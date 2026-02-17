@@ -1509,16 +1509,16 @@
         },
         {
             "name": "laminas/laminas-inputfilter",
-            "version": "2.34.0",
+            "version": "2.35.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laminas/laminas-inputfilter.git",
-                "reference": "5589fcfa366de04f34a5634b43c6c66e69bd2fe8"
+                "reference": "326d2dac38814f70902a3a9e0062f740d06f89c5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laminas/laminas-inputfilter/zipball/5589fcfa366de04f34a5634b43c6c66e69bd2fe8",
-                "reference": "5589fcfa366de04f34a5634b43c6c66e69bd2fe8",
+                "url": "https://api.github.com/repos/laminas/laminas-inputfilter/zipball/326d2dac38814f70902a3a9e0062f740d06f89c5",
+                "reference": "326d2dac38814f70902a3a9e0062f740d06f89c5",
                 "shasum": ""
             },
             "require": {
@@ -1535,11 +1535,10 @@
             "require-dev": {
                 "ext-json": "*",
                 "laminas/laminas-coding-standard": "^3.1.0",
-                "phpunit/phpunit": "^11.5.42",
+                "phpunit/phpunit": "^11.5.46",
                 "psalm/plugin-phpunit": "^0.19.5",
                 "psr/http-message": "^2.0",
-                "vimeo/psalm": "^6.13.1",
-                "webmozart/assert": "^1.11"
+                "vimeo/psalm": "^6.14.3"
             },
             "suggest": {
                 "psr/http-message-implementation": "PSR-7 is required if you wish to validate PSR-7 UploadedFileInterface payloads"
@@ -1580,7 +1579,7 @@
                     "type": "community_bridge"
                 }
             ],
-            "time": "2025-10-14T19:52:47+00:00"
+            "time": "2026-01-10T15:07:43+00:00"
         },
         {
             "name": "laminas/laminas-servicemanager",
