@@ -1,0 +1,25 @@
+<?php
+\define('PHPUNIT_RUN', 1);
+
+$configDir = \getenv('CONFIG_DIR');
+if ($configDir) {
+	\define('PHPUNIT_CONFIG_DIR', $configDir);
+}
+
+require_once __DIR__ . '/../lib/base.php';
+
+// if instance is in maintenance mode tests cannot be executed
+if (\OC::$server->getSystemConfig()->getValue('maintenance', false)) {
+	throw new LogicException('Instance is in maintenance mode. Tests cannot be executed.');
+}
+if (\OCP\Util::needUpgrade()) {
+	throw new LogicException('Upgrade is required. Tests cannot be executed.');
+}
+
+// especially with code coverage it will require some more time
+\set_time_limit(0);
+
+// load all enabled apps
+\OC_App::loadApps();
+
+OC_Hook::clear();

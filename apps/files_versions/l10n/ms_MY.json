@@ -1,0 +1,6 @@
+{ "translations": {
+    "Versions" : "Versi",
+    "Failed to revert {file} to revision {timestamp}." : "Gagal kembalikan {file} ke semakan {timestamp}.",
+    "Restore" : "Pulihkan"
+},"pluralForm" :"nplurals=1; plural=0;"
+}

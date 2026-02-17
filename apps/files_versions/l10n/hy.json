@@ -1,0 +1,6 @@
+{ "translations": {
+    "Versions" : "Տարբերակներ",
+    "_%n byte_::_%n bytes_" : ["%n բայտ","%n բայտ"],
+    "Restore" : "Վերականգնել"
+},"pluralForm" :"nplurals=2; plural=(n != 1);"
+}

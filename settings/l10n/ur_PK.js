@@ -1,0 +1,27 @@
+OC.L10N.register(
+    "settings",
+    {
+    "Email sent" : "ارسال شدہ ای میل ",
+    "Delete" : "حذف کریں",
+    "Share" : "اشتراک",
+    "Invalid request" : "غلط درخواست",
+    "Very weak password" : "بہت کمزور پاسورڈ",
+    "Weak password" : "کمزور پاسورڈ",
+    "So-so password" : "نص نص پاسورڈ",
+    "Good password" : "اچھا پاسورڈ",
+    "Strong password" : "مضبوط پاسورڈ",
+    "Cheers!" : "واہ!",
+    "Save" : "حفظ",
+    "Add" : "شامل کریں",
+    "Cancel" : "منسوخ کریں",
+    "Username" : "یوزر نیم",
+    "Password" : "پاسورڈ",
+    "New password" : "نیا پاسورڈ",
+    "Name" : "اسم",
+    "Personal" : "شخصی",
+    "Admin" : "ایڈمن",
+    "Settings" : "ترتیبات",
+    "Group" : "گروپ",
+    "Other" : "دیگر"
+},
+"nplurals=2; plural=(n != 1);");
