@@ -95,12 +95,12 @@
         "sabre/dav": "^4.4",
         "sabre/http": "^5.1",
         "sabre/vobject": "^4.5",
-        "symfony/console": "^7.4",
-        "symfony/event-dispatcher": "^7.4",
-        "symfony/process": "^7.4",
-        "symfony/routing": "^7.4",
-        "symfony/translation": "^7.4",
-        "symfony/mailer": "^7.4"
+        "symfony/console": "^8.0",
+        "symfony/event-dispatcher": "^8.0",
+        "symfony/process": "^8.0",
+        "symfony/routing": "^8.0",
+        "symfony/translation": "^8.0",
+        "symfony/mailer": "^8.0"
     },
     "replace": {
         "symfony/polyfill-ctype": "*",
