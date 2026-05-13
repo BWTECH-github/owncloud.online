@@ -1,0 +1,191 @@
+# Modified by BW-Tech GmbH: clean release workflow for owncloud.online core only.
+name: owncloud.online Clean Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, for example 11.0.1. Empty = version.php"
+        required: false
+        type: string
+      create_github_release:
+        description: "Create a GitHub Release with the generated files"
+        required: false
+        default: false
+        type: boolean
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_VERSION_INPUT: ${{ github.event.inputs.version || github.ref_name }}
+  CREATE_GITHUB_RELEASE: ${{ github.event.inputs.create_github_release || 'false' }}
+
+jobs:
+  build-release:
+    name: Build clean owncloud.online release packages
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout owncloud.online
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: apcu, ctype, curl, dom, exif, fileinfo, gd, iconv, imagick, intl, json, libxml, mbstring, memcached, openssl, pdo, pdo_mysql, pdo_sqlite, posix, simplexml, xml, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y make rsync tar zip unzip bzip2
+          npm install -g yarn@1.22.22
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${RELEASE_VERSION_INPUT:-}"
+          version="${version#v}"
+
+          if [[ -z "${version}" || "${version}" == "main" || "${version}" == "master" ]]; then
+            version="$(php -r '
+              require "version.php";
+              if (isset($OC_VersionString) && $OC_VersionString !== "") {
+                echo $OC_VersionString;
+              } elseif (isset($OC_Version) && is_array($OC_Version)) {
+                echo implode(".", $OC_Version);
+              } else {
+                fwrite(STDERR, "Could not resolve ownCloud version\n");
+                exit(1);
+              }
+            ')"
+          fi
+
+          echo "release_version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "Resolved release version: ${version}"
+
+      - name: Build owncloud.online core distribution
+        shell: bash
+        run: |
+          set -euo pipefail
+          composer config --global github-oauth.github.com "${{ secrets.GITHUB_TOKEN }}"
+          make dist-dir RELEASE_CHANNEL=stable
+          test -d build/dist/owncloud
+
+      - name: Build release archives
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version="${{ steps.version.outputs.release_version }}"
+          artifact_dir="${GITHUB_WORKSPACE}/build/release-artifacts"
+          release_stage="${GITHUB_WORKSPACE}/build/release/owncloud-online"
+
+          rm -rf "${release_stage}" "${artifact_dir}"
+          mkdir -p "${release_stage}" "${artifact_dir}"
+
+          rsync -a build/dist/owncloud/ "${release_stage}/owncloud/"
+
+          prune_report="${artifact_dir}/removed-release-files.txt"
+          : > "${prune_report}"
+
+          (
+            cd "${release_stage}/owncloud"
+
+            for path in README.md CHANGELOG.md; do
+              if [[ -e "${path}" ]]; then
+                echo "${path}" >> "${prune_report}"
+                rm -f "${path}"
+              fi
+            done
+
+            find . -type f \( \
+              -name ".gitattributes" -o \
+              -name ".gitignore" -o \
+              -name ".gitkeep" -o \
+              -name ".php-cs-fixer.php" -o \
+              -name ".scrutinizer.yml" -o \
+              -name ".travis.yml" -o \
+              -name "phpcs.xml" -o \
+              -name "phpstan.neon" -o \
+              -name "phpunit.xml" -o \
+              -name "psalm.xml" -o \
+              -name "sonar-project.properties" -o \
+              -name "package-lock.json" -o \
+              -name "yarn.lock" -o \
+              -name "npm-debug.log" -o \
+              -name "yarn-error.log" \
+              \) -print -delete >> "${prune_report}"
+
+            find . -depth -type d \( \
+              -name ".github" -o \
+              -name ".idea" -o \
+              -name ".scannerwork" -o \
+              -name ".vscode" -o \
+              -name "coverage" -o \
+              -name "node_modules" -o \
+              -name "test" -o \
+              -name "tests" -o \
+              -name "vendor-bin" \
+              \) -print -exec rm -rf {} + >> "${prune_report}"
+          )
+
+          cat > "${artifact_dir}/release-manifest.json" <<EOF
+          {
+            "product": "owncloud.online",
+            "version": "${version}",
+            "commit": "${GITHUB_SHA}",
+            "php": "$(php -r 'echo PHP_VERSION;')",
+            "bundle": {
+              "name": "owncloud-online",
+              "description": "clean owncloud.online core release",
+              "apps": []
+            },
+            "excludedCustomApps": true,
+            "notes": [
+              "No custom app packages are bundled.",
+              "Only core ownCloud apps required by the distribution remain part of this release.",
+              "Development, CI, test, cache and package-manager metadata files are pruned after the core distribution build."
+            ]
+          }
+          EOF
+
+          (
+            cd "${release_stage}"
+            zip -rq "${artifact_dir}/owncloud-online-${version}.zip" owncloud
+            tar -czf "${artifact_dir}/owncloud-online-${version}.tar.gz" owncloud
+          )
+
+          (
+            cd "${artifact_dir}"
+            sha256sum *.tar.gz *.zip *.json > SHA256SUMS.txt
+          )
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: owncloud-online-${{ steps.version.outputs.release_version }}
+          path: build/release-artifacts/*
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/') || env.CREATE_GITHUB_RELEASE == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('v{0}', steps.version.outputs.release_version) }}
+          name: owncloud.online ${{ steps.version.outputs.release_version }}
+          files: build/release-artifacts/*
+          generate_release_notes: true
