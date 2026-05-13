@@ -13,7 +13,10 @@
 /build/dist
 /build/phan.phar
 /build/phpstan.phar*
-/core/vendor
+# Modified by BW-Tech GmbH: keep core frontend vendor assets in source releases
+# so the unchanged base-image script can clone a working login UI without
+# running make on customer servers.
+!/core/vendor
 /updater/
 
 # ignore all apps except core ones
