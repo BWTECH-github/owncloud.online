@@ -4,6 +4,8 @@
  * This configuration file is only provided to document the different
  * configuration options and their usage for the core system.
  *
+ * Modified by BW-Tech GmbH
+ *
  * DO NOT COMPLETELY BASE YOUR CONFIGURATION FILE ON THESE SAMPLES. THIS MAY BREAK
  * YOUR INSTANCE. Instead, manually copy configuration switches that you
  * consider important for your instance to your working `config.php`, and
@@ -765,6 +767,10 @@ $CONFIG = [
  */
 'has_internet_connection' => true,
 
+/**
+ * The following URL is used to detect internet connectivity.
+ */
+'internet_connectivity_detect_url' => 'https://detectportal.firefox.com/success.txt',
 /**
  * Check for a `.well-known` setup
  * Allows ownCloud to verify a working .well-known URL redirect.
