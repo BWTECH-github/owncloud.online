@@ -248,7 +248,7 @@ class OC_Util {
 			$user,
 			'owncloud',
 			'isGuest',
-			false
+			''
 		);
 
 		if (!$isGuest) {
