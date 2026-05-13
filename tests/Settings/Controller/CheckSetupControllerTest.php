@@ -3,6 +3,7 @@
  * @author Lukas Reschke <lukas@owncloud.com>
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
+ * Modified by BW-Tech GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -34,6 +35,7 @@ use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 use Test\TestCase;
+use OCP\Http\Client\IClient;
 
 /**
  * Class CheckSetupControllerTest
@@ -59,24 +61,24 @@ class CheckSetupControllerTest extends TestCase {
 	public function setUp(): void {
 		parent::setUp();
 
-		$this->request = $this->getMockBuilder('\OCP\IRequest')
+		$this->request = $this->getMockBuilder(IRequest::class)
 			->disableOriginalConstructor()->getMock();
-		$this->config = $this->getMockBuilder('\OCP\IConfig')
+		$this->config = $this->getMockBuilder(IConfig::class)
 			->disableOriginalConstructor()->getMock();
-		$this->clientService = $this->getMockBuilder('\OCP\Http\Client\IClientService')
+		$this->clientService = $this->getMockBuilder(IClientService::class)
 			->disableOriginalConstructor()->getMock();
-		$this->urlGenerator = $this->getMockBuilder('\OCP\IURLGenerator')
+		$this->urlGenerator = $this->getMockBuilder(IURLGenerator::class)
 			->disableOriginalConstructor()->getMock();
-		$this->l10n = $this->getMockBuilder('\OCP\IL10N')
+		$this->l10n = $this->getMockBuilder(IL10N::class)
 			->disableOriginalConstructor()->getMock();
 		$this->l10n
 			->method('t')
 			->willReturnCallback(function ($message, array $replace) {
 				return \vsprintf($message, $replace);
 			});
-		$this->checker = $this->getMockBuilder('\OC\IntegrityCheck\Checker')
+		$this->checker = $this->getMockBuilder(Checker::class)
 				->disableOriginalConstructor()->getMock();
-		$this->checkSetupController = $this->getMockBuilder('\OC\Settings\Controller\CheckSetupController')
+		$this->checkSetupController = $this->getMockBuilder(CheckSetupController::class)
 			->setConstructorArgs([
 				'settings',
 				$this->request,
@@ -94,92 +96,6 @@ class CheckSetupControllerTest extends TestCase {
 			->method('getSystemValue')
 			->with('has_internet_connection', true)
 			->willReturn(false);
-
-		$this->assertFalse(
-			self::invokePrivate(
-				$this->checkSetupController,
-				'isInternetConnectionWorking'
-			)
-		);
-	}
-
-	public function testIsInternetConnectionWorkingCorrectly() {
-		$this->config->expects($this->once())
-			->method('getSystemValue')
-			->with('has_internet_connection', true)
-			->willReturn(true);
-
-		$client = $this->getMockBuilder('\OCP\Http\Client\IClient')
-			->disableOriginalConstructor()->getMock();
-		$client
-			->expects($this->exactly(2))
-			->method('get')
-			->withConsecutive(
-				['https://www.owncloud.com/', []],
-				['http://www.owncloud.com/', []],
-			);
-
-		$this->clientService->expects($this->once())
-			->method('newClient')
-			->willReturn($client);
-
-		$this->assertTrue(
-			self::invokePrivate(
-				$this->checkSetupController,
-				'isInternetConnectionWorking'
-			)
-		);
-	}
-
-	public function testIsInternetConnectionHttpsFail() {
-		$this->config->expects($this->once())
-			->method('getSystemValue')
-			->with('has_internet_connection', true)
-			->willReturn(true);
-
-		$client = $this->getMockBuilder('\OCP\Http\Client\IClient')
-			->disableOriginalConstructor()->getMock();
-		$client
-			->expects($this->once())
-			->method('get')
-			->with('https://www.owncloud.com/', [])
-			->will($this->throwException(new \Exception()));
-
-		$this->clientService->expects($this->once())
-			->method('newClient')
-			->willReturn($client);
-
-		$this->assertFalse(
-			self::invokePrivate(
-				$this->checkSetupController,
-				'isInternetConnectionWorking'
-			)
-		);
-	}
-
-	public function testIsInternetConnectionHttpFail() {
-		$this->config->expects($this->once())
-			->method('getSystemValue')
-			->with('has_internet_connection', true)
-			->willReturn(true);
-
-		$client = $this->getMockBuilder('\OCP\Http\Client\IClient')
-			->disableOriginalConstructor()->getMock();
-		$client
-			->expects($this->exactly(2))
-			->method('get')
-			->withConsecutive(
-				['https://www.owncloud.com/', []],
-				['http://www.owncloud.com/', []],
-			)
-			->willReturnOnConsecutiveCalls(
-				[],
-				$this->throwException(new \Exception()),
-			);
-
-		$this->clientService->expects($this->once())
-			->method('newClient')
-			->willReturn($client);
 
 		$this->assertFalse(
 			self::invokePrivate(
@@ -280,18 +196,22 @@ class CheckSetupControllerTest extends TestCase {
 		);
 	}
 
-	public function testCheck() {
+	/**
+	 * @dataProvider providesCheckData
+	 */
+	public function testCheck(bool $internet_available) {
 		$this->config
-			->expects($this->any())
 			->method('getSystemValue')
 			->withConsecutive(
 				['has_internet_connection', true],
+				['internet_connectivity_detect_url', 'https://detectportal.firefox.com/success.txt'],
 				['memcache.local', null],
 				['has_internet_connection', true],
 				['trusted_proxies', []],
 			)
 			->willReturnOnConsecutiveCalls(
 				true,
+				'https://detectportal.firefox.com/success.txt',
 				'SomeProvider',
 				false,
 				['1.2.3.4'],
@@ -301,19 +221,17 @@ class CheckSetupControllerTest extends TestCase {
 			->method('getRemoteAddress')
 			->willReturn('4.3.2.1');
 
-		$client = $this->getMockBuilder('\OCP\Http\Client\IClient')
+		$client = $this->getMockBuilder(IClient::class)
 			->disableOriginalConstructor()->getMock();
 		$client
-			->expects($this->exactly(2))
+			->expects($this->once())
 			->method('get')
-			->withConsecutive(
-				['https://www.owncloud.com/', []],
-				['http://www.owncloud.com/', []],
-			)
-			->willReturnOnConsecutiveCalls(
-				[],
-				$this->throwException(new \Exception())
-			);
+			->willReturnCallback(function () use ($internet_available) {
+				if ($internet_available) {
+					return;
+				}
+				throw new \Exception();
+			});
 
 		$this->clientService->expects($this->once())
 			->method('newClient')
@@ -339,7 +257,7 @@ class CheckSetupControllerTest extends TestCase {
 
 		$expected = new DataResponse(
 			[
-				'serverHasInternetConnection' => false,
+				'serverHasInternetConnection' => $internet_available,
 				'isMemcacheConfigured' => true,
 				'memcacheDocs' => 'http://doc.owncloud.com/server/go.php?to=admin-performance',
 				'isUrandomAvailable' => self::invokePrivate($this->checkSetupController, 'isUrandomAvailable'),
@@ -361,7 +279,7 @@ class CheckSetupControllerTest extends TestCase {
 	}
 
 	public function testGetCurlVersion() {
-		$checkSetupController = $this->getMockBuilder('\OC\Settings\Controller\CheckSetupController')
+		$checkSetupController = $this->getMockBuilder(CheckSetupController::class)
 			->setConstructorArgs([
 				'settings',
 				$this->request,
@@ -377,7 +295,7 @@ class CheckSetupControllerTest extends TestCase {
 	}
 
 	public function testIsUsedTlsLibOutdatedWithAnotherLibrary() {
-		$this->config->expects($this->any())
+		$this->config
 			->method('getSystemValue')
 			->willReturn(true);
 		$this->checkSetupController
@@ -388,7 +306,7 @@ class CheckSetupControllerTest extends TestCase {
 	}
 
 	public function testIsUsedTlsLibOutdatedWithMisbehavingCurl() {
-		$this->config->expects($this->any())
+		$this->config
 			->method('getSystemValue')
 			->willReturn(true);
 		$this->checkSetupController
@@ -399,7 +317,7 @@ class CheckSetupControllerTest extends TestCase {
 	}
 
 	public function testIsUsedTlsLibOutdatedWithOlderOpenSsl() {
-		$this->config->expects($this->any())
+		$this->config
 			->method('getSystemValue')
 			->willReturn(true);
 		$this->checkSetupController
@@ -410,7 +328,7 @@ class CheckSetupControllerTest extends TestCase {
 	}
 
 	public function testIsUsedTlsLibOutdatedWithOlderOpenSsl1() {
-		$this->config->expects($this->any())
+		$this->config
 			->method('getSystemValue')
 			->willReturn(true);
 		$this->checkSetupController
@@ -421,7 +339,7 @@ class CheckSetupControllerTest extends TestCase {
 	}
 
 	public function testIsUsedTlsLibOutdatedWithMatchingOpenSslVersion() {
-		$this->config->expects($this->any())
+		$this->config
 			->method('getSystemValue')
 			->willReturn(true);
 		$this->checkSetupController
@@ -432,7 +350,7 @@ class CheckSetupControllerTest extends TestCase {
 	}
 
 	public function testIsUsedTlsLibOutdatedWithMatchingOpenSslVersion1() {
-		$this->config->expects($this->any())
+		$this->config
 			->method('getSystemValue')
 			->willReturn(true);
 		$this->checkSetupController
@@ -443,14 +361,14 @@ class CheckSetupControllerTest extends TestCase {
 	}
 
 	public function testIsBuggyNss400() {
-		$this->config->expects($this->any())
+		$this->config
 			->method('getSystemValue')
 			->willReturn(true);
 		$this->checkSetupController
 			->expects($this->once())
 			->method('getCurlVersion')
 			->willReturn(['ssl_version' => 'NSS/1.0.2b']);
-		$client = $this->getMockBuilder('\OCP\Http\Client\IClient')
+		$client = $this->getMockBuilder(IClient::class)
 			->disableOriginalConstructor()->getMock();
 		/** @var ClientException | \PHPUnit\Framework\MockObject\MockObject $exception */
 		$exception = $this->getMockBuilder('\GuzzleHttp\Exception\ClientException')
@@ -478,14 +396,14 @@ class CheckSetupControllerTest extends TestCase {
 	}
 
 	public function testIsBuggyNss200() {
-		$this->config->expects($this->any())
+		$this->config
 			->method('getSystemValue')
 			->willReturn(true);
 		$this->checkSetupController
 			->expects($this->once())
 			->method('getCurlVersion')
 			->willReturn(['ssl_version' => 'NSS/1.0.2b']);
-		$client = $this->getMockBuilder('\OCP\Http\Client\IClient')
+		$client = $this->getMockBuilder(IClient::class)
 			->disableOriginalConstructor()->getMock();
 		/** @var ClientException | \PHPUnit\Framework\MockObject\MockObject $exception */
 		$exception = $this->getMockBuilder('\GuzzleHttp\Exception\ClientException')
@@ -1017,5 +935,10 @@ Array
 				]
 		);
 		$this->assertEquals($expected, $this->checkSetupController->getFailedIntegrityCheckFiles());
+	}
+
+	public function providesCheckData() {
+		yield [true];
+		yield [false];
 	}
 }
