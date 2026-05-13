@@ -43,7 +43,7 @@ class UserTypeHelper {
 	 * @return bool
 	 */
 	public function isGuestUser($uid) {
-		return (bool) $this->config->getUserValue($uid, 'owncloud', 'isGuest', false);
+		return $this->config->getUserValue($uid, 'owncloud', 'isGuest', '') === '1';
 	}
 
 	/**
