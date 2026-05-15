@@ -1,6 +1,7 @@
 <?php
 /**
  * Copyright (c) 2012 Lukas Reschke <lukas@statuscode.ch>
+ * Modified by BW-Tech GmbH
  * This file is licensed under the Affero General Public License version 3 or
  * later.
  * See the COPYING-README file.
@@ -586,7 +587,7 @@ class UtilTest extends \Test\TestCase {
 	public function testGetStatusInfo() {
 		$statusInfo = \OCP\Util::getStatusInfo();
 		$this->assertArrayHasKey('productname', $statusInfo);
-		$this->assertEquals($statusInfo['productname'], 'ownCloud');
+		$this->assertEquals($statusInfo['productname'], 'ownCloud.online');
 		$statusInfoShortHostname = \OCP\Util::getStatusInfo(false, false, true);
 		if (\strpos($statusInfo['hostname'], '.') === false) {
 			$this->assertEquals($statusInfo['hostname'], $statusInfoShortHostname['hostname']);
