@@ -18,6 +18,7 @@ use OCP\IConfig;
  * @author Volkan Gezer <volkangezer@gmail.com>
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
+ * Modified by BW-Tech GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -60,9 +61,9 @@ class OC_Defaults {
 		$this->config = \OC::$server->getConfig();
 		$version = \OCP\Util::getVersion();
 
-		$this->defaultEntity = 'ownCloud'; /* e.g. company name, used for footers and copyright notices */
-		$this->defaultName = 'ownCloud'; /* short name, used when referring to the software */
-		$this->defaultTitle = 'ownCloud'; /* can be a longer name, for titles */
+		$this->defaultEntity = 'BW-Tech GmbH'; /* e.g. company name, used for footers and copyright notices */
+		$this->defaultName = 'ownCloud.online'; /* short name, used when referring to the software */
+		$this->defaultTitle = 'ownCloud.online'; /* can be a longer name, for titles */
 		$this->defaultBaseUrl = 'https://owncloud.com';
 		$this->defaultSyncClientUrl = 'https://owncloud.com/desktop-app/';
 		$this->defaultiOSClientUrl = 'https://apps.apple.com/app/id1359583808';
