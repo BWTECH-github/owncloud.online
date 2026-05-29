@@ -101,7 +101,7 @@ class Checker {
 	 * @return bool
 	 */
 	public function isCodeCheckEnforced() {
-		$notSignedChannels = [ '', 'git'];
+		$notSignedChannels = [ '', 'git', 'bwtech'];
 		if (\in_array($this->environmentHelper->getChannel(), $notSignedChannels, true)) {
 			return false;
 		}
