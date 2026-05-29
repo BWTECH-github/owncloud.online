@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">ownCloud.online Architektur</title>
+  <desc id="desc">Übersicht der Komponenten: Benutzer, Webserver, ownCloud.online Core, Apps, Datenbank, Speicher, Market Backend und Desktop Client.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#e0f7f5"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f8fbff"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#0f172a" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2 2 L10 6 L2 10 Z" fill="#0f766e"/>
+    </marker>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <text x="70" y="78" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800" fill="#0f172a">ownCloud.online Systemübersicht</text>
+  <text x="70" y="112" font-family="Inter, Arial, sans-serif" font-size="18" fill="#475569">PHP 8.4 Core, eigene Apps, Market Backend und Desktop Client</text>
+
+  <g filter="url(#shadow)">
+    <rect x="70" y="165" width="250" height="140" rx="16" fill="url(#card)" stroke="#dbeafe"/>
+    <text x="95" y="210" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800" fill="#0f172a">Benutzer</text>
+    <text x="95" y="244" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">Browser, Mobile Apps,</text>
+    <text x="95" y="268" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">Desktop Client</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="405" y="145" width="320" height="180" rx="16" fill="url(#card)" stroke="#ccfbf1"/>
+    <text x="430" y="190" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800" fill="#0f172a">Webserver</text>
+    <text x="430" y="224" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">Apache oder Nginx</text>
+    <text x="430" y="248" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">PHP-FPM 8.4</text>
+    <text x="430" y="272" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">HTTPS, Rewrite, Headers</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="815" y="120" width="360" height="230" rx="18" fill="#0f172a" stroke="#164e63"/>
+    <text x="845" y="170" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800" fill="#ffffff">ownCloud.online Core</text>
+    <text x="845" y="208" font-family="Inter, Arial, sans-serif" font-size="15" fill="#cbd5e1">Version 11.0.0</text>
+    <text x="845" y="232" font-family="Inter, Arial, sans-serif" font-size="15" fill="#cbd5e1">ownCloud Fork für PHP 8.4</text>
+    <text x="845" y="256" font-family="Inter, Arial, sans-serif" font-size="15" fill="#cbd5e1">OCS, WebDAV, Sharing, Files</text>
+    <rect x="845" y="285" width="280" height="38" rx="10" fill="#00c8b4"/>
+    <text x="870" y="310" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="800" fill="#042f2e">apps-external und Market-App</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="120" y="440" width="250" height="140" rx="16" fill="url(#card)" stroke="#dbeafe"/>
+    <text x="145" y="485" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800" fill="#0f172a">Market Backend</text>
+    <text x="145" y="519" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">Plugin-Katalog</text>
+    <text x="145" y="543" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">Pakete, Screenshots,</text>
+    <text x="145" y="567" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">Changelogs, API-Key</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="455" y="445" width="250" height="140" rx="16" fill="url(#card)" stroke="#dbeafe"/>
+    <text x="480" y="490" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800" fill="#0f172a">Datenbank</text>
+    <text x="480" y="524" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">MariaDB/MySQL</text>
+    <text x="480" y="548" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">SQLite nur lokal</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="790" y="445" width="250" height="140" rx="16" fill="url(#card)" stroke="#dbeafe"/>
+    <text x="815" y="490" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800" fill="#0f172a">Storage</text>
+    <text x="815" y="524" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">Data-Verzeichnis</text>
+    <text x="815" y="548" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">S3 Primary optional</text>
+  </g>
+
+  <path d="M320 235 H405" stroke="#0f766e" stroke-width="4" fill="none" marker-end="url(#arrow)"/>
+  <path d="M725 235 H815" stroke="#0f766e" stroke-width="4" fill="none" marker-end="url(#arrow)"/>
+  <path d="M995 350 V445" stroke="#0f766e" stroke-width="4" fill="none" marker-end="url(#arrow)"/>
+  <path d="M890 350 C780 395 690 410 590 445" stroke="#0f766e" stroke-width="4" fill="none" marker-end="url(#arrow)"/>
+  <path d="M815 300 C620 370 450 400 370 485" stroke="#0f766e" stroke-width="4" fill="none" marker-end="url(#arrow)"/>
+</svg>
