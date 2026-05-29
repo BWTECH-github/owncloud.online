@@ -1,0 +1,22 @@
+:root {
+  --md-primary-fg-color: #00c8b4;
+  --md-accent-fg-color: #0ea5e9;
+}
+
+.md-typeset h1,
+.md-typeset h2 {
+  font-weight: 760;
+}
+
+.md-typeset img {
+  border-radius: 10px;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+}
+
+.md-typeset table:not([class]) {
+  font-size: 0.82rem;
+}
+
+.md-typeset code {
+  border-radius: 6px;
+}

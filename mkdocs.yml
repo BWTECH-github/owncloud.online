@@ -1,0 +1,62 @@
+site_name: ownCloud.online Documentation
+site_description: Betrieb, Installation, Administration und Entwicklung von ownCloud.online.
+site_url: https://docs.owncloud.online/
+repo_url: https://github.com/BWTECH-github/owncloud.online
+repo_name: BWTECH-github/owncloud.online
+edit_uri: ""
+
+theme:
+  name: material
+  language: de
+  logo: assets/images/owncloud-online-logo.svg
+  favicon: assets/images/owncloud-online-logo.svg
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+  palette:
+    - scheme: default
+      primary: teal
+      accent: cyan
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Start: index.md
+  - Installation:
+      - installation/index.md
+      - Leerer Linux-Server: installation/linux-server.md
+      - Webhosting: installation/webhosting.md
+      - Lokale Entwicklung mit WSL: installation/local-wsl.md
+  - Administration:
+      - administration/index.md
+      - Sicherheit und Setup-Warnungen: administration/security-hardening.md
+      - Apps und Marketplace: administration/apps-market.md
+      - Backups und Updates: administration/backups-updates.md
+      - Troubleshooting: administration/troubleshooting.md
+  - Benutzer:
+      - user/index.md
+      - Dateien und Freigaben: user/files-sharing.md
+      - Desktop Client: user/desktop-client.md
+  - Plugins:
+      - plugins/index.md
+      - Plugin-Matrix: plugins/plugin-matrix.md
+      - Market Backend: plugins/market-backend.md
+  - Entwickler:
+      - developer/index.md
+      - Release Workflow: developer/release-workflow.md
+      - PHP 8.4 Kompatibilität: developer/php84-compat.md
