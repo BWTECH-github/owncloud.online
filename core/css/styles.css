@@ -1,6 +1,7 @@
 /* Copyright (c) 2011, Jan-Christoph Borchardt, http://jancborchardt.net
  This file is licensed under the Affero General Public License version 3 or later.
- See the COPYING-README file. */
+ See the COPYING-README file.
+ Modified by BW-Tech GmbH */
 
 html, body, div, span, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, code, del, dfn, em, img, q, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td, article, aside, dialog, figure, footer, header, hgroup, nav, section { margin:0; padding:0; border:0; outline:0; font-weight:inherit; font-size:100%; font-family:inherit; vertical-align:baseline; cursor:default; }
 html, body { height:100%; }
@@ -219,27 +220,28 @@ a.two-factor-cancel {
 	height: 101%; /* fix sticky footer */
 }
 
-/* Dark subtle label text */
+/* Readable guest page text on the ownCloud.online photo background */
 #body-login p.info,
 #body-login form legend,
 #body-login #datadirContent label,
 #body-login form .warning-info,
 #body-login form input[type="checkbox"]+label {
 	text-align: center;
-	color: #fff;
+	color: #26384d;
 }
 
 #body-login form label {
-	color: #fff;
+	color: #26384d;
 	text-align: left;
 	margin-bottom: .5rem;
-	font-weight: bold;
+	font-weight: 700;
+	text-shadow: 0 1px 0 rgba(255,255,255,.75);
 }
 /* overrides another !important statement that sets this to unreadable black */
 #body-login form .warning input[type="checkbox"]:hover+label,
 #body-login form .warning input[type="checkbox"]:focus+label,
 #body-login form .warning input[type="checkbox"]+label {
-	color: #fff !important;
+	color: #26384d !important;
 }
 
 #body-login .update h2 {
@@ -247,8 +249,8 @@ a.two-factor-cancel {
 }
 
 #body-login .update a {
-	color: #fff;
-	border-bottom: 1px solid #aaa;
+	color: #007a67;
+	border-bottom: 1px solid rgba(0,122,103,.35);
 }
 
 #body-login .infogroup {
@@ -487,7 +489,7 @@ a.two-factor-cancel {
 }
 
 #body-login p.info a, #body-login #showAdvanced {
-	color: #fff;
+	color: #26384d;
 }
 
 #body-login #remember_login:hover+label,
@@ -573,13 +575,17 @@ a.two-factor-cancel {
 #body-login .update,
 #body-login .error {
 	display: block;
-	padding: 10px;
-	color: #fff;
+	padding: 18px 20px;
+	color: #172033;
 	text-align: center;
-	border-radius: 3px;
+	line-height: 1.55;
+	border-radius: 8px;
 	cursor: default;
-	border: 1px solid rgba(255,255,255,.5);
+	background: rgba(255,255,255,.94);
+	border: 1px solid rgba(121,139,160,.35);
+	box-shadow: 0 18px 44px rgba(15,23,42,.16);
 	margin-bottom: 1rem;
+	backdrop-filter: blur(4px);
 }
 
 #body-login .update {
@@ -608,7 +614,7 @@ a.two-factor-cancel {
 .warning legend,
 .warning a,
 .error a {
-	color: #fff !important;
+	color: #007a67 !important;
 	font-weight: 600 !important;
 }
 .error a.button {
