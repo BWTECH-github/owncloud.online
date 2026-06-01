@@ -1,6 +1,7 @@
 <?php
 /**
  * @author Martin Mattel <martin.mattel@diemattels.at>
+ * Modified by BW-Tech GmbH
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
@@ -31,7 +32,7 @@ class Status implements ISettings {
 
 	public function getPanel() {
 		$tmpl = new Template('settings', 'panels/admin/status');
-		$values = \OCP\Util::getStatusInfo();
+		$values = \OCP\Util::getStatusInfo(false, true);
 		$tmpl->assign('showStatus', $values);
 		return $tmpl;
 	}

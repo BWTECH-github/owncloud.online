@@ -588,6 +588,13 @@ class UtilTest extends \Test\TestCase {
 		$statusInfo = \OCP\Util::getStatusInfo();
 		$this->assertArrayHasKey('productname', $statusInfo);
 		$this->assertEquals($statusInfo['productname'], 'ownCloud.online');
+		$this->assertArrayHasKey('version', $statusInfo);
+		$expectedVersion = \OCP\Util::getVersion();
+		while (\count($expectedVersion) < 3) {
+			$expectedVersion[] = 0;
+		}
+		$this->assertEquals(\implode('.', \array_slice($expectedVersion, 0, 3)), $statusInfo['version']);
+		$this->assertMatchesRegularExpression('/^\d+\.\d+\.\d+$/', $statusInfo['version']);
 		$statusInfoShortHostname = \OCP\Util::getStatusInfo(false, false, true);
 		if (\strpos($statusInfo['hostname'], '.') === false) {
 			$this->assertEquals($statusInfo['hostname'], $statusInfoShortHostname['hostname']);
