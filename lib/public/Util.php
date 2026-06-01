@@ -22,6 +22,7 @@
  * @author Thomas Tanghus <thomas@tanghus.net>
  * @author Victor Dubiniuk <dubiniuk@owncloud.com>
  * @author Vincent Petry <pvince81@owncloud.com>
+ * Modified by BW-Tech GmbH
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
@@ -73,6 +74,20 @@ class Util {
 	 */
 	public static function getVersion() {
 		return(\OC_Util::getVersion());
+	}
+
+	/**
+	 * Formatiert die öffentliche Produktversion ohne internen Patch-Level.
+	 *
+	 * @return string
+	 */
+	private static function getPublicVersionString() {
+		$version = self::getVersion();
+		while (\count($version) < 3) {
+			$version[] = 0;
+		}
+
+		return \implode('.', \array_slice($version, 0, 3));
 	}
 
 	/**
@@ -765,7 +780,7 @@ class Util {
 
 		// expose version and servername details
 		if ($includeVersion || (bool) $systemConfig->getValue('version.hide', false) === false) {
-			$values['version'] = \implode('.', self::getVersion());
+			$values['version'] = self::getPublicVersionString();
 			$values['versionstring'] = \OC_Util::getVersionString();
 			$values['edition'] = \OC_Util::getEditionString();
 			$values['productname'] = $defaults->getName();
