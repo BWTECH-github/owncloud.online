@@ -32,7 +32,7 @@ class Status implements ISettings {
 
 	public function getPanel() {
 		$tmpl = new Template('settings', 'panels/admin/status');
-		$values = \OCP\Util::getStatusInfo(false, true);
+		$values = \OCP\Util::getStatusInfo();
 		$tmpl->assign('showStatus', $values);
 		return $tmpl;
 	}
