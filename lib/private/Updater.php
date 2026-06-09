@@ -244,7 +244,7 @@ class Updater extends BasicEmitter {
 				&& \is_writable(Setup::pathToHtaccess())
 			) {
 				// Update .htaccess files
-				Setup::updateHtaccess();
+				Setup::updateHtaccess($this->config);
 			}
 			Setup::protectDataDirectory();
 		} catch (\Exception $e) {
