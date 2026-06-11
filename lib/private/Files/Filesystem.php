@@ -669,6 +669,40 @@ class Filesystem {
 	 * @param string $callerMessage Message from the calling function to identify where a possible error is coming from
 	 * @return boolean folder or file regex status
 	 */
+	/** @var array|null normalisierte Blacklist-/Exclude-Listen aus der Config (Request-Cache) */
+	private static $forbiddenListsCache = null;
+
+	/**
+	 * Normalisiert die Blacklist-/Exclude-Listen wie von isForbiddenFileOrDir erwartet.
+	 *
+	 * @param array $excludeFolders
+	 * @param array $excludeFoldersRegex
+	 * @param array $blacklistFiles
+	 * @param array $blacklistFilesRegex
+	 * @return array [$excludeFolders, $excludeFoldersRegex, $blacklistFiles, $blacklistFilesRegex]
+	 */
+	private static function buildForbiddenLists($excludeFolders, $excludeFoldersRegex, $blacklistFiles, $blacklistFilesRegex) {
+		// empty array elements ('') will cause an infinite loop
+		// remove double or empty array elements and add exactly one '.htaccess' if not present.
+		// important, because if you define an empty config value, '.htaccess' will not be added...
+		// prevents misuse with a fake config value
+		$blacklistFiles[] = '.htaccess';
+		$blacklistFiles = \array_unique($blacklistFiles);
+		$blacklistFiles = \array_values(\array_filter($blacklistFiles));
+		// removes double or empty array elements
+		$excludeFolders = \array_unique($excludeFolders);
+		$excludeFolders = \array_values(\array_filter($excludeFolders));
+		$excludeFoldersRegex = \array_unique($excludeFoldersRegex);
+		$excludeFoldersRegex = \array_values(\array_filter($excludeFoldersRegex));
+		$blacklistFilesRegex = \array_unique($blacklistFilesRegex);
+		$blacklistFilesRegex = \array_values(\array_filter($blacklistFilesRegex));
+
+		$excludeFolders = \array_map('trim', $excludeFolders);
+		$excludeFolders = \array_map('strtolower', $excludeFolders);
+
+		return [$excludeFolders, $excludeFoldersRegex, $blacklistFiles, $blacklistFilesRegex];
+	}
+
 	private static function checkRegexAgainstFolderOrFile($regexList, $path, $callerMessage = '') {
 		foreach ($regexList as $item) {
 			// check if the first and last character is a '/' and add one if not
@@ -718,32 +752,22 @@ class Filesystem {
 
 		// force blacklist/exclude arraylist/arrayRegex for unit tests
 		if ($excluded) {
-			$excludeFolders = $excluded;
-			$excludeFoldersRegex = $excluded;
-			$blacklistFiles = $excluded;
-			$blacklistFilesRegex = $excluded;
+			$lists = self::buildForbiddenLists($excluded, $excluded, $excluded, $excluded);
 		} else {
-			$config = \OC::$server->getSystemConfig();
-			$excludeFolders = $config->getValue('excluded_directories', []);
-			$excludeFoldersRegex = $config->getValue('excluded_directories_regex', []);
-			$blacklistFiles = $config->getValue('blacklisted_files', ['.htaccess']);
-			$blacklistFilesRegex = $config->getValue('blacklisted_files_regex', []);
+			// Config-Arrays pro Request nur einmal normalisieren: die Funktion
+			// läuft pro Listing-Eintrag und mehrfach pro Schreiboperation
+			if (self::$forbiddenListsCache === null) {
+				$config = \OC::$server->getSystemConfig();
+				self::$forbiddenListsCache = self::buildForbiddenLists(
+					$config->getValue('excluded_directories', []),
+					$config->getValue('excluded_directories_regex', []),
+					$config->getValue('blacklisted_files', ['.htaccess']),
+					$config->getValue('blacklisted_files_regex', [])
+				);
+			}
+			$lists = self::$forbiddenListsCache;
 		}
-
-		// empty array elements ('') will cause an infinite loop
-		// remove double or empty array elements and add exactly one '.htaccess' if not present.
-		// important, because if you define an empty config value, '.htaccess' will not be added...
-		// prevents misuse with a fake config value
-		$blacklistFiles[] = '.htaccess';
-		$blacklistFiles = \array_unique($blacklistFiles);
-		$blacklistFiles = \array_values(\array_filter($blacklistFiles));
-		// removes double or empty array elements
-		$excludeFolders = \array_unique($excludeFolders);
-		$excludeFolders = \array_values(\array_filter($excludeFolders));
-		$excludeFoldersRegex = \array_unique($excludeFoldersRegex);
-		$excludeFoldersRegex = \array_values(\array_filter($excludeFoldersRegex));
-		$blacklistFilesRegex = \array_unique($blacklistFilesRegex);
-		$blacklistFilesRegex = \array_values(\array_filter($blacklistFilesRegex));
+		[$excludeFolders, $excludeFoldersRegex, $blacklistFiles, $blacklistFilesRegex] = $lists;
 
 		// explode '/'
 		$ppx = \array_filter(\explode('/', $FileOrDir), 'strlen');
@@ -760,8 +784,6 @@ class Filesystem {
 		$blacklistArray[] = \end($pathParts);
 
 		// first, check if the folder is excluded
-		$excludeFolders= \array_map('trim', $excludeFolders);
-		$excludeFolders= \array_map('strtolower', $excludeFolders);
 		if (\array_intersect($excludeFolders, $pathParts)) {
 			return true;
 		}
