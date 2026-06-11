@@ -133,10 +133,11 @@ class OC_Template extends \OC\Template\Base {
 
 			OC_Util::addScript('oc-backbone-webdav', null, true);
 			OC_Util::addScript('oc-backbone', null, true);
-			OC_Util::addVendorScript('core', 'backbone/backbone', true);
-			OC_Util::addVendorScript('core', 'select2/select2', true);
+			// minifizierte Varianten: identische Versionen, ~deutlich kleinere Payload
+			OC_Util::addVendorScript('core', 'backbone/backbone-min', true);
+			OC_Util::addVendorScript('core', 'select2/select2.min', true);
 			OC_Util::addVendorStyle('select2/select2', null, true);
-			OC_Util::addVendorScript('snapjs/dist/latest/snap', null, true);
+			OC_Util::addVendorScript('snapjs/dist/latest/snap.min', null, true);
 			OC_Util::addScript('mimetypelist', null, true);
 			OC_Util::addScript('mimetype', null, true);
 			OC_Util::addScript("apps", null, true);
