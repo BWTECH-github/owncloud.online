@@ -364,8 +364,10 @@ class PreviewManager implements IPreview {
 						if (!$officeFound) {
 							$officeFound = \OC_Helper::findBinaryPath('openoffice') !== null;
 						}
-						if (!$officeFound && !\OC_Helper::is_function_enabled('exec')) {
-							// Fallback: exec ist deaktiviert, shell_exec aber erlaubt
+						if (!$officeFound) {
+							// Fallback auf shell_exec, wenn findBinaryPath nichts liefert:
+							// deckt deaktiviertes exec UND open_basedir-Setups ab, in denen
+							// is_executable() auf /usr/bin nicht erlaubt ist
 							$whichLibreOffice = \shell_exec('command -v libreoffice');
 							$officeFound = !empty($whichLibreOffice);
 							if (!$officeFound) {
