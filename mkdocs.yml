@@ -1,4 +1,5 @@
 site_name: ownCloud.online Documentation
+# Modified by BW-Tech GmbH
 site_description: Betrieb, Installation, Administration und Entwicklung von ownCloud.online.
 site_url: https://docs.owncloud.online/
 repo_url: https://github.com/BWTECH-github/owncloud.online
@@ -44,6 +45,7 @@ nav:
       - Lokale Entwicklung mit WSL: installation/local-wsl.md
   - Administration:
       - administration/index.md
+      - Performance: administration/performance.md
       - Sicherheit und Setup-Warnungen: administration/security-hardening.md
       - Apps und Marketplace: administration/apps-market.md
       - Backups und Updates: administration/backups-updates.md

@@ -4,6 +4,7 @@
  * @author Morris Jobke <hey@morrisjobke.de>
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
+ * Modified by BW-Tech GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -23,6 +24,7 @@
 namespace OCA\Files\Command;
 
 use OCP\IDBConnection;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -53,7 +55,7 @@ class DeleteOrphanedFiles extends Command {
 		$deletedEntries = 0;
 
 		$query = $this->connection->getQueryBuilder();
-		$query->select('fc.fileid')
+		$query->selectDistinct('fc.storage')
 			->from('filecache', 'fc')
 			->where($query->expr()->isNull('s.numeric_id'))
 			->leftJoin('fc', 'storages', 's', $query->expr()->eq('fc.storage', 's.numeric_id'))
@@ -61,18 +63,23 @@ class DeleteOrphanedFiles extends Command {
 
 		$deleteQuery = $this->connection->getQueryBuilder();
 		$deleteQuery->delete('filecache')
-			->where($deleteQuery->expr()->eq('fileid', $deleteQuery->createParameter('objectid')));
+			->where($deleteQuery->expr()->in('storage', $deleteQuery->createParameter('storageids')));
 
 		$deletedInLastChunk = self::CHUNK_SIZE;
 		while ($deletedInLastChunk === self::CHUNK_SIZE) {
-			$deletedInLastChunk = 0;
+			$storageIds = [];
 			$result = $query->execute();
 			while ($row = $result->fetchAssociative()) {
-				$deletedInLastChunk++;
-				$deletedEntries += $deleteQuery->setParameter('objectid', (int) $row['fileid'])
-					->execute();
+				$storageIds[] = (int) $row['storage'];
 			}
 			$result->free();
+
+			$deletedInLastChunk = \count($storageIds);
+			if ($deletedInLastChunk > 0) {
+				$deletedEntries += $deleteQuery
+					->setParameter('storageids', $storageIds, IQueryBuilder::PARAM_INT_ARRAY)
+					->execute();
+			}
 		}
 
 		$output->writeln("$deletedEntries orphaned file cache entries deleted");

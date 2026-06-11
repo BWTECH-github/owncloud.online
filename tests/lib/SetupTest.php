@@ -1,6 +1,7 @@
 <?php
 /**
  * Copyright (c) 2014 Lukas Reschke <lukas@owncloud.com>
+ * Modified by BW-Tech GmbH
  * This file is licensed under the Affero General Public License version 3 or
  * later.
  * See the COPYING-README file.
@@ -201,5 +202,36 @@ class SetupTest extends \Test\TestCase {
 			'#### DO NOT CHANGE ANYTHING ABOVE THIS LINE ####',
 			$content
 		);
+	}
+
+	public function testUpdateHtaccessWithCliUrlWithoutPath() {
+		$origServerRoot = \OC::$SERVERROOT;
+		$origCli = \OC::$CLI;
+		$htaccessFile = \OC::$SERVERROOT . '/tests/data/.htaccess';
+		\touch($htaccessFile);
+		\chmod($htaccessFile, 0700);
+		\OC::$SERVERROOT = \OC::$SERVERROOT . '/tests/data';
+		\OC::$CLI = true;
+
+		$systemConfig = \OC::$server->getConfig();
+		$oldCliUrl = $systemConfig->getSystemValue('overwrite.cli.url', null);
+		$systemConfig->setSystemValue('overwrite.cli.url', 'http://localhost');
+
+		try {
+			$this->setupClass->updateHtaccess();
+		} finally {
+			if ($oldCliUrl === null) {
+				$systemConfig->deleteSystemValue('overwrite.cli.url');
+			} else {
+				$systemConfig->setSystemValue('overwrite.cli.url', $oldCliUrl);
+			}
+			\OC::$SERVERROOT = $origServerRoot;
+			\OC::$CLI = $origCli;
+		}
+
+		$content = \file_get_contents($htaccessFile);
+		@\unlink($htaccessFile);
+		$this->assertStringContainsString('ErrorDocument 403 /core/templates/403.php', $content);
+		$this->assertStringContainsString('ErrorDocument 404 /core/templates/404.php', $content);
 	}
 }
