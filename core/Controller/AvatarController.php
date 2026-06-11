@@ -143,8 +143,11 @@ class AvatarController extends Controller {
 		}
 
 		$resp->addHeader('Pragma', 'public');
-		$resp->cacheFor(0);
-		$resp->setLastModified(new \DateTime('now', new \DateTimeZone('GMT')));
+		// no-cache statt no-store: Browser darf cachen, muss aber jedes Mal per
+		// If-None-Match revalidieren — das Framework antwortet dann mit 304 ohne
+		// Payload. Last-Modified=now entfällt, es machte Conditional Requests
+		// wirkungslos. Frische-Semantik bleibt identisch (Revalidierung pro Request).
+		$resp->addHeader('Cache-Control', 'no-cache, must-revalidate');
 
 		return $resp;
 	}
