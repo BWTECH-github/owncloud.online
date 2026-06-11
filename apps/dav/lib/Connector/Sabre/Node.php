@@ -262,17 +262,35 @@ abstract class Node implements \Sabre\DAV\INode {
 	}
 
 	/**
+	 * Request-Cache für getShareByToken: pro ShareManager-Instanz Token → Share|false.
+	 * Verhindert 3 oc_share-Queries pro PROPFIND-Kind bei identischem Token.
+	 *
+	 * @var \WeakMap|null
+	 */
+	private static $shareByTokenCache = null;
+
+	/**
 	 * @param string $user
 	 * @return int
 	 */
 	public function getSharePermissions($user) {
 		// check of we access a federated share
 		if ($user !== null) {
-			try {
-				$share = $this->shareManager->getShareByToken($user);
-				return $share->getPermissions();
-			} catch (ShareNotFound $e) {
-				// ignore
+			if (self::$shareByTokenCache === null) {
+				self::$shareByTokenCache = new \WeakMap();
+			}
+			$cache = self::$shareByTokenCache[$this->shareManager] ?? [];
+			if (!\array_key_exists($user, $cache)) {
+				try {
+					$cache[$user] = $this->shareManager->getShareByToken($user);
+				} catch (ShareNotFound $e) {
+					// ignore
+					$cache[$user] = false;
+				}
+				self::$shareByTokenCache[$this->shareManager] = $cache;
+			}
+			if ($cache[$user] !== false) {
+				return $cache[$user]->getPermissions();
 			}
 		}
 
