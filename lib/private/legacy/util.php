@@ -723,7 +723,12 @@ class OC_Util {
 		$errors = [];
 		$CONFIG_DATADIRECTORY = $config->getSystemValue('datadirectory', OC::$SERVERROOT . '/data');
 
-		if (!self::needUpgrade($config) && $config->getSystemValue('installed', false)) {
+		// Für die Server-Config den memoisierten Wrapper nutzen: vermeidet einen
+		// zweiten kompletten App-Scan pro Request (OCP\Util cached das Ergebnis)
+		$needUpgrade = $config === \OC::$server->getConfig()
+			? \OCP\Util::needUpgrade()
+			: self::needUpgrade($config);
+		if (!$needUpgrade && $config->getSystemValue('installed', false)) {
 			// this check needs to be done every time
 			$errors = self::checkDataDirectoryValidity($CONFIG_DATADIRECTORY);
 		}
