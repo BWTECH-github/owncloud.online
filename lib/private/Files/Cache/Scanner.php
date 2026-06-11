@@ -391,8 +391,9 @@ class Scanner extends BasicEmitter implements IScanner {
 		$this->emit('\OC\Files\Cache\Scanner', 'scanFolder', [$path, $this->storageId]);
 		$size = 0;
 		// Aufrufer übergeben die fileid bereits — nur bei unbekannter id nachschlagen,
-		// sonst kostet das ein redundantes SELECT pro gescanntem Ordner
-		if ($folderId === null) {
+		// sonst kostet das ein redundantes SELECT pro gescanntem Ordner.
+		// folderId < 0 (z.B. -1 bei filesystem_cache_readonly) braucht das Re-Lookup.
+		if ($folderId === null || $folderId < 0) {
 			$folderId = $this->cache->getId($path);
 		}
 		$childQueue = $this->handleChildren($path, $recursive, $reuse, $folderId, $lock, $size);
