@@ -749,6 +749,19 @@
 				</field>
 			</index>
 
+			<index>
+				<!-- bedient JobList::getNext(): ORDER BY last_checked mit reserved_at-Filter -->
+				<name>job_lastcheck_reserved</name>
+				<field>
+					<name>last_checked</name>
+					<sorting>ascending</sorting>
+				</field>
+				<field>
+					<name>reserved_at</name>
+					<sorting>ascending</sorting>
+				</field>
+			</index>
+
 		</declaration>
 
 	</table>
