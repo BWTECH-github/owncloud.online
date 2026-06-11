@@ -33,6 +33,7 @@ use OCP\Files\Cache\IWatcher;
 class Watcher implements IWatcher {
 	protected $watchPolicy = self::CHECK_ONCE;
 
+	/** @var bool[] geprüfte Pfade als Set (Pfad => true) statt Liste mit array_search */
 	protected $checkedPaths = [];
 
 	/**
@@ -120,8 +121,8 @@ class Watcher implements IWatcher {
 	 * @return bool
 	 */
 	public function needsUpdate($path, $cachedData) {
-		if ($this->watchPolicy === self::CHECK_ALWAYS or ($this->watchPolicy === self::CHECK_ONCE and \array_search($path, $this->checkedPaths) === false)) {
-			$this->checkedPaths[] = $path;
+		if ($this->watchPolicy === self::CHECK_ALWAYS or ($this->watchPolicy === self::CHECK_ONCE and !isset($this->checkedPaths[$path]))) {
+			$this->checkedPaths[$path] = true;
 			if (isset($cachedData['storage_mtime'])) {
 				$storageMtime = $cachedData['storage_mtime'];
 			} else {
