@@ -5,6 +5,7 @@
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
+ * Modified by BW-Tech GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -126,5 +127,45 @@ class DeleteOrphanedFilesTest extends TestCase {
 			$view->unlink('files/test');
 		} catch (StorageNotAvailableException $e) {
 		}
+	}
+
+	public function testClearManyFilesForOneOrphanedStorage() {
+		$input = $this->getMockBuilder('Symfony\Component\Console\Input\InputInterface')
+			->disableOriginalConstructor()
+			->getMock();
+		$output = $this->getMockBuilder('Symfony\Component\Console\Output\OutputInterface')
+			->disableOriginalConstructor()
+			->getMock();
+
+		self::loginAsUser($this->user1);
+
+		$view = new View('/' . $this->user1 . '/');
+		$view->mkdir('files/batch-test');
+		for ($index = 0; $index <= DeleteOrphanedFiles::CHUNK_SIZE; $index++) {
+			$view->file_put_contents(
+				'files/batch-test/file-' . $index . '.txt',
+				'batch cleanup test'
+			);
+		}
+
+		$fileInfo = $view->getFileInfo('files/batch-test');
+		$storageId = $fileInfo->getStorage()->getId();
+
+		$deletedRows = $this->connection->executeStatement(
+			'DELETE FROM `*PREFIX*storages` WHERE `id` = ?',
+			[$storageId]
+		);
+		$this->assertSame(1, $deletedRows);
+
+		$output
+			->expects($this->once())
+			->method('writeln')
+			->with($this->callback(static function ($message) {
+				return \preg_match('/^[2-9][0-9]{2,} orphaned file cache entries deleted$/', $message) === 1;
+			}));
+
+		$this->command->execute($input, $output);
+
+		$this->assertCount(0, $this->getFile($fileInfo->getId()));
 	}
 }

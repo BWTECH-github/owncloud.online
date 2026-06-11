@@ -4,6 +4,7 @@
  * @author Morris Jobke <hey@morrisjobke.de>
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
+ * Modified by BW-Tech GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -93,7 +94,8 @@ class InfoChecker extends BasicEmitter {
 			];
 		}
 
-		if (isset($info['dependencies']['owncloud']['@attributes']['min-version']) && ($info['requiremin'] || $info['require'])) {
+		$legacyMinRequirement = !empty($info['requiremin']) || !empty($info['require']);
+		if (isset($info['dependencies']['owncloud']['@attributes']['min-version']) && $legacyMinRequirement) {
 			$this->emit('InfoChecker', 'duplicateRequirement', ['min']);
 			$errors[] = [
 				'type' => 'duplicateRequirement',
@@ -103,7 +105,7 @@ class InfoChecker extends BasicEmitter {
 			$this->emit('InfoChecker', 'missingRequirement', ['min']);
 		}
 
-		if (isset($info['dependencies']['owncloud']['@attributes']['max-version']) && $info['requiremax']) {
+		if (isset($info['dependencies']['owncloud']['@attributes']['max-version']) && !empty($info['requiremax'])) {
 			$this->emit('InfoChecker', 'duplicateRequirement', ['max']);
 			$errors[] = [
 				'type' => 'duplicateRequirement',

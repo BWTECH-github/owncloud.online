@@ -110,8 +110,10 @@ nbproject
 /tests/phpunit.xml
 
 # Node Modules
+# Modified by BW-Tech GmbH
 /build/yarn-error.log
 /build/node_modules/
+/build/performance/
 
 # nodejs
 /build/lib/

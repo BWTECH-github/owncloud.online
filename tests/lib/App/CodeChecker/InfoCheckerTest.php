@@ -3,6 +3,7 @@
  * @author Morris Jobke <hey@morrisjobke.de>
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
+ * Modified by BW-Tech GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -85,6 +86,33 @@ class InfoCheckerTest extends TestCase {
 
 		$this->assertArrayHasKey('type', $errors[0]);
 		$this->assertEquals('invalidAppInfo', $errors[0]['type']);
+	}
+
+	public function testDependenciesWithoutLegacyRequirementFields() {
+		$infoParser = $this->getMockBuilder(InfoParser::class)
+			->getMock();
+		$infoParser->expects($this->once())
+			->method('parse')
+			->willReturn([
+				'author' => 'ownCloud contributors',
+				'description' => 'Test app',
+				'id' => 'testapp',
+				'licence' => 'AGPL-3.0',
+				'name' => 'Test app',
+				'version' => '1.0.0',
+				'dependencies' => [
+					'owncloud' => [
+						'@attributes' => [
+							'min-version' => '10.0',
+							'max-version' => '11.0',
+						],
+					],
+				],
+			]);
+
+		$infoChecker = $this->getInfoChecker($infoParser);
+
+		$this->assertSame([], $infoChecker->analyse('testapp-infoxml'));
 	}
 
 	private function getInfoChecker($infoParser) {
