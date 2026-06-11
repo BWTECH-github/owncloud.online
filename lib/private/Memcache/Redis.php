@@ -65,7 +65,8 @@ class Redis extends Cache implements IMemcacheTTL {
 	}
 
 	public function hasKey($key) {
-		return self::$cache->exists($this->getNameSpace() . $key);
+		// phpredis >= 4 liefert int statt bool — Interface verlangt bool
+		return (bool)self::$cache->exists($this->getNameSpace() . $key);
 	}
 
 	public function remove($key) {
@@ -114,6 +115,17 @@ class Redis extends Cache implements IMemcacheTTL {
 	}
 
 	/**
+	 * Kodiert einen Wert exakt so, wie set()/add()/inc() ihn in Redis ablegen:
+	 * Integer roh, alles andere als JSON. Nötig für atomare Lua-Vergleiche.
+	 *
+	 * @param mixed $value
+	 * @return string
+	 */
+	private static function encodeStoredValue($value) {
+		return \is_int($value) ? (string)$value : \json_encode($value);
+	}
+
+	/**
 	 * Decrease a stored number
 	 *
 	 * @param string $key
@@ -121,10 +133,11 @@ class Redis extends Cache implements IMemcacheTTL {
 	 * @return int | bool
 	 */
 	public function dec($key, $step = 1) {
-		if (!$this->hasKey($key)) {
-			return false;
-		}
-		return self::$cache->decrBy($this->getNameSpace() . $key, $step);
+		// atomar in einem Roundtrip statt EXISTS + DECRBY
+		$lua = 'if redis.call("EXISTS", KEYS[1]) == 1 then '
+			. 'return redis.call("DECRBY", KEYS[1], ARGV[1]) end '
+			. 'return false';
+		return self::$cache->eval($lua, [$this->getNameSpace() . $key, $step], 1);
 	}
 
 	/**
@@ -139,16 +152,16 @@ class Redis extends Cache implements IMemcacheTTL {
 		if (!\is_int($new)) {
 			$new = \json_encode($new);
 		}
-		self::$cache->watch($this->getNameSpace() . $key);
-		if ($this->get($key) === $old) {
-			/** @phan-suppress-next-line PhanNonClassMethodCall */
-			$result = self::$cache->multi()
-				->set($this->getNameSpace() . $key, $new)
-				->exec();
-			return ($result === false) ? false : true;
-		}
-		self::$cache->unwatch();
-		return false;
+		// atomar per Lua in einem Roundtrip statt WATCH/GET/MULTI/SET/EXEC
+		$lua = 'if redis.call("GET", KEYS[1]) == ARGV[1] then '
+			. 'redis.call("SET", KEYS[1], ARGV[2]) return 1 end '
+			. 'return 0';
+		$result = self::$cache->eval(
+			$lua,
+			[$this->getNameSpace() . $key, self::encodeStoredValue($old), $new],
+			1
+		);
+		return (bool)$result;
 	}
 
 	/**
@@ -159,16 +172,16 @@ class Redis extends Cache implements IMemcacheTTL {
 	 * @return bool
 	 */
 	public function cad($key, $old) {
-		self::$cache->watch($this->getNameSpace() . $key);
-		if ($this->get($key) === $old) {
-			/** @phan-suppress-next-line PhanNonClassMethodCall */
-			$result = self::$cache->multi()
-				->del($this->getNameSpace() . $key)
-				->exec();
-			return ($result === false) ? false : true;
-		}
-		self::$cache->unwatch();
-		return false;
+		// atomar per Lua in einem Roundtrip statt WATCH/GET/MULTI/DEL/EXEC
+		$lua = 'if redis.call("GET", KEYS[1]) == ARGV[1] then '
+			. 'redis.call("DEL", KEYS[1]) return 1 end '
+			. 'return 0';
+		$result = self::$cache->eval(
+			$lua,
+			[$this->getNameSpace() . $key, self::encodeStoredValue($old)],
+			1
+		);
+		return (bool)$result;
 	}
 
 	public function setTTL($key, $ttl) {
