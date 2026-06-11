@@ -47,11 +47,13 @@ class Redis extends Cache implements IMemcacheTTL {
 
 	public function get($key) {
 		$result = self::$cache->get($this->getNameSpace() . $key);
-		if ($result === false && !self::$cache->exists($this->getNameSpace() . $key)) {
+		if ($result === false) {
+			// phpredis liefert false nur bei fehlendem Key; Werte sind immer
+			// JSON-Strings. Der frühere exists()-Roundtrip lieferte im
+			// false-Fall ebenfalls null (json_decode(false) === null).
 			return null;
-		} else {
-			return \json_decode($result, true);
 		}
+		return \json_decode($result, true);
 	}
 
 	public function set($key, $value, $ttl = 0) {
