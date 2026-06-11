@@ -184,7 +184,7 @@ class ViewController extends Controller {
 		\OCP\Util::addStyle('files', 'detailsView');
 		\OCP\Util::addScript('files', 'locktabview');
 
-		\OC_Util::addVendorScript('core', 'handlebars/handlebars');
+		\OC_Util::addVendorScript('core', 'handlebars/handlebars.min');
 
 		\OCP\Util::addScript('files', 'fileactions');
 		\OCP\Util::addScript('files', 'fileactionsmenu');
