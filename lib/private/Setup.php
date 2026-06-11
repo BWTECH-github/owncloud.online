@@ -469,7 +469,7 @@ class Setup {
 			if ($webRoot === '') {
 				return;
 			}
-			$webRoot = (string)\parse_url($webRoot, PHP_URL_PATH);
+			$webRoot = (string)\parse_url((string)$webRoot, PHP_URL_PATH);
 			$webRoot = \rtrim($webRoot, '/');
 		} else {
 			$webRoot = !empty(\OC::$WEBROOT) ? \OC::$WEBROOT : '/';
@@ -494,6 +494,7 @@ class Setup {
 		// Add rewrite rules if the RewriteBase is configured
 		$rewriteBase = $config->getSystemValue('htaccess.RewriteBase', '');
 		if ($rewriteBase !== '') {
+			$rewriteBase = (string)$rewriteBase;
 			// Make sure we don't add double slashes
 			$rewriteBaseRe = \preg_quote(\trim($rewriteBase, '/'));
 			if (\strlen($rewriteBaseRe) > 0) {

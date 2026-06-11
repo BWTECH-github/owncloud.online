@@ -6,6 +6,7 @@
  * @author Robin McCorkell <robin@mccorkell.me.uk>
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
+ * Modified by BW-Tech GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -209,7 +210,7 @@ class JobList implements IJobList {
 			}
 
 			// skip jobs marked as disabled
-			$jobs_disabled = \explode(',', $this->config->getAppValue('backgroundjob', 'jobs_disabled', ''));
+			$jobs_disabled = \explode(',', (string)$this->config->getAppValue('backgroundjob', 'jobs_disabled', ''));
 			if (\in_array($row['id'], $jobs_disabled, true)) {
 				$this->logger->warning("Background job configuration has the job {$row['id']} as disabled. Skipping it");
 				return $this->getNext();
