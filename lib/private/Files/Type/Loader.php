@@ -37,6 +37,7 @@ use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 class Loader implements IMimeTypeLoader {
 	public const CACHE_PREFIX_FOR_ID = ':id:';
 	public const CACHE_PREFIX_FOR_MIME = ':mime:';
+	public const CACHE_KEY_ALL = ':all';
 
 	/** @var IDBConnection */
 	private $dbConnection;
@@ -49,6 +50,9 @@ class Loader implements IMimeTypeLoader {
 
 	/** @var array [mimetype => id] */
 	protected $mimetypeIds;
+
+	/** @var bool ob die komplette Mimetype-Tabelle schon geladen wurde */
+	private $fullLoaded = false;
 
 	/**
 	 * @param IDBConnection $dbConnection
@@ -68,6 +72,13 @@ class Loader implements IMimeTypeLoader {
 	 */
 	public function getMimetypeById($id) {
 		// Check local vars
+		if (isset($this->mimetypes[$id])) {
+			return $this->mimetypes[$id];
+		}
+
+		// Die komplette Tabelle ist winzig — einmal laden statt ein
+		// Memcache-Roundtrip pro Mimetype-ID (z.B. bei Verzeichnislisten)
+		$this->loadAllMimetypes();
 		if (isset($this->mimetypes[$id])) {
 			return $this->mimetypes[$id];
 		}
@@ -119,6 +130,12 @@ class Loader implements IMimeTypeLoader {
 			return $this->mimetypeIds[$mimetype];
 		}
 
+		// komplette Tabelle einmalig laden (siehe getMimetypeById)
+		$this->loadAllMimetypes();
+		if (isset($this->mimetypeIds[$mimetype])) {
+			return $this->mimetypeIds[$mimetype];
+		}
+
 		// Check memcache. It will update the local var if needed.
 		$id = $this->getIdFromMemcache($mimetype);
 		if ($id !== null) {
@@ -130,12 +147,47 @@ class Loader implements IMimeTypeLoader {
 	}
 
 	/**
+	 * Lädt die komplette Mimetype-Tabelle in die lokalen Maps.
+	 * Neue, danach angelegte Mimetypes laufen weiter über den
+	 * Einzel-Lookup (Memcache/DB) — Verhalten bleibt identisch.
+	 */
+	private function loadAllMimetypes() {
+		if ($this->fullLoaded) {
+			return;
+		}
+		$this->fullLoaded = true;
+
+		$all = $this->memcache->get(self::CACHE_KEY_ALL);
+		if (!\is_array($all)) {
+			$all = [];
+			$qb = $this->dbConnection->getQueryBuilder();
+			$qb->select('id', 'mimetype')->from('mimetypes');
+			$result = $qb->execute();
+			while (($row = $result->fetchAssociative()) !== false) {
+				$all[(int)$row['id']] = $row['mimetype'];
+			}
+			$result->free();
+			$this->memcache->set(self::CACHE_KEY_ALL, $all, 3600);
+		}
+
+		foreach ($all as $id => $mimetype) {
+			if (!isset($this->mimetypes[$id])) {
+				$this->mimetypes[$id] = $mimetype;
+			}
+			if (!isset($this->mimetypeIds[$mimetype])) {
+				$this->mimetypeIds[$mimetype] = $id;
+			}
+		}
+	}
+
+	/**
 	 * Clear all loaded mimetypes, allow for re-loading
 	 */
 	public function reset() {
 		$this->memcache->clear();
 		$this->mimetypes = [];
 		$this->mimetypeIds = [];
+		$this->fullLoaded = false;
 	}
 
 	/**
