@@ -47,6 +47,7 @@ nav:
       - administration/index.md
       - Performance: administration/performance.md
       - Sicherheit und Setup-Warnungen: administration/security-hardening.md
+      - Upstream-CVE-Status: administration/upstream-cve-status.md
       - Apps und Marketplace: administration/apps-market.md
       - Backups und Updates: administration/backups-updates.md
       - Troubleshooting: administration/troubleshooting.md
