@@ -31,13 +31,14 @@
   </IfModule>
 
   # Let browsers cache CSS, JS files for half a year
+  # immutable: verhindert Revalidierungs-Requests, URLs sind versioniert (?v=)
   <FilesMatch "\.(css|js)$">
     Header      unset Cache-Control
-    Header always set Cache-Control "max-age=15778463"
+    Header always set Cache-Control "max-age=15778463, immutable"
   </FilesMatch>
-  
-  # Let browsers cache WOFF files for a week
-  <FilesMatch "\.woff$">
+
+  # Statische Bilder und Fonts eine Woche cachen
+  <FilesMatch "\.(png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|map)$">
     Header      unset Cache-Control
     Header always set Cache-Control "max-age=604800"
   </FilesMatch>
