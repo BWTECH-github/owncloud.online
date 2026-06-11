@@ -35,6 +35,7 @@
 
 namespace OC\Files\Cache;
 
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Platforms\OraclePlatform;
 use OC\Cache\CappedMemoryCache;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -320,8 +321,26 @@ class Cache implements ICache {
 			return \trim($item, "`");
 		}, $queryParts);
 		$values = \array_combine($queryParts, $params);
+
+		$connection = \OC::$server->getDatabaseConnection();
+		try {
+			// Direkter INSERT: neue Einträge sind hier der Normalfall. Spart den
+			// UPDATE-Versuch des generischen upsert und das anschließende
+			// SELECT der id (lastInsertId kostet keinen weiteren Roundtrip).
+			$qb = $connection->getQueryBuilder();
+			$qb->insert('filecache');
+			foreach ($values as $column => $value) {
+				$qb->setValue($column, $qb->createNamedParameter($value));
+			}
+			$qb->execute();
+			return (int)$connection->lastInsertId('*PREFIX*filecache');
+		} catch (UniqueConstraintViolationException $e) {
+			// Eintrag existiert bereits (z.B. paralleler Scanner):
+			// wie bisher per upsert aktualisieren und id nachschlagen
+		}
+
 		// Update or insert this to the filecache
-		\OC::$server->getDatabaseConnection()->upsert(
+		$connection->upsert(
 			'*PREFIX*filecache',
 			$values,
 			[
