@@ -55,7 +55,10 @@ class MemcacheLockingProvider extends AbstractLockingProvider {
 	public function isLocked($path, $type) {
 		$lockValue = $this->memcache->get($path);
 		if ($type === self::LOCK_SHARED) {
-			return $lockValue > 0;
+			// explizit numerisch prüfen: seit PHP 8 ist 'exclusive' > 0 ein
+			// String-Vergleich und damit true — exklusive Locks meldeten
+			// fälschlich auch ein Shared-Lock
+			return \is_numeric($lockValue) && (int)$lockValue > 0;
 		}
 
 		if ($type === self::LOCK_EXCLUSIVE) {
