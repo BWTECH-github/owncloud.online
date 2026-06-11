@@ -388,6 +388,15 @@ class View {
 	 *
 	 * @return bool
 	 */
+	/**
+	 * Prüft, ob ein vom Default '/' abweichender share_folder konfiguriert ist
+	 *
+	 * @return bool
+	 */
+	protected function isShareFolderConfigured() {
+		return \trim($this->config->getSystemValue('share_folder', '/'), '/') !== '';
+	}
+
 	protected function isShareFolderOrShareFolderParent($path) {
 		$shareFolder = \trim($this->config->getSystemValue('share_folder', '/'), '/');
 		if ($shareFolder === '') {
@@ -1461,11 +1470,16 @@ class View {
 			if ($mount instanceof MoveableMount && $internalPath === '') {
 				$data['permissions'] |= \OCP\Constants::PERMISSION_DELETE;
 			}
-			try {
-				$itemPath = $this->getPath($data['fileid'], false);
-				$hasShareFolderInPath = $this->isShareFolderOrShareFolderParent($itemPath);
-			} catch (NotFoundException $e) {
-				$hasShareFolderInPath = false;
+			$hasShareFolderInPath = false;
+			if ($this->isShareFolderConfigured()) {
+				// getPath() kostet ein Filecache-SELECT pro Aufruf — nur nötig,
+				// wenn überhaupt ein share_folder konfiguriert ist
+				try {
+					$itemPath = $this->getPath($data['fileid'], false);
+					$hasShareFolderInPath = $this->isShareFolderOrShareFolderParent($itemPath);
+				} catch (NotFoundException $e) {
+					$hasShareFolderInPath = false;
+				}
 			}
 			if ($hasShareFolderInPath) {
 				$data['permissions'] = $data['permissions'] & ~\OCP\Constants::PERMISSION_DELETE;
@@ -1532,18 +1546,23 @@ class View {
 			$contents = $cache->getFolderContentsById($folderId); //TODO: mimetype_filter
 
 			$sharingDisabled = Util::isSharingDisabledForUser();
+			// einmal pro Listing prüfen statt ein getPath()-SELECT pro Kind
+			$checkShareFolder = $this->isShareFolderConfigured();
 			/**
 			 * @var \OC\Files\FileInfo[] $files
 			 */
 			$files = \array_filter($contents, function (ICacheEntry $content) {
 				return (!\OC\Files\Filesystem::isForbiddenFileOrDir($content['path']));
 			});
-			$files = \array_map(function (ICacheEntry $content) use ($path, $storage, $mount, $sharingDisabled) {
-				try {
-					$itemPath = $this->getPath($content['fileid'], false);
-					$hasShareFolderInPath = $this->isShareFolderOrShareFolderParent($itemPath);
-				} catch (NotFoundException $e) {
-					$hasShareFolderInPath = false;
+			$files = \array_map(function (ICacheEntry $content) use ($path, $storage, $mount, $sharingDisabled, $checkShareFolder) {
+				$hasShareFolderInPath = false;
+				if ($checkShareFolder) {
+					try {
+						$itemPath = $this->getPath($content['fileid'], false);
+						$hasShareFolderInPath = $this->isShareFolderOrShareFolderParent($itemPath);
+					} catch (NotFoundException $e) {
+						$hasShareFolderInPath = false;
+					}
 				}
 
 				if ($sharingDisabled || $hasShareFolderInPath) {
