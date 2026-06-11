@@ -69,6 +69,8 @@ class AppManager implements IAppManager {
 	private $appConfig;
 	/** @var \OCP\ICache */
 	private $appInfo;
+	/** @var bool[] app-info-Cache-Keys, deren Etag in diesem Request schon validiert wurde */
+	private $appInfoValidated = [];
 	/** @var \OCP\IGroupManager */
 	private $groupManager;
 	/** @var \OCP\ICacheFactory */
@@ -381,6 +383,7 @@ class AppManager implements IAppManager {
 		$settingsMemCache = $this->memCacheFactory->create('settings');
 		$settingsMemCache->clear('listApps');
 		$this->appInfo->clear();
+		$this->appInfoValidated = [];
 		$this->appDirs = [];
 	}
 
@@ -448,10 +451,16 @@ class AppManager implements IAppManager {
 		// check the cache
 		$data = $this->appInfo->get($appId);
 		if (isset($data['path'])) {
+			// Etag pro Request nur einmal prüfen: erspart clearstatcache+stat
+			// bei jedem weiteren Aufruf für dieselbe App
+			if (isset($this->appInfoValidated[$appId])) {
+				return $data['info'];
+			}
 			// check that that info file hasn't changed by comparing the etag
 			$etag = $this->getEtag($data['path']);
 			if ($data['etag'] === $etag) {
 				// nice, etag is still the same, return from cache!
+				$this->appInfoValidated[$appId] = true;
 				return $data['info'];
 			}
 			// invalidate cache
@@ -495,10 +504,15 @@ class AppManager implements IAppManager {
 		// check the cache
 		$data = $this->appInfo->get($file);
 		if (isset($data['path'])) {
+			// Etag pro Request nur einmal prüfen (siehe getAppInfo)
+			if (isset($this->appInfoValidated[$file])) {
+				return $data['info'];
+			}
 			// check that that info file hasn't changed by comparing the etag
 			$etag = $this->getEtag($data['path']);
 			if ($data['etag'] === $etag) {
 				// nice, etag is still the same, return from cache!
+				$this->appInfoValidated[$file] = true;
 				return $data['info'];
 			}
 			// invalidate cache
