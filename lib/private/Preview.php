@@ -1265,5 +1265,66 @@ class Preview {
 
 		$preview = new Preview($node->getOwner()->getUID(), '', $node);
 		$preview->deletePreview(false);
+
+		self::queuePregeneration($path, $node, $args);
+	}
+
+	/**
+	 * Reiht nach einem Schreibvorgang die Hintergrund-Erzeugung der
+	 * Max-Preview ein (nur Bilder). Best-Effort: Fehler hier dürfen den
+	 * Schreibvorgang niemals beeinträchtigen.
+	 *
+	 * @param string $path normalisierter Hook-Pfad (relativ zum files/-Ordner)
+	 * @param \OCP\Files\Node $node
+	 * @param array $args ursprüngliche Hook-Argumente (für den User-Kontext)
+	 */
+	private static function queuePregeneration($path, $node, $args) {
+		try {
+			$server = \OC::$server;
+			$config = $server->getConfig();
+			if ($config->getSystemValue('preview_pregeneration', true) !== true
+				|| $config->getSystemValue('enable_previews', true) !== true
+			) {
+				return;
+			}
+			// nur Bilder: Office/PDF würden externe Konverter im Cron starten
+			if (\strpos((string)$node->getMimetype(), 'image/') !== 0) {
+				return;
+			}
+			// Trashbin-Dateien bekommen keine Vorab-Previews
+			if (\strpos($path, '/files_trashbin/') === 0) {
+				return;
+			}
+			// mit aktiver Verschlüsselung kann der Cron-Kontext User-Daten
+			// ggf. nicht lesen — On-Demand-Pfad bleibt zuständig
+			if ($server->getEncryptionManager()->isEnabled()) {
+				return;
+			}
+
+			// User des Schreibvorgangs: sein files/-Ordner passt zum Hook-Pfad
+			// (bei Shares weicht der Owner-Pfad ab); Fallback auf den Owner
+			$uid = $args['user'] ?? \OC_User::getUser();
+			if (!\is_string($uid) || $uid === '') {
+				$uid = $node->getOwner()->getUID();
+			}
+			// Hook-Pfade sind bereits relativ zum files/-Ordner
+			// (vgl. /files_trashbin/-Sonderfall in post_write)
+			$relativePath = \ltrim($path, '/');
+			if ($relativePath === '') {
+				return;
+			}
+
+			$jobArguments = ['uid' => $uid, 'path' => $relativePath];
+			$jobList = $server->getJobList();
+			if (!$jobList->has(PregenerateJob::class, $jobArguments)) {
+				$jobList->add(PregenerateJob::class, $jobArguments);
+			}
+		} catch (\Throwable $e) {
+			$server = \OC::$server;
+			$server->getLogger()->debug(
+				'Could not queue preview pregeneration: {message}',
+				['app' => 'core', 'message' => $e->getMessage()]
+			);
+		}
 	}
 }
