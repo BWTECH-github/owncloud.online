@@ -246,11 +246,15 @@ class Message {
 	/**
 	 * Set the HTML body of this message. Consider also sending a plain-text body instead of only an HTML one.
 	 *
+	 * addPart(new DataPart(...)) würde das HTML als Attachment anhängen
+	 * (DataPart setzt Content-Disposition: attachment) statt es als
+	 * multipart/alternative-Body zu rendern — html() ist der kanonische Weg.
+	 *
 	 * @param string $body
 	 * @return $this
 	 */
 	public function setHtmlBody($body) {
-		$this->email->addPart(new DataPart(body: $body, contentType: 'text/html'));
+		$this->email->html($body);
 		return $this;
 	}
 
