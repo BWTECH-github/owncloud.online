@@ -239,7 +239,9 @@ class URLGenerator implements IURLGenerator {
 	 */
 	public function getAbsoluteURL($url) {
 		$webRoot = $this->environmentHelper->getWebRoot();
-		$separator = $url[0] === '/' ? '' : '/';
+		// Leere URLs (z.B. Notifications ohne Link) wären unter PHP 8 eine
+		// "Uninitialized string offset"-Warnung beim Offset-Zugriff.
+		$separator = isset($url[0]) && $url[0] === '/' ? '' : '/';
 
 		if (\OC::$CLI && !\defined('PHPUNIT_RUN')) {
 			return \rtrim($this->config->getSystemValue('overwrite.cli.url'), '/') . '/' . \ltrim($url, '/');
