@@ -178,9 +178,29 @@ class MessageTest extends TestCase {
 		$content = '<blink>Fancy Body</blink>';
 		$this->email
 			->expects($this->once())
-			->method('addPart')
-			->with(new DataPart(body: $content, contentType: 'text/html'));
+			->method('html')
+			->with($content);
 
 		$this->message->setHtmlBody($content);
+	}
+
+	public function testHtmlBodyIsNotAnAttachment() {
+		// Regression: addPart(new DataPart(..., 'text/html')) erzeugte
+		// multipart/mixed mit Content-Disposition: attachment — der HTML-Teil
+		// muss als multipart/alternative-Body gerendert werden.
+		$email = new \Symfony\Component\Mime\Email();
+		$message = new Message($email);
+		$message->setFrom(['from@example.com']);
+		$message->setTo(['to@example.com']);
+		$message->setSubject('subject');
+		$message->setPlainBody('plain');
+		$message->setHtmlBody('<p>html</p>');
+
+		$body = $email->getBody();
+		$this->assertSame('alternative', $body->getMediaSubtype());
+		$this->assertStringNotContainsString(
+			'Content-Disposition: attachment',
+			$body->toString()
+		);
 	}
 }
