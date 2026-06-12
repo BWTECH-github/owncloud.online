@@ -184,14 +184,32 @@ class L10N implements IL10N {
 	 * @return bool
 	 */
 	protected function load($translationFile) {
-		$json = \json_decode(\file_get_contents($translationFile), true);
-		if (!\is_array($json)) {
-			$jsonError = \json_last_error();
-			\OC::$server->getLogger()->warning("Failed to load $translationFile - json error code: $jsonError", ['app' => 'l10n']);
-			return false;
+		// geparste Übersetzungen lokal cachen (APCu): erspart file_get_contents
+		// + json_decode pro Sprachdatei und Request. Key enthält mtime, damit
+		// geänderte Dateien sofort neu geladen werden; ohne APCu (NullCache)
+		// bleibt das Verhalten wie bisher.
+		$cache = \OC::$server->getMemCacheFactory()->createLocal('l10n');
+		$cacheKey = $translationFile . '|' . @\filemtime($translationFile);
+		$translations = $cache->get($cacheKey);
+
+		if (!\is_array($translations)) {
+			$json = \json_decode(\file_get_contents($translationFile), true);
+			if (!\is_array($json)) {
+				$jsonError = \json_last_error();
+				\OC::$server->getLogger()->warning("Failed to load $translationFile - json error code: $jsonError", ['app' => 'l10n']);
+				return false;
+			}
+			// fehlender translations-Key (z.B. leere Sprachdatei) => leeres Array,
+			// sonst wirft array_merge unter PHP 8 einen TypeError
+			$translations = $json['translations'] ?? [];
+			if (\is_array($translations)) {
+				$cache->set($cacheKey, $translations, 86400);
+			} else {
+				$translations = [];
+			}
 		}
 
-		$this->translations = \array_merge($this->translations, $json['translations']);
+		$this->translations = \array_merge($this->translations, $translations);
 		return true;
 	}
 
