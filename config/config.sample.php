@@ -982,6 +982,16 @@ $CONFIG = [
 'enable_previews' => true,
 
 /**
+ * Pregenerate image previews in the background
+ *
+ * When enabled, a background job creates the cached max-preview for newly
+ * uploaded or changed images so the first gallery or file list view does not
+ * have to generate it on the fly. Only applies to image files; disabled
+ * automatically while server-side encryption is active.
+ */
+'preview_pregeneration' => true,
+
+/**
  * Define the preview path
  * Location of the thumbnails folder, defaults to `data/$user/thumbnails` where
  * `$user` is the current user. When specified, the format will change to
