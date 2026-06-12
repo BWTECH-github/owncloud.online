@@ -20,7 +20,7 @@ updates:
     - "< 7, >= 6.a"
   - dependency-name: league/flysystem
     versions:
-    - ">= 2.a, < 3"
+    - ">= 2.a"
   - dependency-name: doctrine/dbal
     versions:
     - 2.13.0
@@ -61,3 +61,4 @@ updates:
   - dependency-name: sinon
     versions:
     - 9.2.4
+    - ">= 20.a"
