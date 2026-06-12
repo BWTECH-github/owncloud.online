@@ -1316,8 +1316,10 @@ class Preview {
 
 			$jobArguments = ['uid' => $uid, 'path' => $relativePath];
 			$jobList = $server->getJobList();
-			if (!$jobList->has(PregenerateJob::class, $jobArguments)) {
-				$jobList->add(PregenerateJob::class, $jobArguments);
+			// FQN zwingend: diese Datei liegt im Namespace OC, unqualifiziert
+			// würde PregenerateJob::class zu OC\PregenerateJob auflösen
+			if (!$jobList->has(\OC\Preview\PregenerateJob::class, $jobArguments)) {
+				$jobList->add(\OC\Preview\PregenerateJob::class, $jobArguments);
 			}
 		} catch (\Throwable $e) {
 			$server = \OC::$server;
