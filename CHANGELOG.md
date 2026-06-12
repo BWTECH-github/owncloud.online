@@ -1,5 +1,6 @@
 # Table of Contents
 
+* [Changelog for ownCloud.online 11.0.3](#changelog-for-owncloudonline-1103-2026-06-12)
 * [Changelog for unreleased](#changelog-for-owncloud-core-unreleased-unreleased)
 * [Changelog for 10.16.1](#changelog-for-owncloud-core-10161-2026-02-18)
 * [Changelog for 10.16.0](#changelog-for-owncloud-core-10160-2025-10-23)
@@ -27,6 +28,37 @@
 * [Changelog for 10.4.1](#changelog-for-owncloud-core-1041-2020-03-30)
 * [Changelog for 10.4.0](#changelog-for-owncloud-core-1040-2020-02-10)
 * [Changelog for 10.3.2](#changelog-for-owncloud-core-1032-2019-12-04)
+# Changelog for ownCloud.online [11.0.3] (2026-06-12)
+
+The following sections list the changes in ownCloud.online 11.0.3 relevant to
+admins and users.
+
+[11.0.3]: https://github.com/BWTECH-github/owncloud.online
+
+## Summary
+
+* Security - Update guzzlehttp/psr7 to 2.11.0: fixes CVE-2026-49214 (CRLF/header injection) and CVE-2026-48998 (host confusion)
+* Security - All upstream ownCloud fixes up to and including 10.16.3 merged (see docs/administration/upstream-cve-status.md)
+* Change - Update guzzlehttp/guzzle to 7.11.1, phpseclib to 3.0.53, sabre/vobject to 4.6.0, symfony routing/mailer/mime
+* Enhancement - Performance: background jobs now run reliably via absolute occ path and indexed job queries (new index job_lastcheck_reserved)
+* Enhancement - Performance: file cache inserts use a single INSERT with lastInsertId instead of select-after-upsert
+* Enhancement - Performance: change propagation batches parent updates per depth (IN() grouping)
+* Enhancement - Performance: parsed translation files are cached in APCu
+* Enhancement - Performance: previews for uploaded images are pre-generated in the background (config switch preview_pregeneration, default on)
+* Enhancement - Performance: memoized upgrade checks, app info parsing, forbidden-file lists, mimetype loading and share-folder lookups
+* Enhancement - Performance: static assets get long-lived immutable cache headers; vendor JS is minified
+* Bugfix - Redis memcache: hasKey returned int with phpredis 6, breaking strict checks; cas/cad/dec are now atomic Lua scripts
+* Bugfix - Memcache locking provider: exclusive locks were misreported as shared under PHP 8
+* Bugfix - htaccess RewriteBase rules no longer block API requests for files with common extensions
+* Bugfix - karma JS test suite repaired: sinon pinned back to ^19 (fakeServer removal in sinon 20+ broke the suite)
+
+## Details
+
+See the git history of github.com/BWTECH-github/owncloud.online between
+v11.0.2 and v11.0.3 for individual commits, and
+docs/administration/upstream-cve-status.md for the upstream CVE
+synchronisation status.
+
 # Changelog for ownCloud Core [unreleased] (UNRELEASED)
 
 The following sections list the changes in ownCloud core unreleased relevant to
