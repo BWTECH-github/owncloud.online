@@ -98,8 +98,8 @@ a.two-factor-cancel {
 	font-size: 1.2em;
 	padding: 3px;
 	padding-left: 25px;
-	background: transparent url('../img/actions/search-white.svg') no-repeat 6px center;
-	color: #fff;
+	background: transparent url('../img/actions/search.svg') no-repeat 6px center; /* OC-A11Y-01: dunkles Icon auf Teal */
+	color: #262B45; /* OC-A11Y-01 */
 	border: 0;
 	border-radius: 3px;
 	margin-top: 9px;
@@ -114,11 +114,11 @@ a.two-factor-cancel {
 .searchbox input[type="search"]:focus,
 .searchbox input[type="search"]:active,
 .searchbox input[type="search"]:valid {
-	color: #fff;
+	color: #262B45; /* OC-A11Y-01 */
 	width: 155px;
 	max-width: 50%;
 	cursor: text;
-	background-color: #112;
+	background-color: #fff; /* OC-A11Y-01: heller Grund fuer dunklen Text/Icon im Fokus */
 }
 
 /* CONTENT ------------------------------------------------------------------ */
