@@ -151,7 +151,7 @@ tbody a {
 span.extension,
 span.uploading,
 td.date {
-	color: #999;
+	color: #757575; /* OC-A11Y-03: WCAG 1.4.3 (4,61:1) statt #999 (2,85:1) */
 }
 
 span.extension {
@@ -173,7 +173,7 @@ tr:hover span.extension {
 
 table th,
 table th a {
-	color: #999;
+	color: #757575; /* OC-A11Y-03 */
 }
 
 table.multiselect th a {
