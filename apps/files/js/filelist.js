@@ -1278,7 +1278,7 @@
 			// size column
 			if (typeof(fileData.size) !== 'undefined' && fileData.size >= 0) {
 				simpleSize = humanFileSize(parseInt(fileData.size, 10), true);
-				sizeColor = Math.round(160-Math.pow((fileData.size/(1024*1024)),2));
+				sizeColor = Math.round(117-Math.pow((fileData.size/(1024*1024)),2)); // OC-A11Y-03: Basis 117 (#757575) statt 160 -> kleinste Dateien >=4,5:1
 			} else {
 				simpleSize = t('files', 'Pending');
 			}
@@ -1290,11 +1290,11 @@
 			tr.append(td);
 
 			// date column (1000 milliseconds to seconds, 60 seconds, 60 minutes, 24 hours)
-			// difference in days multiplied by 5 - brightest shade for files older than 32 days (160/5)
+			// difference in days multiplied by 5 - brightest shade for files older than ~23 days (117/5)
 			var modifiedColor = Math.round(((new Date()).getTime() - mtime )/1000/60/60/24*5 );
 			// ensure that the brightest color is still readable
-			if (modifiedColor >= '160') {
-				modifiedColor = 160;
+			if (modifiedColor >= 117) { // OC-A11Y-03: Deckel 117 (#757575) statt 160 -> WCAG 1.4.3
+				modifiedColor = 117;
 			}
 			var formatted;
 			var text;
