@@ -1,0 +1,9 @@
+Bugfix: occ user:home:list-dirs und user:home:list-users --all brechen nicht mehr ab
+
+Beide Befehle übergaben für „alle Konten“ null als Suchmuster an
+IUserManager::search(). Unter PHP 8 kam das null bei
+Connection::escapeLikeParameter(string) an und endete in einem TypeError, der
+den Befehl abbrach. Jetzt übergeben beide die leere Zeichenkette, die alle
+anderen Aufrufer schon für „alle“ verwenden.
+
+Übernommen aus dem Upstream-Projekt (PR 41631).
