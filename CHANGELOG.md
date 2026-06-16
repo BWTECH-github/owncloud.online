@@ -1,5 +1,6 @@
 # Table of Contents
 
+* [Changelog for ownCloud.online 11.0.6](#changelog-for-owncloudonline-1106-2026-06-16)
 * [Changelog for ownCloud.online 11.0.5](#changelog-for-owncloudonline-1105-2026-06-16)
 * [Changelog for ownCloud.online 11.0.4](#changelog-for-owncloudonline-1104-2026-06-16)
 * [Changelog for ownCloud.online 11.0.3](#changelog-for-owncloudonline-1103-2026-06-12)
@@ -30,6 +31,21 @@
 * [Changelog for 10.4.1](#changelog-for-owncloud-core-1041-2020-03-30)
 * [Changelog for 10.4.0](#changelog-for-owncloud-core-1040-2020-02-10)
 * [Changelog for 10.3.2](#changelog-for-owncloud-core-1032-2019-12-04)
+# Changelog for ownCloud.online [11.0.6] (2026-06-16)
+
+The following sections list the changes in ownCloud.online 11.0.6 relevant to
+admins and users.
+
+[11.0.6]: https://github.com/BWTECH-github/owncloud.online
+
+## Summary
+
+* Enhancement - Version parity with the SaaS bundle (11.0.6). Carries the rebuilt market app (owncloud.online branding + German translations) and the "Support Key" license wording from 11.0.5.
+
+## Details
+
+* Note - The viewer third-party libraries (Ace editor, pdf.js) that were missing from the SaaS bundle are fixed in the SaaS 11.0.6 release; the public Core release does not bundle those viewer apps (they are installed from the marketplace), so this version is a parity bump for Core.
+
 # Changelog for ownCloud.online [11.0.5] (2026-06-16)
 
 The following sections list the changes in ownCloud.online 11.0.5 relevant to
