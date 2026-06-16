@@ -1,5 +1,6 @@
 # Table of Contents
 
+* [Changelog for ownCloud.online 11.0.5](#changelog-for-owncloudonline-1105-2026-06-16)
 * [Changelog for ownCloud.online 11.0.4](#changelog-for-owncloudonline-1104-2026-06-16)
 * [Changelog for ownCloud.online 11.0.3](#changelog-for-owncloudonline-1103-2026-06-12)
 * [Changelog for unreleased](#changelog-for-owncloud-core-unreleased-unreleased)
@@ -29,6 +30,28 @@
 * [Changelog for 10.4.1](#changelog-for-owncloud-core-1041-2020-03-30)
 * [Changelog for 10.4.0](#changelog-for-owncloud-core-1040-2020-02-10)
 * [Changelog for 10.3.2](#changelog-for-owncloud-core-1032-2019-12-04)
+# Changelog for ownCloud.online [11.0.5] (2026-06-16)
+
+The following sections list the changes in ownCloud.online 11.0.5 relevant to
+admins and users.
+
+[11.0.5]: https://github.com/BWTECH-github/owncloud.online
+
+## Summary
+
+* Bugfix - .txt and .pdf files now open in the correct viewer (text editor / PDF viewer) instead of the wrong app
+* Bugfix - occ maintenance:install no longer aborts under PHP 8.4 / Doctrine DBAL 3.10 (logging is non-fatal during early bootstrap)
+* Enhancement - The Enterprise "license key" is now called "Support Key" (no license sales); German translations completed
+* Enhancement - market app: owncloud.online branding and German translations
+
+## Details
+
+* Bugfix - files_texteditor explicitly registers text/plain; richdocuments and onlyoffice no longer claim it as the default opener
+* Bugfix - files_pdfviewer stays the default for application/pdf (onlyoffice no longer sets itself default for PDF; richdocuments dropped application/pdf)
+* Bugfix - OC-CI-01: OC\Log\Owncloud::writeExtra wraps request/DB-derived metadata in try/catch so a PHP 8.4 deprecation can no longer cascade into a fatal install error
+* Enhancement - License panel and messages use "Support Key" wording; de/de_DE l10n added (settings + core)
+* Enhancement - market re-bundled with owncloud.online branding and de/de_DE translations
+
 # Changelog for ownCloud.online [11.0.4] (2026-06-16)
 
 The following sections list the changes in ownCloud.online 11.0.4 relevant to
