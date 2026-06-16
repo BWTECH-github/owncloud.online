@@ -86,16 +86,28 @@ class Owncloud {
 			// apply timezone if $time is created from UNIX timestamp
 			$time->setTimezone($timezone);
 		}
-		$request = \OC::$server->getRequest();
-		$reqId = $request->getId();
-		$remoteAddr = $request->getRemoteAddress();
 		// remove username/passwords from URLs before writing the to the log file
 		$time = $time->format($format);
-		$url = ($request->getRequestUri() !== '') ? $request->getRequestUri() : '--';
-		$method = \is_string($request->getMethod()) ? $request->getMethod() : '--';
-		if (\OC::$server->getConfig()->getSystemValue('installed', false)) {
-			$user = (\OC_User::getUser()) ? \OC_User::getUser() : '--';
-		} else {
+		// OC-CI-01: gathering request/DB-derived metadata must never make logging fatal.
+		// During early bootstrap (e.g. logging a PHP 8.4 deprecation before the DB
+		// connection is ready) getRequest() can trigger a DB connection and throw, which
+		// previously cascaded into an unhandled error and aborted "occ maintenance:install".
+		try {
+			$request = \OC::$server->getRequest();
+			$reqId = $request->getId();
+			$remoteAddr = $request->getRemoteAddress();
+			$url = ($request->getRequestUri() !== '') ? $request->getRequestUri() : '--';
+			$method = \is_string($request->getMethod()) ? $request->getMethod() : '--';
+			if (\OC::$server->getConfig()->getSystemValue('installed', false)) {
+				$user = (\OC_User::getUser()) ? \OC_User::getUser() : '--';
+			} else {
+				$user = '--';
+			}
+		} catch (\Throwable $e) {
+			$reqId = '--';
+			$remoteAddr = '';
+			$url = '--';
+			$method = '--';
 			$user = '--';
 		}
 		$entry = \compact(
