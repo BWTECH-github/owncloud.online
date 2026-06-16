@@ -264,6 +264,7 @@ $(dist_dir)/owncloud: $(composer_deps) $(core_vendor) $(core_all_src)
 	cd $(NODE_PREFIX) && $(YARN) run clean-modules
 	rm -Rf $@; mkdir -p $@/config
 	cp -RL $(core_all_src) $@
+	mkdir -p $@/apps-external && cp -RL apps-external/market $@/apps-external/market
 	cp -R $(core_config_files) $@/config
 	find $@ -name .gitkeep -delete
 	find $@ -name .gitignore -delete
@@ -273,7 +274,7 @@ $(dist_dir)/owncloud: $(composer_deps) $(core_vendor) $(core_all_src)
 	rm -Rf $@/core/vendor/*/{.bower.json,bower.json,package.json,testem.json}
 	rm -Rf $@/l10n/
 	find $@/core/ -iname \*.sh -delete
-	find $@/{apps/,lib/composer/,core/vendor/} \( \
+	find $@/{apps/,apps-external/,lib/composer/,core/vendor/} \( \
 		-name bin -o \
 		-name test -o \
 		-name tests -o \
