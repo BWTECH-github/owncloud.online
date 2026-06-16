@@ -2,7 +2,7 @@
 script('settings', 'panels/license');
 ?>
 <div class="section">
-	<h2 class="app-name"><?php p($l->t('Enterprise license key'));?></h2>
+	<h2 class="app-name"><?php p($l->t('Enterprise Support Key'));?></h2>
 	<div id="license_message_div" <?php print_unescaped($_['divMessageClass']); ?>>
 	<?php foreach ($_['messageInfo']['translated_message'] as $lineNumber => $line): ?>
 		<?php if (\in_array($lineNumber, $_['messageInfo']['contains_html'], true)): ?>
@@ -14,10 +14,10 @@ script('settings', 'panels/license');
 	</div>
 
 	<div>
-		<?php p($l->t('Enter a new license:')); ?>
+		<?php p($l->t('Enter a new support key:')); ?>
 		<input id="license_input_text" type="text" style="width: 350px; max-width: 100%" />
 		<input id="license_input_button" type="button" value="<?php p($l->t('Save')); ?>"/>
 		<br>
-		<input id="license_remove_button" type="button" value="<?php p($l->t('Remove current license key')); ?>"/>
+		<input id="license_remove_button" type="button" value="<?php p($l->t('Remove current support key')); ?>"/>
 	</div>
 </div>
