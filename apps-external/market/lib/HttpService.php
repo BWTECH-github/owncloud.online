@@ -263,7 +263,7 @@ class HttpService {
 	}
 
 	private function getAbsoluteUrl(string $relativeUrl): string {
-		$storeUrl = $this->config->getSystemValue('appstoreurl', self::LOCAL_CATALOG_MARKER);
+		$storeUrl = $this->config->getSystemValue('appstoreurl', self::DEFAULT_STORE_URL);
 		return \rtrim($storeUrl, '/') . $relativeUrl;
 	}
 
@@ -272,12 +272,12 @@ class HttpService {
 	 * (default `local`) or when the URL points at a `file://` location.
 	 */
 	private function isLocalCatalog(): bool {
-		$url = $this->config->getSystemValue('appstoreurl', self::LOCAL_CATALOG_MARKER);
+		$url = $this->config->getSystemValue('appstoreurl', self::DEFAULT_STORE_URL);
 		return $url === self::LOCAL_CATALOG_MARKER || \str_starts_with((string) $url, 'file://');
 	}
 
 	private function getLocalCatalogPath(): string {
-		$url = (string) $this->config->getSystemValue('appstoreurl', self::LOCAL_CATALOG_MARKER);
+		$url = (string) $this->config->getSystemValue('appstoreurl', self::DEFAULT_STORE_URL);
 		if (\str_starts_with($url, 'file://')) {
 			return \rtrim(\substr($url, 7), '/');
 		}
