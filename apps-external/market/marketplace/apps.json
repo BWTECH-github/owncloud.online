@@ -1,0 +1,32 @@
+[
+  {
+    "id": "example_app",
+    "name": "Example App",
+    "summary": "An example app shipped as a placeholder for the local catalog.",
+    "description": "Replace this entry with your own apps. Each app needs an `id`, a `name`, at least one `release` with a `download` URL (HTTPS or `file://`), and a `categories` array.\n\nSee `marketplace/README.md` for the full schema.",
+    "categories": ["tools"],
+    "rating": 0,
+    "publisher": {
+      "name": "BW-Tech GmbH",
+      "url": "https://bw.tech",
+      "isPagePublic": true
+    },
+    "marketplace": "https://owncloud.online",
+    "downloadable": true,
+    "screenshots": [
+      {
+        "url": "https://owncloud.online/img/example_app.png"
+      }
+    ],
+    "releases": [
+      {
+        "version": "1.0.0",
+        "platformMin": "10",
+        "platformMax": "10.99",
+        "license": "AGPL-3.0",
+        "created": 1714694400000,
+        "download": "https://github.com/BWTECH-github/owncloud.online/releases/download/example_app-1.0.0/example_app-1.0.0.tar.gz"
+      }
+    ]
+  }
+]

@@ -1,0 +1,92 @@
+// =====================================================================
+// BW-Tech / owncloud.online theme variables
+// ---------------------------------------------------------------------
+// Modified by BW-Tech GmbH for owncloud.online (PHP 8.4).
+// The market intentionally follows the light ownCloud shell. Do not bind it
+// to browser/OS dark-mode preferences because ownCloud 10 does not switch
+// the surrounding UI with the same signal.
+// =====================================================================
+
+// Brand
+$bwt-brand: #4f46e5;          // indigo-600
+$bwt-brand-dark: #3730a3;     // indigo-800
+$bwt-brand-soft: #eef2ff;     // indigo-50
+$bwt-accent: #0ea5e9;         // sky-500
+
+// Light surface
+$bwt-bg-light: #f6f7fb;
+$bwt-surface-light: #ffffff;
+$bwt-surface-elev-light: #ffffff;
+$bwt-text-light: #0f172a;
+$bwt-muted-light: #64748b;
+$bwt-border-light: #e2e8f0;
+$bwt-border-soft-light: #eef2f7;
+
+// Status palette
+$bwt-success: #16a34a;
+$bwt-warning: #d97706;
+$bwt-danger:  #dc2626;
+
+:root {
+	--bwt-brand: #{$bwt-brand};
+	--bwt-brand-strong: #{$bwt-brand-dark};
+	--bwt-brand-soft: #{$bwt-brand-soft};
+	--bwt-accent: #{$bwt-accent};
+
+	--bwt-bg: #{$bwt-bg-light};
+	--bwt-surface: #{$bwt-surface-light};
+	--bwt-surface-elevated: #{$bwt-surface-elev-light};
+	--bwt-text: #{$bwt-text-light};
+	--bwt-muted: #{$bwt-muted-light};
+	--bwt-border: #{$bwt-border-light};
+	--bwt-border-soft: #{$bwt-border-soft-light};
+
+	--bwt-success: #{$bwt-success};
+	--bwt-warning: #{$bwt-warning};
+	--bwt-danger:  #{$bwt-danger};
+
+	--bwt-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+	--bwt-shadow:    0 4px 14px rgba(15, 23, 42, 0.08);
+	--bwt-shadow-hover: 0 12px 28px rgba(15, 23, 42, 0.14);
+	--bwt-ring:      0 0 0 3px rgba(79, 70, 229, 0.22);
+
+	--bwt-radius-sm: 8px;
+	--bwt-radius:    14px;
+	--bwt-radius-lg: 20px;
+	--bwt-radius-pill: 999px;
+
+	--bwt-transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+
+	--bwt-sidebar-width: 280px;
+	--bwt-content-max:   1280px;
+}
+
+// ---------------------------------------------------------------------
+// UIkit overrides — keep the legacy mixins working
+// ---------------------------------------------------------------------
+$global-link-color: $bwt-brand;
+
+@import "../../node_modules/uikit/src/scss/variables-theme.scss";
+@import "../../node_modules/uikit/src/scss/mixins-theme.scss";
+
+$button-secondary-background: #f8f8f8;
+$button-secondary-color: $global-color;
+$button-secondary-hover-background: darken($button-secondary-background, 5%);
+$button-secondary-hover-color: $button-secondary-color;
+
+@mixin hook-card-default() {
+	box-shadow: var(--bwt-shadow);
+	background: var(--bwt-surface);
+	color: var(--bwt-text);
+	border-radius: var(--bwt-radius);
+	transition: box-shadow var(--bwt-transition), transform var(--bwt-transition);
+}
+
+@mixin hook-card-default-hover() {
+	box-shadow: var(--bwt-shadow-hover);
+	transform: translateY(-2px);
+}
+
+@mixin hook-button-secondary() {
+	border: 1px solid lighten($button-secondary-color, 50%);
+}

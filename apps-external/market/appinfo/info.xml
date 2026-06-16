@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<info>
+	<id>market</id>
+	<name>Market</name>
+	<summary>Browse, install and update apps from a local catalog inside ownCloud</summary>
+	<description>Easily manage ownCloud apps from within your ownCloud web interface. This BW-Tech fork ships with a fully self-contained, local app catalog (no external marketplace required) and a refreshed light UI with live search. Apps can be downloaded from any URL declared in `marketplace/apps.json` (for example GitHub releases).
+
+This is a community fork maintained by BW-Tech GmbH for owncloud.online. Original code by ownCloud GmbH.
+
+To use this application click on "Apps" in the top left corner and click on "Market" (cart icon) (Administrator privileges required).</description>
+	<licence>AGPL</licence>
+	<author>ownCloud GmbH, modified by BW-Tech GmbH</author>
+	<version>0.10.1</version>
+	<default_enable/>
+	<category>tools</category>
+	<website>https://bw.tech</website>
+	<bugs>https://github.com/BWTECH-github/owncloud.online/issues</bugs>
+	<repository type="git">https://github.com/BWTECH-github/owncloud.online.git</repository>
+	<dependencies>
+		<owncloud min-version="11" max-version="11" />
+		<php min-version="8.4" />
+	</dependencies>
+	<background-jobs>
+		<job>OCA\Market\CheckUpdateBackgroundJob</job>
+	</background-jobs>
+	<commands>
+		<command>OCA\Market\Command\InstallApp</command>
+		<command>OCA\Market\Command\UnInstallApp</command>
+		<command>OCA\Market\Command\ListApps</command>
+		<command>OCA\Market\Command\UpgradeApp</command>
+	</commands>
+	<navigation role="admin">
+		<route>market.page.index</route>
+		<order>100</order>
+	</navigation>
+</info>

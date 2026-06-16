@@ -33,6 +33,9 @@
 !/apps/provisioning_api
 !/apps/systemtags
 !/apps/updatenotification
+# BW-Tech: bundle the market app (neutral local-catalog default)
+!/apps-external/market
+!/apps-external/market/**
 /apps/files_external/3rdparty/irodsphp/PHPUnitTest
 /apps/files_external/3rdparty/irodsphp/web
 /apps/files_external/3rdparty/irodsphp/prods/test

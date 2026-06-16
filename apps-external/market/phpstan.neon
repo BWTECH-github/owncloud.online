@@ -1,0 +1,8 @@
+parameters:
+  # Modified by BW-Tech GmbH for owncloud.online (PHP 8.4).
+  inferPrivatePropertyTypeFromConstructor: true
+  bootstrapFiles:
+    - %currentWorkingDirectory%/../../lib/base.php
+  excludePaths:
+    - %currentWorkingDirectory%/appinfo/Migrations/*.php
+    - %currentWorkingDirectory%/appinfo/routes.php

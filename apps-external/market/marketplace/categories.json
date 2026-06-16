@@ -1,0 +1,37 @@
+[
+  {
+    "id": "tools",
+    "translations": {
+      "en": { "name": "Tools" },
+      "de": { "name": "Werkzeuge" }
+    }
+  },
+  {
+    "id": "files",
+    "translations": {
+      "en": { "name": "Files" },
+      "de": { "name": "Dateien" }
+    }
+  },
+  {
+    "id": "integration",
+    "translations": {
+      "en": { "name": "Integration" },
+      "de": { "name": "Integration" }
+    }
+  },
+  {
+    "id": "security",
+    "translations": {
+      "en": { "name": "Security" },
+      "de": { "name": "Sicherheit" }
+    }
+  },
+  {
+    "id": "productivity",
+    "translations": {
+      "en": { "name": "Productivity" },
+      "de": { "name": "Produktivität" }
+    }
+  }
+]
