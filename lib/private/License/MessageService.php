@@ -70,10 +70,10 @@ class MessageService {
 		if ($info['licenseState'] === ILicenseManager::LICENSE_STATE_MISSING) {
 			return [
 				'raw_message' => [
-					'No license key available.',
+					'No support key available.',
 				],
 				'translated_message' => [
-					$l->t('No license key available.'),
+					$l->t('No support key available.'),
 				],
 				'contains_html' => [],
 			];
@@ -83,14 +83,14 @@ class MessageService {
 		if ($info['licenseState'] === ILicenseManager::LICENSE_STATE_INVALID) {
 			return [
 				'raw_message' => [
-					'Invalid license key!',
-					'Please contact your administrator or sales@owncloud.com for a new license key.',
+					'Invalid support key!',
+					'Please contact your administrator for a new support key.',
 				],
 				'translated_message' => [
-					$l->t('Invalid license key!'),
-					$l->t('Please contact your administrator or %s for a new license key.', ['<a href="mailto:sales@owncloud.com?subject=Renew+ownCloud+License">sales@owncloud.com</a>']),
+					$l->t('Invalid support key!'),
+					$l->t('Please contact your administrator for a new support key.'),
 				],
-				'contains_html' => [1],
+				'contains_html' => [],
 			];
 		}
 
@@ -100,28 +100,28 @@ class MessageService {
 			if ($info['licenseType'] === ILicense::LICENSE_TYPE_DEMO) {
 				return [
 					'raw_message' => [
-						'Your Enterprise license key has expired.',
+						'Your Enterprise support key has expired.',
 						'Enterprise features have been disabled.',
-						'Please contact your administrator or sales@owncloud.com for a new license key.',
+						'Please contact your administrator for a new support key.',
 					],
 					'translated_message' => [
-						$l->t('Your Enterprise license key has expired.'),
+						$l->t('Your Enterprise support key has expired.'),
 						$l->t('Enterprise features have been disabled.'),
-						$l->t('Please contact your administrator or %s for a new license key.', ['<a href="mailto:sales@owncloud.com?subject=Renew+ownCloud+License">sales@owncloud.com</a>']),
+						$l->t('Please contact your administrator for a new support key.'),
 					],
-					'contains_html' => [2],
+					'contains_html' => [],
 				];
 			} else {
 				return [
 					'raw_message' => [
-						'Your Enterprise license key has expired.',
-						'Please contact your administrator or sales@owncloud.com for a new license key.',
+						'Your Enterprise support key has expired.',
+						'Please contact your administrator for a new support key.',
 					],
 					'translated_message' => [
-						$l->t('Your Enterprise license key has expired.'),
-						$l->t('Please contact your administrator or %s for a new license key.', ['<a href="mailto:sales@owncloud.com?subject=Renew+ownCloud+License">sales@owncloud.com</a>']),
+						$l->t('Your Enterprise support key has expired.'),
+						$l->t('Please contact your administrator for a new support key.'),
 					],
-					'contains_html' => [1],
+					'contains_html' => [],
 				];
 			}
 		}
@@ -148,22 +148,22 @@ class MessageService {
 			if ($info['licenseState'] === ILicenseManager::LICENSE_STATE_ABOUT_TO_EXPIRE) {
 				return [
 					'raw_message' => [
-						"Your Enterprise license key is about to expire (days remaining: {$info['daysLeft']}).",
-						'Please contact your administrator or sales@owncloud.com for a new license key.',
+						"Your Enterprise support key is about to expire (days remaining: {$info['daysLeft']}).",
+						'Please contact your administrator for a new support key.',
 					],
 					'translated_message' => [
-						$l->t('Your Enterprise license key is about to expire (days remaining: %d).', [$info['daysLeft']]),
-						$l->t('Please contact your administrator or %s for a new license key.', ['<a href="mailto:sales@owncloud.com?subject=Renew+ownCloud+License">sales@owncloud.com</a>']),
+						$l->t('Your Enterprise support key is about to expire (days remaining: %d).', [$info['daysLeft']]),
+						$l->t('Please contact your administrator for a new support key.'),
 					],
-					'contains_html' => [1],
+					'contains_html' => [],
 				];
 			} else {
 				return [
 					'raw_message' => [
-						"The registered enterprise license key expires in {$info['daysLeft']} days",
+						"The registered enterprise support key expires in {$info['daysLeft']} days",
 					],
 					'translated_message' => [
-						$l->t('The registered enterprise license key expires in %d days', [$info['daysLeft']]),
+						$l->t('The registered enterprise support key expires in %d days', [$info['daysLeft']]),
 					],
 					'contains_html' => [],
 				];
