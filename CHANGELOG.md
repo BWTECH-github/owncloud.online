@@ -1,5 +1,6 @@
 # Table of Contents
 
+* [Changelog for ownCloud.online 11.0.4](#changelog-for-owncloudonline-1104-2026-06-16)
 * [Changelog for ownCloud.online 11.0.3](#changelog-for-owncloudonline-1103-2026-06-12)
 * [Changelog for unreleased](#changelog-for-owncloud-core-unreleased-unreleased)
 * [Changelog for 10.16.1](#changelog-for-owncloud-core-10161-2026-02-18)
@@ -28,6 +29,26 @@
 * [Changelog for 10.4.1](#changelog-for-owncloud-core-1041-2020-03-30)
 * [Changelog for 10.4.0](#changelog-for-owncloud-core-1040-2020-02-10)
 * [Changelog for 10.3.2](#changelog-for-owncloud-core-1032-2019-12-04)
+# Changelog for ownCloud.online [11.0.4] (2026-06-16)
+
+The following sections list the changes in ownCloud.online 11.0.4 relevant to
+admins and users.
+
+[11.0.4]: https://github.com/BWTECH-github/owncloud.online
+
+## Summary
+
+* Accessibility - WCAG 1.4.3 AA: header and secondary-text contrast in the web UI (dark text on the teal header, darker file-list/secondary text)
+* Accessibility - WCAG 2.1 AA: comprehensive accessible-name, label, contrast, keyboard, focus and status-live-region fixes across the bundled apps
+* Enhancement - The market app is bundled and ships a compact storefront-style app list with small icons; it defaults to a neutral local catalog
+* Bugfix - HTML mail bodies are sent as multipart/alternative instead of being attached
+* Bugfix - getAbsoluteURL no longer raises a PHP 8 uninitialized-string-offset warning for empty URLs
+
+## Details
+
+* Accessibility - WCAG 1.4.3/2.1 AA fixes (contrast, accessible names, labels, keyboard, focus, live regions) across core and apps
+* Enhancement - market app bundled with neutral local-catalog default (no auto-connection to an external marketplace)
+
 # Changelog for ownCloud.online [11.0.3] (2026-06-12)
 
 The following sections list the changes in ownCloud.online 11.0.3 relevant to
