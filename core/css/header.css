@@ -174,6 +174,22 @@
 }
 
 
+/* OC-A11Y-01: Notifications-Glocke dunkel faerben. Das Bell-SVG der
+   notifications-App ist weiss (gedacht fuer dunkle Standard-Header) und sticht
+   auf unserem Teal-Header als weisser Punkt heraus, waehrend alle anderen
+   Header-Icons #262B45 sind. Die <img> laesst sich nicht per `color` faerben,
+   daher wird der Button-Hintergrund #262B45 durch die Bell-Form maskiert. */
+#header .notifications-button img {
+	opacity: 0;
+}
+
+#header .notifications-button {
+	background-color: #262B45;
+	-webkit-mask: url('../../apps-external/notifications/img/notifications.svg') no-repeat center / 16px 16px;
+	mask: url('../../apps-external/notifications/img/notifications.svg') no-repeat center / 16px 16px;
+}
+
+
 /* NAVIGATION --------------------------------------------------------------- */
 
 #navigation {
