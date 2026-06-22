@@ -213,7 +213,10 @@ $(document).ready(function () {
 		// Serialize the data
 		var post = $("#languageinput").serialize();
 		// Ajax foo
-		$.post('ajax/setlanguage.php', post, function (data) {
+		// Use OC.filePath so the request always routes through index.php; a
+		// relative 'ajax/...' URL resolves to /settings/ajax/setlanguage.php on
+		// clean-URL pages, which Apache serves directly (no oc bootstrap) -> 500.
+		$.post(OC.filePath('settings', 'ajax', 'setlanguage.php'), post, function (data) {
 			if (data.status === "success") {
 				location.reload();
 			}
