@@ -54,10 +54,8 @@ jobs:
           - 5432:5432
 
     steps:
-      - name: Clone owncloud/core
+      - name: Checkout owncloud.online
         uses: actions/checkout@v4
-        with:
-          repository: owncloud/core
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2

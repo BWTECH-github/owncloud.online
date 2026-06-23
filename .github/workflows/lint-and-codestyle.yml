@@ -3,6 +3,7 @@ name: Lint and Code Style
 on:
   push:
     branches:
+      - main
       - master
   pull_request:
     types:
