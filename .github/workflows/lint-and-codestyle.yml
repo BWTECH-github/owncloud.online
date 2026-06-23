@@ -58,3 +58,18 @@ jobs:
       - name: Run PHP Phan
         run: |
           make test-php-phan
+
+  composer-audit:
+    name: Composer Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+
+      - name: Composer security audit (locked dependencies)
+        run: composer audit --locked --no-interaction
