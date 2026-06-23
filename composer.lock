@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "78e5339b4872e007970b7383ef24ff39",
+    "content-hash": "b5789d825cece64a847c5dc19d33e72b",
     "packages": [
         {
             "name": "bantu/ini-get-wrapper",
@@ -3210,7 +3210,7 @@
         },
         {
             "name": "rhukster/dom-sanitizer",
-            "version": "dev-main",
+            "version": "1.0.11",
             "source": {
                 "type": "git",
                 "url": "https://github.com/rhukster/dom-sanitizer.git",
@@ -3230,7 +3230,6 @@
             "require-dev": {
                 "phpunit/phpunit": "^9"
             },
-            "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-4": {
@@ -3250,7 +3249,7 @@
             "description": "A simple but effective DOM/SVG/MathML Sanitizer for PHP 7.4+",
             "support": {
                 "issues": "https://github.com/rhukster/dom-sanitizer/issues",
-                "source": "https://github.com/rhukster/dom-sanitizer/tree/main"
+                "source": "https://github.com/rhukster/dom-sanitizer/tree/1.0.11"
             },
             "time": "2026-04-23T22:56:32+00:00"
         },
@@ -7715,7 +7714,6 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
-        "rhukster/dom-sanitizer": 20,
         "roave/security-advisories": 20
     },
     "prefer-stable": false,
