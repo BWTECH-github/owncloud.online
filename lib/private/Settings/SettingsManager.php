@@ -243,6 +243,9 @@ class SettingsManager implements ISettingsManager {
 				Logging::class,
 				Tips::class,
 				SecurityWarning::class,
+				// CORS-Domain-Whitelist ("Add Domain"): aus Persoenlich -> Sicherheit
+				// nach Admin -> Sicherheit verschoben, damit nur Admins sie pflegen.
+				Cors::class,
 				Mail::class,
 				FileSharing::class,
 				Encryption::class,
@@ -260,7 +263,6 @@ class SettingsManager implements ISettingsManager {
 				LegacyPersonal::class,
 				Version::class,
 				Tokens::class,
-				Cors::class,
 				Quota::class
 			];
 		}

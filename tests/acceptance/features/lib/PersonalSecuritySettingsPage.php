@@ -47,7 +47,7 @@ class PersonalSecuritySettingsPage extends OwncloudPage {
 	protected $linkedAppNameXpath = '//span[@class="token-name"]';
 	protected $disconnectButtonXpath = '//*[@data-original-title="Disconnect"]';
 	protected $createNewAppPasswordLoadingIndicatorClass = 'icon-loading-small';
-	protected $corsInputFieldXpath = "//input[@id='domain']";
+	protected $appPasswordFormXpath = "//*[@id='app-password-form']";
 
 	/**
 	 * create a new app password for the app named $appName
@@ -139,7 +139,8 @@ class PersonalSecuritySettingsPage extends OwncloudPage {
 
 	/**
 	 * there is no reliable loading indicator on the personal security settings page,
-	 * so just wait for the cors input field to be there and all Ajax calls to finish
+	 * so just wait for the app password form to be there and all Ajax calls to finish.
+	 * (The CORS panel was moved to admin security, so it can no longer be the anchor.)
 	 *
 	 * @param Session $session
 	 * @param int $timeout_msec
@@ -153,7 +154,7 @@ class PersonalSecuritySettingsPage extends OwncloudPage {
 	):void {
 		$this->waitForOutstandingAjaxCalls($session);
 		$this->waitTillXpathIsVisible(
-			$this->corsInputFieldXpath,
+			$this->appPasswordFormXpath,
 			$timeout_msec
 		);
 	}
