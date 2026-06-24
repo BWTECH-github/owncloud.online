@@ -53,8 +53,8 @@ class UserTypeHelperTest extends TestCase {
 
 	public function isGuestUserDataProvider() {
 		return [
-			[false, false],
-			[true, true],
+			['', false],
+			['1', true],
 		];
 	}
 }
