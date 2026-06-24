@@ -61,7 +61,9 @@ class IMipPluginTest extends TestCase {
 		$this->assertEquals('Fellowship meeting', $mailMessage->getSubject());
 		$this->assertEquals('frodo@hobb.it', $mailMessage->getTo()[0]->getAddress());
 		$this->assertEquals('gandalf@wiz.ard', $mailMessage->getReplyTo()[0]->getAddress());
-		$this->assertEquals('text/calendar; charset=UTF-8; method=REQUEST', $mailMessage->getMessage()->getHeaders()->getHeaderBody('Content-Type'));
+		$contentType = $mailMessage->getMessage()->getBody()->getPreparedHeaders()->get('Content-Type');
+		$this->assertSame('text/calendar', $contentType->getValue());
+		$this->assertSame('REQUEST', $contentType->getParameter('method'));
 	}
 
 	public function testFailedDeliveryWithException() {
@@ -92,7 +94,9 @@ class IMipPluginTest extends TestCase {
 		$this->assertEquals('Fellowship meeting', $mailMessage->getSubject());
 		$this->assertEquals('frodo@hobb.it', $mailMessage->getTo()[0]->getAddress());
 		$this->assertEquals('gandalf@wiz.ard', $mailMessage->getReplyTo()[0]->getAddress());
-		$this->assertEquals('text/calendar; charset=UTF-8; method=REQUEST', $mailMessage->getMessage()->getHeaders()->getHeaderBody('Content-Type'));
+		$contentType = $mailMessage->getMessage()->getBody()->getPreparedHeaders()->get('Content-Type');
+		$this->assertSame('text/calendar', $contentType->getValue());
+		$this->assertSame('REQUEST', $contentType->getParameter('method'));
 	}
 
 	public function testFailedDelivery() {
@@ -124,7 +128,9 @@ class IMipPluginTest extends TestCase {
 		$this->assertEquals('Fellowship meeting', $mailMessage->getSubject());
 		$this->assertEquals('frodo@hobb.it', $mailMessage->getTo()[0]->getAddress());
 		$this->assertEquals('gandalf@wiz.ard', $mailMessage->getReplyTo()[0]->getAddress());
-		$this->assertEquals('text/calendar; charset=UTF-8; method=REQUEST', $mailMessage->getMessage()->getHeaders()->getHeaderBody('Content-Type'));
+		$contentType = $mailMessage->getMessage()->getBody()->getPreparedHeaders()->get('Content-Type');
+		$this->assertSame('text/calendar', $contentType->getValue());
+		$this->assertSame('REQUEST', $contentType->getParameter('method'));
 	}
 
 	public function testDeliveryOfCancel() {
@@ -155,7 +161,9 @@ class IMipPluginTest extends TestCase {
 		$this->assertEquals('Cancelled: Fellowship meeting', $mailMessage->getSubject());
 		$this->assertEquals('frodo@hobb.it', $mailMessage->getTo()[0]->getAddress());
 		$this->assertEquals('gandalf@wiz.ard', $mailMessage->getReplyTo()[0]->getAddress());
-		$this->assertEquals('text/calendar; charset=UTF-8; method=CANCEL', $mailMessage->getMessage()->getHeaders()->getHeaderBody('Content-Type'));
+		$contentType = $mailMessage->getMessage()->getBody()->getPreparedHeaders()->get('Content-Type');
+		$this->assertSame('text/calendar', $contentType->getValue());
+		$this->assertSame('CANCEL', $contentType->getParameter('method'));
 		$this->assertEquals('CANCELLED', $message->message->VEVENT->STATUS->getValue());
 	}
 }

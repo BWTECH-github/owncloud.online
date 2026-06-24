@@ -281,7 +281,34 @@ class Message {
 	 * @return $this
 	 */
 	public function setBody($body, $contentType) {
-		$this->email->text($body, $contentType);
+		// Symfony's Email::text()/html() force text/plain resp. text/html, and
+		// the previous Email::text($body, $contentType) call silently used the
+		// content type as the charset. Build the body part ourselves so an
+		// explicit content type -- notably the iMIP 'text/calendar; method=...'
+		// used for calendar invitations -- keeps its media type and parameters.
+		$segments = \explode(';', $contentType);
+		$mediaType = \trim(\array_shift($segments));
+		$subtype = \explode('/', $mediaType, 2)[1] ?? 'plain';
+		$charset = 'utf-8';
+		$parameters = [];
+		foreach ($segments as $segment) {
+			if (\strpos($segment, '=') === false) {
+				continue;
+			}
+			[$key, $value] = \explode('=', $segment, 2);
+			$key = \strtolower(\trim($key));
+			$value = \trim($value, " \"");
+			if ($key === 'charset') {
+				$charset = $value;
+			} else {
+				$parameters[$key] = $value;
+			}
+		}
+		$part = new \Symfony\Component\Mime\Part\TextPart($body, $charset, $subtype);
+		if ($parameters !== []) {
+			$part->getHeaders()->addParameterizedHeader('Content-Type', $mediaType, $parameters);
+		}
+		$this->email->setBody($part);
 		return $this;
 	}
 }
