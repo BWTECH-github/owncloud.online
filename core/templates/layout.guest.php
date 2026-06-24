@@ -48,6 +48,19 @@
 			#body-login .v-align .login-button,#body-login .v-align input[type="submit"],#body-login .v-align button[type="submit"]{display:block;height:46px;width:100%;margin:6px 0 0;background:#00e4bd !important;color:#fff !important;border:none !important;border-radius:8px !important;font-weight:600;font-size:15px;cursor:pointer;box-shadow:none !important;}
 			#body-login .v-align .login-button:hover,#body-login .v-align button[type="submit"]:hover{background:#00c9a7 !important;}
 			#body-login footer{flex:0 0 auto;text-align:center;padding:10px 0 14px;margin:0;}
+			/* Update-/Wartungs-Screens nutzen dieselbe Gastkarte: breiter, EINE Karte, zentrierter Text */
+			#body-login .v-align:has(.update),#body-login .v-align:has(.update-progress),#body-login .v-align:has(.error-wide){max-width:460px;text-align:center;}
+			#body-login .v-align .error-wide{list-style:none;margin:0 !important;padding:0 !important;background:transparent !important;text-align:center;}
+			#body-login .v-align .error-wide li.error,#body-login .v-align .error-wide li{background:transparent !important;border:none !important;color:#26384d;margin:0 0 12px;padding:0;font-size:15px;line-height:1.5;}
+			#body-login .v-align .error-wide .hint{font-size:13px;color:#5b6675;margin:6px 0 0;}
+			#body-login .v-align .update,#body-login .v-align .updateProgress{background:transparent !important;box-shadow:none !important;border:none !important;border-radius:0 !important;padding:0 !important;margin:0 !important;width:100% !important;color:#26384d;text-align:center;}
+			#body-login .v-align .update .updateOverview{text-align:center;}
+			#body-login .v-align .update h2.title,#body-login .v-align .update .title{font-size:20px;line-height:1.3;font-weight:600;margin:0 0 14px;color:#26384d;}
+			#body-login .v-align .update .infogroup{margin:0 0 16px;font-size:14px;line-height:1.55;color:#5b6675;text-align:center;}
+			#body-login .v-align .update .infogroup.bold{font-weight:600;color:#26384d;}
+			#body-login .v-align .update .updateButton{display:block !important;width:100% !important;height:46px;margin:6px 0 14px;background:#00e4bd !important;color:#fff !important;border:none !important;border-radius:8px !important;font-weight:600;font-size:15px;cursor:pointer;box-shadow:none !important;}
+			#body-login .v-align .update .updateButton:hover{background:#00c9a7 !important;}
+			#body-login .v-align .update pre{background:#f5f7fa;border:1px solid #e3e8ef;border-radius:8px;padding:8px 10px;margin:6px 0 0;font-size:13px;color:#26384d;white-space:pre-wrap;word-break:break-word;text-align:center;}
 		</style>
 	</head>
 	<body id="<?php p($_['bodyid']);?>" <?php
