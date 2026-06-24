@@ -38,6 +38,8 @@
 			#body-login .v-align #header .logo{margin:0 auto;float:none;}
 			#body-login form{background:transparent !important;margin:0;box-shadow:none;border:none;text-align:left;}
 			#body-login .v-align label,#body-login .v-align form>p{text-align:left;}
+			#body-login .v-align .grouptop,#body-login .v-align .groupbottom{margin:0 !important;}
+			#body-login .v-align .submit-wrap{margin:8px 0 0 !important;padding:0 !important;}
 			#body-login .v-align input[type="text"],#body-login .v-align input[type="password"],#body-login .v-align input[type="email"]{display:block;box-sizing:border-box;height:44px;width:100%;margin:0 0 12px;padding:9px 12px;border:1px solid #d6dce4 !important;border-radius:8px !important;background:#fff !important;color:#26384d;font-size:14px;box-shadow:none !important;text-align:left;}
 			#body-login .v-align input:focus{border-color:#00b596 !important;outline:none !important;box-shadow:none !important;}
 			#body-login .v-align input:focus-visible{box-shadow:0 0 0 2px rgba(0,181,150,.35) !important;}
