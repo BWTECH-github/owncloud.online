@@ -50,9 +50,9 @@
 		<header role="banner">
 			<div id="header">
 				<a href="<?php print_unescaped(link_to('', 'index.php')); ?>" id="owncloud" tabindex="1">
-					<h1 class="logo-icon">
+					<span class="logo-icon" role="img" aria-label="ownCloud Online"><!-- OC-A11Y-12: war <h1>, jetzt kein zweites Heading -->
 						<?php // print_unescaped($theme->getHTMLName()); ?>
-					</h1>
+					</span>
 				</a>
 				<a href="#" class="header-appname-container menutoggle" tabindex="2">
 					<button class="burger">
