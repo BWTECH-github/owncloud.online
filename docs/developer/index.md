@@ -15,8 +15,8 @@ Dieses Kapitel beschreibt lokale Entwicklung, Tests, Release-Builds und Kompatib
 ## Lokale Server
 
 ```powershell
-wsl --cd /mnt/c/git/owncloud.online php8.4 -S 0.0.0.0:8088 -t .
-wsl --cd /mnt/c/git/market-backend php8.4 -S 0.0.0.0:8090 -t public
+wsl --cd /mnt/c/git/owncloud.online php8.4 -S 127.0.0.1:8088 -t .
+wsl --cd /mnt/c/git/market-backend php8.4 -S 127.0.0.1:8090 -t public
 ```
 
 ## Pflichtchecks vor Release

@@ -11,7 +11,7 @@ cd /mnt/c/git/market-backend
 php8.4 bin/setup.php --admin admin --password '<entfernt>'
 php8.4 bin/import-packages.php /mnt/c/git/_plugin_packages/packages
 php8.4 bin/remove-core-apps.php
-php8.4 -S 0.0.0.0:8090 -t public
+php8.4 -S 127.0.0.1:8090 -t public
 ```
 
 Admin UI:
