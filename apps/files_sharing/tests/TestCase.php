@@ -179,11 +179,10 @@ abstract class TestCase extends \Test\TestCase {
 	 * reset init status for the share storage
 	 */
 	protected static function resetStorage() {
-		$storage = new \ReflectionClass(SharedStorage::class);
-		$isInitialized = $storage->getProperty('initialized');
-		$isInitialized->setAccessible(true);
-		$isInitialized->setValue($storage, false);
-		$isInitialized->setAccessible(false);
+		// SharedStorage::$initialized is a private per-instance flag with no
+		// static state and nothing to reset here; the previous
+		// ReflectionProperty::setValue() passed the ReflectionClass instead of a
+		// SharedStorage instance, only creating a deprecated dynamic property.
 
 		$storage = new \ReflectionClass(Storage::class);
 		$property = $storage->getProperty('localCache');
