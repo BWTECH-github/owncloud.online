@@ -14,7 +14,7 @@ Ubuntu muss mit `VERSION 2` laufen.
 ## Server starten
 
 ```powershell
-wsl --cd /mnt/c/git/owncloud.online php8.4 -S 0.0.0.0:8088 -t .
+wsl --cd /mnt/c/git/owncloud.online php8.4 -S 127.0.0.1:8088 -t .
 ```
 
 Browser:

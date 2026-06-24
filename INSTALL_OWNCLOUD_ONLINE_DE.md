@@ -108,7 +108,7 @@ EXIT;
 
 ```bash
 cd /var/www
-git clone https://github.com/GrossLukas/owncloud.online.git owncloud.online
+git clone https://github.com/BWTECH-github/owncloud.online.git owncloud.online
 cd /var/www/owncloud.online
 composer install
 make
@@ -247,7 +247,7 @@ Schnellstart ohne Apache:
 
 ```bash
 cd /opt/owncloud.online-live
-php8.4 -S 0.0.0.0:8088 -t /opt/owncloud.online-live
+php8.4 -S 127.0.0.1:8088 -t /opt/owncloud.online-live  # nur lokal, NICHT fuer Produktion (Dev-Server)
 ```
 
 Dann Browser:
