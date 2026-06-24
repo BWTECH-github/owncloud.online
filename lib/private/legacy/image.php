@@ -717,6 +717,14 @@ class OC_Image implements \OCP\IImage {
 	 * @return bool|resource An image resource or false on error
 	 */
 	public function loadFromData($str) {
+		if ($str instanceof \Imagick) {
+			// Imagick-based preview providers (Bitmap/PDF/Font/Postscript, SVG,
+			// Office) hand us the Imagick object directly. Before PHP 8.3 this
+			// was implicitly coerced to its blob via Imagick::__toString(); the
+			// strict is_string() guard below would otherwise reject it and break
+			// every Imagick-based thumbnail. Convert it back to its image blob.
+			$str = $str->getImageBlob();
+		}
 		if (!\is_string($str)) {
 			return false;
 		}
