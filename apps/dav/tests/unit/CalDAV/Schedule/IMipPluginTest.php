@@ -59,8 +59,8 @@ class IMipPluginTest extends TestCase {
 		$plugin->schedule($message);
 		$this->assertEquals('1.1', $message->getScheduleStatus());
 		$this->assertEquals('Fellowship meeting', $mailMessage->getSubject());
-		$this->assertEquals(['frodo@hobb.it' => null], $mailMessage->getTo());
-		$this->assertEquals(['gandalf@wiz.ard' => null], $mailMessage->getReplyTo());
+		$this->assertEquals('frodo@hobb.it', $mailMessage->getTo()[0]->getAddress());
+		$this->assertEquals('gandalf@wiz.ard', $mailMessage->getReplyTo()[0]->getAddress());
 		$this->assertEquals('text/calendar; charset=UTF-8; method=REQUEST', $mailMessage->getMessage()->getHeaders()->getHeaderBody('Content-Type'));
 	}
 
@@ -90,8 +90,8 @@ class IMipPluginTest extends TestCase {
 		$plugin->schedule($message);
 		$this->assertEquals('5.0', $message->getScheduleStatus());
 		$this->assertEquals('Fellowship meeting', $mailMessage->getSubject());
-		$this->assertEquals(['frodo@hobb.it' => null], $mailMessage->getTo());
-		$this->assertEquals(['gandalf@wiz.ard' => null], $mailMessage->getReplyTo());
+		$this->assertEquals('frodo@hobb.it', $mailMessage->getTo()[0]->getAddress());
+		$this->assertEquals('gandalf@wiz.ard', $mailMessage->getReplyTo()[0]->getAddress());
 		$this->assertEquals('text/calendar; charset=UTF-8; method=REQUEST', $mailMessage->getMessage()->getHeaders()->getHeaderBody('Content-Type'));
 	}
 
@@ -122,8 +122,8 @@ class IMipPluginTest extends TestCase {
 		$plugin->schedule($message);
 		$this->assertEquals('5.0', $message->getScheduleStatus());
 		$this->assertEquals('Fellowship meeting', $mailMessage->getSubject());
-		$this->assertEquals(['frodo@hobb.it' => null], $mailMessage->getTo());
-		$this->assertEquals(['gandalf@wiz.ard' => null], $mailMessage->getReplyTo());
+		$this->assertEquals('frodo@hobb.it', $mailMessage->getTo()[0]->getAddress());
+		$this->assertEquals('gandalf@wiz.ard', $mailMessage->getReplyTo()[0]->getAddress());
 		$this->assertEquals('text/calendar; charset=UTF-8; method=REQUEST', $mailMessage->getMessage()->getHeaders()->getHeaderBody('Content-Type'));
 	}
 
@@ -153,8 +153,8 @@ class IMipPluginTest extends TestCase {
 		$plugin->schedule($message);
 		$this->assertEquals('1.1', $message->getScheduleStatus());
 		$this->assertEquals('Cancelled: Fellowship meeting', $mailMessage->getSubject());
-		$this->assertEquals(['frodo@hobb.it' => null], $mailMessage->getTo());
-		$this->assertEquals(['gandalf@wiz.ard' => null], $mailMessage->getReplyTo());
+		$this->assertEquals('frodo@hobb.it', $mailMessage->getTo()[0]->getAddress());
+		$this->assertEquals('gandalf@wiz.ard', $mailMessage->getReplyTo()[0]->getAddress());
 		$this->assertEquals('text/calendar; charset=UTF-8; method=CANCEL', $mailMessage->getMessage()->getHeaders()->getHeaderBody('Content-Type'));
 		$this->assertEquals('CANCELLED', $message->message->VEVENT->STATUS->getValue());
 	}

@@ -610,7 +610,7 @@ class UsersControllerTest extends TestCase {
 	 */
 	public function testIndexWithSearch(): void {
 		$this->container['IsAdmin'] = true;
-		$this->container['Config']->method('getUserValue')->willReturn(false, false, true);
+		$this->container['Config']->method('getUserValue')->willReturn('', '', '1');
 
 		$foo = $this->getMockBuilder(User::class)
 			->disableOriginalConstructor()->getMock();

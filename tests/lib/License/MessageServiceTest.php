@@ -94,10 +94,10 @@ class MessageServiceTest extends TestCase {
 				$missingLicenseInfo,
 				[
 					'raw_message' => [
-						'No license key available.',
+						'No support key available.',
 					],
 					'translated_message' => [
-						'No License Key Available.',
+						'No Support Key Available.',
 					],
 					'contains_html' => [],
 				],
@@ -106,44 +106,44 @@ class MessageServiceTest extends TestCase {
 				$invalidLicenseInfo,
 				[
 					'raw_message' => [
-						'Invalid license key!',
-						'Please contact your administrator or sales@owncloud.com for a new license key.',
+						'Invalid support key!',
+						'Please contact your administrator for a new support key.',
 					],
 					'translated_message' => [
-						'Invalid License Key!',
-						'Please Contact Your Administrator Or <a href="mailto:sales@owncloud.com?subject=Renew+ownCloud+License">sales@owncloud.com</a> For A New License Key.',
+						'Invalid Support Key!',
+						'Please Contact Your Administrator For A New Support Key.',
 					],
-					'contains_html' => [1],
+					'contains_html' => [],
 				],
 			],
 			[
 				$expiredDemoLicenseInfo,
 				[
 					'raw_message' => [
-						'Your Enterprise license key has expired.',
+						'Your Enterprise support key has expired.',
 						'Enterprise features have been disabled.',
-						'Please contact your administrator or sales@owncloud.com for a new license key.',
+						'Please contact your administrator for a new support key.',
 					],
 					'translated_message' => [
-						'Your Enterprise License Key Has Expired.',
+						'Your Enterprise Support Key Has Expired.',
 						'Enterprise Features Have Been Disabled.',
-						'Please Contact Your Administrator Or <a href="mailto:sales@owncloud.com?subject=Renew+ownCloud+License">sales@owncloud.com</a> For A New License Key.',
+						'Please Contact Your Administrator For A New Support Key.',
 					],
-					'contains_html' => [2],
+					'contains_html' => [],
 				],
 			],
 			[
 				$expiredLicenseInfo,
 				[
 					'raw_message' => [
-						'Your Enterprise license key has expired.',
-						'Please contact your administrator or sales@owncloud.com for a new license key.',
+						'Your Enterprise support key has expired.',
+						'Please contact your administrator for a new support key.',
 					],
 					'translated_message' => [
-						'Your Enterprise License Key Has Expired.',
-						'Please Contact Your Administrator Or <a href="mailto:sales@owncloud.com?subject=Renew+ownCloud+License">sales@owncloud.com</a> For A New License Key.',
+						'Your Enterprise Support Key Has Expired.',
+						'Please Contact Your Administrator For A New Support Key.',
 					],
-					'contains_html' => [1],
+					'contains_html' => [],
 				],
 			],
 			[
@@ -162,10 +162,10 @@ class MessageServiceTest extends TestCase {
 				$licenseInfo,
 				[
 					'raw_message' => [
-						"The registered enterprise license key expires in 30 days",
+						"The registered enterprise support key expires in 30 days",
 					],
 					'translated_message' => [
-						'The Registered Enterprise License Key Expires In 30 Days',
+						'The Registered Enterprise Support Key Expires In 30 Days',
 					],
 					'contains_html' => [],
 				],
@@ -198,14 +198,14 @@ class MessageServiceTest extends TestCase {
 				$licenseAboutToExpireInfo,
 				[
 					'raw_message' => [
-						"Your Enterprise license key is about to expire (days remaining: 15).",
-						'Please contact your administrator or sales@owncloud.com for a new license key.',
+						"Your Enterprise support key is about to expire (days remaining: 15).",
+						'Please contact your administrator for a new support key.',
 					],
 					'translated_message' => [
-						'Your Enterprise License Key Is About To Expire (days Remaining: 15).',  // ucwords('(dd') doesn't change the string
-						'Please Contact Your Administrator Or <a href="mailto:sales@owncloud.com?subject=Renew+ownCloud+License">sales@owncloud.com</a> For A New License Key.',
+						'Your Enterprise Support Key Is About To Expire (days Remaining: 15).',  // ucwords('(dd') doesn't change the string
+						'Please Contact Your Administrator For A New Support Key.',
 					],
-					'contains_html' => [1],
+					'contains_html' => [],
 				],
 			],
 		];
