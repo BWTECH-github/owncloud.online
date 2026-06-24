@@ -275,7 +275,7 @@ class UserMountCache implements IUserMountCache {
 			$builder = $this->connection->getQueryBuilder();
 			$query = $builder->select('storage', 'path')
 				->from('filecache')
-				->where($builder->expr()->eq('fileid', $builder->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
+				->where($builder->expr()->eq('fileid', $builder->createNamedParameter((int)$fileId, IQueryBuilder::PARAM_INT)));
 
 			$result = $query->execute();
 			$row = $result->fetchAssociative();
