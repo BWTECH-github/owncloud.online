@@ -80,6 +80,7 @@ class Util {
 	 * Formatiert die öffentliche Produktversion ohne internen Patch-Level.
 	 *
 	 * @return string
+	 * @since 11.0.0
 	 */
 	private static function getPublicVersionString() {
 		$version = self::getVersion();
