@@ -120,6 +120,13 @@
 	outline: none !important;
 	box-shadow: none;
 }
+/* OC-A11Y-02 (WCAG 2.4.7): sichtbarer Tastatur-Fokus fuer den Collapse-Toggle.
+ * Hebt das outline:none !important oben gezielt nur fuer :focus-visible auf;
+ * negativer Offset, damit die Outline innerhalb des 44px-Buttons bleibt. */
+#app-navigation .collapsible > .collapse:focus-visible {
+	outline: 2px solid #262B45 !important;
+	outline-offset: -2px;
+}
 #app-navigation .collapsible:hover > a,
 #app-navigation .collapsible:focus > a {
 	background-image: none;

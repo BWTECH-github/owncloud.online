@@ -1109,3 +1109,31 @@ fieldset.warning legend + p, fieldset.update legend + p {
         padding-top: 35px;
     }
 }
+
+/* ---------------------------------------------------------------------------
+ * OC-A11Y-02 (WCAG 2.4.7 Focus Visible) - BW-Tech GmbH
+ * Globaler sichtbarer Fokus-Indikator. Der Reset oben (Zeile 6) setzt
+ * outline:0 auf nahezu alle Elemente; hier wird fuer Tastatur-Fokus
+ * (:focus-visible) ein sichtbarer Indikator wiederhergestellt.
+ * !important ueberschreibt die diversen outline:0/outline:none-Resets
+ * (styles.css, inputs.css) ladereihenfolge-unabhaengig; da :focus-visible nur
+ * bei Tastatur-/programmatischem Fokus greift, werden Maus-Interaktionen
+ * visuell nicht veraendert. Outline-Farbe #262B45 = --e-global-color-primary
+ * (Kontrast auf Weiss ~13,9:1, auf Brand-Teal ~8,5:1 - weit ueber 3:1).
+ * ------------------------------------------------------------------------- */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible,
+[role="button"]:focus-visible,
+[role="link"]:focus-visible,
+[role="tab"]:focus-visible,
+[role="menuitem"]:focus-visible,
+[role="checkbox"]:focus-visible,
+.menuitem:focus-visible {
+	outline: 2px solid #262B45 !important;
+	outline-offset: 2px;
+}
