@@ -1724,11 +1724,20 @@ class Server extends ServerContainer implements IServerContainer, IServiceLoader
 			foreach ($xmlPath as $xml) {
 				$info = isset($info[$xml]) ? $info[$xml] : [];
 			}
-			if (!\is_array($info)) {
-				$info = [$info];
+			// The appinfo parser nests repeated child elements (e.g. several
+			// <plugin> entries) one level deeper, so flatten to a plain list of
+			// class names; otherwise an array would reach query()/ltrim() and
+			// raise a TypeError on PHP 8.4.
+			if (\is_array($info)) {
+				$classes = [];
+				\array_walk_recursive($info, static function ($leaf) use (&$classes) {
+					$classes[] = $leaf;
+				});
+			} else {
+				$classes = [$info];
 			}
 
-			foreach ($info as $class) {
+			foreach ($classes as $class) {
 				try {
 					if (!\OC_App::isAppLoaded($appId)) {
 						\OC_App::loadApp($appId);
