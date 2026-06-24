@@ -62,3 +62,9 @@ updates:
     versions:
     - 9.2.4
     - ">= 20.a"
+- package-ecosystem: github-actions
+  directory: "/"
+  schedule:
+    interval: weekly
+    time: "22:00"
+  open-pull-requests-limit: 10

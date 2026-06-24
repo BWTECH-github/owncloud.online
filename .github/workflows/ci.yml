@@ -21,7 +21,7 @@ concurrency:
 jobs:
   semantic-git-messages:
     name: Commits
-    uses: owncloud/reusable-workflows/.github/workflows/semantic-git-message.yml@main
+    uses: owncloud/reusable-workflows/.github/workflows/semantic-git-message.yml@ed7b4827feafc644f1fd1b723b7a1ca890480009 # main
 
   php-unit:
     name: PHP Unit
