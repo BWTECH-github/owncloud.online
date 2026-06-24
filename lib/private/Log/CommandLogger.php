@@ -141,7 +141,7 @@ class CommandLogger implements ILogger {
 	 * @param mixed $level
 	 * @param string $message
 	 * @param array $context
-	 * @return mixed
+	 * @return void
 	 * @since 7.0.0
 	 */
 	public function log($level, $message, array $context = []): void {

@@ -104,4 +104,8 @@ return [
 	'parent_constructor_required' => [
 	],
 
+	// Pre-existing PHP 8.4 false positives are recorded here so that only NEW
+	// issues fail the build. See .phan/baseline.php for the rationale.
+	'baseline_path' => __DIR__ . '/baseline.php',
+
 ];
