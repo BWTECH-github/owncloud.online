@@ -451,16 +451,13 @@ class AppManager implements IAppManager {
 		// check the cache
 		$data = $this->appInfo->get($appId);
 		if (isset($data['path'])) {
-			// Etag pro Request nur einmal prüfen: erspart clearstatcache+stat
-			// bei jedem weiteren Aufruf für dieselbe App
-			if (isset($this->appInfoValidated[$appId])) {
-				return $data['info'];
-			}
-			// check that that info file hasn't changed by comparing the etag
+			// check that that info file hasn't changed by comparing the etag.
+			// NOTE: this must run on every call -- a per-request "validated
+			// once" short-circuit returned stale info when info.xml changed
+			// mid-request (app upgrade/install/occ), see AppTest::testGetAppInfoXMLChange.
 			$etag = $this->getEtag($data['path']);
 			if ($data['etag'] === $etag) {
 				// nice, etag is still the same, return from cache!
-				$this->appInfoValidated[$appId] = true;
 				return $data['info'];
 			}
 			// invalidate cache
@@ -504,15 +501,11 @@ class AppManager implements IAppManager {
 		// check the cache
 		$data = $this->appInfo->get($file);
 		if (isset($data['path'])) {
-			// Etag pro Request nur einmal prüfen (siehe getAppInfo)
-			if (isset($this->appInfoValidated[$file])) {
-				return $data['info'];
-			}
 			// check that that info file hasn't changed by comparing the etag
+			// (must run on every call, see getAppInfo)
 			$etag = $this->getEtag($data['path']);
 			if ($data['etag'] === $etag) {
 				// nice, etag is still the same, return from cache!
-				$this->appInfoValidated[$file] = true;
 				return $data['info'];
 			}
 			// invalidate cache

@@ -616,6 +616,12 @@ class DAV extends Common {
 			if ($response === false) {
 				return false;
 			}
+			if (!isset($response['{DAV:}getlastmodified'])) {
+				// an empty or incomplete propfind response carries no usable
+				// stat information (strtotime(null) is deprecated on PHP 8.4),
+				// so report the resource as not stat-able
+				return false;
+			}
 			return [
 				'mtime' => \strtotime($response['{DAV:}getlastmodified']),
 				'size' => (int)isset($response['{DAV:}getcontentlength']) ? $response['{DAV:}getcontentlength'] : 0,
