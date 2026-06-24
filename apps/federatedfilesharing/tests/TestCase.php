@@ -100,10 +100,11 @@ abstract class TestCase extends \Test\TestCase {
 	 * reset init status for the share storage
 	 */
 	protected static function resetStorage() {
-		$storage = new \ReflectionClass('\OCA\Files_Sharing\SharedStorage');
-		$isInitialized = $storage->getProperty('initialized');
-		$isInitialized->setAccessible(true);
-		$isInitialized->setValue($storage, false);
-		$isInitialized->setAccessible(false);
+		// SharedStorage::$initialized is a private per-instance flag with no
+		// static state, so there is nothing to reset here: every freshly
+		// constructed SharedStorage already starts with initialized = false.
+		// The previous ReflectionProperty::setValue() call passed the
+		// ReflectionClass instead of a SharedStorage instance, which on PHP 8.2+
+		// only created a deprecated dynamic property and reset nothing.
 	}
 }

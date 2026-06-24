@@ -34,4 +34,14 @@
   <listeners>
     <listener class="StartSessionListener" file="startsessionlistener.php"/>
   </listeners>
+  <php>
+    <!-- Legacy ownCloud 10.x code triggers many unavoidable PHP 8.4
+         deprecations (e.g. passing null to string parameters). These are not
+         defects in the behaviour under test, so E_DEPRECATED (8192) and
+         E_USER_DEPRECATED (16384) are excluded from error_reporting:
+         32767 & ~8192 & ~16384 = 8191. PHPUnit's error handler honours
+         error_reporting() and will not turn suppressed deprecations into
+         test errors. -->
+    <ini name="error_reporting" value="8191"/>
+  </php>
 </phpunit>
