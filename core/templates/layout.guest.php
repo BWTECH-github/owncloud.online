@@ -61,6 +61,19 @@
 			#body-login .v-align .update .updateButton{display:block !important;width:100% !important;height:46px;margin:6px 0 14px;background:#00e4bd !important;color:#fff !important;border:none !important;border-radius:8px !important;font-weight:600;font-size:15px;cursor:pointer;box-shadow:none !important;}
 			#body-login .v-align .update .updateButton:hover{background:#00c9a7 !important;}
 			#body-login .v-align .update pre{background:#f5f7fa;border:1px solid #e3e8ef;border-radius:8px;padding:8px 10px;margin:6px 0 0;font-size:13px;color:#26384d;white-space:pre-wrap;word-break:break-word;text-align:center;}
+			/* Wartung (li.update) + 404 (li.error): Listen-Wrapper neutralisieren, breite zentrierte Karte */
+			#body-login .v-align:has(li.error),#body-login .v-align:has(li.update){max-width:460px;text-align:center;}
+			#body-login .v-align ul:has(> li.update),#body-login .v-align ul:has(> li.error){list-style:none;margin:0 !important;padding:0 !important;background:transparent !important;}
+			#body-login .v-align li.update,#body-login .v-align li.error{list-style:none;background:transparent !important;border:none !important;color:#26384d;margin:0;padding:0;font-size:15px;line-height:1.55;text-align:center;}
+			#body-login .v-align li.error .hint,#body-login .v-align li.update .hint{font-size:13px;color:#5b6675;margin:6px 0 0;line-height:1.5;}
+			#body-login .v-align li.error a,#body-login .v-align .hint a{color:#00b596;}
+			/* Exception/500: Ueberschriften zentriert, technische Details + Trace links und scrollbar */
+			#body-login .v-align span.error-wide{display:block;}
+			#body-login .v-align span.error-wide h2{font-size:17px;font-weight:600;color:#26384d;margin:12px 0 8px;}
+			#body-login .v-align span.error-wide p{font-size:14px;color:#5b6675;line-height:1.5;margin:0 0 8px;}
+			#body-login .v-align span.error-wide ul{list-style:none;text-align:left;margin:0;padding:0;font-size:13px;color:#26384d;}
+			#body-login .v-align span.error-wide ul li{margin:0 0 4px;background:transparent !important;}
+			#body-login .v-align span.error-wide pre{text-align:left;background:#f5f7fa;border:1px solid #e3e8ef;border-radius:8px;padding:8px 10px;margin:8px 0 0;font-size:12px;color:#26384d;max-height:220px;overflow:auto;white-space:pre-wrap;word-break:break-word;}
 		</style>
 	</head>
 	<body id="<?php p($_['bodyid']);?>" <?php
