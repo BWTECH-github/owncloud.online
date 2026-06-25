@@ -22,7 +22,8 @@
 				<tr>
 					<td width="20px">&nbsp;</td>
 					<td style="font-weight:normal; font-size:0.8em; line-height:1.2em; font-family:verdana,'arial',sans;">
-						<?php print_unescaped($this->inc('html.mail.footer')); ?>
+						<?php /* footer lives in core/templates; load it explicitly (inc() would look in the settings app) */ ?>
+						<?php print_unescaped((new \OC_Template('core', 'html.mail.footer'))->fetchPage()); ?>
 					</td>
 				</tr>
 				<tr>
