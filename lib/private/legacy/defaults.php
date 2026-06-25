@@ -68,7 +68,7 @@ class OC_Defaults {
 		$this->defaultSyncClientUrl = 'https://owncloud.online/first-steps/';
 		$this->defaultiOSClientUrl = 'https://itunes.apple.com/de/app/owncloud-online/id1436996124?mt=8';
 		$this->defaultiTunesAppId = '1436996124';
-		$this->defaultAndroidClientUrl = 'https://play.google.com/store/apps/details?id=online.owncloud.com.Android';
+		$this->defaultAndroidClientUrl = 'https://play.google.com/store/apps/details?id=com.owncloud.android';
 		$this->defaultDocBaseUrl = 'https://doc.owncloud.com';
 		$this->defaultDocVersion = $version[0] . '.' . $version[1]; // used to generate doc links
 		$this->defaultSlogan = $this->l->t('Cloud storage made to trust.');
