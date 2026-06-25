@@ -20,7 +20,5 @@
  */
 print_unescaped(\str_replace('{link}', $_['link'], $l->t('Use the following link to reset your password: {link}')));
 print_unescaped("\n\n");
-// TRANSLATORS term at the end of a mail
-p($l->t("Cheers!"));
 ?>
 <?php print_unescaped($this->inc('plain.mail.footer'));
