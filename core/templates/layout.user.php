@@ -20,7 +20,7 @@
 		} ?>
 		<meta name="apple-mobile-web-app-capable" content="yes">
 		<meta name="apple-mobile-web-app-status-bar-style" content="black">
-		<meta name="apple-mobile-web-app-title" content="<?php p((!empty($_['application']) && $_['appid']!='files')? $_['application']:'ownCloud'); ?>">
+		<meta name="apple-mobile-web-app-title" content="<?php p((!empty($_['application']) && $_['appid']!='files')? $_['application']:$theme->getName()); ?>">
 		<meta name="mobile-web-app-capable" content="yes">
 		<meta name="theme-color" content="<?php p($theme->getMailHeaderColor()); ?>">
 		<link rel="icon" href="<?php print_unescaped(image_path($_['appid'], 'favicon.ico')); /* IE11+ supports png */ ?>">
@@ -50,7 +50,7 @@
 		<header role="banner">
 			<div id="header">
 				<a href="<?php print_unescaped(link_to('', 'index.php')); ?>" id="owncloud" tabindex="1">
-					<span class="logo-icon" role="img" aria-label="ownCloud Online"><!-- OC-A11Y-12: war <h1>, jetzt kein zweites Heading -->
+					<span class="logo-icon" role="img" aria-label="<?php p($theme->getName()); ?>"><!-- OC-A11Y-12: war <h1>, jetzt kein zweites Heading -->
 						<?php // print_unescaped($theme->getHTMLName()); ?>
 					</span>
 				</a>

@@ -383,7 +383,7 @@ class OC {
 
 			// render error page
 			$template = new OC_Template('', 'update.use-cli', 'guest');
-			$template->assign('productName', 'ownCloud'); // for now
+			$template->assign('productName', 'ownCloud.online');
 			$template->assign('version', OC_Util::getVersionString());
 			$template->assign('tooBig', $tooBig);
 
@@ -415,7 +415,7 @@ class OC {
 		// get third party apps
 		$ocVersion = \OCP\Util::getVersion();
 		$tmpl->assign('appsToUpgrade', $appManager->getAppsNeedingUpgrade($ocVersion));
-		$tmpl->assign('productName', 'ownCloud'); // for now
+		$tmpl->assign('productName', 'ownCloud.online');
 		$tmpl->assign('oldTheme', $oldTheme);
 		$tmpl->printPage();
 	}

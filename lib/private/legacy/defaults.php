@@ -64,14 +64,14 @@ class OC_Defaults {
 		$this->defaultEntity = 'BW-Tech GmbH'; /* e.g. company name, used for footers and copyright notices */
 		$this->defaultName = 'ownCloud.online'; /* short name, used when referring to the software */
 		$this->defaultTitle = 'ownCloud.online'; /* can be a longer name, for titles */
-		$this->defaultBaseUrl = 'https://owncloud.com';
-		$this->defaultSyncClientUrl = 'https://owncloud.com/desktop-app/';
-		$this->defaultiOSClientUrl = 'https://apps.apple.com/app/id1359583808';
-		$this->defaultiTunesAppId = '1359583808';
-		$this->defaultAndroidClientUrl = 'https://play.google.com/store/apps/details?id=com.owncloud.android';
+		$this->defaultBaseUrl = 'https://owncloud.online';
+		$this->defaultSyncClientUrl = 'https://owncloud.online/first-steps/';
+		$this->defaultiOSClientUrl = 'https://itunes.apple.com/de/app/owncloud-online/id1436996124?mt=8';
+		$this->defaultiTunesAppId = '1436996124';
+		$this->defaultAndroidClientUrl = 'https://play.google.com/store/apps/details?id=online.owncloud.com.Android';
 		$this->defaultDocBaseUrl = 'https://doc.owncloud.com';
 		$this->defaultDocVersion = $version[0] . '.' . $version[1]; // used to generate doc links
-		$this->defaultSlogan = $this->l->t('A safe home for all your data');
+		$this->defaultSlogan = $this->l->t('Cloud storage made to trust.');
 		$this->defaultLogoClaim = '';
 		$this->defaultMailHeaderColor = '#041e42'; /* header color of mail notifications */
 
