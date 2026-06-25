@@ -13,7 +13,7 @@
 <strong><?php p($theme->getName()); ?></strong> &ndash; <?php p($theme->getSlogan()); ?>
 <br><br>
 <?php p($l->t('A trademark of')); ?><br>
-<span style="color:#e2001a;font-weight:bold;">BW-TECH GMBH</span><br>
+<span style="color:#e6374b;font-weight:bold;">BW-TECH GMBH</span><br>
 IT Service für Systemintegration und Datensicherheit<br>
 Albert-Bassermann-Strasse 31, D-68782 Brühl<br>
 Phone: +49 6202 95323 - 41 / Fax: +49 6202 95323 &ndash; 99
