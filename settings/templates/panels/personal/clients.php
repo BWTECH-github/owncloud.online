@@ -15,10 +15,10 @@
 	<?php if (OC_Util::getEditionString() === OC_Util::EDITION_COMMUNITY): ?>
 		<p>
 			<?php print_unescaped($l->t('If you want to support the project
-			<a href="https://owncloud.com/contribute"
+			<a href="https://owncloud.online"
 			target="_blank" rel="noreferrer">join development</a>
 			or
-			<a href="https://owncloud.com/promote"
+			<a href="https://owncloud.online"
 			target="_blank" rel="noreferrer">spread the word</a>!'));?>
 		</p>
 	<?php endif; ?>
