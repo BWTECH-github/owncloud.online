@@ -74,6 +74,13 @@
 			#body-login .v-align span.error-wide ul{list-style:none;text-align:left;margin:0;padding:0;font-size:13px;color:#26384d;}
 			#body-login .v-align span.error-wide ul li{margin:0 0 4px;background:transparent !important;}
 			#body-login .v-align span.error-wide pre{text-align:left;background:#f5f7fa;border:1px solid #e3e8ef;border-radius:8px;padding:8px 10px;margin:8px 0 0;font-size:12px;color:#26384d;max-height:220px;overflow:auto;white-space:pre-wrap;word-break:break-word;}
+			/* Radios/Checkboxen in Gast-Formularen nicht auf 100% strecken (Login hat keine; Install/2FA schon) */
+			#body-login .v-align input[type="radio"],#body-login .v-align input[type="checkbox"]{width:auto !important;height:auto !important;display:inline-block !important;margin:0 6px 0 0 !important;vertical-align:middle;}
+			/* Erst-Setup-Wizard (installation.php): langes Formular nicht abschneiden -> Block-Layout, breiter, links, scrollbar */
+			html:has(#hasMySQL){overflow:auto !important;height:auto !important;}
+			html:has(#hasMySQL) #body-login{display:block !important;height:auto !important;min-height:100vh;overflow:visible !important;}
+			html:has(#hasMySQL) #body-login .wrapper{display:block !important;padding:24px 16px !important;}
+			html:has(#hasMySQL) #body-login .v-align{max-width:540px;margin:0 auto !important;text-align:left;}
 		</style>
 	</head>
 	<body id="<?php p($_['bodyid']);?>" <?php
