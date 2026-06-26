@@ -161,6 +161,10 @@ class Server {
 		$this->server->addPlugin(new \Sabre\DAV\Sync\Plugin());
 		$this->server->addPlugin(new LockPlugin(\OC::$server->getConfig(), \OC::$server->getGroupManager()));
 
+		// owncloud.online: bulk upload endpoint (POST /remote.php/dav/bulk) for many
+		// small files in one request. Self-guards on the request path.
+		$this->server->addPlugin(new \OCA\DAV\Upload\BulkUploadPlugin(\OC::$server->getUserSession()));
+
 		$fileLocksBackend = new FileLocksBackend($this->server->tree, false, OC::$server->getTimeFactory(), $isPublicAccess);
 		$this->server->addPlugin(new \OCA\DAV\Connector\Sabre\PublicDavLocksPlugin($fileLocksBackend, function ($uri) {
 			if (\strpos($uri, "public-files/") === 0) {
