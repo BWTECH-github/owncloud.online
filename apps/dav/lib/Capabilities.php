@@ -41,6 +41,7 @@ class Capabilities implements ICapability {
 		$cap = [
 			'dav' => [
 				'chunking' => '1.0',
+				'bulkupload' => '1.0',
 				'reports' => [
 					'search-files',
 				],
