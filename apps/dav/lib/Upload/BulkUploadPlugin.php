@@ -147,11 +147,16 @@ class BulkUploadPlugin extends ServerPlugin {
 			}
 
 			$info = $view->getFileInfo($path);
+			// Return the canonical OC-FileID (same format the DAV layer / PROPFIND
+			// uses: zero-padded numeric id + instance id), so the desktop client
+			// stores the same file id it would get from a PROPFIND and does not see
+			// the freshly uploaded file as changed on the next sync.
+			$ocFileId = \sprintf('%08d', $info->getId()) . \OC_Util::getInstanceId();
 			return [
 				'error' => false,
 				'etag' => $info->getEtag(),
 				'fileid' => $info->getId(),
-				'OC-FileID' => $info->getId(),
+				'OC-FileID' => $ocFileId,
 			];
 		} catch (ForbiddenException $e) {
 			return ['error' => true, 'message' => $e->getMessage()];
