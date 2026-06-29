@@ -47,6 +47,10 @@ class BulkUploadPlugin extends ServerPlugin {
 	 *  files; large files must use chunked upload. Guards against memory abuse. */
 	private const MAX_BODY_SIZE = 100 * 1024 * 1024; // 100 MiB
 
+	/** Maximum number of parts in a single request. Bounds the filesystem/DB
+	 *  operation fan-out so a tiny body cannot amplify into millions of writes. */
+	private const MAX_PARTS = 10000;
+
 	/** @var Server */
 	private $server;
 	/** @var IUserSession */
@@ -108,7 +112,14 @@ class BulkUploadPlugin extends ServerPlugin {
 
 		$response->setStatus(200);
 		$response->setHeader('Content-Type', 'application/json; charset=utf-8');
-		$response->setBody(\json_encode($results));
+		// X-File-Path (the result keys) are raw DAV byte strings and need not be valid
+		// UTF-8; substitute invalid sequences so json_encode cannot return false and
+		// emit an empty 200 body that hides every per-file result from the client.
+		$json = \json_encode($results, JSON_INVALID_UTF8_SUBSTITUTE);
+		if ($json === false) {
+			$json = \json_encode(['error' => true, 'message' => 'Could not encode bulk result']);
+		}
+		$response->setBody($json);
 		return false;
 	}
 
@@ -147,6 +158,13 @@ class BulkUploadPlugin extends ServerPlugin {
 			}
 
 			$info = $view->getFileInfo($path);
+			// getFileInfo() is typed FileInfo|bool and returns false when the cache could
+			// not be updated (object storage, scan race). Guard before dereferencing so
+			// one un-stat-able file returns a per-file error instead of a fatal that 500s
+			// the whole batch and discards the results already collected.
+			if ($info === false) {
+				return ['error' => true, 'message' => 'Stored but could not stat file'];
+			}
 			// Return the canonical OC-FileID (same format the DAV layer / PROPFIND
 			// uses: zero-padded numeric id + instance id), so the desktop client
 			// stores the same file id it would get from a PROPFIND and does not see
@@ -160,7 +178,9 @@ class BulkUploadPlugin extends ServerPlugin {
 			];
 		} catch (ForbiddenException $e) {
 			return ['error' => true, 'message' => $e->getMessage()];
-		} catch (\Exception $e) {
+		} catch (\Throwable $e) {
+			// \Throwable (not just \Exception) so a PHP \Error in the storage stack
+			// degrades to a per-file error rather than 500-ing the entire batch.
 			return ['error' => true, 'message' => $e->getMessage()];
 		}
 	}
@@ -209,8 +229,12 @@ class BulkUploadPlugin extends ServerPlugin {
 			throw new BadRequest('No multipart boundary found in body');
 		}
 		$len = \strlen($body);
+		$delimLen = \strlen($delimiter);
 		while ($pos !== false && $pos < $len) {
-			$pos += \strlen($delimiter);
+			if (\count($parts) >= self::MAX_PARTS) {
+				throw new BadRequest('Too many parts in bulk upload request');
+			}
+			$pos += $delimLen;
 			// End delimiter "--boundary--"
 			if (\substr($body, $pos, 2) === '--') {
 				break;
@@ -230,8 +254,23 @@ class BulkUploadPlugin extends ServerPlugin {
 
 			if (isset($headers['content-length'])) {
 				$bodyLen = (int)$headers['content-length'];
+				// The declared length must fit inside the body and the part must be
+				// followed by [CRLF +] the delimiter. Otherwise the client under- or
+				// over-declared it: reject instead of silently storing a truncated /
+				// over-read body, or crashing on an out-of-range strpos offset (which
+				// raises a ValueError on PHP 8 and 500s the whole request).
+				if ($bodyLen < 0 || $bodyStart + $bodyLen > $len) {
+					throw new BadRequest('Part content-length exceeds request body');
+				}
 				$partBody = \substr($body, $bodyStart, $bodyLen);
-				$next = \strpos($body, $delimiter, $bodyStart + $bodyLen);
+				$delimAt = $bodyStart + $bodyLen;
+				if (\substr($body, $delimAt, 2) === "\r\n") {
+					$delimAt += 2;
+				}
+				if (\substr($body, $delimAt, $delimLen) !== $delimiter) {
+					throw new BadRequest('Malformed multipart: part content-length does not match part extent');
+				}
+				$next = $delimAt;
 			} else {
 				// Fall back to scanning for the next delimiter (strips trailing CRLF).
 				$next = \strpos($body, $delimiter, $bodyStart);
