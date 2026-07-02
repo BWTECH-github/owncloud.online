@@ -31,6 +31,32 @@
  */
 
 try {
+	/**
+	 * Fast path: status.php is polled by every desktop/mobile client on connection
+	 * validation, yet the answer only changes on upgrades or maintenance toggles.
+	 * Serve the last known-good answer from APCu — keyed on config.php/version.php
+	 * mtimes, so occ upgrade (toggles maintenance in config.php) and code deploys
+	 * invalidate immediately — and skip the full bootstrap. Only a "green" state
+	 * (installed, no maintenance, no pending upgrade) is ever cached; anything else
+	 * always takes the full path below so upgrade/maintenance semantics stay exact.
+	 */
+	if (PHP_SAPI !== 'cli' && \function_exists('apcu_fetch')) {
+		$statusConfigFile = __DIR__ . '/config/config.php';
+		$statusVersionFile = __DIR__ . '/version.php';
+		if (@\is_file($statusConfigFile)) {
+			$statusCacheKey = 'oco_status_' . \md5(
+				__DIR__ . '|' . @\filemtime($statusConfigFile) . '|' . @\filesize($statusConfigFile) . '|' . @\filemtime($statusVersionFile)
+			);
+			$statusCached = \apcu_fetch($statusCacheKey, $statusCacheHit);
+			if ($statusCacheHit && \is_string($statusCached)) {
+				\header('Access-Control-Allow-Origin: *');
+				\header('Content-Type: application/json');
+				echo $statusCached;
+				return;
+			}
+		}
+	}
+
 	require_once __DIR__ . '/lib/base.php';
 
 	# show the version details based on config.php parameter,
@@ -46,7 +72,16 @@ try {
 	} else {
 		\header('Access-Control-Allow-Origin: *');
 		\header('Content-Type: application/json');
-		echo \json_encode($values);
+		$statusBody = \json_encode($values);
+		if (isset($statusCacheKey)
+			&& $values['installed'] === true
+			&& $values['maintenance'] === false
+			&& $values['needsDbUpgrade'] === false
+		) {
+			// short TTL as safety net for app-only upgrades that do not touch config.php
+			\apcu_store($statusCacheKey, $statusBody, 90);
+		}
+		echo $statusBody;
 	}
 } catch (\Throwable $ex) {
 	try {

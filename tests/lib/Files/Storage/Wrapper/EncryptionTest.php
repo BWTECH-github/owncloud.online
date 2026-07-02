@@ -1085,7 +1085,9 @@ class EncryptionTest extends Storage {
 
 		$sourceStorage->method('file_exists')
 			->willReturn(true);
-		$sourceStorage->expects($this->once())
+		// with encryption disabled and an unencrypted cache entry, fopen takes the
+		// fast passthrough and never probes the source storage cache or the header
+		$sourceStorage->expects($isEncrypted ? $this->once() : $this->never())
 			->method('getCache')
 			->willReturn($cache);
 

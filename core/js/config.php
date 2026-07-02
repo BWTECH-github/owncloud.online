@@ -41,9 +41,14 @@
 // Set the content type to Javascript
 \header("Content-type: text/javascript");
 
-// Disallow caching
+// The body is buffered below so we can emit an ETag: browsers then revalidate with
+// If-None-Match and get a cheap 304 instead of re-downloading and re-parsing the
+// whole config blob on every page load. Deliberately NO max-age: the payload
+// contains per-user identity data (oc_user, oc_isadmin, groups) under a URL whose
+// v= parameter is NOT user-specific — any freshness window would let a shared
+// browser serve user A's cached config to user B after a re-login. no-cache
+// forces revalidation on every use; the ETag turns that into a cheap 304.
 \header("Cache-Control: no-cache, must-revalidate");
-\header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
 
 // Enable l10n support
 $l = \OC::$server->getL10N('core');
@@ -272,7 +277,18 @@ $array['oc_appconfig'] = \json_encode($array['oc_appconfig']);
 $array['oc_config'] = \json_encode($array['oc_config']);
 $array['oc_defaults'] = \json_encode($array['oc_defaults']);
 
-// Echo it
+// Build the body in one string so we can derive an ETag from it
+$body = '';
 foreach ($array as  $setting => $value) {
-	echo("var ". $setting ."=".$value.";\n");
+	$body .= "var " . $setting . "=" . $value . ";\n";
 }
+
+$etag = '"' . \md5($body) . '"';
+\header('ETag: ' . $etag);
+
+if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && \trim($_SERVER['HTTP_IF_NONE_MATCH']) === $etag) {
+	\http_response_code(304);
+	return;
+}
+
+echo $body;
