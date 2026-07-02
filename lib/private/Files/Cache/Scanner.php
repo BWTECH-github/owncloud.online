@@ -278,7 +278,11 @@ class Scanner extends BasicEmitter implements IScanner {
 				return $fileId;
 			}
 
-			return $this->cache->put($path, $data);
+			// fileId === -1 means scanFile already looked the entry up and found none —
+			// put() would redo that lookup via getId() before deciding on insert.
+			// insert() handles the parallel-scanner race via its unique-constraint
+			// fallback, so calling it directly is safe and saves one SELECT per new file.
+			return $this->cache->insert($path, $data);
 		}
 
 		return -1;

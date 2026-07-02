@@ -48,6 +48,18 @@ class DefaultTokenProvider implements IProvider {
 	private $time;
 
 	/**
+	 * Request-lokales Memo für getToken(): der DAV-Login-Pfad fragt dasselbe Token
+	 * bis zu dreimal pro Request ab (isTokenPassword -> validateToken -> loginWithToken),
+	 * jeweils sha512 + SELECT. Nur Positiv-Treffer werden gemerkt (InvalidTokenException
+	 * nie, sonst bräche generateToken->getToken im selben Request), und jede
+	 * schreibende Operation invalidiert den Eintrag. Instanz-Property statt static,
+	 * damit langlebige Prozesse (occ, Cron) Cross-Prozess-Invalidierungen nicht
+	 * über die Prozesslebensdauer hinweg verdecken.
+	 * @var array<string, DefaultToken>
+	 */
+	private $tokenMemo = [];
+
+	/**
 	 * @param DefaultTokenMapper $mapper
 	 * @param ICrypto $crypto
 	 * @param IConfig $config
@@ -99,6 +111,7 @@ class DefaultTokenProvider implements IProvider {
 		$dbToken->setLastCheck($this->time->getTime());
 
 		$this->mapper->insert($dbToken);
+		$this->tokenMemo = [];
 
 		return $dbToken;
 	}
@@ -113,6 +126,7 @@ class DefaultTokenProvider implements IProvider {
 			throw new InvalidTokenException();
 		}
 		$this->mapper->update($token);
+		$this->tokenMemo = [];
 	}
 
 	/**
@@ -135,6 +149,7 @@ class DefaultTokenProvider implements IProvider {
 				['app' => __METHOD__, 'tokenId' => $token->getId(), 'now' => $now]
 			);
 			$this->mapper->update($token);
+			$this->tokenMemo = [];
 		}
 	}
 
@@ -159,8 +174,14 @@ class DefaultTokenProvider implements IProvider {
 	 * @return DefaultToken
 	 */
 	public function getToken($tokenId) {
+		$hashed = $this->hashToken($tokenId);
+		if (isset($this->tokenMemo[$hashed])) {
+			return $this->tokenMemo[$hashed];
+		}
 		try {
-			return $this->mapper->getToken($this->hashToken($tokenId));
+			$token = $this->mapper->getToken($hashed);
+			$this->tokenMemo[$hashed] = $token;
+			return $token;
 		} catch (DoesNotExistException $ex) {
 			throw new InvalidTokenException();
 		}
@@ -196,6 +217,7 @@ class DefaultTokenProvider implements IProvider {
 		/** @var DefaultToken $token */
 		$token->setPassword($this->encryptPassword($password, $tokenId));
 		$this->mapper->update($token);
+		$this->tokenMemo = [];
 	}
 
 	/**
@@ -209,6 +231,7 @@ class DefaultTokenProvider implements IProvider {
 			['app' => __METHOD__, 'token' => $this->hashToken($token)]
 		);
 		$this->mapper->invalidate($this->hashToken($token));
+		$this->tokenMemo = [];
 	}
 
 	/**
@@ -223,6 +246,7 @@ class DefaultTokenProvider implements IProvider {
 			['app' => __METHOD__, 'uid' => $user->getUID(), 'id' => $id]
 		);
 		$this->mapper->deleteById($user, $id);
+		$this->tokenMemo = [];
 	}
 
 	/**
@@ -236,6 +260,7 @@ class DefaultTokenProvider implements IProvider {
 		$olderThan = $this->time->getTime() - (int) $this->config->getSystemValue('session_lifetime', 60 * 20);
 		$this->logger->info('Invalidating tokens older than ' . \date('c', $olderThan), ['app' => 'cron']);
 		$this->mapper->invalidateOld($olderThan);
+		$this->tokenMemo = [];
 	}
 
 	/**

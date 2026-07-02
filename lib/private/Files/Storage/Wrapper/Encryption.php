@@ -417,6 +417,25 @@ class Encryption extends Wrapper {
 		}
 
 		$encryptionEnabled = $this->encryptionManager->isEnabled();
+
+		// Fast path for instances without active encryption: when the filecache knows
+		// the file and it is not encrypted (including no legacy-encrypted leftovers,
+		// encrypted is an int version so isEncrypted() covers >0), the header probe
+		// (an extra physical open+read of the first block) and the follow-up cache
+		// lookups can be skipped entirely — the function would end up at the plain
+		// passthrough at the bottom anyway. Files without a cache entry (fresh
+		// uploads, .part targets) and encrypted files keep taking the full path.
+		if (!$encryptionEnabled) {
+			$fastPathFile = OC_Util::stripPartialFileExtension($path);
+			$fastPathInfo = $this->getCache()->get($fastPathFile);
+			// ICache::get may return a CacheEntry or a plain array — read the
+			// encrypted flag via array access (encrypted is an int version, >0 means
+			// encrypted, so a truthy check covers legacy-encrypted leftovers too)
+			if ($fastPathInfo !== false && $fastPathInfo !== null && empty($fastPathInfo['encrypted'])) {
+				return $this->storage->fopen($path, $mode);
+			}
+		}
+
 		$shouldEncrypt = false;
 		$encryptionModule = null;
 		$header = $this->getHeader($path);

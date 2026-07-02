@@ -310,7 +310,11 @@ class Cache implements ICache {
 		}
 
 		$data['path'] = $file;
-		$data['parent'] = $this->getParentId($file);
+		if (!isset($data['parent'])) {
+			// Scanner::scanFile already provides the parent id it just resolved —
+			// re-selecting it here costs one extra query per newly scanned/uploaded file.
+			$data['parent'] = $this->getParentId($file);
+		}
 		$data['name'] = \OC_Util::basename($file);
 
 		list($queryParts, $params) = $this->buildParts($data);

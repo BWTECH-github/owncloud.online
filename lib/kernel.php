@@ -453,8 +453,12 @@ class OC {
 		if (!$session->exists('LAST_ACTIVITY')) {
 			// if this is a new session, invalidate any previously stored auth token.
 			// this could happen if the session disappears / expires in the server but the user
-			// didn't log out explicitly
-			if (\OC::$server->getUserSession() !== null) {
+			// didn't log out explicitly.
+			// Only worth doing when the client actually SENT a session cookie: a freshly
+			// generated session id cannot have an orphaned token, so cookie-less clients
+			// (DAV sync, owncloudcmd, CalDAV/CardDAV, status polls) would otherwise pay a
+			// guaranteed no-op DELETE on oc_authtoken on every single request.
+			if (isset($_COOKIE[\session_name()]) && \OC::$server->getUserSession() !== null) {
 				// web installer doesn't have a valid userSession at this point
 				\OC::$server->getUserSession()->invalidateSessionToken();
 			}

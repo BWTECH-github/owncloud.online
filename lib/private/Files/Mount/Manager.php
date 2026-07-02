@@ -73,18 +73,26 @@ class Manager implements IMountManager {
 		}
 
 		\OC_Hook::emit('OC_Filesystem', 'get_mountpoint', ['path' => $path]);
-		$foundMountPoint = '';
-		$mountPoints = \array_keys($this->mounts);
-		foreach ($mountPoints as $mountpoint) {
-			if (\strpos($path, $mountpoint) === 0 and \strlen($mountpoint) > \strlen($foundMountPoint)) {
-				$foundMountPoint = $mountpoint;
+		// The longest matching mount point wins. Mount points are stored with a
+		// trailing slash, so prefix matches are always segment-aligned — instead of
+		// scanning every mount (O(mounts) per lookup, and this runs for every path
+		// touched in a request) walk the path hierarchy deepest-first with hash
+		// lookups: O(path depth).
+		$current = $path;
+		while (true) {
+			$pos = \strrpos(\rtrim($current, '/'), '/');
+			if ($pos === false) {
+				break;
+			}
+			$current = \substr($current, 0, $pos + 1);
+			if (isset($this->mounts[$current])) {
+				return $this->mounts[$current];
+			}
+			if ($current === '/') {
+				break;
 			}
 		}
-		if (isset($this->mounts[$foundMountPoint])) {
-			return $this->mounts[$foundMountPoint];
-		} else {
-			return null;
-		}
+		return null;
 	}
 
 	/**
