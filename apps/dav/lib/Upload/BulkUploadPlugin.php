@@ -65,10 +65,12 @@ class BulkUploadPlugin extends ServerPlugin {
 	 */
 	public function initialize(Server $server) {
 		$this->server = $server;
-		// Priority 90 (< the default 100) so this runs before Sabre's Browser
-		// plugin POST handler, which would otherwise try to resolve the (nonexistent)
-		// "bulk" node and return 404 before we get a chance to handle the request.
-		$server->on('method:POST', [$this, 'httpPost'], 90);
+		// Priority 85: earlier than Sabre's Browser plugin (100), which would try to
+		// resolve the (nonexistent) "bulk" node and 404, AND earlier than app plugins
+		// that registered themselves at 90 — customgroups' CSVImportPlugin calls
+		// getNodeForPath() unguarded, so at equal priority the registration order
+		// decided whether bulk uploads worked at all.
+		$server->on('method:POST', [$this, 'httpPost'], 85);
 	}
 
 	/**
