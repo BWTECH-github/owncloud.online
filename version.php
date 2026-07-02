@@ -26,7 +26,7 @@
 // We only can count up. The 4. digit is only for the internal patch-level to trigger DB upgrades
 // between betas, final and RCs. This is _not_ the public version number. Reset minor/patch-level
 // when updating major/minor version number.
-$OC_Version = [11, 0, 8, 0];
+$OC_Version = [11, 0, 8, 1];
 
 // The human-readable string
 $OC_VersionString = '11.0.8';
