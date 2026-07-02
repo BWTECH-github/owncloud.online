@@ -38,18 +38,23 @@
   </FilesMatch>
 
   # Statische Bilder und Fonts eine Woche cachen
-  <FilesMatch "\.(png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|map)$">
+  <FilesMatch "\.(png|jpg|jpeg|gif|ico|woff|woff2|ttf|eot|map)$">
     Header      unset Cache-Control
     Header always set Cache-Control "max-age=604800"
+  </FilesMatch>
+
+  # SVG konservativer cachen: skriptfaehiges Format, kuerzeres Fenster
+  # begrenzt die Lebensdauer eines theoretisch vergifteten Cache-Eintrags
+  <FilesMatch "\.svg$">
+    Header      unset Cache-Control
+    Header always set Cache-Control "max-age=3600"
   </FilesMatch>
 </IfModule>
 
 <IfModule mod_php5.c>
-    php_value always_populate_raw_post_data -1
     php_value upload_max_filesize 513M
     php_value post_max_size 513M
     php_value memory_limit 512M
-    php_value mbstring.func_overload 0
     php_value default_charset 'UTF-8'
     php_value output_buffering 0
     <IfModule mod_env.c>
@@ -61,7 +66,6 @@
     php_value upload_max_filesize 513M
     php_value post_max_size 513M
     php_value memory_limit 512M
-    php_value mbstring.func_overload 0
     php_value default_charset 'UTF-8'
     php_value output_buffering 0
     <IfModule mod_env.c>
