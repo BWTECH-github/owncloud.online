@@ -109,6 +109,21 @@ class OC_API {
 	private static $isLoggedIn = false;
 
 	/**
+	 * Apps die für einen legacy-OCS-Routennamen registriert sind. Wird vom
+	 * Route-Cache genutzt, um bei einem Cache-Hit nur die Besitzer-Apps
+	 * (statt aller Apps) nachzuladen.
+	 *
+	 * @param string $name route name as built in register()
+	 * @return string[] app ids
+	 */
+	public static function getRouteApps($name) {
+		if (!isset(self::$actions[$name])) {
+			return [];
+		}
+		return \array_values(\array_unique(\array_column(self::$actions[$name], 'app')));
+	}
+
+	/**
 	 * registers an api call
 	 * @param string $method the http method
 	 * @param string $url the url to match

@@ -36,7 +36,9 @@ use OCP\Route\IRouter;
 use OCP\AppFramework\App;
 use OCP\Util;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
+use Symfony\Component\Routing\Matcher\CompiledUrlMatcher;
 use Symfony\Component\Routing\Matcher\UrlMatcher;
+use Symfony\Component\Routing\Generator\CompiledUrlGenerator;
 use Symfony\Component\Routing\Generator\UrlGenerator;
 use Symfony\Component\Routing\RequestContext;
 use Symfony\Component\Routing\RouteCollection;
@@ -63,6 +65,12 @@ class Router implements IRouter {
 	protected $logger;
 	/** @var RequestContext */
 	protected $context;
+	/** @var RouteCache|null */
+	protected $routeCache;
+	/** @var array|null geladener Cache-Inhalt (matcher/generator/routeApps) */
+	protected $routeCacheData;
+	/** @var bool true sobald ein Cache-Load versucht wurde */
+	protected $routeCacheChecked = false;
 
 	/**
 	 * @param ILogger $logger
@@ -277,7 +285,24 @@ class Router implements IRouter {
 			}
 			$this->loadRoutes('core');
 		} else {
+			// Voll-Load-Pfad (/, /login, /ocs/..., Public-Links, Avatare, cron):
+			// erst den kompilierten Routen-Cache versuchen — der matcht ohne die
+			// ~30 routes.php-Includes und lädt nur die Routen der Besitzer-App nach.
+			if ($this->matchWithCache($url)) {
+				return;
+			}
+			// Cache-Miss mit nutzbarem Cache: einmalig alle Apps laden, damit der
+			// Voll-Load vollständig ist (loadRoutes überspringt Apps, deren Code
+			// nicht geladen ist) und die kompilierten Tabellen persistiert werden
+			// können. Gleiche Gates wie der /core/-Zweig oben; alle Folge-Requests
+			// treffen dann den Cache.
+			if ($this->routeCache !== null && $this->routeCacheData === null
+				&& !\OC::$server->getConfig()->getSystemValue('maintenance', false) && !Util::needUpgrade()
+			) {
+				\OC_App::loadApps();
+			}
 			$this->loadRoutes();
+			$this->storeRouteCacheIfNeeded();
 		}
 
 		$matcher = new UrlMatcher($this->root, $this->context);
@@ -334,6 +359,16 @@ class Router implements IRouter {
 			}
 		}
 
+		$this->runRoute($parameters);
+	}
+
+	/**
+	 * Dispatch matched route parameters (shared by the classic and the cached path)
+	 *
+	 * @param array $parameters
+	 * @throws \Exception
+	 */
+	private function runRoute(array $parameters) {
 		\OC::$server->getEventLogger()->start('run_route', 'Run route');
 		if (isset($parameters['action'])) {
 			$action = $parameters['action'];
@@ -348,6 +383,222 @@ class Router implements IRouter {
 			throw new \Exception('no action available');
 		}
 		\OC::$server->getEventLogger()->end('run_route');
+	}
+
+	/**
+	 * Try to match+dispatch $url via the compiled route cache.
+	 *
+	 * Fail-open: false means "not handled" — the caller continues on the classic
+	 * full-load path, which reproduces the exact legacy behaviour (including the
+	 * final ResourceNotFoundException for unknown urls).
+	 *
+	 * @param string $url
+	 * @return bool true when the request was fully dispatched
+	 */
+	private function matchWithCache($url) {
+		$isOptionsPreflight = false;
+		$parameters = null;
+		// WICHTIG: dieser try deckt NUR Matching und Action-Rekonstruktion ab.
+		// Der eigentliche Dispatch (runRoute) passiert unten AUSSERHALB — seine
+		// Exceptions muessen exakt wie auf dem klassischen Pfad propagieren.
+		// Wuerde er hier drin laufen, ergaebe der \Throwable-Fallback ein
+		// "return false" und der Aufrufer wuerde den Handler ein ZWEITES Mal
+		// ausfuehren (doppelte Seiteneffekte bei state-changing OCS-Calls).
+		try {
+			if ($this->loaded) {
+				return false;
+			}
+			if ($this->getRouteCache() === null || $this->routeCacheData === null) {
+				return false;
+			}
+
+			$matcher = new CompiledUrlMatcher($this->routeCacheData['matcher'], $this->context);
+			$request = \OC::$server->getRequest();
+
+			if ($request->getMethod() === 'OPTIONS' && $request->getHeader('Access-Control-Request-Method')) {
+				try {
+					// mirrors the classic OPTIONS pre-flight check including its
+					// context mutation via object reference
+					$tempContext = $this->context;
+					$tempContext->setMethod($request->getHeader('Access-Control-Request-Method'));
+					$tempMatcher = new CompiledUrlMatcher($this->routeCacheData['matcher'], $tempContext);
+					$tempMatcher->match($url);
+					$isOptionsPreflight = true;
+				} catch (ResourceNotFoundException $e) {
+					if (\substr($url, -1) !== '/') {
+						try {
+							$parameters = $this->prepareCachedDispatch($matcher->match($url . '/'));
+							if ($parameters === null) {
+								return false;
+							}
+						} catch (ResourceNotFoundException $newException) {
+							// the cache holds the complete route table, so "not found"
+							// here means the classic path would throw as well — same
+							// exception semantics, without the full route load
+							// (ocs/v1.php relies on this to probe /ocs before /ocsapp)
+							throw $e;
+						}
+					} else {
+						throw $e;
+					}
+				}
+			} else {
+				try {
+					$matched = $matcher->match($url);
+				} catch (ResourceNotFoundException $e) {
+					if (\substr($url, -1) !== '/') {
+						try {
+							$matched = $matcher->match($url . '/');
+						} catch (ResourceNotFoundException $newException) {
+							throw $e;
+						}
+					} else {
+						throw $e;
+					}
+				}
+				$parameters = $this->prepareCachedDispatch($matched);
+				if ($parameters === null) {
+					return false;
+				}
+			}
+		} catch (ResourceNotFoundException $e) {
+			// complete table -> identical to the classic outcome
+			throw $e;
+		} catch (\Symfony\Component\Routing\Exception\MethodNotAllowedException $e) {
+			throw $e;
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'route cache match failed, falling back to full route load: ' . $e->getMessage(),
+				['app' => 'core']
+			);
+			return false;
+		}
+
+		if ($isOptionsPreflight) {
+			$response = new \OC\OCS\Result(null, 100, 'OPTIONS request successful');
+			$response = \OC_Response::setOptionsRequestHeaders($response);
+			\OC_API::respond($response, \OC_API::requestedFormat());
+			return true;
+		}
+
+		// ausserhalb jedes catch-alls — siehe Kommentar oben
+		$this->runRoute($parameters);
+		return true;
+	}
+
+	/**
+	 * Reconstruct the non-serializable action of a cache-matched route by loading
+	 * only the owning app's routes.
+	 *
+	 * @param array $parameters compiled matcher result (contains _route)
+	 * @return array|null dispatchable parameters, or null to fall back to the classic path
+	 */
+	private function prepareCachedDispatch(array $parameters) {
+		if (!isset($parameters['_route'])) {
+			return null;
+		}
+		$routeName = $parameters['_route'];
+
+		if (!isset($parameters['action']) && !isset($parameters['file'])) {
+			if (!\array_key_exists($routeName, $this->routeCacheData['routeApps'])) {
+				return null;
+			}
+			$owner = $this->routeCacheData['routeApps'][$routeName];
+			if ($owner === null) {
+				// legacy-OCS route without resolvable owner list
+				return null;
+			}
+
+			$owners = $owner === RouteCache::OWNER_CORE ? [] : (array)$owner;
+			foreach ($owners as $app) {
+				if (!\OC_App::isAppLoaded($app)) {
+					\OC_App::loadApp($app);
+				}
+				$this->loadRoutes($app);
+			}
+			if ($owners === []) {
+				// core/settings routes are (re-)registered by any loadRoutes() call
+				$this->loadRoutes('core');
+			}
+
+			$liveRoute = $this->root->get($routeName);
+			if ($liveRoute === null && isset($this->collections['ocs'])) {
+				// legacy OCS routes live in the 'ocs' collection and are only merged
+				// into root on a full load
+				$liveRoute = $this->collections['ocs']->get($routeName);
+			}
+			if ($liveRoute === null) {
+				return null;
+			}
+
+			$liveDefaults = $liveRoute->getDefaults();
+			if (isset($liveDefaults['action'])) {
+				$parameters['action'] = $liveDefaults['action'];
+			} elseif (isset($liveDefaults['file'])) {
+				$parameters['file'] = $liveDefaults['file'];
+			} else {
+				return null;
+			}
+		}
+
+		return $parameters;
+	}
+
+	/**
+	 * Lazily set up the route cache and load its payload for the current signature.
+	 *
+	 * @return RouteCache|null null when the cache must not be used
+	 */
+	private function getRouteCache() {
+		if ($this->routeCacheChecked) {
+			return $this->routeCache;
+		}
+		$this->routeCacheChecked = true;
+		try {
+			$cache = new RouteCache();
+			if (!$cache->isUsable()) {
+				return null;
+			}
+			$this->routeCacheData = $cache->load($cache->getSignature($this->getRoutingFiles()));
+			$this->routeCache = $cache;
+			return $cache;
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'route cache unavailable: ' . $e->getMessage(),
+				['app' => 'core']
+			);
+			$this->routeCache = null;
+			return null;
+		}
+	}
+
+	/**
+	 * Persist the compiled route tables after a COMPLETE full load (never after a
+	 * partial one where apps were skipped because they were not loaded yet).
+	 */
+	private function storeRouteCacheIfNeeded() {
+		try {
+			if (!$this->loaded || $this->routeCache === null || $this->routeCacheData !== null) {
+				return;
+			}
+			foreach ($this->getRoutingFiles() as $app => $file) {
+				if (!isset($this->loadedApps[$app])) {
+					return;
+				}
+			}
+			$this->routeCache->store(
+				$this->routeCache->getSignature($this->getRoutingFiles()),
+				$this->root,
+				$this->collections
+			);
+			// mark as present so this request doesn't try again
+			$this->routeCacheData = ['matcher' => [], 'generator' => [], 'routeApps' => []];
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'route cache store failed: ' . $e->getMessage(),
+				['app' => 'core']
+			);
+		}
 	}
 
 	/**
@@ -377,12 +628,31 @@ class Router implements IRouter {
 		$parameters = [],
 		$absolute = false
 	) {
+		$referenceType = UrlGenerator::ABSOLUTE_URL;
+		if ($absolute === false) {
+			$referenceType = UrlGenerator::ABSOLUTE_PATH;
+		}
+
+		// As long as the routes were not fully loaded anyway, the compiled generator
+		// from the route cache answers without including a single routes.php.
+		if (!$this->loaded) {
+			try {
+				if ($this->getRouteCache() !== null && $this->routeCacheData !== null && $this->routeCacheData['generator'] !== []) {
+					$generator = new CompiledUrlGenerator($this->routeCacheData['generator'], $this->context);
+					return $generator->generate($name, $parameters, $referenceType);
+				}
+			} catch (RouteNotFoundException $e) {
+				// unknown in the cache — fall through to the classic full load
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					'route cache generate failed, falling back: ' . $e->getMessage(),
+					['app' => 'core']
+				);
+			}
+		}
+
 		$this->loadRoutes();
 		try {
-			$referenceType = UrlGenerator::ABSOLUTE_URL;
-			if ($absolute === false) {
-				$referenceType = UrlGenerator::ABSOLUTE_PATH;
-			}
 			return $this->getGenerator()->generate($name, $parameters, $referenceType);
 		} catch (RouteNotFoundException $e) {
 			$this->logger->logException($e);
