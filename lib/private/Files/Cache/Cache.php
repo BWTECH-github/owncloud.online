@@ -681,28 +681,35 @@ class Cache implements ICache {
 		];
 		switch ($platformName) {
 			case 'oracle':
+				// Prefix-only replace (see the mysql/postgresql branch below). Oracle
+				// SUBSTR + LENGTH are character-based, and || concatenates.
 				if (\intval($versionArray[0]) < 12) {
 					$sql = 'UPDATE `*PREFIX*filecache`
 						SET `storage` = :targetStorageId,
-							`path_hash` = LOWER(dbms_obfuscation_toolkit.md5(input => UTL_RAW.cast_to_raw(REPLACE(`path`, :sourcePath, :targetPath)))),
-							`path` = REPLACE(`path`, :sourcePath, :targetPath)
+							`path_hash` = LOWER(dbms_obfuscation_toolkit.md5(input => UTL_RAW.cast_to_raw(:targetPath || SUBSTR(`path`, LENGTH(:sourcePath) + 1)))),
+							`path` = :targetPath || SUBSTR(`path`, LENGTH(:sourcePath) + 1)
 						WHERE `storage` = :sourceStorageId
 						AND `path` LIKE :sourcePathLike';
 				} else {
 					$sql = 'UPDATE `*PREFIX*filecache`
 						SET `storage` = :targetStorageId,
-							`path_hash` = LOWER(standard_hash(REPLACE(`path`, :sourcePath, :targetPath), \'MD5\')),
-							`path` = REPLACE(`path`, :sourcePath, :targetPath)
+							`path_hash` = LOWER(standard_hash(:targetPath || SUBSTR(`path`, LENGTH(:sourcePath) + 1), \'MD5\')),
+							`path` = :targetPath || SUBSTR(`path`, LENGTH(:sourcePath) + 1)
 						WHERE `storage` = :sourceStorageId
 						AND `path` LIKE :sourcePathLike';
 				}
 				break;
 			case 'mysql':
 			case 'postgresql':
+				// Replace only the leading source prefix, not every occurrence:
+				// REPLACE() would also rewrite a descendant path that repeats the
+				// prefix deeper (e.g. moving /foo, the child /foo/sub/foo/y became
+				// /bar/sub/bar/y). CHAR_LENGTH (not byte LENGTH) so multibyte prefixes
+				// line up with SUBSTR's character indexing.
 				$sql = 'UPDATE `*PREFIX*filecache`
 					SET `storage` = :targetStorageId,
-						`path_hash` = MD5(REPLACE(`path`, :sourcePath, :targetPath)),
-						`path` = REPLACE(`path`, :sourcePath, :targetPath)
+						`path_hash` = MD5(CONCAT(:targetPath, SUBSTR(`path`, CHAR_LENGTH(:sourcePath) + 1))),
+						`path` = CONCAT(:targetPath, SUBSTR(`path`, CHAR_LENGTH(:sourcePath) + 1))
 					WHERE `storage` = :sourceStorageId
 					AND `path` LIKE :sourcePathLike';
 				break;
