@@ -285,13 +285,21 @@ class OC_Helper {
 	 *
 	 * @param resource $source
 	 * @param resource $target
+	 * @param int $bufSize read/write buffer size in bytes. Defaults to 8 KiB to keep
+	 *        memory low for the many small copies across the codebase. Large-file
+	 *        writers (e.g. the DAV upload/assembly path) should pass a much larger
+	 *        value: an 11 GB assembly at 8 KiB is ~1.44M userland fread/fwrite
+	 *        iterations, which a MiB-sized buffer cuts by ~2-3 orders of magnitude.
 	 * @return array the number of bytes copied and result
 	 */
-	public static function streamCopy($source, $target) {
+	public static function streamCopy($source, $target, $bufSize = 8192) {
 		if (!$source or !$target) {
 			return [0, false];
 		}
-		$bufSize = 8192;
+		$bufSize = (int)$bufSize;
+		if ($bufSize < 1) {
+			$bufSize = 8192;
+		}
 		$result = true;
 		$count = 0;
 		while (!\feof($source)) {

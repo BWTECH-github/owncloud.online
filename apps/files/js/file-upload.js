@@ -1038,7 +1038,16 @@ OC.Uploader.prototype = _.extend({
 				type: 'PUT',
 				dropZone: options.dropZone, // restrict dropZone to content div
 				autoUpload: false,
-				sequentialUploads: true,
+				// Upload several files at once instead of strictly one-at-a-time.
+				// Over HTTP/2 these multiplex on a single connection (no extra
+				// TCP/TLS handshakes), so many-small-files uploads finish roughly
+				// limitConcurrentUploads× faster. The conflict/autorename pass still
+				// gathers the whole selection up front (see the add() callback), so
+				// only the upload dispatch becomes concurrent. Keep the cap modest so
+				// a drop of a few multi-GB files does not open that many parallel
+				// multi-GB transfers and starve php-fpm workers.
+				sequentialUploads: false,
+				limitConcurrentUploads: options.limitConcurrentUploads || 4,
 				maxRetries: options.uploadStallRetries || 3,
 				retryTimeout: 500,
 				//singleFileUploads is on by default, so the data.files array will always have length 1
@@ -1205,7 +1214,17 @@ OC.Uploader.prototype = _.extend({
 				},
 				fail: function(e, data) {
 					var upload = self.getUpload(data);
-					if (upload && upload.data && upload.data.stalled) {
+					// Only chunked uploads can be resumed: the retry below lists the
+					// already-uploaded chunks under uploads/<uid>/<id>. A non-chunked
+					// single PUT — every public-link upload, and any file below
+					// maxChunkSize — has nothing to resume, and OC.getCurrentUser().uid
+					// is null on a public page. Entering this branch there produced a
+					// bogus PROPFIND /remote.php/dav/uploads/null/<id> whose 401 tripped
+					// the global ajax handler into a 5-second full-page reload. Guard it
+					// so non-chunked/anonymous failures fall through to the normal,
+					// non-reloading fail handling below.
+					if (upload && upload.data && upload.data.stalled
+						&& upload.data.isChunked && OC.getCurrentUser().uid) {
 						self.log('retry', e, upload);
 						// jQuery Widget Factory uses "namespace-widgetname" since version 1.10.0:
 						var fu = $(this).data('blueimp-fileupload') || $(this).data('fileupload'),

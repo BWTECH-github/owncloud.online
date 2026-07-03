@@ -204,7 +204,12 @@ class File extends Node implements IFile, IFileNode {
 				throw new Exception('Could not write file contents');
 			}
 
-			list($count, $result) = \OC_Helper::streamCopy($data, $target);
+			// Use a large copy buffer for the upload/assembly write. The default 8 KiB
+			// would mean ~1.44M userland iterations for an 11 GB chunk assembly; a
+			// MiB-sized buffer collapses that and shortens the window in which a
+			// proxy/fpm wall-clock timeout can fire. Tunable via dav.upload_copy_buffer_size.
+			$copyBufferSize = (int)\OC::$server->getConfig()->getSystemValue('dav.upload_copy_buffer_size', 1024 * 1024);
+			list($count, $result) = \OC_Helper::streamCopy($data, $target, $copyBufferSize);
 			\fclose($target);
 
 			try {

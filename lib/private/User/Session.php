@@ -668,6 +668,26 @@ class Session implements IUserSession, Emitter {
 		$name = isset($request->server['HTTP_USER_AGENT']) ? $request->server['HTTP_USER_AGENT'] : 'unknown browser';
 		try {
 			$sessionId = $this->session->getId();
+			// The session auth token is derived deterministically from the session id
+			// (hashToken(sessionId)), so a token for this session may already exist —
+			// e.g. a parallel request on the same session cookie created it, or a
+			// second createSessionToken call happens within the same request (tryAuth-
+			// ModuleLogin and OC_App::loadApps both call this path). Reuse the existing
+			// token instead of blindly INSERTing a duplicate that only trips the unique
+			// index on oc_authtoken.token and spams the log with a swallowed exception.
+			try {
+				$existingToken = $this->tokenProvider->getToken($sessionId);
+				if ($existingToken->getUID() === $uid) {
+					// Same session already holds a token for this user. Reuse it (just
+					// bump its activity) rather than INSERTing a duplicate. If the uid
+					// differs — a session id reused for another user — fall through and
+					// let generateToken run; a collision there keeps the prior behaviour.
+					$this->tokenProvider->updateTokenActivity($existingToken);
+					return true;
+				}
+			} catch (InvalidTokenException $ex) {
+				// No token for this session yet — create one below.
+			}
 			$pwd = $this->getPassword($password);
 			$this->tokenProvider->generateToken($sessionId, $uid, $loginName, $pwd, $name);
 			return true;
@@ -677,13 +697,15 @@ class Session implements IUserSession, Emitter {
 			$this->logger->logException($ex, ['app' => __METHOD__]);
 			return false;
 		} catch (UniqueConstraintViolationException $ex) {
-			$this->logger->error(
-				'There are code paths that trigger the generation of an auth ' .
-				'token for the same session twice. We log this to trace the code ' .
-				'paths. Please send all log lines belonging to this request id.',
+			// Benign race: another concurrent request on the same session created the
+			// token between our getToken() check and the INSERT above. The session
+			// already has a valid auth token, so this is expected under parallel
+			// same-session requests — log at debug only, do not spam error + stacktrace.
+			$this->logger->debug(
+				'Session auth token was created concurrently for the same session; ' .
+				'reusing the existing token.',
 				['app' => __METHOD__]
 			);
-			$this->logger->logException($ex, ['app' => __METHOD__]);
 			return true; // the session already has an auth token, go ahead.
 		}
 	}

@@ -103,13 +103,37 @@ class BulkUploadPlugin extends ServerPlugin {
 
 		$view = new \OC\Files\View('/' . $user->getUID() . '/files');
 		$results = [];
-		foreach ($parts as $part) {
-			$path = isset($part['headers']['x-file-path']) ? $part['headers']['x-file-path'] : null;
-			if ($path === null || $path === '') {
-				// Can't key the result without a path; skip defensively.
-				continue;
+		// Defer etag/size propagation to the end of the batch. Without this, every
+		// stored file immediately UPDATEs its whole parent-folder chain (Propagator::
+		// propagateChange), so N files dropped into one folder cause N propagation
+		// UPDATE storms in a single request. beginBatch()/commitBatch() collapse the
+		// common single-target-folder case to ~2 grouped UPDATEs total. The per-file
+		// etag/fileid returned below comes from the file's own scanned row, not from
+		// folder propagation, so deferring the folder update does not corrupt them.
+		// Files may land in different storages (a received share has its own
+		// SharedPropagator), so batches are tracked per storage and each is committed.
+		$batchedPropagators = [];
+		try {
+			foreach ($parts as $part) {
+				$path = isset($part['headers']['x-file-path']) ? $part['headers']['x-file-path'] : null;
+				if ($path === null || $path === '') {
+					// Can't key the result without a path; skip defensively.
+					continue;
+				}
+				$this->beginPropagatorBatch($view, $path, $batchedPropagators);
+				$results[$path] = $this->storeFile($view, $part);
 			}
-			$results[$path] = $this->storeFile($view, $part);
+		} finally {
+			// Commit every batch we opened, even if a store threw, so folder sizes/etags
+			// are flushed and the connection is not left mid-batch. A commit failure on
+			// one storage must not swallow the collected results or block the others.
+			foreach ($batchedPropagators as $propagator) {
+				try {
+					$propagator->commitBatch();
+				} catch (\Throwable $e) {
+					\OC::$server->getLogger()->logException($e, ['app' => 'dav_bulkupload']);
+				}
+			}
 		}
 
 		$response->setStatus(200);
@@ -123,6 +147,37 @@ class BulkUploadPlugin extends ServerPlugin {
 		}
 		$response->setBody($json);
 		return false;
+	}
+
+	/**
+	 * Ensure the propagator for the storage that will hold $path is in batch mode,
+	 * tracking it so it gets committed once. Resolving the storage for a not-yet-
+	 * existing file works because the mount is matched by path prefix. If the mount
+	 * cannot be resolved, we simply do not batch that file and it falls back to
+	 * immediate per-file propagation — correct, just not batched.
+	 *
+	 * @param array<int, \OCP\Files\Cache\IPropagator> $batchedPropagators keyed by spl_object_id
+	 */
+	private function beginPropagatorBatch(\OC\Files\View $view, string $path, array &$batchedPropagators): void {
+		try {
+			$mount = $view->getMount($path);
+			if ($mount === null) {
+				return;
+			}
+			$storage = $mount->getStorage();
+			if ($storage === null) {
+				return;
+			}
+			$propagator = $storage->getPropagator();
+			$key = \spl_object_id($propagator);
+			if (!isset($batchedPropagators[$key])) {
+				$propagator->beginBatch();
+				$batchedPropagators[$key] = $propagator;
+			}
+		} catch (\Throwable $e) {
+			// Non-fatal: without a batch this file just propagates immediately.
+			\OC::$server->getLogger()->logException($e, ['app' => 'dav_bulkupload']);
+		}
 	}
 
 	/**
