@@ -327,31 +327,20 @@ class Cache implements ICache {
 		$values = \array_combine($queryParts, $params);
 
 		$connection = \OC::$server->getDatabaseConnection();
-		// Direkter INSERT: neue Einträge sind hier der Normalfall. Spart den
-		// UPDATE-Versuch des generischen upsert und das anschließende SELECT der id
-		// (lastInsertId kostet keinen weiteren Roundtrip).
-		//
-		// ABER: der INSERT provoziert bei einem parallelen Scanner bewusst eine
-		// UniqueConstraintViolation. Auf PostgreSQL/Oracle bricht ein
-		// fehlgeschlagenes Statement die GESAMTE umgebende Transaktion ab (z.B. den
-		// Batch von Scanner::handleChildren), sodass der upsert-Fallback darunter
-		// scheitert und der ganze Ordner-Scan verloren geht. Nur auf Plattformen,
-		// die ein fehlgeschlagenes Statement isolieren (MySQL/MariaDB, SQLite),
-		// darf der Direkt-INSERT laufen; sonst direkt per upsert (UPDATE-first).
-		$dbType = \OC::$server->getConfig()->getSystemValue('dbtype', 'sqlite');
-		if ($dbType !== 'pgsql' && $dbType !== 'oci') {
-			try {
-				$qb = $connection->getQueryBuilder();
-				$qb->insert('filecache');
-				foreach ($values as $column => $value) {
-					$qb->setValue($column, $qb->createNamedParameter($value));
-				}
-				$qb->execute();
-				return (int)$connection->lastInsertId('*PREFIX*filecache');
-			} catch (UniqueConstraintViolationException $e) {
-				// Eintrag existiert bereits (z.B. paralleler Scanner):
-				// wie bisher per upsert aktualisieren und id nachschlagen
+		try {
+			// Direkter INSERT: neue Einträge sind hier der Normalfall. Spart den
+			// UPDATE-Versuch des generischen upsert und das anschließende
+			// SELECT der id (lastInsertId kostet keinen weiteren Roundtrip).
+			$qb = $connection->getQueryBuilder();
+			$qb->insert('filecache');
+			foreach ($values as $column => $value) {
+				$qb->setValue($column, $qb->createNamedParameter($value));
 			}
+			$qb->execute();
+			return (int)$connection->lastInsertId('*PREFIX*filecache');
+		} catch (UniqueConstraintViolationException $e) {
+			// Eintrag existiert bereits (z.B. paralleler Scanner):
+			// wie bisher per upsert aktualisieren und id nachschlagen
 		}
 
 		// Update or insert this to the filecache
@@ -681,35 +670,28 @@ class Cache implements ICache {
 		];
 		switch ($platformName) {
 			case 'oracle':
-				// Prefix-only replace (see the mysql/postgresql branch below). Oracle
-				// SUBSTR + LENGTH are character-based, and || concatenates.
 				if (\intval($versionArray[0]) < 12) {
 					$sql = 'UPDATE `*PREFIX*filecache`
 						SET `storage` = :targetStorageId,
-							`path_hash` = LOWER(dbms_obfuscation_toolkit.md5(input => UTL_RAW.cast_to_raw(:targetPath || SUBSTR(`path`, LENGTH(:sourcePath) + 1)))),
-							`path` = :targetPath || SUBSTR(`path`, LENGTH(:sourcePath) + 1)
+							`path_hash` = LOWER(dbms_obfuscation_toolkit.md5(input => UTL_RAW.cast_to_raw(REPLACE(`path`, :sourcePath, :targetPath)))),
+							`path` = REPLACE(`path`, :sourcePath, :targetPath)
 						WHERE `storage` = :sourceStorageId
 						AND `path` LIKE :sourcePathLike';
 				} else {
 					$sql = 'UPDATE `*PREFIX*filecache`
 						SET `storage` = :targetStorageId,
-							`path_hash` = LOWER(standard_hash(:targetPath || SUBSTR(`path`, LENGTH(:sourcePath) + 1), \'MD5\')),
-							`path` = :targetPath || SUBSTR(`path`, LENGTH(:sourcePath) + 1)
+							`path_hash` = LOWER(standard_hash(REPLACE(`path`, :sourcePath, :targetPath), \'MD5\')),
+							`path` = REPLACE(`path`, :sourcePath, :targetPath)
 						WHERE `storage` = :sourceStorageId
 						AND `path` LIKE :sourcePathLike';
 				}
 				break;
 			case 'mysql':
 			case 'postgresql':
-				// Replace only the leading source prefix, not every occurrence:
-				// REPLACE() would also rewrite a descendant path that repeats the
-				// prefix deeper (e.g. moving /foo, the child /foo/sub/foo/y became
-				// /bar/sub/bar/y). CHAR_LENGTH (not byte LENGTH) so multibyte prefixes
-				// line up with SUBSTR's character indexing.
 				$sql = 'UPDATE `*PREFIX*filecache`
 					SET `storage` = :targetStorageId,
-						`path_hash` = MD5(CONCAT(:targetPath, SUBSTR(`path`, CHAR_LENGTH(:sourcePath) + 1))),
-						`path` = CONCAT(:targetPath, SUBSTR(`path`, CHAR_LENGTH(:sourcePath) + 1))
+						`path_hash` = MD5(REPLACE(`path`, :sourcePath, :targetPath)),
+						`path` = REPLACE(`path`, :sourcePath, :targetPath)
 					WHERE `storage` = :sourceStorageId
 					AND `path` LIKE :sourcePathLike';
 				break;
