@@ -152,7 +152,7 @@ class TemplateLayout extends \OC_Template {
 		}
 		foreach ($jsFiles as $info) {
 			$web = $info[1];
-			$file = $info[2];
+			$file = self::preferMinified($info);
 			$this->append('jsfiles', $web.'/'.$file . '?v=' . self::$versionHash);
 		}
 
@@ -162,14 +162,54 @@ class TemplateLayout extends \OC_Template {
 		$this->assign('printcssfiles', []);
 		foreach ($cssFiles as $info) {
 			$web = $info[1];
-			$file = $info[2];
+			// Detect the print variant on the ORIGINAL name — a foo.print.css that
+			// gets swapped to foo.print.min.css must still land in the print bucket.
+			$isPrint = \substr($info[2], -\strlen('print.css')) === 'print.css';
+			$file = self::preferMinified($info);
 
-			if (\substr($file, -\strlen('print.css')) === 'print.css') {
+			if ($isPrint) {
 				$this->append('printcssfiles', $web.'/'.$file . '?v=' . self::$versionHash);
 			} else {
 				$this->append('cssfiles', $web.'/'.$file . '?v=' . self::$versionHash);
 			}
 		}
+	}
+
+	/**
+	 * Prefer a pre-generated `.min.js` / `.min.css` sibling when one exists on disk.
+	 *
+	 * Scoped to assets resolved against SERVERROOT, i.e. core and settings only:
+	 * app-provided and third-party resources resolve with their own root and are
+	 * returned untouched, so no per-app allowlist is needed. When no minified
+	 * sibling exists (e.g. a development checkout that never ran `make minify-assets`)
+	 * the original file is returned, so behaviour is identical to before. The global
+	 * `?v=` cache-busting hash is applied by the caller to whatever is returned.
+	 *
+	 * @param array{0:string,1:string,2:string} $info [root, webRoot, relFile]
+	 * @return string the relative file to emit (possibly the .min variant)
+	 */
+	private static function preferMinified(array $info): string {
+		$root = $info[0];
+		$file = $info[2];
+		if ($root !== \OC::$SERVERROOT) {
+			return $file;
+		}
+		if (\substr($file, -3) === '.js') {
+			$ext = '.js';
+		} elseif (\substr($file, -4) === '.css') {
+			$ext = '.css';
+		} else {
+			return $file;
+		}
+		$minSuffix = '.min' . $ext;
+		if (\substr($file, -\strlen($minSuffix)) === $minSuffix) {
+			return $file;
+		}
+		$minFile = \substr($file, 0, -\strlen($ext)) . $minSuffix;
+		if (\is_file($root . '/' . $minFile)) {
+			return $minFile;
+		}
+		return $file;
 	}
 
 	/**
