@@ -142,6 +142,30 @@ class BulkUploadPlugin extends ServerPlugin {
 				return ['error' => true, 'message' => 'Checksum mismatch'];
 			}
 
+			// Enforce the share permission mask. file_put_contents/mkdir/touch below
+			// write straight through the storage and — unlike fopen('wb') on a
+			// SharedStorage — do NOT re-check the recipient's permissions. Without
+			// this gate a read-only share recipient could create or overwrite files
+			// in the owner's storage through the bulk endpoint.
+			if ($view->file_exists($path)) {
+				if (!$view->isUpdatable($path)) {
+					return ['error' => true, 'message' => 'Permission denied'];
+				}
+			} else {
+				// walk up to the nearest existing ancestor and require create rights
+				// there (intermediate directories are created via mkdir below)
+				$checkDir = \dirname($path);
+				while ($checkDir !== '' && $checkDir !== '.' && $checkDir !== '/' && !$view->file_exists($checkDir)) {
+					$checkDir = \dirname($checkDir);
+				}
+				if ($checkDir === '' || $checkDir === '.') {
+					$checkDir = '/';
+				}
+				if (!$view->isCreatable($checkDir)) {
+					return ['error' => true, 'message' => 'Permission denied'];
+				}
+			}
+
 			// Make sure the parent collection exists.
 			$dir = \dirname($path);
 			if ($dir !== '' && $dir !== '.' && $dir !== '/' && !$view->is_dir($dir)) {
