@@ -922,9 +922,12 @@ class SessionTest extends TestCase {
 		$session->expects($this->once())
 			->method('getId')
 			->will($this->returnValue($sessionId));
-		$this->tokenProvider->expects($this->once())
+		// getToken is now called twice: once for the idempotency pre-check on the
+		// session id (miss → InvalidTokenException, so a new token is created), and
+		// once inside getPassword() on the supplied password (also a miss here).
+		$this->tokenProvider->expects($this->exactly(2))
 			->method('getToken')
-			->with($password)
+			->withConsecutive([$sessionId], [$password])
 			->will($this->throwException(new InvalidTokenException()));
 
 		$this->tokenProvider->expects($this->once())
@@ -980,10 +983,18 @@ class SessionTest extends TestCase {
 		$session->expects($this->once())
 			->method('getId')
 			->will($this->returnValue($sessionId));
-		$this->tokenProvider->expects($this->once())
+		// getToken is called twice: first the idempotency pre-check on the session id
+		// (miss → InvalidTokenException), then inside getPassword() on the supplied
+		// password, which here resolves to an existing token carrying the real password.
+		$this->tokenProvider->expects($this->exactly(2))
 			->method('getToken')
-			->with($password)
-			->will($this->returnValue($token));
+			->withConsecutive([$sessionId], [$password])
+			->willReturnCallback(function ($arg) use ($sessionId, $token) {
+				if ($arg === $sessionId) {
+					throw new InvalidTokenException();
+				}
+				return $token;
+			});
 		$this->tokenProvider->expects($this->once())
 			->method('getPassword')
 			->with($token, $password)

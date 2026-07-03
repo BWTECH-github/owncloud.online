@@ -102,6 +102,19 @@ class Checksum extends Wrapper {
 			return self::PATH_NEW_OR_UPDATED;
 		}
 
+		// Chunk-upload parts live under the home storage's "uploads/" area and are
+		// deleted immediately after the final file is assembled. They enter the
+		// cache without a checksum, which would otherwise make every assembly read
+		// re-hash the chunk AND write that throwaway checksum back to filecache per
+		// chunk in onClose() — ~1100 pointless UPDATEs plus extra hash passes for an
+		// 11 GB upload, in the exact window where the assembly is racing a timeout.
+		// The chunk checksum is never consumed (the assembled file is checksummed on
+		// its own .part write, which is a "files/" path handled above), so never
+		// require one for these ephemeral paths.
+		if ($this->instanceOfStorage(IHomeStorage::class) && \substr($path, 0, 8) === 'uploads/') {
+			return self::NOT_REQUIRED;
+		}
+
 		// file could be in cache but without checksum for example
 		// if mounted from ext. storage
 		$cache = $this->getCache($path);
