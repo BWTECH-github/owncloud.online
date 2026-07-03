@@ -172,6 +172,10 @@ class BulkUploadPlugin extends ServerPlugin {
 				$view->mkdir($dir);
 			}
 
+			// No explicit locking here: View::file_put_contents() already takes the
+			// shared→exclusive→shared lock dance around the write itself. Wrapping it in
+			// an outer exclusive lock self-deadlocks (the inner acquire then sees a
+			// conflicting exclusive lock held by the same request and throws).
 			if ($view->file_put_contents($path, $part['body']) === false) {
 				return ['error' => true, 'message' => 'Could not write file'];
 			}
