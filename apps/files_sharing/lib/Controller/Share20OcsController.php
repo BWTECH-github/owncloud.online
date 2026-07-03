@@ -780,23 +780,18 @@ class Share20OcsController extends OCSController {
 			$reshares = false;
 		}
 
-		// Fetch shares for every child node and every requested type in ONE batched
-		// query (per provider) instead of getSharesBy() per node per type — a nested
-		// N+1 when listing a folder's shares (?subfiles=true). getAllSharesBy() is the
-		// same query the DAV SharesPlugin uses for the folder share overview and takes
-		// the identical $reshares flag, so the result set is unchanged.
-		$requestedTypes = \array_keys(\array_filter($requestedShareTypes));
-		$nodeIDs = \array_map(static function ($node) {
-			return $node->getId();
-		}, $nodes);
 		$shares = [];
-		if (!empty($nodeIDs) && !empty($requestedTypes)) {
-			$shares = $this->shareManager->getAllSharesBy(
-				$this->userSession->getUser()->getUID(),
-				$requestedTypes,
-				$nodeIDs,
-				$reshares
-			);
+		foreach ($nodes as $node) {
+			foreach ($requestedShareTypes as $shareType => $requested) {
+				if (!$requested) {
+					continue;
+				}
+
+				$shares = \array_merge(
+					$shares,
+					$this->shareManager->getSharesBy($this->userSession->getUser()->getUID(), $shareType, $node, $reshares, -1, 0)
+				);
+			}
 		}
 
 		$formatted = [];
