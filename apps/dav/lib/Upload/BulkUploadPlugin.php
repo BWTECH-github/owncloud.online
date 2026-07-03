@@ -302,11 +302,12 @@ class BulkUploadPlugin extends ServerPlugin {
 				}
 				$next = $delimAt;
 			} else {
-				// Fall back to scanning for the next delimiter (strips trailing CRLF).
-				$next = \strpos($body, $delimiter, $bodyStart);
-				$rawLen = ($next === false ? $len : $next) - $bodyStart;
-				$partBody = \substr($body, $bodyStart, $rawLen);
-				$partBody = \preg_replace('/\r\n$/', '', $partBody);
+				// The bulk protocol requires a per-part Content-Length so parsing is
+				// always length-driven and binary-safe. Scanning for the boundary in a
+				// length-less part would truncate any file whose bytes happen to contain
+				// the (fixed) boundary token, so reject instead of silently storing a
+				// short file. The owncloud.online client always sends Content-Length.
+				throw new BadRequest('Bulk upload part is missing Content-Length');
 			}
 
 			$parts[] = ['headers' => $headers, 'body' => $partBody];

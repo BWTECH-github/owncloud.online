@@ -956,9 +956,11 @@ class Session implements IUserSession, Emitter {
 	 * @throws \OCP\PreConditionNotMetException
 	 */
 	public function loginWithCookie($uid, $currentToken) {
+		// Never log the raw remember-me token — it is the bearer credential that
+		// authenticates the user for the whole cookie lifetime (CWE-532).
 		$this->logger->debug(
-			'regenerating session id for uid {uid}, currentToken {currentToken}',
-			['app' => __METHOD__, 'uid' => $uid, 'currentToken' => $currentToken]
+			'regenerating session id for uid {uid}',
+			['app' => __METHOD__, 'uid' => $uid]
 		);
 		$this->session->regenerateId();
 		$user = $this->manager->get($uid);
