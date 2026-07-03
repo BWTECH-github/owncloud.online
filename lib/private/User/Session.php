@@ -677,7 +677,7 @@ class Session implements IUserSession, Emitter {
 			// index on oc_authtoken.token and spams the log with a swallowed exception.
 			try {
 				$existingToken = $this->tokenProvider->getToken($sessionId);
-				if ($existingToken->getUID() === $uid) {
+				if ($existingToken !== null && $existingToken->getUID() === $uid) {
 					// Same session already holds a token for this user. Reuse it (just
 					// bump its activity) rather than INSERTing a duplicate. If the uid
 					// differs — a session id reused for another user — fall through and
