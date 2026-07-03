@@ -78,6 +78,58 @@ sudo -u www-data php8.4 occ config:system:get memcache.locking
 sudo -u www-data php8.4 occ background:queue:status
 ```
 
+## OPcache-Dimensionierung
+
+Der Standardwert `opcache.max_accelerated_files=10000` reicht für
+ownCloud.online nicht: die Installation umfasst inklusive aller Apps und
+Vendor-Bibliotheken über 14.000 PHP-Dateien. Wird das Limit überschritten,
+verdrängt OPcache Einträge und kompiliert unter wechselnder Last laufend Dateien
+neu. Dateizahl prüfen und das Limit darüber setzen:
+
+```bash
+find /pfad/zum/webroot -name '*.php' | wc -l
+```
+
+Empfohlene `php.ini`- bzw. FPM-Pool-Werte:
+
+```ini
+opcache.enable=1
+opcache.memory_consumption=256      ; MB, 512 bei sehr vielen Apps
+opcache.interned_strings_buffer=32
+opcache.max_accelerated_files=24000 ; muss die Dateizahl übersteigen
+opcache.validate_timestamps=0       ; nur mit OPcache-Reset im Deploy
+opcache.enable_cli=0                 ; CLI/Cron braucht keinen persistenten OPcache
+```
+
+`validate_timestamps=0` macht Code-Änderungen erst nach FPM-Reload oder
+OPcache-Reset sichtbar. Das Deploy-Werkzeug muss den Reset auslösen, sonst laufen
+alte Klassen weiter.
+
+## Frontend-Auslieferung
+
+Die Weboberfläche lädt JavaScript und CSS als viele einzelne, unkomprimierte
+Dateien. Bis diese gebündelt und minifiziert werden, senkt der TLS-Terminator die
+wahrgenommene Ladezeit am wirksamsten:
+
+- HTTP/2 aktivieren; das Multiplexing spart die Round-Trips der vielen Einzeldateien
+- Keepalive zum PHP-FPM-Upstream
+- gzip oder brotli für `text/*`, `application/javascript` und `application/json`
+
+## Grenzen einzelner Server-Optimierungen
+
+Auf einer Instanz mit warmem OPcache bewegt der kompilierte Route-Cache
+(`route.cache`) die Antwortzeit messbar nicht: OPcache hält die Routen-Dateien
+bereits vor, und der Router baut ohnehin nur die Routen bereits geladener Apps.
+Der Route-Cache hilft vor allem bei kaltem oder deaktiviertem OPcache und frisch
+gestarteten FPM-Workern.
+
+Der dominierende Kostenblock eines authentifizierten Requests ist die
+Wiederholung von Passwort-Hashing (bcrypt) und Session- sowie Filesystem-Setup.
+Ein Client, der seine Session-Cookie über Requests hält, erreicht ein Vielfaches
+der Geschwindigkeit gegenüber einem Client, der bei jedem Request erneut per
+Basic-Auth authentifiziert. Sync- und API-Clients sollten die Session-Cookie
+wiederverwenden.
+
 ## Retention
 
 Alte Aktivitäten, Papierkorbobjekte und Versionen erhöhen langfristig
