@@ -155,6 +155,7 @@ class Propagator implements IPropagator {
 
 		$this->connection->beginTransaction();
 
+		try {
 		$storageId = (int)$this->storage->getStorageCache()->getNumericId();
 		// ein etag für den gesamten Batch — entspricht dem bisherigen Verhalten,
 		// das uniqid() ebenfalls nur einmal beim Query-Bau auswertete
@@ -205,8 +206,15 @@ class Propagator implements IPropagator {
 			}
 		}
 
-		$this->batch = [];
-
-		$this->connection->commit();
+			$this->connection->commit();
+		} catch (\Throwable $e) {
+			// Without this, a failed UPDATE (deadlock, aborted statement, …) would
+			// leave the batch transaction open and poison every later query on this
+			// connection. Roll back and rethrow instead.
+			$this->connection->rollBack();
+			throw $e;
+		} finally {
+			$this->batch = [];
+		}
 	}
 }

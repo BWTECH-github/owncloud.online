@@ -327,20 +327,31 @@ class Cache implements ICache {
 		$values = \array_combine($queryParts, $params);
 
 		$connection = \OC::$server->getDatabaseConnection();
-		try {
-			// Direkter INSERT: neue Einträge sind hier der Normalfall. Spart den
-			// UPDATE-Versuch des generischen upsert und das anschließende
-			// SELECT der id (lastInsertId kostet keinen weiteren Roundtrip).
-			$qb = $connection->getQueryBuilder();
-			$qb->insert('filecache');
-			foreach ($values as $column => $value) {
-				$qb->setValue($column, $qb->createNamedParameter($value));
+		// Direkter INSERT: neue Einträge sind hier der Normalfall. Spart den
+		// UPDATE-Versuch des generischen upsert und das anschließende SELECT der id
+		// (lastInsertId kostet keinen weiteren Roundtrip).
+		//
+		// ABER: der INSERT provoziert bei einem parallelen Scanner bewusst eine
+		// UniqueConstraintViolation. Auf PostgreSQL/Oracle bricht ein
+		// fehlgeschlagenes Statement die GESAMTE umgebende Transaktion ab (z.B. den
+		// Batch von Scanner::handleChildren), sodass der upsert-Fallback darunter
+		// scheitert und der ganze Ordner-Scan verloren geht. Nur auf Plattformen,
+		// die ein fehlgeschlagenes Statement isolieren (MySQL/MariaDB, SQLite),
+		// darf der Direkt-INSERT laufen; sonst direkt per upsert (UPDATE-first).
+		$dbType = \OC::$server->getConfig()->getSystemValue('dbtype', 'sqlite');
+		if ($dbType !== 'pgsql' && $dbType !== 'oci') {
+			try {
+				$qb = $connection->getQueryBuilder();
+				$qb->insert('filecache');
+				foreach ($values as $column => $value) {
+					$qb->setValue($column, $qb->createNamedParameter($value));
+				}
+				$qb->execute();
+				return (int)$connection->lastInsertId('*PREFIX*filecache');
+			} catch (UniqueConstraintViolationException $e) {
+				// Eintrag existiert bereits (z.B. paralleler Scanner):
+				// wie bisher per upsert aktualisieren und id nachschlagen
 			}
-			$qb->execute();
-			return (int)$connection->lastInsertId('*PREFIX*filecache');
-		} catch (UniqueConstraintViolationException $e) {
-			// Eintrag existiert bereits (z.B. paralleler Scanner):
-			// wie bisher per upsert aktualisieren und id nachschlagen
 		}
 
 		// Update or insert this to the filecache
