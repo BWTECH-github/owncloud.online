@@ -1557,12 +1557,11 @@ class View {
 			$files = \array_map(function (ICacheEntry $content) use ($path, $storage, $mount, $sharingDisabled, $checkShareFolder) {
 				$hasShareFolderInPath = false;
 				if ($checkShareFolder) {
-					try {
-						$itemPath = $this->getPath($content['fileid'], false);
-						$hasShareFolderInPath = $this->isShareFolderOrShareFolderParent($itemPath);
-					} catch (NotFoundException $e) {
-						$hasShareFolderInPath = false;
-					}
+					// The child's view path is $path/$content['name'] — the same value
+					// used to build the FileInfo below. Computing it directly avoids a
+					// getPath() fileid->path SELECT per child (an N+1 on the listing).
+					$itemPath = $path . '/' . $content['name'];
+					$hasShareFolderInPath = $this->isShareFolderOrShareFolderParent($itemPath);
 				}
 
 				if ($sharingDisabled || $hasShareFolderInPath) {
