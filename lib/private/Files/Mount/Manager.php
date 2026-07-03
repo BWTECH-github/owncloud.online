@@ -55,6 +55,11 @@ class Manager implements IMountManager {
 	 * @param string $target
 	 */
 	public function moveMount($mountPoint, $target) {
+		// Normalize like addMount() does: keys are stored slash-terminated so the
+		// hierarchy walk in find() can resolve them. Callers such as
+		// MountProviderCollection::registerMount() pass a target built via
+		// Filesystem::normalizePath(), which strips the trailing slash.
+		$target = $this->formatPath($target);
 		$this->mounts[$target] = $this->mounts[$mountPoint];
 		unset($this->mounts[$mountPoint]);
 	}
