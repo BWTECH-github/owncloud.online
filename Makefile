@@ -310,6 +310,14 @@ dist-dir: $(dist_dir)/owncloud
 clean-dist:
 	rm -Rf $(dist_dir)
 
+# Regenerate the .min.js / .min.css siblings for core + settings assets that
+# TemplateLayout::preferMinified() serves in production. Re-run after changing
+# any core/settings JS or CSS. Best-effort: falls back to copying the original
+# when a minifier is unavailable, so it can never break a checkout.
+.PHONY: minify-assets
+minify-assets:
+	bash build/minify-assets.sh $(if $(MINIFY_ROOT),$(MINIFY_ROOT),.)
+
 #
 # Build qa distribution
 #
