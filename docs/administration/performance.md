@@ -130,6 +130,16 @@ der Geschwindigkeit gegenüber einem Client, der bei jedem Request erneut per
 Basic-Auth authentifiziert. Sync- und API-Clients sollten die Session-Cookie
 wiederverwenden.
 
+Für den Desktop- und Mobil-Client ist das bcrypt-Problem bereits gelöst: er
+authentifiziert mit einem Geräte-Token (`oc_authtoken`, App-Passwort), nicht mit
+dem Kontopasswort. `OC\User\Session::checkTokenCredentials()` prüft bcrypt nur,
+wenn die `last_check`-Spalte des Tokens älter als `last_check_timeout` (Standard
+5 Minuten) ist — nicht bei jedem Request. Ein per Plaintext-Passwort geschlüsselter
+Hash-Cache darf NICHT ergänzt werden: er würde Passwort-Material speichern und
+Brute-Force-Drosselung, Rate-Limiting sowie Token-Widerruf aushebeln. Der
+verbleibende Per-Request-bcrypt betrifft nur Nicht-Token-Clients, die das rohe
+Kontopasswort ohne persistente Session senden (z. B. fremde WebDAV-Integrationen).
+
 ## Retention
 
 Alte Aktivitäten, Papierkorbobjekte und Versionen erhöhen langfristig
