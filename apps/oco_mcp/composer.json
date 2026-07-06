@@ -1,0 +1,38 @@
+{
+    "name": "bwtech/oco_mcp",
+    "type": "owncloud-app",
+    "description": "Model Context Protocol (MCP) connector for owncloud.online — exposes Files, Shares, Users, Tags and Comments as AI tools. By BW-Tech GmbH (PHP 8.4).",
+    "license": "AGPL-3.0-only",
+    "modified-by": "BW-Tech GmbH",
+    "require": {
+        "php": ">=8.4",
+        "ext-fileinfo": "*",
+        "mcp/sdk": "^0.6.0"
+    },
+    "replace": {
+        "psr/container": "*",
+        "psr/event-dispatcher": "*",
+        "psr/http-client": "*",
+        "psr/http-factory": "*",
+        "psr/http-message": "*",
+        "psr/log": "*",
+        "doctrine/deprecations": "*",
+        "guzzlehttp/psr7": "*",
+        "guzzlehttp/promises": "*"
+    },
+    "config": {
+        "platform": {
+            "php": "8.4"
+        },
+        "sort-packages": true,
+        "optimize-autoloader": true,
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "OCA\\OcoMcp\\": "lib/"
+        }
+    }
+}

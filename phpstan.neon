@@ -5,6 +5,10 @@ parameters:
     analyseAndScan:
       - %currentWorkingDirectory%/core/ajax/update.php
       - %currentWorkingDirectory%/apps/*/tests*
+      # oco_mcp is a self-contained app that bundles its own composer vendor/
+      # (the MCP SDK) and loads it lazily at runtime, so its classes are not on
+      # the analysis autoloader. Exclude it wholesale, like the apps-external tree.
+      - %currentWorkingDirectory%/apps/oco_mcp/*
       - %currentWorkingDirectory%/settings/templates/*
     analyse:
       - %currentWorkingDirectory%/apps/*/composer/*

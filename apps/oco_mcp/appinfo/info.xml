@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<!--
+  ~ MCP Connector for owncloud.online
+  ~ @copyright Copyright (c) 2026, BW-Tech GmbH
+  ~ @license AGPL-3.0-only
+-->
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="https://apps.owncloud.com/schema/apps/info.xsd">
+	<id>oco_mcp</id>
+	<name>MCP Connector</name>
+	<summary>Model Context Protocol server — exposes owncloud.online to AI assistants</summary>
+	<description>
+Turns owncloud.online into a Model Context Protocol (MCP) server. AI assistants
+(Claude, ChatGPT, editors, agents) can list, read, search, write, share and tag
+files, and — for admins — manage users and groups, all as the authenticated user
+and subject to the same ownCloud permissions.
+
+The endpoint speaks Streamable HTTP JSON-RPC at /apps/oco_mcp/mcp. It is read-only
+by default; set the app config "oco_mcp enable_write true" (occ) to allow write and
+management tools. Authentication uses an ownCloud app/device token or Basic auth —
+never a plain browser cookie session — so it is safe from cross-site request forgery.
+
+Modified by BW-Tech GmbH for owncloud.online (PHP 8.4).
+	</description>
+	<version>1.0.0</version>
+	<licence>AGPL-3.0-only</licence>
+	<author>BW-Tech GmbH</author>
+	<namespace>OcoMcp</namespace>
+	<category>integration</category>
+	<category>tools</category>
+	<website>https://bw.tech</website>
+	<bugs>https://github.com/BWTECH-github/owncloud.online/issues</bugs>
+	<repository type="git">https://github.com/BWTECH-github/owncloud.online.git</repository>
+	<dependencies>
+		<php min-version="8.4"/>
+		<owncloud min-version="10" max-version="11"/>
+	</dependencies>
+</info>
