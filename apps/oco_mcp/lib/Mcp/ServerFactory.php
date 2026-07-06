@@ -7,6 +7,7 @@
  */
 namespace OCA\OcoMcp\Mcp;
 
+use OCA\OcoMcp\Tools\AiDocumentsTool;
 use OCA\OcoMcp\Tools\CommentsTool;
 use OCA\OcoMcp\Tools\FilesTool;
 use OCA\OcoMcp\Tools\GroupsTool;
@@ -14,11 +15,11 @@ use OCA\OcoMcp\Tools\MetaTool;
 use OCA\OcoMcp\Tools\SharesTool;
 use OCA\OcoMcp\Tools\TagsTool;
 use OCA\OcoMcp\Tools\UsersTool;
+use OCP\App\IAppManager;
 use OCP\Comments\ICommentsManager;
 use OCP\Files\IRootFolder;
 use OCP\IConfig;
 use OCP\IGroupManager;
-use OCP\ILogger;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -43,7 +44,7 @@ class ServerFactory {
 	private ICommentsManager $commentsManager;
 	private IConfig $config;
 	private IURLGenerator $urlGenerator;
-	private ILogger $logger;
+	private IAppManager $appManager;
 
 	public function __construct(
 		IRootFolder $rootFolder,
@@ -55,7 +56,7 @@ class ServerFactory {
 		ICommentsManager $commentsManager,
 		IConfig $config,
 		IURLGenerator $urlGenerator,
-		ILogger $logger
+		IAppManager $appManager
 	) {
 		$this->rootFolder = $rootFolder;
 		$this->shareManager = $shareManager;
@@ -66,7 +67,7 @@ class ServerFactory {
 		$this->commentsManager = $commentsManager;
 		$this->config = $config;
 		$this->urlGenerator = $urlGenerator;
-		$this->logger = $logger;
+		$this->appManager = $appManager;
 	}
 
 	public function build(IUser $user, bool $isAdmin, bool $writeEnabled): \Mcp\Server {
@@ -76,7 +77,7 @@ class ServerFactory {
 		// the SDK through a PSR-11 container. The SDK resolves an array handler
 		// [Class::class, 'method'] via container->get(Class), so these exact
 		// instances are used and every tool runs strictly as this user.
-		$container = new InstanceContainer([
+		$map = [
 			FilesTool::class => new FilesTool($this->rootFolder, $uid, $writeEnabled),
 			SharesTool::class => new SharesTool($this->shareManager, $this->rootFolder, $this->urlGenerator, $uid, $writeEnabled),
 			TagsTool::class => new TagsTool($this->tagManager, $this->tagMapper, $this->rootFolder, $user, $isAdmin, $writeEnabled),
@@ -84,7 +85,18 @@ class ServerFactory {
 			UsersTool::class => new UsersTool($this->userManager, $isAdmin, $writeEnabled),
 			GroupsTool::class => new GroupsTool($this->groupManager, $this->userManager, $isAdmin, $writeEnabled),
 			MetaTool::class => new MetaTool($this->rootFolder, $uid, $isAdmin, $writeEnabled),
-		]);
+			FileResourceProvider::class => new FileResourceProvider($this->rootFolder, $uid),
+		];
+
+		// The ai_documents RAG tool is optional: only wire it when that app is
+		// actually enabled for this user, so instances without it never see a
+		// broken tool and oco_mcp keeps no hard dependency on it.
+		$aiDocsEnabled = $this->appManager->isEnabledForUser('ai_documents', $user);
+		if ($aiDocsEnabled) {
+			$map[AiDocumentsTool::class] = new AiDocumentsTool();
+		}
+
+		$container = new InstanceContainer($map);
 
 		$builder = \Mcp\Server::builder()
 			->setServerInfo('owncloud.online', '1.0.0', 'MCP access to owncloud.online files, shares, tags, comments and user management.')
@@ -101,6 +113,7 @@ class ServerFactory {
 			->addTool([FilesTool::class, 'list'], 'files_list')
 			->addTool([FilesTool::class, 'info'], 'files_info')
 			->addTool([FilesTool::class, 'read'], 'files_read')
+			->addTool([FilesTool::class, 'viewImage'], 'files_view_image')
 			->addTool([FilesTool::class, 'search'], 'files_search')
 			->addTool([FilesTool::class, 'write'], 'files_write')
 			->addTool([FilesTool::class, 'mkdir'], 'files_mkdir')
@@ -147,6 +160,30 @@ class ServerFactory {
 			->addTool([MetaTool::class, 'whoami'], 'whoami')
 			->addTool([MetaTool::class, 'quota'], 'quota')
 			->addTool([MetaTool::class, 'capabilities'], 'capabilities');
+
+		// AI document search (only when ai_documents is enabled for this user).
+		if ($aiDocsEnabled) {
+			$builder->addTool([AiDocumentsTool::class, 'ask'], 'ai_ask');
+		}
+
+		// Resources: expose the user's files so MCP clients can browse and attach
+		// them to context natively (not only via tool calls).
+		$builder
+			->addResource(
+				[FileResourceProvider::class, 'root'],
+				'owncloud:///',
+				'owncloud-root',
+				'ownCloud root folder',
+				'JSON listing of the user\'s root folder. Each entry carries a "uri" you can read.',
+				'application/json'
+			)
+			->addResourceTemplate(
+				[FileResourceProvider::class, 'read'],
+				'owncloud:///{path}',
+				'owncloud-file',
+				'ownCloud file or folder',
+				'Read a file (text or binary) or a folder listing by path. Percent-encode "/" as %2F for nested paths.'
+			);
 
 		return $builder->build();
 	}
