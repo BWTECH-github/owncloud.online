@@ -33,6 +33,11 @@
 !/apps/provisioning_api
 !/apps/systemtags
 !/apps/updatenotification
+# BW-Tech: bundle the MCP connector app (Model Context Protocol server for AI
+# assistants). Ships its own composer vendor/ (mcp/sdk + PSR glue), so include
+# everything below the app dir.
+!/apps/oco_mcp
+!/apps/oco_mcp/**
 # BW-Tech: bundle the market app (neutral local-catalog default)
 !/apps-external/market
 !/apps-external/market/**
