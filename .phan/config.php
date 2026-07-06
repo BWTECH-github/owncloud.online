@@ -69,7 +69,7 @@ return [
 	// oco_mcp bundles its own composer vendor/ (the MCP SDK) and loads it lazily
 	// at runtime; exclude the whole app from parsing/analysis so its lazily-loaded
 	// classes are not flagged as undeclared.
-	'exclude_file_regex' => '@(.*/[^/]*(tests|Tests|templates)/|/apps/oco_mcp/)@',
+	'exclude_file_regex' => '@(.*/[^/]*(tests|Tests|templates)/|(?:^|/)apps/oco_mcp/)@',
 
 	// If true, missing properties will be created when
 	// they are first seen. If false, we'll report an
