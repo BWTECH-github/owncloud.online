@@ -25,6 +25,7 @@ occ config:app:set oco_mcp enable_write --value=yes
 | Tool | Read/Write | Notes |
 |------|-----------|-------|
 | `files_list`, `files_info`, `files_read`, `files_search` | read | browse & read the user's files |
+| `files_view_image` | read | return an image file as visual content the model can see (≤ 5 MB) |
 | `files_write`, `files_mkdir`, `files_move`, `files_copy`, `files_delete` | write | delete moves to trash |
 | `shares_list` | read | shares created by the user |
 | `shares_create_link`, `shares_create_user`, `shares_delete` | write | public links & user shares |
@@ -35,10 +36,36 @@ occ config:app:set oco_mcp enable_write --value=yes
 | `groups_list`, `groups_members` | read (admin) | |
 | `groups_add_member`, `groups_remove_member` | write (admin) | |
 | `whoami`, `quota`, `capabilities` | read | identity & limits |
+| `ai_ask` | read | RAG question-answering over the user's documents — **only present when the optional `ai_documents` app is enabled** |
 
 Write tools return a clear error when write access is disabled; admin tools
 return a clear error for non-admins. Both surface as MCP tool errors the model
 can read and act on.
+
+## Resources
+
+Besides tools, the server exposes the user's files as MCP **resources**, so
+clients can browse and attach them to context natively:
+
+- `owncloud:///` — a JSON listing of the user's root folder; each entry carries
+  a `uri` you can read.
+- `owncloud:///{path}` — read any file (text or binary) or a folder listing by
+  path. Because URI-template variables match a single non-slash segment, nested
+  paths percent-encode `/` as `%2F` (RFC 6570), e.g.
+  `owncloud:///Documents%2Freport.txt`.
+
+Binary files come back as base64 blobs; text as UTF-8. Reads are bounded to 5 MB
+and confined to the user's own storage.
+
+## AI document search (`ai_ask`)
+
+When the optional `ai_documents` app is installed and enabled, an `ai_ask` tool
+appears. It runs retrieval-augmented generation over the user's indexed
+documents (as that user, with their permissions) and returns an answer plus
+cited sources. Parameters: `question`, `scope` (`all` | `folder` | `selection`),
+`path` (for `folder`), `file_ids` (comma-separated, for `selection`), and `mode`
+(`qa` | `summary` | `extract` | `report`). oco_mcp keeps **no hard dependency**
+on ai_documents — the tool is absent on servers without it.
 
 ## Connecting a client (example: Claude Desktop via `mcp-remote`)
 
@@ -119,9 +146,14 @@ To add a **whole new tool group**, create `lib/Tools/MyTool.php`, add it to the
 OCP services it needs, wired in `lib/AppInfo/Application.php`), and register its
 methods.
 
-### Idea: expose `ai_documents` RAG as MCP tools
+### Optional-app tools (pattern used by `ai_ask`)
 
-The `ai_documents` app already does document analysis, embeddings and semantic
-search. Wrapping its search/RAG service in an `AiDocumentsTool` here would let an
-assistant ask natural-language questions over the user's documents through the
-same MCP connection — a natural next step.
+`AiDocumentsTool` shows how to bridge an **optional** app without taking a hard
+dependency on it: reference the foreign app only by string class name, guard
+with `class_exists()`, resolve its service through its own app container
+(`(new \OCA\Foo\AppInfo\Application())->getContainer()->query(...)`), and register
+the tool in `ServerFactory` only when `IAppManager::isEnabledForUser()` is true.
+On servers without that app the tool simply never appears — no fatal, no error.
+
+Good further candidates: trash/versions restore, full-text search, calendar and
+contacts (CardDAV), and generated document previews as image content.

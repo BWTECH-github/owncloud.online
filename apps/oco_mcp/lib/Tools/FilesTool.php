@@ -8,6 +8,7 @@
 namespace OCA\OcoMcp\Tools;
 
 use Mcp\Exception\ToolCallException;
+use Mcp\Schema\Content\ImageContent;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -94,6 +95,27 @@ class FilesTool {
 			'truncated' => $truncated,
 			'size' => $node->getSize(),
 		];
+	}
+
+	/**
+	 * View an image file so the model can actually see it. Returns the image as
+	 * visual content (not text). Only image files up to 5 MB are supported.
+	 *
+	 * @param string $path Path to an image file relative to the user's root.
+	 */
+	public function viewImage(string $path): ImageContent {
+		$node = $this->getNode($path);
+		if (!$node instanceof File) {
+			throw new ToolCallException('Not a file: ' . $path);
+		}
+		$mime = $node->getMimetype();
+		if (!\str_starts_with($mime, 'image/')) {
+			throw new ToolCallException('Not an image file (' . $mime . '): ' . $path);
+		}
+		if ($node->getSize() > 5 * 1048576) {
+			throw new ToolCallException('Image too large to view (max 5 MB): ' . $path);
+		}
+		return new ImageContent(\base64_encode($node->getContent()), $mime);
 	}
 
 	/**
