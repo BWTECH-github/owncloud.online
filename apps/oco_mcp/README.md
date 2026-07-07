@@ -77,14 +77,23 @@ on ai_documents — the tool is absent on servers without it.
       "args": [
         "-y", "mcp-remote",
         "https://cloud.example.com/apps/oco_mcp/mcp",
-        "--header", "Authorization: Bearer <app-token>"
+        "--header", "Authorization: Basic <base64 of username:app-password>",
+        "--transport", "http-only"
       ]
     }
   }
 }
 ```
 
-Create the app token in ownCloud under **Settings → Security → App passwords**.
+Create the app password in ownCloud under **Settings → Security → App passwords**
+and send it via HTTP **Basic** auth (`base64("username:app-password")`). A plain
+`Bearer` token is NOT understood by the core login path (only real OAuth2 access
+tokens are, when the oauth2 app is installed). `--transport http-only` matches
+this server: it speaks Streamable HTTP JSON responses and deliberately has no
+SSE GET stream.
+
+Verified end-to-end with `mcp-remote` (the same bridge Claude Desktop uses):
+initialize → notifications/initialized → tools/list → tools/call all pass.
 
 ## Architecture (one request, start to finish)
 
