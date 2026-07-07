@@ -309,15 +309,28 @@ OC.FileUpload.prototype = {
 		this.data.allowAuthErrors = true;
 
 		var chunkFolderPromise;
+		var isPublicUpload = !OC.getCurrentUser().uid;
 		if ($.support.blobSlice
 			&& this.uploader.fileUploadParam.maxChunkSize
 			&& this.getFile().size > this.uploader.fileUploadParam.maxChunkSize
 		) {
 			data.isChunked = true;
-			chunkFolderPromise = this.uploader.davClient.createDirectory(
-				'uploads/' + OC.getCurrentUser().uid + '/' + this.getId()
-			);
-			// TODO: if fails, it means same id already existed, need to retry
+			if (isPublicUpload) {
+				// Public share link: there is no user principal for the new-DAV
+				// uploads/<uid> collection, so use the legacy "-chunking-" protocol
+				// against public.php/webdav. The server assembles on the final chunk
+				// (see OCA\DAV Sabre\File::createFileChunked), so there is no folder
+				// to create up front and no final MOVE.
+				data.isLegacyChunk = true;
+				data.legacyTransferId = '' + (new Date()).getTime() + Math.floor(Math.random() * 1000000);
+				data.legacyChunkCount = Math.ceil(this.getFile().size / this.uploader.fileUploadParam.maxChunkSize);
+				chunkFolderPromise = $.Deferred().resolve().promise();
+			} else {
+				chunkFolderPromise = this.uploader.davClient.createDirectory(
+					'uploads/' + OC.getCurrentUser().uid + '/' + this.getId()
+				);
+				// TODO: if fails, it means same id already existed, need to retry
+			}
 		} else {
 			chunkFolderPromise = $.Deferred().resolve().promise();
 		}
@@ -335,7 +348,9 @@ OC.FileUpload.prototype = {
 	 * Process end of transfer
 	 */
 	done: function() {
-		if (!this.data.isChunked) {
+		// Legacy public chunking assembles server-side on the final chunk, so
+		// there is nothing to finalize here.
+		if (!this.data.isChunked || this.data.isLegacyChunk) {
 			return $.Deferred().resolve().promise();
 		}
 
@@ -1453,6 +1468,27 @@ OC.Uploader.prototype = _.extend({
 					// modify the request to adjust it to our own chunking
 					var upload = self.getUpload(data);
 					var range = data.contentRange.split(' ')[1];
+
+					if (upload.data.isLegacyChunk) {
+						// Public link: legacy "-chunking-" protocol against
+						// public.php/webdav. Append the chunk suffix to the normal
+						// upload URL and tag the request with OC-Chunked; the server
+						// caches each chunk and assembles them on the last one.
+						var startByte = parseInt(range.split('/')[0].split('-')[0], 10);
+						var index = Math.floor(startByte / self.fileUploadParam.maxChunkSize);
+						var baseUrl = upload.uploader.fileList.getUploadUrl(upload.getFileName(), upload.getFullPath());
+						data.url = baseUrl +
+							'-chunking-' + upload.data.legacyTransferId +
+							'-' + upload.data.legacyChunkCount +
+							'-' + index;
+						data.headers = data.headers || {};
+						data.headers['OC-Chunked'] = '1';
+						delete data.contentRange;
+						delete data.headers['Content-Range'];
+						upload.data.retries = 0;
+						return;
+					}
+
 					var chunkId = range.split('/')[0].split('-')[0];
 					data.url = OC.getRootPath() +
 						'/remote.php/dav/uploads' +
