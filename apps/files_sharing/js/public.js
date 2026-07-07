@@ -72,7 +72,14 @@ OCA.Sharing.PublicApp = {
 					fileActions: fileActions,
 					detailsViewEnabled: false,
 					filesClient: filesClient,
-					enableUpload: true
+					enableUpload: true,
+					// Enable chunked upload on public links too. The public page has
+					// no user principal, so the uploader falls back to the legacy
+					// "-chunking-" protocol against public.php/webdav (see
+					// file-upload.js); this lets large files (multi-GB) upload as many
+					// small requests instead of one monolithic PUT that a php-fpm /
+					// proxy timeout would truncate.
+					maxChunkSize: (OC.appConfig.files && OC.appConfig.files.max_chunk_size) || (10 * 1024 * 1024)
 				}
 			);
 			this.files = OCA.Files.Files;
