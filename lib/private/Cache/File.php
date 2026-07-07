@@ -45,19 +45,35 @@ class File implements ICache {
 		if (isset($this->storage)) {
 			return $this->storage;
 		}
+
+		$uid = null;
 		if (\OC_User::isLoggedIn()) {
-			$rootView = new View();
-			$user = \OC::$server->getUserSession()->getUser();
-			Filesystem::initMountPoints($user->getUID());
-			if (!$rootView->file_exists('/' . $user->getUID() . '/cache')) {
-				$rootView->mkdir('/' . $user->getUID() . '/cache');
-			}
-			$this->storage = new View('/' . $user->getUID() . '/cache');
-			return $this->storage;
+			$uid = \OC::$server->getUserSession()->getUser()->getUID();
 		} else {
+			// Public / anonymous context (e.g. a chunked upload through a public
+			// share link served by public.php/webdav): there is no login session,
+			// but setupFS() has mounted the share owner's filesystem. Fall back to
+			// that owner's cache so chunked uploads work on public links too. The
+			// owner is derived from the server-mounted filesystem root (set from
+			// the share token), never from client input.
+			$root = Filesystem::getRoot();
+			if (\is_string($root) && \preg_match('#^/([^/]+)/files(?:/|$)#', $root, $m)) {
+				$uid = $m[1];
+			}
+		}
+
+		if ($uid === null) {
 			\OCP\Util::writeLog('core', 'Can\'t get cache storage, user not logged in', \OCP\Util::ERROR);
 			throw new \OC\ForbiddenException('Can\t get cache storage, user not logged in');
 		}
+
+		$rootView = new View();
+		Filesystem::initMountPoints($uid);
+		if (!$rootView->file_exists('/' . $uid . '/cache')) {
+			$rootView->mkdir('/' . $uid . '/cache');
+		}
+		$this->storage = new View('/' . $uid . '/cache');
+		return $this->storage;
 	}
 
 	/**
