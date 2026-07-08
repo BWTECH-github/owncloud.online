@@ -67,6 +67,12 @@ use Symfony\Component\EventDispatcher\GenericEvent;
 
 class File extends Node implements IFile, IFileNode {
 	use EventEmitterTrait;
+
+	// Retry-Parameter für das SHARED→EXCLUSIVE-Lock-Upgrade: konkurrierende
+	// Shared-Locks (paralleles GET/Stat) leben typischerweise nur Millisekunden
+	private const LOCK_UPGRADE_RETRY_ATTEMPTS = 4;
+	private const LOCK_UPGRADE_RETRY_DELAY_USEC = 150000;
+
 	protected $request;
 
 	/**
@@ -161,7 +167,7 @@ class File extends Node implements IFile, IFileNode {
 		$newFile = false;
 		$path = $this->fileView->getAbsolutePath($this->path);
 		$beforeEvent = new GenericEvent(null, ['path' => $path]);
-		if (!$this->fileView->file_exists($this->path)) {
+		if (!$exists) {
 			\OC::$server->getEventDispatcher()->dispatch($beforeEvent, 'file.beforecreate');
 			$newFile = true;
 		} else {
@@ -186,7 +192,7 @@ class File extends Node implements IFile, IFileNode {
 		list($storage, $internalPath) = $this->fileView->resolvePath($this->path);
 		try {
 			try {
-				$this->changeLock(ILockingProvider::LOCK_EXCLUSIVE);
+				$this->changeLockExclusiveWithRetry();
 			} catch (LockedException $e) {
 				$this->cleanFailedUpload($partStorage, $internalPartPath);
 				throw new FileLocked($e->getMessage(), $e->getCode(), $e);
@@ -255,7 +261,10 @@ class File extends Node implements IFile, IFileNode {
 			}
 
 			try {
-				$this->changeLock(ILockingProvider::LOCK_EXCLUSIVE);
+				// Der Upload ist an dieser Stelle bereits komplett übertragen —
+				// ein sofortiges Aufgeben bei einer kurzlebigen Lock-Kollision
+				// würde die komplette Datei verwerfen, daher kurze Retries
+				$this->changeLockExclusiveWithRetry();
 			} catch (LockedException $e) {
 				$this->cleanFailedUpload($partStorage, $internalPartPath);
 				throw new FileLocked($e->getMessage(), $e->getCode(), $e);
@@ -560,7 +569,9 @@ class File extends Node implements IFile, IFileNode {
 				$this->fileView->lockFile($targetPath, ILockingProvider::LOCK_SHARED);
 
 				$this->emitPreHooks($exists, $targetPath);
-				$this->fileView->changeLock($targetPath, ILockingProvider::LOCK_EXCLUSIVE);
+				// Alle Chunks sind bereits übertragen — ein kurzlebiger Shared-Lock
+				// (z.B. paralleler Download) soll den Upload nicht komplett verwerfen
+				$this->changeLockExclusiveWithRetry($targetPath);
 				/** @var \OC\Files\Storage\Storage $targetStorage */
 				list($targetStorage, $targetInternalPath) = $this->fileView->resolvePath($targetPath);
 
@@ -570,7 +581,9 @@ class File extends Node implements IFile, IFileNode {
 					/** @var \OC\Files\Storage\Storage $targetStorage */
 					list($partStorage, $partInternalPath) = $this->fileView->resolvePath($partFile);
 
-					$chunk_handler->file_assemble($partStorage, $partInternalPath);
+					if ($chunk_handler->file_assemble($partStorage, $partInternalPath) === false) {
+						throw new Exception('Could not assemble chunks into part file');
+					}
 
 					if (!self::isChecksumValid($this->request, $partStorage, $partInternalPath)) {
 						$partStorage->unlink($partInternalPath);  // remove the uploaded file on checksum error
@@ -594,7 +607,9 @@ class File extends Node implements IFile, IFileNode {
 					}
 				} else {
 					// assemble directly into the final file
-					$chunk_handler->file_assemble($targetStorage, $targetInternalPath);
+					if ($chunk_handler->file_assemble($targetStorage, $targetInternalPath) === false) {
+						throw new Exception('Could not assemble chunks into target file');
+					}
 				}
 
 				$this->handleMetadataUpdate($targetStorage, $targetInternalPath);
@@ -633,7 +648,22 @@ class File extends Node implements IFile, IFileNode {
 				}
 				return $etag;
 			} catch (\Exception $e) {
-				$this->cleanFailedUpload($targetStorage, $targetInternalPath);
+				if ($usePartFile) {
+					// Die Assembly lief in eine separate Part-Datei — nur diese
+					// aufräumen. Eine vor dem Upload existierende Zieldatei wurde
+					// bis zum finalen Rename nie angefasst und darf hier keinesfalls
+					// gelöscht werden (cleanFailedUpload umgeht den Trashbin).
+					if ($partFile !== null && isset($partStorage, $partInternalPath)) {
+						$this->cleanFailedUpload($partStorage, $partInternalPath);
+					}
+					if (!$exists) {
+						// Ziel existierte vorher nicht — ggf. halb angelegte Datei entfernen
+						$this->cleanFailedUpload($targetStorage, $targetInternalPath);
+					}
+				} else {
+					// Ohne Part-Datei wurde direkt ins Ziel assembliert — Partial-Daten entfernen
+					$this->cleanFailedUpload($targetStorage, $targetInternalPath);
+				}
 				$this->convertToSabreException($e);
 			}
 		}
@@ -764,6 +794,33 @@ class File extends Node implements IFile, IFileNode {
 	 */
 	public function getNode() {
 		return \OC::$server->getRootFolder()->get($this->getFileInfo()->getPath());
+	}
+
+	/**
+	 * Upgrade auf einen Exclusive-Lock mit kurzen Retries statt sofortigem
+	 * Fehlschlag: schlägt das Upgrade fehl, würde der bereits vollständig
+	 * übertragene Upload verworfen, obwohl konkurrierende Shared-Locks
+	 * meist nur Millisekunden bestehen.
+	 *
+	 * @param string|null $path Pfad relativ zur View; null = Pfad dieses Nodes
+	 * @throws LockedException wenn der Lock auch nach den Retries belegt ist
+	 */
+	private function changeLockExclusiveWithRetry($path = null): void {
+		for ($attempt = 1; ; $attempt++) {
+			try {
+				if ($path === null) {
+					$this->changeLock(ILockingProvider::LOCK_EXCLUSIVE);
+				} else {
+					$this->fileView->changeLock($path, ILockingProvider::LOCK_EXCLUSIVE);
+				}
+				return;
+			} catch (LockedException $e) {
+				if ($attempt >= self::LOCK_UPGRADE_RETRY_ATTEMPTS) {
+					throw $e;
+				}
+				\usleep(self::LOCK_UPGRADE_RETRY_DELAY_USEC);
+			}
+		}
 	}
 
 	private function cleanFailedUpload(Storage $partStorage, $internalPartPath): void {

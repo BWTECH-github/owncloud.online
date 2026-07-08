@@ -153,7 +153,37 @@
 			this._uploader = new OC.Uploader(this.$('.uploader'), {
 				filesClient: this._filesClient,
 				dropZone: this.$('.public-upload-view--dropzone'),
-				url: this._getUploadUrl
+				url: this._getUploadUrl,
+				// Chunking auch auf der Upload-only-Seite aktivieren (wie in
+				// public.js): ohne maxChunkSize ginge jede Datei als ein
+				// monolithischer PUT auf public.php/webdav raus und grosse
+				// Dateien sterben am php-fpm-/Proxy-Timeout.
+				// Nur anonym: mit eingeloggter Session naehme file-upload.js
+				// den privaten DAV-Chunk-Pfad (uploads/<uid> + MOVE nach
+				// files/<uid>) und legte die Datei im eigenen Home statt im
+				// Share ab; eingeloggte Besucher behalten den Single-PUT.
+				maxChunkSize: !OC.getCurrentUser().uid
+					? ((OC.appConfig.files && OC.appConfig.files.max_chunk_size) || (10 * 1024 * 1024))
+					: undefined,
+				// Minimales FileList-Shim: der Legacy-Chunk-Pfad in
+				// file-upload.js (fileuploadchunksend) baut die Chunk-URL ueber
+				// uploader.fileList.getUploadUrl() — die Drop-Page hat keine
+				// echte FileList. Die uebrigen Methoden spiegeln exakt das
+				// bisherige Verhalten ohne fileList: kein clientseitiger
+				// Konfliktcheck (der Server autorenamed via OC-Autorename)
+				// und kein clientseitiges Autorename-Retry.
+				fileList: {
+					getUploadUrl: this._getUploadUrl,
+					getCurrentDirectory: function() {
+						return '/';
+					},
+					findFile: function() {
+						return null;
+					},
+					inList: function() {
+						return false;
+					}
+				}
 			});
 			this._uploader.on('beforeadd', this._onUploadBeforeAdd);
 			this._uploader.on('done', this._onUploadDone);

@@ -83,9 +83,60 @@ class OC_FileChunking {
 	public function store($index, $data) {
 		$cache = $this->getCache();
 		$name = $this->getPrefix().$index;
+		// bei Retries desselben Chunks die alte Größe aus der Zwischensumme herausrechnen
+		$oldSize = $cache->size($name);
 		$cache->set($name, $data, $this->ttl);
+		$size = $cache->size($name);
+		$this->updateCachedTotalSize($size - $oldSize);
 
-		return $cache->size($name);
+		return $size;
+	}
+
+	/**
+	 * Cache-Key für die kumulierte Größe aller gespeicherten Chunks.
+	 * 'size' ist nie numerisch und kollidiert daher nicht mit Chunk-Indizes.
+	 *
+	 * @return string
+	 */
+	protected function getSizeKey() {
+		return $this->getPrefix().'size';
+	}
+
+	/**
+	 * Passt die gecachte Größen-Zwischensumme an — nur wenn sie bereits
+	 * existiert, sonst rechnet getCurrentSize() beim nächsten Aufruf neu.
+	 * Fehler (z.B. Lock-Kollisionen paralleler Chunk-Uploads) invalidieren
+	 * die Zwischensumme statt sie falsch werden zu lassen.
+	 *
+	 * @param int|float $delta
+	 */
+	protected function updateCachedTotalSize($delta) {
+		$cache = $this->getCache();
+		$sizeKey = $this->getSizeKey();
+		try {
+			$total = $cache->get($sizeKey);
+			if (\is_numeric($total)) {
+				if (!$cache->set($sizeKey, (string)\max(0, (0 + $total) + $delta), $this->ttl)) {
+					$cache->remove($sizeKey);
+				}
+			}
+		} catch (\Exception $e) {
+			try {
+				$cache->remove($sizeKey);
+			} catch (\Exception $e2) {
+				// ignorieren — Zwischensumme wird beim nächsten getCurrentSize neu aufgebaut
+			}
+		}
+	}
+
+	/**
+	 * Größe eines einzelnen, bereits gespeicherten Chunks (0 wenn nicht vorhanden)
+	 *
+	 * @param string $index
+	 * @return int
+	 */
+	public function getChunkSize($index) {
+		return $this->getCache()->size($this->getPrefix().$index);
 	}
 
 	public function isComplete() {
@@ -110,18 +161,36 @@ class OC_FileChunking {
 	 *
 	 * @return integer assembled file size
 	 *
-	 * @throws \OC\ForbiddenException when file could not be fully
-	 * assembled due to lack of free space or permissions
+	 * @throws \OC\ForbiddenException when a chunk is missing or could not be
+	 * written completely (e.g. lack of free space or permissions)
 	 */
 	public function assemble($f) {
 		$cache = $this->getCache();
 		$prefix = $this->getPrefix();
+		// Zwischensumme invalidieren — die Chunks werden hier konsumiert
+		$cache->remove($this->getSizeKey());
 		$count = 0;
 		for ($i = 0; $i < $this->info['chunkcount']; $i++) {
 			$chunk = $cache->get($prefix.$i);
-			// remove after reading to directly save space
+			if ($chunk === null || $chunk === false) {
+				// Chunk fehlt (GC/TTL) oder ist nicht lesbar — ein fwrite(null)
+				// würde die Datei stillschweigend verkürzen
+				throw new \OC\ForbiddenException(
+					'Chunk ' . $i . ' of chunked upload "' . $this->info['name'] . '" is missing, cannot assemble'
+				);
+			}
+			$written = \fwrite($f, $chunk);
+			if ($written !== \strlen($chunk)) {
+				// false oder Short-Write (Platte voll/Quota/IO-Fehler): abbrechen,
+				// die verbliebenen Chunks bleiben für einen Retry im Cache
+				throw new \OC\ForbiddenException(
+					'Could not write chunk ' . $i . ' of chunked upload "' . $this->info['name']
+					. '" (wrote ' . (int)$written . ' of ' . \strlen($chunk) . ' bytes)'
+				);
+			}
+			// Chunk erst nach erfolgreichem Schreiben entfernen
 			$cache->remove($prefix.$i);
-			$count += \fwrite($f, $chunk);
+			$count += $written;
 			// let php release the memory to work around memory exhausted error with php 5.6
 			$chunk = null;
 		}
@@ -135,10 +204,22 @@ class OC_FileChunking {
 	 */
 	public function getCurrentSize() {
 		$cache = $this->getCache();
+		// Zwischensumme bevorzugen: der Stat-Loop über alle Chunk-Indizes kostet
+		// 2-3 Storage-Operationen pro Index und wird bei jedem Chunk-PUT vom
+		// QuotaPlugin aufgerufen — ohne Cache also O(chunkcount²) pro Upload
+		$cachedTotal = $cache->get($this->getSizeKey());
+		if (\is_numeric($cachedTotal)) {
+			return 0 + $cachedTotal;
+		}
 		$prefix = $this->getPrefix();
 		$total = 0;
 		for ($i = 0; $i < $this->info['chunkcount']; $i++) {
 			$total += $cache->size($prefix.$i);
+		}
+		try {
+			$cache->set($this->getSizeKey(), (string)$total, $this->ttl);
+		} catch (\Exception $e) {
+			// ignorieren — dann wird beim nächsten Aufruf erneut gezählt
 		}
 		return $total;
 	}
@@ -149,6 +230,7 @@ class OC_FileChunking {
 	public function cleanup() {
 		$cache = $this->getCache();
 		$prefix = $this->getPrefix();
+		$cache->remove($this->getSizeKey());
 		for ($i=0; $i < $this->info['chunkcount']; $i++) {
 			$cache->remove($prefix.$i);
 		}
@@ -161,6 +243,7 @@ class OC_FileChunking {
 	public function remove($index) {
 		$cache = $this->getCache();
 		$prefix = $this->getPrefix();
+		$this->updateCachedTotalSize(-$cache->size($prefix.$index));
 		$cache->remove($prefix.$index);
 	}
 
@@ -179,9 +262,14 @@ class OC_FileChunking {
 		if (\OC\Files\Filesystem::isValidPath($path)) {
 			$target = $storage->fopen($path, 'w');
 			if ($target) {
-				$count = $this->assemble($target);
-				\fclose($target);
-				return $count > 0;
+				try {
+					$this->assemble($target);
+				} finally {
+					\fclose($target);
+				}
+				// assemble() wirft bei jedem Fehler (fehlender Chunk, Short-Write) —
+				// hier angekommen ist die Datei vollständig geschrieben
+				return true;
 			} else {
 				return false;
 			}

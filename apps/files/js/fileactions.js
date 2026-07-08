@@ -15,7 +15,10 @@
 		'{{#if icon}}' +
 			'<img class="svg" alt="{{altText}}" src="{{icon}}" />' +
 		'{{else}}' +
-			'{{#if iconClass}}<span class="icon {{iconClass}}" />{{/if}}' +
+			// span ist kein Void-Element: "<span ... />" laesst den Browser den
+			// nachfolgenden Text-Span als Kind parsen -> Icon ueberlagert den Text
+			// (z.B. "Wiederherstellen" im Papierkorb). Explizit schliessen.
+			'{{#if iconClass}}<span class="icon {{iconClass}}"></span>{{/if}}' +
 			'{{#unless hasDisplayName}}<span class="hidden-visually">{{altText}}</span>{{/unless}}' +
 		'{{/if}}' +
 		'{{#if displayName}}<span> {{displayName}}</span>{{/if}}' +

@@ -377,21 +377,52 @@ OC.FileUpload.prototype = {
 			// a 202 response means the server is performing the final MOVE in an async manner,
 			// so we need to poll its status
 			if (status === 202) {
+				var pollRetries = 0;
+				var maxPollRetries = 5;
 				var poll = function() {
 					$.ajax(response.xhr.getResponseHeader('oc-jobstatus-location')).then(function(data) {
-						var obj = JSON.parse(data);
-						if (obj.status === 'finished') {
+						// je nach Content-Type liefert jQuery String oder
+						// bereits geparstes Objekt; Nicht-JSON (HTML-Fehler-
+						// seite, Redirect) darf das Polling nicht abbrechen
+						var obj = data;
+						if (typeof data === 'string') {
+							try {
+								obj = JSON.parse(data);
+							} catch (parseError) {
+								obj = null;
+							}
+						}
+						if (obj && obj.status === 'finished') {
 							doneDeferred.resolve(status, response);
-						}
-						if (obj.status === 'error') {
-							OC.Notification.show(obj.errorMessage);
+						} else if (obj && obj.status === 'error') {
+							if (obj.errorMessage) {
+								OC.Notification.show(obj.errorMessage);
+							}
 							doneDeferred.reject(status, response);
-						}
-						if (obj.status === 'started' || obj.status === 'initial') {
+						} else if (obj && (obj.status === 'started' || obj.status === 'initial')) {
+							pollRetries = 0;
 							// call it again after some short delay
 							setTimeout(poll, 1000);
+						} else {
+							// unbekannter Status oder kaputte Antwort:
+							// wie transienten Fehler behandeln
+							schedulePollRetry();
 						}
+					}, function() {
+						// transienter Poll-Fehler (5xx, Netzausfall):
+						// begrenzt mit Backoff weiterpollen, sonst haengt
+						// die UI ewig in "Processing files..."
+						schedulePollRetry();
 					});
+				};
+				var schedulePollRetry = function() {
+					pollRetries++;
+					if (pollRetries > maxPollRetries) {
+						doneDeferred.reject(status, response);
+						return;
+					}
+					// Backoff: 1s, 2s, 4s, 8s, 16s
+					setTimeout(poll, 1000 * Math.pow(2, pollRetries - 1));
 				};
 
 				// start the polling
@@ -408,6 +439,14 @@ OC.FileUpload.prototype = {
 	},
 
 	_deleteChunkFolder: function() {
+		// Nur das v2-Chunking eingeloggter Nutzer hat eine uploads/<uid>-
+		// Kollektion. Auf Public-Link-Seiten (Legacy-Chunking, uid=null)
+		// wuerde das DELETE auf uploads/null einen 401 liefern und damit den
+		// globalen Ajax-Handler in einen Seiten-Reload treiben; liegen
+		// gebliebene Legacy-Chunks raeumt der Server-Reaper auf.
+		if (this.data.isLegacyChunk || !OC.getCurrentUser().uid) {
+			return;
+		}
 		// delete transfer directory for this upload
 		this.uploader.davClient.remove(
 			'uploads/' + OC.getCurrentUser().uid + '/' + this.getId()
@@ -463,8 +502,12 @@ OC.FileUpload.prototype = {
 			}
 
 			// attempt parsing Sabre exception is available
-			var xml = response.jqXHR.responseXML;
-			if (xml.documentElement.localName === 'error' && xml.documentElement.namespaceURI === 'DAV:') {
+			// responseXML ist nur bei XML-Antworten gesetzt — Proxy-Fehlerseiten
+			// (502/504-HTML) und leere Bodies liefern null/undefined
+			var xml = response.jqXHR && response.jqXHR.responseXML;
+			if (xml && xml.documentElement
+				&& xml.documentElement.localName === 'error'
+				&& xml.documentElement.namespaceURI === 'DAV:') {
 				var messages = xml.getElementsByTagNameNS('http://sabredav.org/ns', 'message');
 				var exceptions = xml.getElementsByTagNameNS('http://sabredav.org/ns', 'exception');
 				if (messages.length) {
@@ -975,12 +1018,33 @@ OC.Uploader.prototype = _.extend({
 				this.$uploadprogressbar.find('.label .desktop').text(t('files', 'Processing files...'));
 			}
 			if (new Date().getTime() - this._lastProgressTime >= this._uploadStallTimeout * 1000 ) {
+				if (progress >= total) {
+					// Alle Bytes sind uebertragen — der Server assembliert
+					// noch (Legacy-Chunking: der letzte Chunk-PUT antwortet
+					// erst nach der Assembly; v2-Chunking: der finale MOVE
+					// laeuft). Das dauert bei grossen Dateien Minuten; ein
+					// retry() wuerde die laufende Assembly abbrechen.
+					return;
+				}
 				// TODO: move to "fileuploadprogress" event instead and use data.uploadedBytes
 				// stalling needs to be checked here because the file upload no longer triggers events
 				// restart upload
 				this.log('progress stalled'); // retry chunk (and prevent IE from dying)
 				_.each(this._uploads, function(upload) {
-					// FIXME: harden by only retry pending, not the finished ones
+					if (!upload.data) {
+						return;
+					}
+					// Nur laufende Uploads retrien, nicht fertige/abgebrochene
+					// (bei unbekanntem Zustand wie bisher retrien).
+					if (upload.data.state && upload.data.state() !== 'pending') {
+						return;
+					}
+					// Legacy-Public-Chunking hat keinen Resume-Pfad — ein
+					// Abbruch waere endgueltig, daher lieber weiterlaufen
+					// lassen (schlaegt bei totem Netz browserseitig fehl).
+					if (upload.data.isLegacyChunk) {
+						return;
+					}
 					upload.retry();
 				});
 			}
@@ -1163,13 +1227,16 @@ OC.Uploader.prototype = _.extend({
 					}
 
 					// check free space
-					freeSpace = $('#free_space').val();
-					if (freeSpace >= 0 && selection.totalBytes > freeSpace) {
+					// #free_space ist direkt nach Seitenload leer (Wert kommt
+					// asynchron via getstoragestats) — '' wuerde als 0
+					// verglichen und jeden Upload faelschlich ablehnen
+					freeSpace = parseInt($('#free_space').val(), 10);
+					if (!isNaN(freeSpace) && freeSpace >= 0 && selection.totalBytes > freeSpace) {
 						data.textStatus = 'notenoughspace';
 						data.errorThrown = t('files',
 							'Not enough free space, you are uploading {size1} but only {size2} is left', {
 							'size1': humanFileSize(selection.totalBytes),
-							'size2': humanFileSize($('#free_space').val())
+							'size2': humanFileSize(freeSpace)
 						});
 					}
 
@@ -1282,9 +1349,16 @@ OC.Uploader.prototype = _.extend({
 							window.setTimeout(retry, retries * fu.options.retryTimeout);
 							return;
 						}
-						fu.prototype
-							.options.fail.call(this, e, data);
-						return;
+						// Retries erschoepft (oder alle Bytes bereits
+						// uebertragen, dann gibt es nichts zu resumen): in die
+						// normale Fail-Verarbeitung unten durchfallen —
+						// Notification, Progressbar und upload.fail()-Cleanup.
+						// Der fruehere fu.prototype.options.fail-Aufruf war
+						// kaputt (fu ist die Widget-Instanz, kein Konstruktor,
+						// und die Prototype-Options definieren kein fail).
+						// stalled zuruecksetzen, damit ein spaeterer Resubmit
+						// nicht wieder im Retry-Zweig landet.
+						upload.data.stalled = false;
 					}
 
 					var status = null;
@@ -1292,7 +1366,17 @@ OC.Uploader.prototype = _.extend({
 						status = upload.getResponseStatus();
 					}
 					self.log('fail', e, upload);
-					self._hideProgressBar();
+					// Progressbar (und damit den Stall-Watchdog-Interval) nur
+					// stoppen, wenn keine weiteren Uploads laufen — bei
+					// parallelen Uploads wuerde ein einzelner Fehlschlag sonst
+					// Anzeige und Stall-Erkennung der uebrigen deaktivieren.
+					// defer analog zum done-Pfad: der fehlgeschlagene Upload
+					// kann selbst noch kurz als pending gelten.
+					_.defer(function() {
+						if (!self.isProcessing()) {
+							self._hideProgressBar();
+						}
+					});
 
 					if (data.textStatus === 'abort') {
 						self.showUploadCancelMessage();

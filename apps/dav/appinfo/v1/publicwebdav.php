@@ -39,6 +39,13 @@ use OCP\Files\NotFoundException;
 use Sabre\DAV\Exception\NotAuthenticated;
 use Sabre\DAV\Exception\NotFound;
 
+// Kein PHP-Timeout für Public-WebDAV (analog v1/webdav.php und v2/remote.php):
+// die Chunk-Assembly großer Public-Link-Uploads kann sonst am globalen
+// 3600s-Limit (bzw. dem php.ini-Limit, wenn set_time_limit deaktiviert ist)
+// mitten im Zusammenbau sterben
+\set_time_limit(0);
+\ignore_user_abort(true);
+
 OC_App::loadApps(['authentication']);
 OC_Util::tearDownFS();  // FS might have been prematurely initialized
 OC_App::loadApps(['filesystem', 'logging']);

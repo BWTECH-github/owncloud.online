@@ -39,6 +39,20 @@ use OCP\Lock\LockedException;
  */
 class DBLockingProvider extends AbstractLockingProvider {
 	/**
+	 * Gnadenfrist (Sekunden), bevor abgelaufene, aber noch als gehalten
+	 * markierte Locks (lock <> 0) geräumt werden: lange Operationen
+	 * (z.B. Upload-Kopie/Chunk-Assembly > filelocking.ttl) frischen die
+	 * TTL nicht auf und würden sonst mitten im Transfer ihren Lock verlieren.
+	 *
+	 * Muss die längste realistische Assembly abdecken (mehrere GB auf
+	 * langsamer Platte), aber nicht länger: Stirbt ein PHP-Prozess hart
+	 * (OOM, kill -9), bleibt sein Lock genau so lange verwaist und blockiert
+	 * paralleles Schreiben. 4 h ist der Kompromiss; per config.php
+	 * ('filelocking.held_grace') übersteuerbar.
+	 */
+	public const EXPIRED_HELD_LOCK_GRACE = 14400;
+
+	/**
 	 * @var \OCP\IDBConnection
 	 */
 	private $connection;
@@ -187,12 +201,22 @@ class DBLockingProvider extends AbstractLockingProvider {
 		$expire = $this->getExpireTime();
 		if ($type === self::LOCK_SHARED) {
 			if (!$this->isLocallyLocked($path)) {
-				$result = $this->initLockField($path, 1);
+				// im Normalfall existiert die Lock-Zeile bereits: erst UPDATE
+				// versuchen, INSERT nur als Fallback — spart einen Roundtrip
+				// pro Pfadebene
+				$result = $this->connection->executeUpdate(
+					'UPDATE `*PREFIX*file_locks` SET `lock` = `lock` + 1, `ttl` = ? WHERE `key` = ? AND `lock` >= 0',
+					[$expire, $path]
+				);
 				if ($result <= 0) {
-					$result = $this->connection->executeUpdate(
-						'UPDATE `*PREFIX*file_locks` SET `lock` = `lock` + 1, `ttl` = ? WHERE `key` = ? AND `lock` >= 0',
-						[$expire, $path]
-					);
+					$result = $this->initLockField($path, 1);
+					if ($result <= 0) {
+						// Race: Zeile wurde zwischenzeitlich von einem anderen Request angelegt
+						$result = $this->connection->executeUpdate(
+							'UPDATE `*PREFIX*file_locks` SET `lock` = `lock` + 1, `ttl` = ? WHERE `key` = ? AND `lock` >= 0',
+							[$expire, $path]
+						);
+					}
 				}
 			} else {
 				$result = 1;
@@ -202,12 +226,19 @@ class DBLockingProvider extends AbstractLockingProvider {
 			if ($this->hasAcquiredLock($path, ILockingProvider::LOCK_SHARED) === false && $this->isLocallyLocked($path)) {
 				$existing = 1;
 			}
-			$result = $this->initLockField($path, -1);
+			$result = $this->connection->executeUpdate(
+				'UPDATE `*PREFIX*file_locks` SET `lock` = -1, `ttl` = ? WHERE `key` = ? AND `lock` = ?',
+				[$expire, $path, $existing]
+			);
 			if ($result <= 0) {
-				$result = $this->connection->executeUpdate(
-					'UPDATE `*PREFIX*file_locks` SET `lock` = -1, `ttl` = ? WHERE `key` = ? AND `lock` = ?',
-					[$expire, $path, $existing]
-				);
+				$result = $this->initLockField($path, -1);
+				if ($result <= 0) {
+					// Race: Zeile wurde zwischenzeitlich von einem anderen Request angelegt
+					$result = $this->connection->executeUpdate(
+						'UPDATE `*PREFIX*file_locks` SET `lock` = -1, `ttl` = ? WHERE `key` = ? AND `lock` = ?',
+						[$expire, $path, $existing]
+					);
+				}
 			}
 		}
 		if ($result !== 1) {
@@ -268,9 +299,21 @@ class DBLockingProvider extends AbstractLockingProvider {
 	public function cleanExpiredLocks() {
 		$expire = $this->timeFactory->getTime();
 		try {
+			// freie Locks (lock = 0) direkt nach TTL-Ablauf löschen
+			$this->connection->executeUpdate(
+				'DELETE FROM `*PREFIX*file_locks` WHERE `ttl` < ? AND `lock` = 0',
+				[$expire]
+			);
+			// gehaltene Locks (lock <> 0) erst nach zusätzlicher Gnadenfrist
+			// räumen: sie können zu noch laufenden Requests gehören, die die
+			// TTL nicht auffrischen (z.B. stundenlange Uploads/Assemblies)
+			$grace = (int)\OC::$server->getConfig()->getSystemValue(
+				'filelocking.held_grace',
+				self::EXPIRED_HELD_LOCK_GRACE
+			);
 			$this->connection->executeUpdate(
 				'DELETE FROM `*PREFIX*file_locks` WHERE `ttl` < ?',
-				[$expire]
+				[$expire - $grace]
 			);
 		} catch (\Exception $e) {
 			// If the table is missing, the clean up was successful

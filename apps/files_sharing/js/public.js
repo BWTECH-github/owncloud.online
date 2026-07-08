@@ -79,7 +79,14 @@ OCA.Sharing.PublicApp = {
 					// file-upload.js); this lets large files (multi-GB) upload as many
 					// small requests instead of one monolithic PUT that a php-fpm /
 					// proxy timeout would truncate.
-					maxChunkSize: (OC.appConfig.files && OC.appConfig.files.max_chunk_size) || (10 * 1024 * 1024)
+					// Only for anonymous visitors: a logged-in visitor of a public
+					// link has OC.getCurrentUser().uid set, and file-upload.js would
+					// then take the private DAV chunk path (uploads/<uid> + MOVE into
+					// files/<uid>), depositing the file in the visitor's own home
+					// instead of the share. Logged-in visitors keep the single PUT.
+					maxChunkSize: !OC.getCurrentUser().uid
+						? ((OC.appConfig.files && OC.appConfig.files.max_chunk_size) || (10 * 1024 * 1024))
+						: undefined
 				}
 			);
 			this.files = OCA.Files.Files;

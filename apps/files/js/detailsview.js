@@ -85,6 +85,12 @@
 
 		_onClose: function(event) {
 			OC.Apps.hideAppSidebar(this.$el);
+			// Render-Marker verwerfen: der Guard in selectTab soll nur innerhalb
+			// desselben Sidebar-Öffnungszyklus greifen — beim nächsten Öffnen
+			// werden die Tab-Daten wieder frisch geladen
+			_.each(this._tabViews, function(tabView) {
+				tabView._lastRenderedFileInfo = undefined;
+			});
 			event.preventDefault();
 		},
 
@@ -197,14 +203,23 @@
 			$tabsContainer.find('>.tab').addClass('hidden');
 
 			// tab already rendered ?
+			var newlyAttached = false;
 			if (!$tabEl.length) {
 				// render tab
 				$tabsContainer.append(tabView.$el);
 				$tabEl = tabView.$el;
+				newlyAttached = true;
 			}
 
-			// this should trigger tab rendering
-			tabView.setFileInfo(this.model);
+			// this should trigger tab rendering.
+			// Guard gegen redundante AJAX-Refetches beim Hin- und Herklicken:
+			// einige Tab-Subklassen (Versions/Comments/Systemtags) überschreiben
+			// setFileInfo ohne eigenen Model-Vergleich, daher wird hier vermerkt,
+			// mit welchem Model der Tab zuletzt gerendert wurde
+			if (newlyAttached || tabView._lastRenderedFileInfo !== this.model) {
+				tabView._lastRenderedFileInfo = this.model;
+				tabView.setFileInfo(this.model);
+			}
 
 			$tabEl.removeClass('hidden');
 
@@ -234,7 +249,12 @@
 				var tabView = _.find(this._tabViews, function(tab) {
 					return tab.id === tabId;
 				});
-				tabView.setFileInfo(fileInfo);
+				// kein Doppel-Fetch, wenn selectTab (via render) den Tab
+				// gerade schon mit demselben Model aktualisiert hat
+				if (tabView._lastRenderedFileInfo !== fileInfo) {
+					tabView._lastRenderedFileInfo = fileInfo;
+					tabView.setFileInfo(fileInfo);
+				}
 			}
 
 			_.each(this._detailFileInfoViews, function(detailView) {

@@ -22,6 +22,7 @@
 namespace OCA\DAV\Upload;
 
 use OCA\DAV\Connector\Sabre\Directory;
+use Sabre\DAV\Exception\BadRequest;
 use Sabre\DAV\Exception\Forbidden;
 use Sabre\DAV\ICollection;
 
@@ -35,6 +36,23 @@ class UploadFolder implements ICollection {
 	public function createFile($name, $data = null) {
 		// need to bypass hooks for individual chunks
 		$this->node->createFileDirectly($name, $data);
+
+		// Geschriebene Bytes gegen Content-Length verifizieren (analog File::put):
+		// ein abgerissener Request-Body darf nicht als vollständiger Chunk
+		// gespeichert bleiben — ohne OC-Total-Length-Header würde der Fehler
+		// sonst nicht einmal beim finalen MOVE auffallen
+		if (isset($_SERVER['CONTENT_LENGTH'], $_SERVER['REQUEST_METHOD'])
+			&& $_SERVER['REQUEST_METHOD'] === 'PUT'
+		) {
+			$expected = $_SERVER['CONTENT_LENGTH'];
+			// wirft NotFound, falls der Chunk gar nicht geschrieben wurde
+			$chunk = $this->node->getChild($name);
+			$written = $chunk->getSize();
+			if ($written !== null && $written != $expected) {
+				$chunk->delete();
+				throw new BadRequest('expected filesize ' . $expected . ' got ' . $written);
+			}
+		}
 	}
 
 	public function createDirectory($name) {
