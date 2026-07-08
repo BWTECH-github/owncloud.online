@@ -58,11 +58,12 @@ class CheckUpdateBackgroundJob extends TimedJob {
 
 		foreach ($updates as $appId => $appInfo) {
 			$url = $this->urlGenerator->linkToRoute('market.page.index') . '#/app/' . $appId;
-			if ($appInfo['major'] !== false) {
-				$this->createNotifications($appId, $appInfo['major'], $url);
-			}
-			if ($appInfo['minor'] !== false) {
-				$this->createNotifications($appId, $appInfo['minor'], $url);
+			// Nur den höchsten Kandidaten melden: createNotifications hat pro App
+			// nur EINEN Versions-Merker — zwei Aufrufe (major+minor) löschen sich
+			// gegenseitig die Notification und re-notifizieren täglich.
+			$version = $appInfo['major'] !== false ? $appInfo['major'] : $appInfo['minor'];
+			if ($version !== false) {
+				$this->createNotifications($appId, $version, $url);
 			}
 		}
 	}

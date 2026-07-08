@@ -23,10 +23,10 @@
 		},
 		computed: {
 			loading() {
-				return this.$store.state.applications.loading
+				return this.$store.state.bundles.loading
 			},
 			failed() {
-				return this.$store.state.applications.failed
+				return this.$store.state.bundles.failed
 			},
 			bundles() {
 				if (this.loading || this.failed) {

@@ -122,7 +122,8 @@ class HttpService {
 		}
 
 		$apiKey = $this->getApiKey();
-		$this->httpGet($url, ['sink' => $path], $apiKey);
+		// Größeres Timeout als für API-Abfragen: App-Pakete können mehrere MB groß sein.
+		$this->httpGet($url, ['sink' => $path, 'timeout' => 300], $apiKey);
 	}
 
 	/**
@@ -156,7 +157,13 @@ class HttpService {
 			$cache = $this->cacheFactory->create(self::CACHE_KEY);
 			$data = $cache->get($key);
 			if ($data !== null) {
-				return \json_decode($data, true);
+				$decoded = \json_decode($data, true);
+				if (\is_array($decoded)) {
+					return $decoded;
+				}
+				// Ungültiger Alt-Eintrag (z.B. vor dieser Validierung gecachte
+				// Fehlerseite): verwerfen und frisch laden.
+				$cache->remove($key);
 			}
 		}
 
@@ -165,11 +172,27 @@ class HttpService {
 		$endpointUrl = $this->getAbsoluteUrl($uri);
 		$response = $this->httpGet($endpointUrl, [], $apiKey);
 		$data = $response->getBody();
+		try {
+			$decoded = \json_decode($data, true, 512, \JSON_THROW_ON_ERROR);
+		} catch (\JsonException $e) {
+			throw new AppManagerException(
+				$this->l10n->t('Marketplace returned invalid JSON: %s', [$e->getMessage()]),
+				0,
+				$e
+			);
+		}
+		if (!\is_array($decoded)) {
+			throw new AppManagerException(
+				$this->l10n->t('Marketplace returned an unexpected response format.')
+			);
+		}
+		// Erst nach erfolgreicher Validierung cachen: eine kaputte 200er-Antwort
+		// (Proxy-/Wartungsseite) würde sonst den Katalog für 24h vergiften.
 		if ($this->cacheFactory->isAvailable()) {
 			$cache = $this->cacheFactory->create(self::CACHE_KEY);
 			$cache->set($key, $data, 60 * 60 * 24);
 		}
-		return \json_decode($data, true);
+		return $decoded;
 	}
 
 	/**
@@ -202,6 +225,13 @@ class HttpService {
 	 * @throws AppManagerException
 	 */
 	private function httpGet(string $path, array $options, ?string $apiKey): IResponse {
+		// Guzzle-Default ist timeout=0 (unendlich): ohne Limit blockiert ein
+		// hängender Marketplace Seitenaufrufe und die serielle Cron-Queue.
+		// Aufrufer-Optionen (z.B. Download-Timeout) haben Vorrang.
+		$options = \array_merge(
+			['connect_timeout' => 10, 'timeout' => 30],
+			$options
+		);
 		if (!empty($apiKey)) {
 			$options = \array_merge(
 				['headers' => ['Authorization' => "apikey: $apiKey"]],
@@ -268,8 +298,9 @@ class HttpService {
 	}
 
 	/**
-	 * Local catalog mode is active when no external `appstoreurl` is configured
-	 * (default `local`) or when the URL points at a `file://` location.
+	 * Local catalog mode is active when `appstoreurl` is set to the `local`
+	 * marker or points at a `file://` location; without configuration the
+	 * remote marketplace (DEFAULT_STORE_URL) is used.
 	 */
 	private function isLocalCatalog(): bool {
 		$url = $this->config->getSystemValue('appstoreurl', self::DEFAULT_STORE_URL);

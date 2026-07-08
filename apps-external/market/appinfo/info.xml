@@ -2,8 +2,8 @@
 <info>
 	<id>market</id>
 	<name>Market</name>
-	<summary>Browse, install and update apps from a local catalog inside ownCloud</summary>
-	<description>Easily manage ownCloud apps from within your ownCloud web interface. This BW-Tech fork ships with a fully self-contained, local app catalog (no external marketplace required) and a refreshed light UI with live search. Apps can be downloaded from any URL declared in `marketplace/apps.json` (for example GitHub releases).
+	<summary>Browse, install and update apps from the marketplace or a local catalog inside ownCloud</summary>
+	<description>Easily manage ownCloud apps from within your ownCloud web interface. This BW-Tech fork connects to the owncloud.online marketplace by default and additionally ships a fully self-contained, local app catalog for offline use (set `appstoreurl` to `local` or a `file://` path). It comes with a refreshed light UI with live search. Apps can be downloaded from any URL declared in `marketplace/apps.json` (for example GitHub releases).
 
 This is a community fork maintained by BW-Tech GmbH for owncloud.online. Original code by ownCloud GmbH.
 

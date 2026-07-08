@@ -11,7 +11,7 @@
 							span(uk-icon="icon: tag; ratio: 0.7")
 							| {{ primaryCategoryLabel }}
 						h1.bwt-detail__title {{ application.name }}
-						.bwt-detail__rating
+						.bwt-detail__rating(v-if="application.rating")
 							rating(:rating="application.rating")
 
 			.uk-card-body.bwt-detail__body
@@ -62,6 +62,9 @@
 					button.uk-button.uk-button-primary.uk-align-right.uk-margin-remove-bottom.uk-margin-small-left.uk-position-relative(disabled)
 						.uk-position-small.uk-position-center-left(uk-spinner, uk-icon="icon: spinner; ratio: 0.8")
 						| &nbsp;&nbsp;&nbsp;&nbsp; {{ t('loading') }}
+
+				div(v-else-if="isLocalOnly")
+					span.uk-text-muted.uk-align-right.uk-margin-remove-bottom {{ t('Installed locally') }}
 
 				div(v-else-if="!application.downloadable")
 					a.uk-button.uk-button-secondary.uk-align-right.uk-margin-remove-bottom.uk-margin-small-left.uk-position-relative(:href="application.marketplace", target="_blank")
@@ -115,6 +118,16 @@
 				updateVersion : 0
 			}
 		},
+		mounted () {
+			// Bei direktem Aufruf der Detail-Route (Deep-Link/Reload) ist die
+			// Liste der lokal installierten Apps evtl. noch nicht geladen —
+			// ohne sie fällt die application-Auflösung für rein lokale Apps
+			// (z.B. theme-owncloudonline) ins Leere und die Seite bliebe leer.
+			const local = this.$store.state.localApps;
+			if (!local.loading && (!local.records || local.records.length === 0)) {
+				this.$store.dispatch('FETCH_LOCAL_APPS');
+			}
+		},
 		computed: {
 			loading() {
 				return this.$store.state.applications.loading
@@ -148,11 +161,27 @@
 			},
 			publisher () {
 				const publisher = this.application && this.application.publisher;
-				return publisher || {
-					name: this.t('Unknown'),
+				if (publisher) {
+					return publisher;
+				}
+				// Lokal installierte Apps liefern statt eines publisher-Objekts
+				// nur ein author-Feld (String oder {name}).
+				const author = this.application && this.application.author;
+				const authorName = _.isObject(author) ? (author.name || author['@value']) : author;
+				return {
+					name: authorName || this.t('Unknown'),
 					url: '#',
 					isPagePublic: false
 				}
+			},
+
+			// App ist nur lokal installiert (nicht im Remote-Katalog): kein
+			// Marktplatz-Link, kein Install/Update — nur Info + ggf. Deinstallation.
+			isLocalOnly () {
+				return !!this.application
+					&& !this.application.release
+					&& !this.application.downloadable
+					&& !this.application.marketplace;
 			},
 			installed() {
 				return this.application.installed && !this.processing
@@ -161,7 +190,16 @@
 				return this.application.release && this.application.release.canInstall && !this.installed && !this.processing
 			},
 			updateable() {
-				return this.application.installed && this.application.updateInfo !== false
+				// Rein lokale Apps haben keine echten Update-Daten (der Controller
+				// liefert updateInfo als leeres Array) — sonst würde der
+				// Update-Button auf undefined-Releases zugreifen und crashen.
+				if (this.isLocalOnly) {
+					return false;
+				}
+				const info = this.application.updateInfo;
+				const hasInfo = info !== false
+					&& !(Array.isArray(info) && info.length === 0);
+				return this.application.installed && hasInfo && this.releases.length > 0;
 			},
 
 			// Any kind of installing, updating or uninstalling process
@@ -173,6 +211,10 @@
 				if (this.installed) {
 					if (this.application.installInfo)
 						return this.application.installInfo
+					// Lokal installierte App ohne installInfo: Version steht
+					// direkt am App-Objekt (aus appinfo/info.xml).
+					if (this.application.version)
+						return { version: this.application.version }
 					return false
 				}
 				else {
@@ -186,7 +228,8 @@
 				if (this.installed) {
 					if (this.application.installInfo)
 						return this.application.installInfo.licence;
-					return false
+					// Lokal installierte App: licence direkt am App-Objekt.
+					return this.application.licence || this.application.license || false;
 				}
 				else {
 					if (this.application.release)
@@ -196,13 +239,14 @@
 			},
 
 			releases () {
-				if (!this.updateable)
-					return false;
+				// Nur echte Release-Objekte behalten: false UND undefined/null
+				// herausfiltern (lokale Apps haben weder minor- noch majorUpdate),
+				// damit der Update-Button nie auf undefined.version zugreift.
 				return _.filter([
 					this.application.minorUpdate,
 					this.application.majorUpdate
 				], function (release) {
-					return release !== false;
+					return !!release;
 				});
 			}
 		},

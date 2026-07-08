@@ -46,6 +46,9 @@ class MarketService {
 	private ?array $apps = null;
 	private ?array $categories = null;
 	private ?array $bundles = null;
+	/** @var array<string, array>|null Memo appId => info.xml-Daten der installierten Apps */
+	private ?array $installedAppInfos = null;
+	private ?DependencyAnalyzer $dependencyAnalyzer = null;
 
 	public function __construct(
 		private readonly HttpService $httpService,
@@ -71,13 +74,27 @@ class MarketService {
 	 * Get application data provided by info.xml.
 	 */
 	public function getInstalledAppInfo(string $appId): ?array {
-		foreach ($this->appManager->getAllApps() as $app) {
-			$info = $this->appManager->getAppInfo($app);
-			if (isset($info['id']) && $info['id'] === $appId) {
-				return $info;
+		// Einmalig pro Prozess als Map aufbauen: enrichApp fragt das sonst
+		// mehrfach pro Katalog-App ab (linearer Scan über alle Apps je Aufruf).
+		if ($this->installedAppInfos === null) {
+			$infos = [];
+			foreach ($this->appManager->getAllApps() as $app) {
+				$info = $this->appManager->getAppInfo($app);
+				if (isset($info['id'])) {
+					$infos[$info['id']] = $info;
+				}
 			}
+			$this->installedAppInfos = $infos;
 		}
-		return null;
+		return $this->installedAppInfos[$appId] ?? null;
+	}
+
+	/**
+	 * Installations-Status kann sich innerhalb eines Prozesses ändern
+	 * (occ-Befehle, Repair-Steps) — Memo dann verwerfen.
+	 */
+	private function invalidateInstalledAppInfoCache(): void {
+		$this->installedAppInfos = null;
 	}
 
 	/**
@@ -91,6 +108,7 @@ class MarketService {
 		if (!$this->canInstall()) {
 			throw new Exception("Installing apps is not supported because the app folder is not writable.");
 		}
+		$this->invalidateInstalledAppInfoCache();
 
 		$marketInfo = $this->getAppInfo($appId);
 		if ($marketInfo === null) {
@@ -128,7 +146,18 @@ class MarketService {
 
 		$package = $this->downloadPackage($appId);
 		$this->installPackage($package, $skipMigrations);
-		$this->appManager->enableApp($appId);
+		try {
+			$this->appManager->enableApp($appId);
+		} catch (Exception $e) {
+			// Rollback: die halb installierte App würde sonst jeden weiteren
+			// Installationsversuch mit AppAlreadyInstalledException blockieren.
+			try {
+				$this->removeDownloadedApp($appId);
+			} catch (Exception) {
+				// Best effort — der ursprüngliche Fehler hat Vorrang.
+			}
+			throw $e;
+		}
 	}
 
 	/**
@@ -162,6 +191,7 @@ class MarketService {
 		if (!$this->canInstall()) {
 			throw new Exception("Installing apps is not supported because the app folder is not writable.");
 		}
+		$this->invalidateInstalledAppInfoCache();
 
 		$info = $this->getInstalledAppInfo($appId);
 		if ($info === null) {
@@ -176,10 +206,12 @@ class MarketService {
 	 * Install downloaded package.
 	 */
 	public function installPackage(string $package, bool $skipMigrations = false): string|false|null {
+		$this->invalidateInstalledAppInfoCache();
 		return $this->appManager->installApp($package, $skipMigrations);
 	}
 
 	public function updatePackage(string $package): string|false|null {
+		$this->invalidateInstalledAppInfoCache();
 		return $this->appManager->updateApp($package);
 	}
 
@@ -258,10 +290,13 @@ class MarketService {
 	 */
 	public function getMissingDependencies(array $appInfo): array {
 		// bad hack - should use OCP
-		$l10n = \OC::$server->getL10N('settings');
-		$dependencyAnalyzer = new DependencyAnalyzer(new Platform($this->config), $l10n);
-
-		return $dependencyAnalyzer->analyze($appInfo);
+		// Analyzer einmal pro Prozess bauen: läuft sonst für jedes Release
+		// jeder Katalog-App neu (Katalog-Apps x Releases Instanzen).
+		$this->dependencyAnalyzer ??= new DependencyAnalyzer(
+			new Platform($this->config),
+			\OC::$server->getL10N('settings')
+		);
+		return $this->dependencyAnalyzer->analyze($appInfo);
 	}
 
 	/**
@@ -380,15 +415,30 @@ class MarketService {
 	 * @throws AppNotInstalledException
 	 */
 	private function filterReleases(array $marketInfo, string $currentVersion, bool $isMajorUpdate): string|false {
+		$platformVersion = $this->versionHelper->getPlatformVersion();
 		$releases = \array_filter(
 			$marketInfo['releases'],
-			function (array $r) use ($currentVersion, $isMajorUpdate): bool {
+			function (array $r) use ($currentVersion, $isMajorUpdate, $platformVersion): bool {
 				$marketVersion = $r['version'];
 				$isDifferentMajor = !$this->versionHelper->isSameMajorVersion($marketVersion, $currentVersion);
 				if ($isMajorUpdate !== $isDifferentMajor) {
 					return false;
 				}
-				return \version_compare($marketVersion, $currentVersion, '>');
+				if (!\version_compare($marketVersion, $currentVersion, '>')) {
+					return false;
+				}
+				// Nur Plattform-kompatible Releases melden (gleicher Check wie
+				// in downloadPackage), sonst entstehen Update-Benachrichtigungen,
+				// die beim Installieren in "No compatible version" enden.
+				// Fehlendes platformMin/platformMax bedeutet "keine Grenze" —
+				// NICHT gegen null vergleichen, da compare($v, null, '>') via
+				// version_compare($v, '', '>') === true wäre und dann jedes
+				// Release ohne Obergrenze fälschlich als inkompatibel gälte.
+				$tooSmall = isset($r['platformMin'])
+					&& $this->versionHelper->compare($platformVersion, $r['platformMin'], '<');
+				$tooBig = isset($r['platformMax'])
+					&& $this->versionHelper->compare($platformVersion, $r['platformMax'], '>');
+				return $tooSmall === false && $tooBig === false;
 			}
 		);
 		\usort(
@@ -447,7 +497,30 @@ class MarketService {
 		$extension = isset($pathInfo['extension']) ? '.' . $pathInfo['extension'] : '';
 		$path = \OC::$server->getTempManager()->getTemporaryFile($extension);
 		$this->httpService->downloadApp($downloadLink, $path);
+		$this->verifyDownloadChecksum($appId, $release[0], $path);
 		return $path;
+	}
+
+	/**
+	 * Vergleicht die im Katalog deklarierte sha256-Checksumme ('checksum' =>
+	 * 'sha256:<hex>') mit dem heruntergeladenen Paket. Releases ohne
+	 * Checksummen-Feld oder mit anderem Algorithmus bleiben erlaubt
+	 * (Fremdkataloge, ältere Backends).
+	 *
+	 * @throws AppManagerException
+	 */
+	private function verifyDownloadChecksum(string $appId, array $release, string $path): void {
+		$checksum = $release['checksum'] ?? null;
+		if (!\is_string($checksum) || !\str_starts_with($checksum, 'sha256:')) {
+			return;
+		}
+		$expected = \strtolower(\trim(\substr($checksum, \strlen('sha256:'))));
+		$actual = \hash_file('sha256', $path);
+		if ($actual === false || !\hash_equals($expected, $actual)) {
+			throw new AppManagerException(
+				$this->l10n->t('Downloaded package for %s failed the sha256 checksum verification.', [$appId])
+			);
+		}
 	}
 
 	private function removeDownloadedApp(string $appId): bool {
@@ -474,6 +547,7 @@ class MarketService {
 
 		$this->removeDirectory($realPath);
 		$this->appManager->clearAppsCache();
+		$this->invalidateInstalledAppInfoCache();
 		return !\file_exists($realPath);
 	}
 
