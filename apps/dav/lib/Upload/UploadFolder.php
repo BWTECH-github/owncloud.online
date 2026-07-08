@@ -47,10 +47,14 @@ class UploadFolder implements ICollection {
 			$expected = $_SERVER['CONTENT_LENGTH'];
 			// wirft NotFound, falls der Chunk gar nicht geschrieben wurde
 			$chunk = $this->node->getChild($name);
-			$written = $chunk->getSize();
-			if ($written !== null && $written != $expected) {
-				$chunk->delete();
-				throw new BadRequest('expected filesize ' . $expected . ' got ' . $written);
+			// getSize() ist auf \Sabre\DAV\INode nicht deklariert — nur auf dem
+			// konkreten OCA-Node; sonst überspringen wir die Größenprüfung.
+			if ($chunk instanceof \OCA\DAV\Connector\Sabre\Node) {
+				$written = $chunk->getSize();
+				if ($written !== null && $written != $expected) {
+					$chunk->delete();
+					throw new BadRequest('expected filesize ' . $expected . ' got ' . $written);
+				}
 			}
 		}
 	}
