@@ -34,18 +34,20 @@ class Application extends App {
 		// needed for translation
 		// t('Market')
 
-		$listener = $this->getContainer()->query(Listener::class);
-		$dispatcher = $this->getContainer()->getServer()->getEventDispatcher();
+		// Listener lazy auflösen: app.php läuft bei jedem Request, der komplette
+		// Market-Service-Graph wird aber nur für die seltenen Repair-Events gebraucht.
+		$container = $this->getContainer();
+		$dispatcher = $container->getServer()->getEventDispatcher();
 		$dispatcher->addListener(
 			IRepairStep::class . '::upgradeAppStoreApp',
-			static function ($event) use ($listener): void {
+			static function ($event) use ($container): void {
 				if ($event instanceof GenericEvent) {
 					try {
 						$isMajorUpdate = $event->getArgument('isMajorUpdate');
 					} catch (\InvalidArgumentException) {
 						$isMajorUpdate = false;
 					}
-					$listener->upgradeAppStoreApp(
+					$container->query(Listener::class)->upgradeAppStoreApp(
 						$event->getSubject(),
 						$isMajorUpdate
 					);
@@ -54,9 +56,9 @@ class Application extends App {
 		);
 		$dispatcher->addListener(
 			IRepairStep::class . '::reinstallAppStoreApp',
-			static function ($event) use ($listener): void {
+			static function ($event) use ($container): void {
 				if ($event instanceof GenericEvent) {
-					$listener->reinstallAppStoreApp($event->getSubject());
+					$container->query(Listener::class)->reinstallAppStoreApp($event->getSubject());
 				}
 			}
 		);

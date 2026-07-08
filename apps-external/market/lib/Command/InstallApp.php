@@ -126,7 +126,10 @@ class InstallApp extends Command {
 				$updateVersion = $updateVersions['minor'];
 				if ($updateVersion !== false) {
 					$output->writeln("$appId: Installing new version $updateVersion ...");
-					$this->marketService->updateApp($appId);
+					// Zielversion explizit übergeben: ohne targetVersion nimmt
+					// downloadPackage die neueste Release — ggf. ein stilles
+					// Major-Upgrade statt des gemeldeten Minor-Updates.
+					$this->marketService->updateApp($appId, $updateVersion);
 					$output->writeln("$appId: App updated.");
 					return;
 				}

@@ -130,7 +130,16 @@ const getters = {
     },
 
     application: (state) => (id) => {
-        return _.find(state.applications.records, function (application) {
+        const remote = _.find(state.applications.records, function (application) {
+            return application.id == id;
+        });
+        if (remote) {
+            return remote;
+        }
+        // Fallback auf lokal installierte Apps: rein lokale Apps (z.B.
+        // theme-owncloudonline, oco_selfservice, audit_log) stehen nicht im
+        // Remote-Katalog — ohne diesen Fallback rendert die Detailseite leer.
+        return _.find(state.localApps.records, function (application) {
             return application.id == id;
         });
     },
@@ -233,7 +242,7 @@ const mutations = {
 		_.extend(state["bundles"], {
 			loading: false,
 			failed: true,
-            record: {}
+			records: {}
 		})
 	},
 
@@ -279,7 +288,13 @@ const mutations = {
     },
 
     SET_APPLICATION_INSTALLED (state, id) {
-        state["installed"].push(id)
+        // Neues Array statt push: hält die Liste duplikatfrei und feuert den
+        // Navigation-Rebuild-Watcher in App.vue trotzdem bei jeder Operation.
+        state["installed"] = _.union(state["installed"], [id]);
+    },
+
+    SET_APPLICATION_UNINSTALLED (state, id) {
+        state["installed"] = _.without(state["installed"], id);
     },
 
     APIKEY (state, changes) {
@@ -324,11 +339,16 @@ const actions = {
     },
 
     REFRESH_MARKET (context) {
-        return context.dispatch("INVALIDATE_CACHE", {silent: true}).catch(() => {
-            return Promise.all([
-                context.dispatch("FETCH_APPLICATIONS"),
-                context.dispatch("FETCH_LOCAL_APPS")
-            ]);
+        // Nur neu laden, NICHT den 24h-Server-Cache leeren: Invalidierung
+        // gibt es ausschließlich über den expliziten Refresh-Button
+        // (INVALIDATE_CACHE); nach Install/Uninstall invalidiert der Server
+        // seinen Cache ohnehin selbst.
+        return Promise.all([
+            context.dispatch("FETCH_APPLICATIONS"),
+            context.dispatch("FETCH_LOCAL_APPS")
+        ]).catch(() => {
+            // Fehler werden bereits in den FETCH_*-Actions als Notification
+            // angezeigt — hier nur unhandled rejections vermeiden.
         });
     },
 
@@ -364,18 +384,28 @@ const actions = {
 			}
 
 			context.commit("FINISH_PROCESSING", id);
-			context.commit("SET_APPLICATION_INSTALLED", id);
+			if (route === "uninstall") {
+				context.commit("SET_APPLICATION_UNINSTALLED", id);
+			} else {
+				context.commit("SET_APPLICATION_INSTALLED", id);
+			}
 
         }).catch((error) => {
+            // FINISH_PROCESSING zuerst: der Button-Spinner darf auch bei
+            // Netzwerkfehlern ohne error.response nie dauerhaft hängen bleiben.
+            context.commit("FINISH_PROCESSING", id);
+
+            const response = (error && error.response) ? error.response : {};
+            const data = response.data || {};
+
             if (!options.suppressNotifications) {
-                UIkit.notification(error.response.data.message, {
+                UIkit.notification(data.message || "Could not complete the operation.", {
                     status:"danger",
                     pos: "bottom-right"
                 });
-			}
+            }
 
-			context.commit("FINISH_PROCESSING", id);
-			return Promise.reject(error.response);
+            return Promise.reject(response);
         })
     },
 
@@ -399,6 +429,9 @@ const actions = {
     FETCH_LOCAL_APPS (context) {
         context.commit("LOADING_LOCAL_APPS");
 
+        // enabled + disabled getrennt abfragen: robust gegen ältere
+        // Controller-Kopien (Bundle-Deployments), bei denen ein unbekanntes
+        // state='all' fälschlich als "disabled" gefiltert würde.
         return Promise.all([
             Axios.get(OC.generateUrl("/apps/market/installed-apps/enabled")),
             Axios.get(OC.generateUrl("/apps/market/installed-apps/disabled"))
@@ -437,12 +470,14 @@ const actions = {
                 });
             })
             .catch((error) => {
-                UIkit.notification(error.response.data.message, {
+                const response = (error && error.response) ? error.response : {};
+                const data = response.data || {};
+                UIkit.notification(data.message || "Could not request a license key.", {
                     status : "danger",
                     pos    : "bottom-right"
                 });
 
-				return Promise.reject(error.response);
+				return Promise.reject(response);
 			});
     },
 
@@ -481,8 +516,10 @@ const actions = {
                 context.commit("FINISH_BUNDLES")
             })
             .catch((error) => {
-                UIkit.notification(error.response.data.message, {status:"danger", pos: "bottom-right"});
-                context.commit("FAILED_BUNDLES")
+                context.commit("FAILED_BUNDLES");
+                const response = (error && error.response) ? error.response : {};
+                const data = response.data || {};
+                UIkit.notification(data.message || "Could not load bundles from the market.", {status:"danger", pos: "bottom-right"});
             });
     },
 
@@ -495,8 +532,10 @@ const actions = {
                 context.commit("FINISH_CATEGORIES")
             })
             .catch((error) => {
-                UIkit.notification(error.response.data.message, {status:"danger", pos: "bottom-right"});
-                context.commit("FAILED_CATEGORIES")
+                context.commit("FAILED_CATEGORIES");
+                const response = (error && error.response) ? error.response : {};
+                const data = response.data || {};
+                UIkit.notification(data.message || "Could not load categories from the market.", {status:"danger", pos: "bottom-right"});
             });
     },
 
@@ -528,7 +567,9 @@ const actions = {
                 context.commit("CONFIG", response.data);
             })
             .catch((error) => {
-                UIkit.notification(error.response.data.message, {
+                const response = (error && error.response) ? error.response : {};
+                const data = response.data || {};
+                UIkit.notification(data.message || "Could not load the market configuration.", {
                     status:"danger",
                     pos: "bottom-right"
                 });

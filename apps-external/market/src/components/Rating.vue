@@ -21,7 +21,9 @@
 			return {
 				classOn: "on",
 				classOff: "off",
-				overall: this.rating.mean,
+				// Lokale Apps liefern kein rating-Objekt — auf 0 zurückfallen,
+				// statt an rating.mean von undefined zu scheitern.
+				overall: (this.rating && this.rating.mean) || 0,
 				stars: 5
 			}
 		},

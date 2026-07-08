@@ -69,7 +69,9 @@ class MarketController extends Controller {
 				return $bundle;
 			}, $this->marketService->getBundles());
 		} catch (AppManagerException $ex) {
-			return new DataResponse(['message' => $ex->getMessage()]);
+			// 503 statt 200: Das Frontend erkennt Marketplace-Ausfälle nur über
+			// den Fehlerstatus, sonst wird {message} als App-Liste gerendert.
+			return new DataResponse(['message' => $ex->getMessage()], Http::STATUS_SERVICE_UNAVAILABLE);
 		} catch (Exception $ex) {
 			return new DataResponse(['message' => $ex->getMessage()], Http::STATUS_SERVICE_UNAVAILABLE);
 		}
@@ -80,9 +82,14 @@ class MarketController extends Controller {
 	 */
 	public function index(): array|DataResponse {
 		try {
+			// Expliziter Nutzer-Refresh (?refresh=1): Katalog-Cache vor der
+			// Abfrage verwerfen; normale Seitenaufrufe nutzen den Cache.
+			if ($this->request->getParam('refresh') === '1') {
+				$this->marketService->invalidateCache();
+			}
 			return $this->queryData();
 		} catch (AppManagerException $ex) {
-			return new DataResponse(['message' => $ex->getMessage()]);
+			return new DataResponse(['message' => $ex->getMessage()], Http::STATUS_SERVICE_UNAVAILABLE);
 		} catch (Exception $ex) {
 			return new DataResponse(['message' => $ex->getMessage()], Http::STATUS_SERVICE_UNAVAILABLE);
 		}

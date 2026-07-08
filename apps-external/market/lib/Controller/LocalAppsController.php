@@ -31,6 +31,8 @@ use OCP\AppFramework\Controller;
 use OCP\IRequest;
 
 class LocalAppsController extends Controller {
+	private ?DependencyAnalyzer $dependencyAnalyzer = null;
+
 	public function __construct(
 		string $appName,
 		IRequest $request,
@@ -53,10 +55,14 @@ class LocalAppsController extends Controller {
 			$apps[] = $app;
 		}
 
-		$apps = \array_filter(
-			$apps,
-			static fn ($app): bool => $state === 'enabled' ? (bool) $app['active'] : !(bool) $app['active']
-		);
+		// state=all liefert enabled+disabled in einem Request, damit das
+		// Frontend nicht zwei getrennte Abfragen stellen muss.
+		if ($state !== 'all') {
+			$apps = \array_filter(
+				$apps,
+				static fn ($app): bool => $state === 'enabled' ? (bool) $app['active'] : !(bool) $app['active']
+			);
+		}
 
 		return \array_values(\array_map(function ($app): array {
 			$missing = $this->getMissingDependencies($app);
@@ -70,10 +76,11 @@ class LocalAppsController extends Controller {
 
 	private function getMissingDependencies(array $appInfo): array {
 		// bad hack - should use OCP
-		$l10n = \OC::$server->getL10N('settings');
-		$config = \OC::$server->getConfig();
-		$dependencyAnalyzer = new DependencyAnalyzer(new Platform($config), $l10n);
-
-		return $dependencyAnalyzer->analyze($appInfo);
+		// Analyzer einmal pro Request bauen statt pro App.
+		$this->dependencyAnalyzer ??= new DependencyAnalyzer(
+			new Platform(\OC::$server->getConfig()),
+			\OC::$server->getL10N('settings')
+		);
+		return $this->dependencyAnalyzer->analyze($appInfo);
 	}
 }
