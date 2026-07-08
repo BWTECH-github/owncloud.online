@@ -88,13 +88,32 @@ class DBLockingProviderTest extends LockingProvider {
 		$this->instance->acquireLock('bar', ILockingProvider::LOCK_EXCLUSIVE);
 		$this->instance->changeLock('asd', ILockingProvider::LOCK_SHARED);
 
-		$this->currentTime = 150 + 3600;
-
+		// foo läuft bei 100 + 3600 = 3700 ab, asd/bar erst bei 200 + 3600 = 3800.
+		// Gehaltene Locks (lock <> 0) werden erst nach zusätzlicher Gnadenfrist
+		// geräumt (EXPIRED_HELD_LOCK_GRACE), damit langlaufende Uploads/Assemblies
+		// ihren Lock nicht mitten im Transfer verlieren.
+		$this->currentTime = 3700 + 1;
+		$this->assertLocks(['foo', 'asd', 'bar']);
+		$this->instance->cleanExpiredLocks();
+		// Trotz überschrittener TTL bleibt foo innerhalb der Gnadenfrist erhalten
 		$this->assertLocks(['foo', 'asd', 'bar']);
 
+		// Nach TTL + Gnadenfrist wird foo geräumt, asd/bar (spätere TTL) bleiben
+		$this->currentTime = 3700 + \OC\Lock\DBLockingProvider::EXPIRED_HELD_LOCK_GRACE + 1;
 		$this->instance->cleanExpiredLocks();
-
 		$this->assertLocks(['asd', 'bar']);
+	}
+
+	public function testCleanExpiredFreeLocksImmediately() {
+		// Freie Locks (lock = 0, entstehen beim Freigeben eines Exclusive-Locks)
+		// werden direkt nach TTL-Ablauf geräumt, ohne Gnadenfrist.
+		$this->currentTime = 100;
+		$this->instance->acquireLock('free', ILockingProvider::LOCK_EXCLUSIVE);
+		$this->instance->releaseLock('free', ILockingProvider::LOCK_EXCLUSIVE);
+
+		$this->currentTime = 100 + 3600 + 1;
+		$this->instance->cleanExpiredLocks();
+		$this->assertLocks([]);
 	}
 
 	/**

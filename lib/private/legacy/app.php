@@ -62,6 +62,8 @@ class OC_App {
 	private static $appTypes = [];
 	private static $loadedApps = [];
 	private static $loadedTypes = [];
+	/** @var bool Session-/Token-Validierung ist pro Request nur einmal nötig */
+	private static $sessionValidated = false;
 	private static $altLogin = [];
 	public const int officialApp = 200;
 	public const int approvedApp = 100;
@@ -129,8 +131,10 @@ class OC_App {
 		\ob_end_clean();
 
 		// once all authentication apps are loaded we can validate the session
-		if ($types === null || \in_array('authentication', $types)) {
+		// (loadApps läuft mehrfach pro Request — Validierung nur beim ersten Mal)
+		if (($types === null || \in_array('authentication', $types)) && !self::$sessionValidated) {
 			if (\OC::$server->getUserSession()) {
+				self::$sessionValidated = true;
 				$request = \OC::$server->getRequest();
 				$session = \OC::$server->getUserSession();
 				$davUser = \OC::$server->getUserSession()->getSession()->get(\OCA\DAV\Connector\Sabre\Auth::DAV_AUTHENTICATED);

@@ -196,12 +196,29 @@ class QuotaPlugin extends \Sabre\DAV\ServerPlugin {
 			$req = $this->server->httpRequest;
 			if ($req->getHeader('OC-Chunked')) {
 				$info = \OC_FileChunking::decodeName($newName);
-				$chunkHandler = $this->getFileChunking($info);
-				// subtract the already uploaded size to see whether
-				// there is still enough space for the remaining chunks
-				$length -= $chunkHandler->getCurrentSize();
-				// use target file name for free space check in case of shared files
-				$path = \rtrim($parentPath, '/') . '/' . $info['name'];
+				if (isset($info['name'], $info['index'])) {
+					$chunkHandler = $this->getFileChunking($info);
+					if (\is_numeric($req->getHeader('OC-Total-Length'))
+						|| \is_numeric($req->getHeader('X-Expected-Entity-Length'))
+					) {
+						// getLength() enthält bereits die Gesamtgröße des Uploads:
+						// subtract the already uploaded size to see whether
+						// there is still enough space for the remaining chunks
+						$length -= $chunkHandler->getCurrentSize();
+					} else {
+						// Kein Gesamtgrößen-Header (z.B. Public-Link-Web-Upload):
+						// $length ist nur die Länge des Einzel-Chunks. Kumulierte
+						// Chunk-Größe mitprüfen, sonst füllen die Chunks — die unter
+						// cache/ liegen, wo weder Quota-Stream-Wrapper noch
+						// Quota-Buchhaltung greifen — die Platte des Share-Owners
+						// beliebig weit über dessen Quota hinaus. Bei Chunk-Retries
+						// die alte Größe desselben Index herausrechnen.
+						$length += $chunkHandler->getCurrentSize()
+							- $chunkHandler->getChunkSize($info['index']);
+					}
+					// use target file name for free space check in case of shared files
+					$path = \rtrim($parentPath, '/') . '/' . $info['name'];
+				}
 			}
 			$freeSpace = $this->getFreeSpace($path);
 			if ($freeSpace === false) {

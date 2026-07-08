@@ -345,9 +345,22 @@
 
 			this.$el.find('.selectedActions a').tooltip({placement:'top'});
 
+			// Tooltips für Zeilen-Elemente delegiert registrieren statt pro Zeile
+			// im Render-Pfad — Bootstrap erzeugt die Instanz dann erst bei mouseenter
+			this.$fileList.tooltip({
+				selector: 'span.modified, span.nametext.extra-data',
+				placement: function(tip, trigger) {
+					return $(trigger).hasClass('modified') ? 'top' : 'right';
+				}
+			});
+
+			// Scroll-Events drosseln (analog zum debounced _onResize),
+			// sonst feuern Layout-Reads bei jedem Scroll-Tick
+			this._onScroll = _.throttle(_.bind(this._onScroll, this), 100);
+
 			// namespaced event based on this jquery element, to be removed when is destroyed
 			// note that the listener is attached to the container, not to the element
-			this.$container.on('scroll.' + this.$el.attr('id'), _.bind(this._onScroll, this));
+			this.$container.on('scroll.' + this.$el.attr('id'), this._onScroll);
 
 			if (options.scrollTo) {
 				this.$fileList.one('updated', function() {
@@ -1262,8 +1275,8 @@
 				if (fileData.extraData.charAt(0) === '/') {
 					fileData.extraData = fileData.extraData.substr(1);
 				}
+				// Tooltip wird delegiert am $fileList-Container gehandhabt (s. initialize)
 				nameSpan.addClass('extra-data').attr('title', fileData.extraData);
-				nameSpan.tooltip({placement: 'right'});
 			}
 			// dirs can show the number of uploaded files
 			if (mime === 'httpd/unix-directory') {
@@ -1306,12 +1319,12 @@
 				text = '?';
 			}
 			td = $('<td></td>').attr({ "class": "date" });
+			// Tooltip wird delegiert am $fileList-Container gehandhabt (s. initialize)
 			td.append($('<span></span>').attr({
 				"class": "modified",
 				"title": formatted,
 				"style": 'color:rgb('+modifiedColor+','+modifiedColor+','+modifiedColor+')'
 			}).text(text)
-			  .tooltip({placement: 'top'})
 			);
 			tr.find('.filesize').text(simpleSize);
 			tr.append(td);
@@ -1453,7 +1466,13 @@
 				var iconDiv = filenameTd.find('.thumbnail');
 				// lazy load / newly inserted td ?
 				// the typeof check ensures that the default value of animate is true
-				if (typeof(options.animate) === 'undefined' || !!options.animate) {
+				if (options.hidden) {
+					// vom Filter versteckte Zeile: Preview-Request aufschieben,
+					// bis die Zeile sichtbar wird (siehe setFilter), sonst feuert
+					// der Filter-Prerender einen Request pro versteckter Datei
+					tr.attr('data-preview-pending', 'true');
+				}
+				else if (typeof(options.animate) === 'undefined' || !!options.animate) {
 					this.lazyLoadPreview({
 						path: path + '/' + fileData.name,
 						mime: mime,
@@ -1520,6 +1539,10 @@
 					}
 					self._updateShareTree().then(function() {
 						self._setShareTreeIcons();
+					}).catch(function(error) {
+						// Share-Info-Fehler dürfen die Navigation nicht als
+						// unhandled rejection verlassen — Icons bleiben dann weg
+						console.error('Could not update share tree', error);
 					});
 					resolve();
 				});
@@ -1757,7 +1780,9 @@
 			}
 
 			// TODO: parse remaining quota from PROPFIND response
-			this.updateStorageStatistics(true);
+			// kein force: Debounce in files.js respektieren, sonst feuert jeder
+			// Ordnerwechsel sofort einen zusätzlichen getstoragestats-Request
+			this.updateStorageStatistics();
 
 			// first entry is the root
 			this.dirInfo = result.shift();
@@ -1828,13 +1853,15 @@
 				return Promise.reject('getDirShareInfo(). param must be typeof string and can not be empty!');
 			}
 
-			// avoiding a unnecessary API calls
-			if (typeof this._shareTreeCache[dir] !== 'undefined' || dir === '/') {
+			// trim trailing slashes BEVOR der Cache geprüft wird — gespeichert
+			// wird unten unter OC.joinPaths(...) ohne Trailing-Slash, sonst
+			// matcht der Lookup-Key nie und der Cache greift nicht
+			dir = dir.replace(/\/$/, "");
+
+			// avoiding a unnecessary API calls ('' entspricht dem Root-Verzeichnis)
+			if (typeof this._shareTreeCache[dir] !== 'undefined' || dir === '') {
 				return Promise.resolve();
 			}
-
-			// trim trailing slashes
-			dir = dir.replace(/\/$/, "");
 
 			var self       = this;
 			var client     = this.filesClient;
@@ -1855,6 +1882,9 @@
 								shares : e.ocs.data
 							};
 							resolve();
+						}).fail(function(error) {
+							// ohne fail-Handler bliebe das Promise ewig pending
+							reject(error);
 						});
 					} else {
 						resolve();
@@ -2069,9 +2099,16 @@
 			var mime = options.mime;
 			var ready = options.callback;
 			var etag = options.etag;
-			var enabledPreviewProviders = oc_appconfig.core.enabledPreviewProviders || [];
-			// We join all supported mimes into a single regex
-			var allMimesPattern = new RegExp(enabledPreviewProviders.join('|'));
+			// Provider-Regex einmalig bauen und cachen — die Liste ändert sich
+			// zur Laufzeit nicht, und dies läuft pro gerenderter Zeile
+			if (_.isUndefined(this._allMimesPattern)) {
+				var enabledPreviewProviders = oc_appconfig.core.enabledPreviewProviders || [];
+				// We join all supported mimes into a single regex
+				// leere Liste ergäbe das Pattern '' (matcht alles) → dann keine Previews
+				this._allMimesPattern = enabledPreviewProviders.length ?
+					new RegExp(enabledPreviewProviders.join('|')) : null;
+			}
+			var allMimesPattern = this._allMimesPattern;
 
 			// get mime icon url
 			var iconURL = OC.MimeType.getIconUrl(mime);
@@ -2081,7 +2118,7 @@
 
 			var img = new Image();
 
-			if (oc_appconfig.core.previewsEnabled && allMimesPattern.test(mime)) {
+			if (oc_appconfig.core.previewsEnabled && allMimesPattern && allMimesPattern.test(mime)) {
 				urlSpec.file = OCA.Files.Files.fixPath(path);
 				if (options.x) {
 					urlSpec.x = options.x;
@@ -2122,6 +2159,28 @@
 			} else {
 				ready(iconURL, img);
 			}
+		},
+
+		/**
+		 * Lädt das beim versteckten Rendern übersprungene Preview nach,
+		 * sobald die Zeile sichtbar wird (siehe _renderRow / setFilter).
+		 *
+		 * @param {jQuery} $tr row element
+		 */
+		_loadPendingPreview: function($tr) {
+			if ($tr.attr('data-preview-pending') !== 'true') {
+				return;
+			}
+			$tr.removeAttr('data-preview-pending');
+			var iconDiv = $tr.find('td.filename .thumbnail');
+			this.lazyLoadPreview({
+				path: ($tr.attr('data-path') || this.getCurrentDirectory()) + '/' + $tr.attr('data-file'),
+				mime: $tr.attr('data-mime'),
+				etag: $tr.attr('data-etag'),
+				callback: function(url) {
+					iconDiv.css('background-image', 'url("' + url + '")');
+				}
+			});
 		},
 
 		/**
@@ -2226,11 +2285,20 @@
 		 * @param {OC.Files.FileInfo} fileData file info
 		 */
 		_findInsertionIndex: function(fileData) {
-			var index = 0;
-			while (index < this.files.length && this._sortComparator(fileData, this.files[index]) > 0) {
-				index++;
+			// binäre Suche (lower bound): this.files ist stets nach
+			// _sortComparator sortiert; liefert denselben Index wie der
+			// frühere lineare Scan, aber in O(log n) statt O(n) Vergleichen
+			var low = 0;
+			var high = this.files.length;
+			while (low < high) {
+				var mid = (low + high) >>> 1;
+				if (this._sortComparator(fileData, this.files[mid]) > 0) {
+					low = mid + 1;
+				} else {
+					high = mid;
+				}
 			}
-			return index;
+			return low;
 		},
 		/**
 		 * Moves a file to a given target folder.
@@ -2669,7 +2737,7 @@
 				})
 				.fail(function(status) {
 					OC.Notification.show(t('files', 'Could not create file "{file}"',
-						{file: name}), {type: 'error'}
+						{file: fileName}), {type: 'error'}
 					);
 					deferred.reject(status);
 				});
@@ -2894,6 +2962,7 @@
 		 * @param filter
 		 */
 		setFilter:function(filter) {
+			var self = this;
 			var total = 0;
 			if (this._filter === filter) {
 				return;
@@ -2915,6 +2984,8 @@
 				} else {
 					visibleCount++;
 					$e.removeClass('hidden');
+					// beim Rendern übersprungenes Preview nachladen
+					self._loadPendingPreview($e);
 				}
 			}
 

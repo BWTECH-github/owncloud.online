@@ -31,8 +31,12 @@
 	background-color: #fff;
 	border-right: 1px solid #eee;
 }
-/* double padding to account for Deleted files entry, issue with Firefox */
-.app-files #app-navigation > ul li:nth-last-child(2) {
+/* double padding to account for Deleted files entry, issue with Firefox.
+   Der Trashbin-Eintrag selbst ist fixed positioniert und darf den Margin nie
+   bekommen — sonst entsteht eine Luecke ueber "Einstellungen", sobald eine
+   App (z.B. ai_documents) einen Nav-Eintrag NACH dem Trashbin anhaengt. */
+.app-files #app-navigation > ul li:nth-last-child(2):not(.nav-trashbin),
+.app-files #app-navigation > ul li:last-child:not(.nav-trashbin) {
 	margin-bottom: 44px;
 }
 

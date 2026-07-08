@@ -256,6 +256,17 @@ class AssemblyStream implements \Icewind\Streams\File {
 			throw $e;
 		}
 		\stream_wrapper_unregister('assembly');
+		if (\is_resource($wrapped)) {
+			// PHPs Stream-Buffer-Schicht ruft stream_read() eines Userspace-Wrappers
+			// sonst nur in 8-KiB-Einheiten auf und neutralisiert damit den großen
+			// Copy-Buffer der Chunk-Assembly (dav.upload_copy_buffer_size)
+			$chunkSize = (int)\OC::$server->getConfig()->getSystemValue('dav.upload_copy_buffer_size', 1024 * 1024);
+			// stream_set_chunk_size wirft ab PHP 8 einen ValueError bei Werten
+			// > 2^31-1 bzw. <= 0 — auf 64 MiB deckeln, damit ein absurd großer
+			// (fehlkonfigurierter) Wert nicht jede Assembly mit 500 abbricht.
+			$chunkSize = \max(1, \min($chunkSize, 64 * 1024 * 1024));
+			\stream_set_chunk_size($wrapped, $chunkSize);
+		}
 		return $wrapped;
 	}
 

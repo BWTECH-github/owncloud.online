@@ -757,8 +757,22 @@ class OC {
 		if (\OC::$server->getSystemConfig()->getValue('installed', false) && !self::checkUpgrade(false)) {
 			// NOTE: This will be replaced to use OCP
 			$userSession = self::$server->getUserSession();
-			$userSession->listen('\OC\User', 'postLogin', function () {
+			$userSession->listen('\OC\User', 'postLogin', function ($user) {
 				try {
+					// Der GC iteriert das komplette cache/-Verzeichnis des Nutzers
+					// (bei laufenden Chunk-Uploads tausende Stat-Calls) — deshalb
+					// höchstens einmal pro 24h pro Nutzer statt synchron bei jedem
+					// Login; Einträge leben ohnehin mindestens cache_chunk_gc_ttl
+					if ($user instanceof \OCP\IUser) {
+						$config = \OC::$server->getConfig();
+						$lastRun = (int)$config->getUserValue($user->getUID(), 'core', 'cache_file_gc_time', 0);
+						$now = \time();
+						// lastRun in der Zukunft (Uhr zurückgestellt) nicht als gültig werten
+						if ($lastRun <= $now && ($now - $lastRun) < 86400) {
+							return;
+						}
+						$config->setUserValue($user->getUID(), 'core', 'cache_file_gc_time', (string)$now);
+					}
 					$cache = new \OC\Cache\File();
 					$cache->gc();
 				} catch (\OC\ServerNotAvailableException $e) {

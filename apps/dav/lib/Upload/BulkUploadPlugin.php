@@ -100,6 +100,19 @@ class BulkUploadPlugin extends ServerPlugin {
 
 		$body = $this->readBody($request);
 		$parts = $this->parseMultipart($body, $boundary);
+		// Ab hier wird nur noch mit den Part-Kopien gearbeitet — Body-Referenz
+		// freigeben, damit während der Store-Phase nicht zwei komplette Abbilder
+		// des Requests gleichzeitig im RAM liegen.
+		unset($body);
+
+		foreach ($parts as $part) {
+			if (!isset($part['headers']['x-file-path']) || $part['headers']['x-file-path'] === '') {
+				// Ohne Pfad ist kein Response-Key möglich; hart ablehnen statt den
+				// Part still zu überspringen (der Client hielte die Datei sonst für
+				// hochgeladen). Läuft vor dem ersten Schreibzugriff, also verlustfrei.
+				throw new BadRequest('Bulk upload part is missing X-File-Path');
+			}
+		}
 
 		$view = new \OC\Files\View('/' . $user->getUID() . '/files');
 		$results = [];
@@ -110,29 +123,40 @@ class BulkUploadPlugin extends ServerPlugin {
 		// common single-target-folder case to ~2 grouped UPDATEs total. The per-file
 		// etag/fileid returned below comes from the file's own scanned row, not from
 		// folder propagation, so deferring the folder update does not corrupt them.
-		// Files may land in different storages (a received share has its own
-		// SharedPropagator), so batches are tracked per storage and each is committed.
+		// Files may land in different storages; for a received share the batch is
+		// begun on the owner's *source* propagator (the SharedPropagator delegates
+		// every call there and never honours its own batch mode), tracked per
+		// propagator instance and committed once each.
 		$batchedPropagators = [];
+		// Request-weite Nebenbuchführung: kumulative Quota-Prüfung pro Storage
+		// (free_space() ist wegen der gebatchten Size-Propagation für die gesamte
+		// Request-Dauer eingefroren) und die erfolgreich geschriebenen Pfade für
+		// den Fallback bei fehlgeschlagenem commitBatch().
+		$state = ['quotaFree' => [], 'quotaUsed' => [], 'storedPaths' => []];
 		try {
 			foreach ($parts as $part) {
-				$path = isset($part['headers']['x-file-path']) ? $part['headers']['x-file-path'] : null;
-				if ($path === null || $path === '') {
-					// Can't key the result without a path; skip defensively.
-					continue;
-				}
+				$path = $part['headers']['x-file-path'];
 				$this->beginPropagatorBatch($view, $path, $batchedPropagators);
-				$results[$path] = $this->storeFile($view, $part);
+				$results[$path] = $this->storeFile($view, $part, $state);
 			}
 		} finally {
 			// Commit every batch we opened, even if a store threw, so folder sizes/etags
 			// are flushed and the connection is not left mid-batch. A commit failure on
 			// one storage must not swallow the collected results or block the others.
+			$commitFailed = false;
 			foreach ($batchedPropagators as $propagator) {
 				try {
 					$propagator->commitBatch();
 				} catch (\Throwable $e) {
+					$commitFailed = true;
 					\OC::$server->getLogger()->logException($e, ['app' => 'dav_bulkupload']);
 				}
+			}
+			if ($commitFailed) {
+				// commitBatch() leert den Batch vor dem Rethrow — die Deltas sind
+				// unwiederbringlich weg. Ohne Fallback blieben Ordnergrößen/-etags
+				// bis zum nächsten occ files:scan dauerhaft falsch.
+				$this->propagateStoredPathsIndividually($view, $state['storedPaths']);
 			}
 		}
 
@@ -141,7 +165,9 @@ class BulkUploadPlugin extends ServerPlugin {
 		// X-File-Path (the result keys) are raw DAV byte strings and need not be valid
 		// UTF-8; substitute invalid sequences so json_encode cannot return false and
 		// emit an empty 200 body that hides every per-file result from the client.
-		$json = \json_encode($results, JSON_INVALID_UTF8_SUBSTITUTE);
+		// Dokumentiert ist ein JSON-Objekt: json_encode([]) ergäbe das Array [],
+		// daher leeres Ergebnis explizit als Objekt serialisieren.
+		$json = $results === [] ? '{}' : \json_encode($results, JSON_INVALID_UTF8_SUBSTITUTE);
 		if ($json === false) {
 			$json = \json_encode(['error' => true, 'message' => 'Could not encode bulk result']);
 		}
@@ -168,6 +194,35 @@ class BulkUploadPlugin extends ServerPlugin {
 			if ($storage === null) {
 				return;
 			}
+			// Empfangene Shares: SharedPropagator::propagateChange() delegiert jeden
+			// Aufruf sofort an den Propagator des Owner-Quell-Storage und prüft nie
+			// den eigenen Batch-Modus — beginBatch() auf dem SharedPropagator wäre
+			// wirkungslos. Der Batch muss deshalb auf dem Quell-Propagator geführt
+			// werden. Schleife wegen möglicher Reshare-Ketten; das Dedupe unten
+			// greift, wenn mehrere Parts (oder Shares) denselben Quell-Storage
+			// treffen.
+			$depth = 0;
+			while ($storage->instanceOfStorage('\OCA\Files_Sharing\SharedStorage') && $depth < 10) {
+				// Erst äußere Wrapper (Availability/Encoding/PermissionsMask/…)
+				// abtragen: resolvePath() existiert nur auf der Jail-/SharedStorage-
+				// Ebene, auf einem generischen Wrapper wäre der Aufruf ein Fatal
+				// (der unten gefangen würde → Batching stillschweigend wirkungslos).
+				while ($storage instanceof \OC\Files\Storage\Wrapper\Wrapper
+					&& !($storage instanceof \OCA\Files_Sharing\SharedStorage)
+				) {
+					$storage = $storage->getWrapperStorage();
+				}
+				if (!($storage instanceof \OCA\Files_Sharing\SharedStorage)) {
+					break;
+				}
+				// resolvePath('') liefert [Quell-Storage des Owners, Quellpfad]
+				list($sourceStorage, ) = $storage->resolvePath('');
+				if (!$sourceStorage instanceof \OC\Files\Storage\Storage || $sourceStorage === $storage) {
+					break;
+				}
+				$storage = $sourceStorage;
+				$depth++;
+			}
 			$propagator = $storage->getPropagator();
 			$key = \spl_object_id($propagator);
 			if (!isset($batchedPropagators[$key])) {
@@ -181,11 +236,58 @@ class BulkUploadPlugin extends ServerPlugin {
 	}
 
 	/**
+	 * Fallback when commitBatch() failed: the batched mtime/etag/size deltas are
+	 * gone for good (the propagator clears its batch before rethrowing), so folder
+	 * etags would never change and folder sizes would stay wrong until the next
+	 * occ files:scan. Re-propagate per stored path instead: an etag/mtime bump on
+	 * the whole parent chain plus an absolute (and therefore idempotent) folder
+	 * size recalculation from the child rows.
+	 *
+	 * Läuft bewusst über ALLE gespeicherten Pfade, nicht nur die des
+	 * fehlgeschlagenen Propagators: für bereits committete Storages ist der
+	 * zweite Etag-Bump harmlos und correctFolderSize() rechnet absolut.
+	 *
+	 * @param string[] $storedPaths
+	 */
+	private function propagateStoredPathsIndividually(\OC\Files\View $view, array $storedPaths): void {
+		$seenDirs = [];
+		foreach ($storedPaths as $path) {
+			try {
+				list($storage, $internalPath) = $view->resolvePath($path);
+				if ($storage === null) {
+					continue;
+				}
+				// Pro (Storage, Elternordner) genügt ein Durchlauf: propagateChange()
+				// bumpt die komplette Elternkette, correctFolderSize() rekursiert
+				// selbst bis zur Storage-Wurzel.
+				$parentDir = \dirname($internalPath);
+				if ($parentDir === '.' || $parentDir === '/') {
+					$parentDir = '';
+				}
+				$key = \spl_object_id($storage) . '|' . $parentDir;
+				if (isset($seenDirs[$key])) {
+					continue;
+				}
+				$seenDirs[$key] = true;
+				// inBatch ist nach dem (fehlgeschlagenen) commitBatch() wieder false,
+				// das UPDATE läuft also sofort als einzelnes Statement. Für Shares
+				// delegiert der SharedPropagator korrekt an den Quell-Storage.
+				$storage->getPropagator()->propagateChange($internalPath, \time());
+				$storage->getCache()->correctFolderSize($parentDir);
+			} catch (\Throwable $e) {
+				\OC::$server->getLogger()->logException($e, ['app' => 'dav_bulkupload']);
+			}
+		}
+	}
+
+	/**
 	 * Write a single part to the user's storage, verifying its md5.
 	 *
+	 * @param array $state request-weite Nebenbuchführung (quotaFree/quotaUsed je
+	 *                     Storage + storedPaths), siehe httpPost()
 	 * @return array per-file result (error flag + etag/fileid or message)
 	 */
-	private function storeFile(\OC\Files\View $view, array $part): array {
+	private function storeFile(\OC\Files\View $view, array $part, array &$state): array {
 		$path = $part['headers']['x-file-path'];
 		try {
 			if (!\OC\Files\Filesystem::isValidPath($path)) {
@@ -202,7 +304,8 @@ class BulkUploadPlugin extends ServerPlugin {
 			// SharedStorage — do NOT re-check the recipient's permissions. Without
 			// this gate a read-only share recipient could create or overwrite files
 			// in the owner's storage through the bulk endpoint.
-			if ($view->file_exists($path)) {
+			$exists = $view->file_exists($path);
+			if ($exists) {
 				if (!$view->isUpdatable($path)) {
 					return ['error' => true, 'message' => 'Permission denied'];
 				}
@@ -221,6 +324,44 @@ class BulkUploadPlugin extends ServerPlugin {
 				}
 			}
 
+			list($targetStorage, $targetInternalPath) = $view->resolvePath($path);
+			$partSize = \strlen($part['body']);
+			// Beim Überschreiben belegt nur das Wachstum zusätzliche Quota: die
+			// unten eingefrorene free_space-Basis von Batch-Beginn enthält die
+			// alte Dateigröße bereits. Volle Anrechnung würde Overwrite-Syncs
+			// auf fast vollen Accounts fälschlich ablehnen, die per Einzel-PUT
+			// durchgingen. Der Quota-Wrapper prüft beim Schreiben trotzdem
+			// weiterhin jede Datei einzeln.
+			$quotaCharge = $partSize;
+			if ($exists) {
+				$oldSize = $view->filesize($path);
+				if ($oldSize !== false && $oldSize >= 0) {
+					$quotaCharge = \max(0, $partSize - (int)$oldSize);
+				}
+			}
+
+			// Kumulative Quota-Prüfung: der Quota-Wrapper prüft jede Datei gegen
+			// free_space(), das wegen der gebatchten Size-Propagation für die
+			// gesamte Request-Dauer auf dem Stand von Batch-Beginn steht. Ohne
+			// laufende Summe könnte ein fast voller Account bis MAX_BODY_SIZE an
+			// Dateien in einem einzigen Request über die Quota schieben.
+			if ($targetStorage !== null) {
+				$quotaKey = \spl_object_id($targetStorage);
+				if (!isset($state['quotaUsed'][$quotaKey])) {
+					$free = $targetStorage->free_space('');
+					// negative Werte sind SPACE_UNKNOWN/UNLIMITED/NOT_COMPUTED →
+					// keine Prüfung, wie im Quota-Wrapper selbst
+					$state['quotaFree'][$quotaKey] = \is_numeric($free) && $free >= 0 ? (int)$free : null;
+					$state['quotaUsed'][$quotaKey] = 0;
+				}
+				if ($state['quotaFree'][$quotaKey] !== null
+					&& $state['quotaUsed'][$quotaKey] + $quotaCharge >= $state['quotaFree'][$quotaKey]
+				) {
+					// gleiche Semantik wie Quota::file_put_contents (strlen < free)
+					return ['error' => true, 'message' => 'Insufficient storage'];
+				}
+			}
+
 			// Make sure the parent collection exists.
 			$dir = \dirname($path);
 			if ($dir !== '' && $dir !== '.' && $dir !== '/' && !$view->is_dir($dir)) {
@@ -231,14 +372,54 @@ class BulkUploadPlugin extends ServerPlugin {
 			// shared→exclusive→shared lock dance around the write itself. Wrapping it in
 			// an outer exclusive lock self-deadlocks (the inner acquire then sees a
 			// conflicting exclusive lock held by the same request and throws).
-			if ($view->file_put_contents($path, $part['body']) === false) {
+			$written = $view->file_put_contents($path, $part['body']);
+			if ($part['body'] === '') {
+				// 0-Byte-Sonderfall: die Storages liefern hier 0 geschriebene Bytes,
+				// was die View als falsy wertet und writeUpdate() (Scan + Propagation)
+				// überspringt — PermissionsMask macht aus der 0 sogar false. Erfolg
+				// deshalb direkt am Storage prüfen und das Cache-Update samt
+				// (gebatchter) Propagation explizit anstoßen.
+				if ($targetStorage === null || !$targetStorage->file_exists($targetInternalPath)) {
+					return ['error' => true, 'message' => 'Could not write file'];
+				}
+				$storedSize = $targetStorage->filesize($targetInternalPath);
+				if ($storedSize === false || (int)$storedSize !== 0) {
+					return ['error' => true, 'message' => 'Could not write file'];
+				}
+				$targetStorage->getUpdater()->update($targetInternalPath);
+			} elseif ($written === false || $written === null) {
+				// null: basicOperation() bricht ohne false ab (Hook-Veto, kein Storage)
 				return ['error' => true, 'message' => 'Could not write file'];
 			}
 
-			if (isset($part['headers']['x-oc-mtime'])) {
+			// Ab hier ist die Datei geschrieben: Quota-Summe fortschreiben und den
+			// Pfad für den commitBatch-Fallback vormerken.
+			if ($targetStorage !== null) {
+				$state['quotaUsed'][\spl_object_id($targetStorage)] += $quotaCharge;
+			}
+			$state['storedPaths'][] = $path;
+
+			if (isset($part['headers']['x-oc-mtime']) && $targetStorage !== null) {
 				$mtime = (int)$part['headers']['x-oc-mtime'];
 				if ($mtime > 0) {
-					$view->touch($path, $mtime);
+					// Wie File::handleMetadataUpdate() beim normalen PUT: mtime direkt
+					// auf dem Storage setzen und nur die Cache-Zeile nachziehen.
+					// $view->touch() würde über den 'touch'-Hook einen kompletten
+					// zweiten Scan-/Update-Zyklus pro Datei auslösen.
+					$touched = false;
+					try {
+						$touched = $targetStorage->touch($targetInternalPath, $mtime) !== false;
+					} catch (\Throwable $ignored) {
+						// Storage ohne mtime-Unterstützung: nur Cache-mtime setzen
+						// (entspricht dem Emulations-Fallback in View::touch()).
+					}
+					$fileInfoUpdate = ['mtime' => $mtime];
+					if ($touched) {
+						// storage_mtime mitziehen, sonst meldet der Watcher die Datei
+						// später als extern geändert und erzwingt einen Rescan.
+						$fileInfoUpdate['storage_mtime'] = $mtime;
+					}
+					$view->putFileInfo($path, $fileInfoUpdate);
 				}
 			}
 
@@ -274,17 +455,30 @@ class BulkUploadPlugin extends ServerPlugin {
 	 * Read the request body with a hard size cap.
 	 */
 	private function readBody(RequestInterface $request): string {
+		$maxSize = self::MAX_BODY_SIZE;
+		// Body und Part-Kopien liegen während des Parsens ~2x im RAM. Ohne
+		// Kopplung an memory_limit stirbt ein ausgereizter Request auf knapp
+		// dimensionierten Instanzen (z. B. 128M) mit einem nicht abfangbaren
+		// OOM-Fatal (500 ohne JSON-Body) statt mit einem sauberen 400.
+		try {
+			$memoryLimit = \OC::$server->getIniWrapper()->getBytes('memory_limit');
+			if (\is_numeric($memoryLimit) && $memoryLimit > 0) {
+				$maxSize = (int)\min($maxSize, (int)($memoryLimit / 3));
+			}
+		} catch (\Throwable $ignored) {
+			// memory_limit nicht ermittelbar: beim statischen Limit bleiben
+		}
 		$declared = (int)$request->getHeader('Content-Length');
-		if ($declared > self::MAX_BODY_SIZE) {
-			throw new BadRequest('Bulk upload body too large; use chunked upload for big files');
+		if ($declared > $maxSize) {
+			throw new BadRequest('Bulk upload body too large; use chunked upload for big files or send smaller batches');
 		}
 		$stream = $request->getBodyAsStream();
-		$body = \stream_get_contents($stream, self::MAX_BODY_SIZE + 1);
+		$body = \stream_get_contents($stream, $maxSize + 1);
 		if ($body === false) {
 			throw new BadRequest('Could not read request body');
 		}
-		if (\strlen($body) > self::MAX_BODY_SIZE) {
-			throw new BadRequest('Bulk upload body too large; use chunked upload for big files');
+		if (\strlen($body) > $maxSize) {
+			throw new BadRequest('Bulk upload body too large; use chunked upload for big files or send smaller batches');
 		}
 		return $body;
 	}
@@ -331,7 +525,11 @@ class BulkUploadPlugin extends ServerPlugin {
 			// Headers run until a blank line.
 			$headerEnd = \strpos($body, "\r\n\r\n", $pos);
 			if ($headerEnd === false) {
-				break;
+				// Abgeschnittene oder LF-only Part-Header: hart ablehnen statt die
+				// restlichen Parts still zu verwerfen und 200 zu liefern (der Client
+				// hielte sie für hochgeladen). Erzwingt zugleich den End-Delimiter
+				// "--boundary--". Läuft vor jedem Schreibzugriff, also verlustfrei.
+				throw new BadRequest('Malformed multipart: unterminated part headers');
 			}
 			$rawHeaders = \substr($body, $pos, $headerEnd - $pos);
 			$headers = $this->parseHeaders($rawHeaders);

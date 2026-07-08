@@ -2149,6 +2149,32 @@ OC.Util = {
 		}
 		return tz;
 	},
+
+	// Memoisierung für _chunkify: als Sort-Comparator wird naturalSortCompare
+	// O(n log n)-mal pro Sortierlauf mit denselben Strings aufgerufen
+	_chunkifyCache: null,
+
+	_chunkifyCached: function (t) {
+		var cache = OC.Util._chunkifyCache;
+		if (!cache) {
+			cache = OC.Util._chunkifyCache = new Map();
+		}
+		var tz = cache.get(t);
+		if (tz === undefined) {
+			// Speicher begrenzen (Dateinamen sammeln sich über die Session an)
+			if (cache.size >= 10000) {
+				cache.clear();
+			}
+			tz = OC.Util._chunkify(t);
+			cache.set(t, tz);
+		}
+		return tz;
+	},
+
+	// einmalig instanziierter Collator — localeCompare mit Locale-Argument
+	// erzeugt in gängigen Engines Overhead pro Aufruf
+	_naturalSortCollator: null,
+
 	/**
 	 * Compare two strings to provide a natural sort
 	 * @param a first string to compare
@@ -2158,8 +2184,8 @@ OC.Util = {
 	 */
 	naturalSortCompare: function (a, b) {
 		var x;
-		var aa = OC.Util._chunkify(a);
-		var bb = OC.Util._chunkify(b);
+		var aa = OC.Util._chunkifyCached(a);
+		var bb = OC.Util._chunkifyCached(b);
 
 		for (x = 0; aa[x] && bb[x]; x++) {
 			if (aa[x] !== bb[x]) {
@@ -2173,6 +2199,12 @@ OC.Util = {
 					//
 					// Note: This setting isn't supported by all browsers but for the ones
 					// that do there will be more consistency between client-server sorting
+					if (!OC.Util._naturalSortCollator && typeof Intl !== 'undefined' && Intl.Collator) {
+						OC.Util._naturalSortCollator = new Intl.Collator('en');
+					}
+					if (OC.Util._naturalSortCollator) {
+						return OC.Util._naturalSortCollator.compare(aa[x], bb[x]);
+					}
 					return aa[x].localeCompare(bb[x], 'en');
 				}
 			}

@@ -95,24 +95,38 @@ class Checksum extends Wrapper {
 		if ($this->instanceOfStorage(IHomeStorage::class)) {
 			// home storage stores files in "files"
 			$isNormalFile = \substr($path, 0, 6) === 'files/';
+
+			// "cache/" enthält nur ephemere Daten (v.a. Legacy-Chunk-Uploads via
+			// OC\Cache\File, wenn kein cache_path konfiguriert ist). Deren
+			// Checksummen werden nirgends konsumiert — die fertige Datei wird beim
+			// eigenen .part-Write unter "files/" gehasht. Ohne diese Ausnahme
+			// würde jeder Chunk beim Assembly-Read komplett gehasht und die
+			// Wegwerf-Checksumme in onClose() per UPDATE nach oc_filecache
+			// geschrieben — pro Chunk, genau im Zeitfenster, in dem das Assembly
+			// gegen den Request-Timeout läuft. Zusätzlich entfällt der
+			// oc_filecache-SELECT pro fopen() unten.
+			if (\substr($path, 0, 6) === 'cache/') {
+				return self::NOT_REQUIRED;
+			}
+		} elseif (\strpos($path, '-chunking-') !== false
+			&& \preg_match('/-chunking-\d+-\d+(\.[a-zA-Z0-9]{16}\.part)?$/', $path) === 1
+		) {
+			// Bei gesetztem cache_path liegen die Legacy-Chunks auf einem eigenen
+			// Local-Mount (CacheMountProvider), dessen interne Pfade keinen
+			// Präfix tragen — nur das Namensschema aus OC_FileChunking
+			// ("<name>-chunking-<transferid>-<index>", beim Schreiben zunächst
+			// mit ".<16 Zeichen>.part"-Suffix, siehe OC\Cache\File::set)
+			// identifiziert sie. Ohne Ausnahme würde jeder Chunk-Write dreifach
+			// (SHA1+MD5+ADLER32) gehasht.
+			// Die Chunks des neuen Chunkings (dav) brauchen keine Ausnahme: ihr
+			// uploads-Mount (ChunkLocationProvider) wird ohne StorageFactory-
+			// Loader erzeugt und daher nie mit diesem Wrapper umhüllt.
+			return self::NOT_REQUIRED;
 		}
 		$fileIsWritten = $mode !== 'r' && $mode !== 'rb';
 
 		if ($isNormalFile && $fileIsWritten) {
 			return self::PATH_NEW_OR_UPDATED;
-		}
-
-		// Chunk-upload parts live under the home storage's "uploads/" area and are
-		// deleted immediately after the final file is assembled. They enter the
-		// cache without a checksum, which would otherwise make every assembly read
-		// re-hash the chunk AND write that throwaway checksum back to filecache per
-		// chunk in onClose() — ~1100 pointless UPDATEs plus extra hash passes for an
-		// 11 GB upload, in the exact window where the assembly is racing a timeout.
-		// The chunk checksum is never consumed (the assembled file is checksummed on
-		// its own .part write, which is a "files/" path handled above), so never
-		// require one for these ephemeral paths.
-		if ($this->instanceOfStorage(IHomeStorage::class) && \substr($path, 0, 8) === 'uploads/') {
-			return self::NOT_REQUIRED;
 		}
 
 		// file could be in cache but without checksum for example
