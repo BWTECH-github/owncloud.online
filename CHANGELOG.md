@@ -1,5 +1,6 @@
 # Table of Contents
 
+* [Changelog for ownCloud.online 11.0.10](#changelog-for-owncloudonline-11010-2026-07-09)
 * [Changelog for ownCloud.online 11.0.6](#changelog-for-owncloudonline-1106-2026-06-16)
 * [Changelog for ownCloud.online 11.0.5](#changelog-for-owncloudonline-1105-2026-06-16)
 * [Changelog for ownCloud.online 11.0.4](#changelog-for-owncloudonline-1104-2026-06-16)
@@ -31,6 +32,36 @@
 * [Changelog for 10.4.1](#changelog-for-owncloud-core-1041-2020-03-30)
 * [Changelog for 10.4.0](#changelog-for-owncloud-core-1040-2020-02-10)
 * [Changelog for 10.3.2](#changelog-for-owncloud-core-1032-2019-12-04)
+# Changelog for ownCloud.online [11.0.10] (2026-07-09)
+
+The following sections list the changes in ownCloud.online 11.0.10 relevant to
+admins and users.
+
+[11.0.10]: https://github.com/BWTECH-github/owncloud.online
+
+## Summary
+
+* Bugfix - Chunked overwrite: a failed final write no longer deletes the existing target file. Previously an interrupted assembly of a legacy chunked overwrite removed the file that was being overwritten (bypassing the trashbin); only partial/part-file data is cleaned up now.
+* Bugfix - Large web uploads: the client-side stall watchdog no longer aborts an upload once all bytes have been transferred and the server is assembling the file, so multi-GB uploads (including public-link uploads) can finish server-side assembly instead of being killed after ~60s.
+* Bugfix - Upload error handling: uploads no longer crash on a non-XML proxy error page (502/504) or a blank PHP error; the failure is reported and the chunk folder is cleaned up. The "Processing files…" state can no longer hang forever on a transient job-status poll error.
+* Bugfix - File locking: expired but still-held locks get a grace period so long-running uploads and assemblies keep their lock instead of losing it mid-transfer (configurable via the `filelocking.held_grace` system value).
+* Bugfix - Trashbin: the "Restore" action icon no longer overlaps its label, and the gap between "Deleted files" and "Settings" in the sidebar is gone when another app adds a navigation entry below the trashbin.
+* Bugfix - Encryption: the personal "Encryption" settings section renders an info message instead of staying blank on master-key setups.
+* Bugfix - Market: locally installed apps (for example the theme app) open a proper details page instead of a blank one; marketplace HTTP requests now use connect/read timeouts so an unreachable marketplace can no longer block a page or the cron queue; a control-character bypass in the Markdown sanitizer was closed.
+* Enhancement - Faster uploads of many small and medium files (batched propagation, cached chunk size for the quota check, binary-search row insertion in the web UI).
+* Enhancement - General web-UI performance: the share-tree cache key is normalised, sidebar tab switches no longer re-fetch within the same open cycle, the scroll handler is throttled, and natural-sort/preview computations are memoised.
+* Enhancement - The version notice now credits BW.Tech as the continued maintainer and links the owncloud.online GitHub repository.
+
+## Details
+
+* Bugfix - `apps/dav` Sabre `File`: on a failing final write of a legacy chunked overwrite the error path previously ran `cleanFailedUpload` against the target and removed the pre-existing file. The failure path now only removes partial/part-file data and never the existing target. The `SHARED`→`EXCLUSIVE` lock upgrade after a completed transfer retries briefly instead of discarding the whole upload on a short-lived lock collision.
+* Bugfix - `apps/files/js/file-upload.js`: `getResponse()` guards `responseXML` (no `TypeError` on HTML 502/504 proxy pages or empty PHP-fatal bodies); retry exhaustion falls through to the normal fail handling (notification + chunk-folder cleanup); the 202 job-status poll retries with exponential backoff and rejects after a bound instead of hanging; the stall watchdog does not abort once `progress >= total` (server assembly). On public links the legacy-chunk cleanup no longer fires a `DELETE` on `uploads/null` (no 401-triggered reload loop).
+* Bugfix - `lib/private/Lock/DBLockingProvider`: expired locks that are still held (`lock <> 0`) are kept for a grace period (default 4 h, override with the `filelocking.held_grace` system value) so a long assembly does not lose its lock while the cron cleanup runs.
+* Bugfix - `apps/files_trashbin`: the inline action-icon `<span>` is now closed correctly so the "Restore" icon no longer overlaps the text; the fixed trashbin nav entry no longer inherits the bottom margin when another app appends a navigation item after it.
+* Enhancement - `apps/dav` `BulkUploadPlugin`: propagation is batched per storage, 0-byte files are handled, per-file part errors are reported in the response, and the double updater pass per file is avoided.
+* Enhancement - `apps/files` `filelist.js` / `detailsview.js` and `core/js/js.js`: the share-tree cache key is normalised (trailing slash), sidebar tab re-fetches are guarded within one open cycle, the scroll handler is throttled, and the natural-sort collator and preview regular expression are memoised.
+* Note - Version parity with the SaaS bundle (11.0.10). The bundled market app is rebuilt (owncloud.online branding, local-app details page, XSS hardening, HTTP timeouts).
+
 # Changelog for ownCloud.online [11.0.6] (2026-06-16)
 
 The following sections list the changes in ownCloud.online 11.0.6 relevant to
