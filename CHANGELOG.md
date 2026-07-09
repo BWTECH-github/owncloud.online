@@ -48,6 +48,7 @@ admins and users.
 * Bugfix - Trashbin: the "Restore" action icon no longer overlaps its label, and the gap between "Deleted files" and "Settings" in the sidebar is gone when another app adds a navigation entry below the trashbin.
 * Bugfix - Encryption: the personal "Encryption" settings section renders an info message instead of staying blank on master-key setups.
 * Bugfix - Market: locally installed apps (for example the theme app) open a proper details page instead of a blank one; marketplace HTTP requests now use connect/read timeouts so an unreachable marketplace can no longer block a page or the cron queue; a control-character bypass in the Markdown sanitizer was closed.
+* Bugfix - Image previews: JPEG/PNG photos larger than 6016 px (modern phone/camera photos, e.g. 48 MP) now get a thumbnail and a full-screen preview instead of a grey placeholder. When ImageMagick is available such images are downscaled while decoding, so previews are generated with far less memory.
 * Enhancement - Faster uploads of many small and medium files (batched propagation, cached chunk size for the quota check, binary-search row insertion in the web UI).
 * Enhancement - General web-UI performance: the share-tree cache key is normalised, sidebar tab switches no longer re-fetch within the same open cycle, the scroll handler is throttled, and natural-sort/preview computations are memoised.
 * Enhancement - The version notice now credits BW.Tech as the continued maintainer and links the owncloud.online GitHub repository.
@@ -60,6 +61,7 @@ admins and users.
 * Bugfix - `apps/files_trashbin`: the inline action-icon `<span>` is now closed correctly so the "Restore" icon no longer overlaps the text; the fixed trashbin nav entry no longer inherits the bottom margin when another app appends a navigation item after it.
 * Enhancement - `apps/dav` `BulkUploadPlugin`: propagation is batched per storage, 0-byte files are handled, per-file part errors are reported in the response, and the double updater pass per file is avoided.
 * Enhancement - `apps/files` `filelist.js` / `detailsview.js` and `core/js/js.js`: the share-tree cache key is normalised (trailing slash), sidebar tab re-fetches are guarded within one open cycle, the scroll handler is throttled, and the natural-sort collator and preview regular expression are memoised.
+* Bugfix - `lib/private/Preview/Image`: images exceeding `preview_max_dimensions` (default 6016×6016) were fully decoded by GD and then discarded, leaving no preview. When the `imagick` extension is loaded such images now take a memory-efficient path (`jpeg:size` decode hint downscales JPEGs during decoding) so large photos get a thumbnail and slideshow preview; normal-sized images keep the unchanged GD path.
 * Note - Version parity with the SaaS bundle (11.0.10). The bundled market app is rebuilt (owncloud.online branding, local-app details page, XSS hardening, HTTP timeouts).
 
 # Changelog for ownCloud.online [11.0.6] (2026-06-16)
