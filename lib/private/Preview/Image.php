@@ -44,6 +44,18 @@ abstract class Image implements IProvider2 {
 		$image->load($handle);
 		$image->fixOrientation();
 		if (!$this->validateImageDimensions($image)) {
+			// Bild ueber dem GD-Dimensionslimit (grosses Kamera-/Handyfoto, z. B.
+			// 48 MP): GD hat es zwar dekodiert, verwirft es hier aber -> keine
+			// Vorschau (graue Kachel). Ist imagick vorhanden, erzeugen wir die
+			// Vorschau stattdessen speicherschonend (der jpeg:size-Hint laesst
+			// libjpeg beim Dekodieren herunterskalieren). Nur dieser bisher leere
+			// Fall aendert sich; normale Bilder behalten exakt den GD-Weg darunter.
+			if (\is_resource($handle)) {
+				\fclose($handle);
+			}
+			if (\extension_loaded('imagick')) {
+				return $this->getThumbnailViaImagick($file, (int)$maxX, (int)$maxY);
+			}
 			return false;
 		}
 
@@ -57,6 +69,66 @@ abstract class Image implements IProvider2 {
 			return $image;
 		}
 		return false;
+	}
+
+	/**
+	 * Erzeugt die Vorschau eines grossen Bildes speicherschonend via imagick.
+	 * Fuer JPEG skaliert libjpeg dank jpeg:size bereits beim Dekodieren herunter,
+	 * sodass auch 48-MP-Fotos eine Vorschau bekommen. Nur der Fall "GD verwirft das
+	 * Bild wegen Ueberdimension" laeuft hier durch; scheitert imagick, gibt es wie
+	 * bisher keine Vorschau (false).
+	 *
+	 * @return \OC_Image|false
+	 */
+	private function getThumbnailViaImagick(File $file, int $maxX, int $maxY) {
+		if ($maxX < 1 || $maxY < 1) {
+			return false;
+		}
+		$handle = $file->fopen('r');
+		if (!\is_resource($handle)) {
+			return false;
+		}
+		try {
+			$content = \stream_get_contents($handle);
+		} finally {
+			if (\is_resource($handle)) {
+				\fclose($handle);
+			}
+		}
+		if ($content === false || $content === '') {
+			return false;
+		}
+
+		$imagick = null;
+		try {
+			$imagick = new \Imagick();
+			// DCT-Downscale-Hint: libjpeg dekodiert JPEGs direkt in reduzierter
+			// Groesse (1/2, 1/4, 1/8). Andere Formate ignorieren die Option.
+			$imagick->setOption('jpeg:size', $maxX . 'x' . $maxY);
+			$imagick->readImageBlob($content);
+			$imagick->setIteratorIndex(0);
+			if (\method_exists($imagick, 'autoOrientImage')) {
+				$imagick->autoOrientImage();
+			}
+			$imagick->setImageFormat('png');
+			$imagick->thumbnailImage($maxX, $maxY, true);
+			$blob = $imagick->getImageBlob();
+		} catch (\Throwable $e) {
+			\OC::$server->getLogger()->logException(
+				$e,
+				['app' => 'core', 'message' => 'imagick large-image preview failed']
+			);
+			return false;
+		} finally {
+			if ($imagick instanceof \Imagick) {
+				$imagick->clear();
+				$imagick->destroy();
+			}
+		}
+
+		$image = new \OC_Image();
+		$image->loadFromData($blob);
+		return $image->valid() ? $image : false;
 	}
 
 	/**
