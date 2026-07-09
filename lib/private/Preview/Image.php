@@ -107,8 +107,11 @@ abstract class Image implements IProvider2 {
 			$imagick->setOption('jpeg:size', $maxX . 'x' . $maxY);
 			$imagick->readImageBlob($content);
 			$imagick->setIteratorIndex(0);
-			if (\method_exists($imagick, 'autoOrientImage')) {
-				$imagick->autoOrientImage();
+			// EXIF-Orientierung anwenden (autoOrientate liest das Orientation-Tag
+			// und dreht/spiegelt entsprechend). method_exists deckt aeltere imagick
+			// ohne diese Methode ab.
+			if (\method_exists($imagick, 'autoOrientate')) {
+				$imagick->autoOrientate();
 			}
 			$imagick->setImageFormat('png');
 			$imagick->thumbnailImage($maxX, $maxY, true);
