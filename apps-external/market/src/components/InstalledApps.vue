@@ -27,7 +27,8 @@
 						tbody
 							tr(v-for="application in applications", :key="application.id")
 								td
-									strong {{ appName(application) }}
+									router-link.bwt-installed-app-link(:to="{ name: 'details', params: { id: application.id }}")
+										strong {{ appName(application) }}
 									div.uk-text-meta {{ application.id }}
 								td {{ application.version || '-' }}
 								td {{ author(application) }}
@@ -106,6 +107,17 @@
 
 <style lang="scss" scoped>
 	@import "../styles/variables-theme";
+
+	// Installierte App per Namensklick zur Detailseite (analog verfuegbare Apps).
+	.bwt-installed-app-link {
+		color: inherit;
+		text-decoration: none;
+
+		&:hover strong,
+		&:focus strong {
+			text-decoration: underline;
+		}
+	}
 
 	// AA-Kontrast: UIkit-Standardrot (#f0506e) erreicht nur 3,46:1 auf Weiss.
 	// Dunkleres Rot erzwingen (>=4,5:1 fuer Normaltext).

@@ -187,10 +187,13 @@ class HttpService {
 			);
 		}
 		// Erst nach erfolgreicher Validierung cachen: eine kaputte 200er-Antwort
-		// (Proxy-/Wartungsseite) würde sonst den Katalog für 24h vergiften.
+		// (Proxy-/Wartungsseite) würde sonst den Katalog vergiften. Kurze TTL (30
+		// Min), damit neu veröffentlichte Katalog-Versionen zeitnah sichtbar sind und
+		// nicht bis zu einem Tag ein veraltetes Release (mit toter Download-URL)
+		// ausgeliefert wird.
 		if ($this->cacheFactory->isAvailable()) {
 			$cache = $this->cacheFactory->create(self::CACHE_KEY);
-			$cache->set($key, $data, 60 * 60 * 24);
+			$cache->set($key, $data, 60 * 30);
 		}
 		return $decoded;
 	}
