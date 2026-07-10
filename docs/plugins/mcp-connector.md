@@ -89,7 +89,7 @@ Mcp-Session-Id: f1fff858-70bc-49ed-bdfc-bed963d5b57b
 
 {"jsonrpc":"2.0","id":1,"result":{
   "protocolVersion":"2025-11-25",
-  "serverInfo":{"name":"owncloud.online","version":"1.0.0"},
+  "serverInfo":{"name":"owncloud.online","version":"1.0.1"},
   "instructions":"You are connected to an owncloud.online instance as user \"…\" …"}}
 ```
 
@@ -142,8 +142,8 @@ Browser mitgeschickte Session kann heimlich MCP-Aufrufe auslösen.
 | Ebene | Regel |
 |---|---|
 | Identität | Jeder Aufruf läuft **als der authentifizierte Nutzer** — gleiche Datei-Sichtbarkeit und -Rechte wie in der Web-Oberfläche. |
-| Lesen/Schreiben | Standardmäßig **read-only**. Schreib-Tools (`files_write`, `shares_create_*`, `tags_assign`, …) liefern einen klaren Fehler, bis ein Admin `enable_write` auf `yes` setzt. |
-| Verwaltung | `users_*`- und `groups_*`-Tools verlangen zusätzlich **Admin-Rechte** des angemeldeten Nutzers — für alle anderen kommt ein klarer Fehler. |
+| Lesen/Schreiben | Standardmäßig **read-only**. Schreib-Tools (`files_write`, `shares_create_*`, `tags_assign`, …) werden erst angeboten, wenn ein Admin `enable_write` auf `yes` setzt. |
+| Verwaltung | Die `users_*`- und `groups_*`-Tools werden **nur Administratoren** überhaupt angeboten; ein Nicht-Admin sieht sie gar nicht erst in `tools/list`. |
 | Grenzen | `files_read` liefert standardmäßig **1 MB** (per `max_bytes` bis maximal **10 MB**); Bilder (`files_view_image`) und Ressourcen sind auf **5 MB** begrenzt. `files_delete` löscht über die normale Datei-API — mit aktiver Papierkorb-App (Standard) landet die Datei im **Papierkorb**. |
 
 Fehler erscheinen als reguläre MCP-Tool-Fehler, die das Modell lesen
@@ -322,8 +322,9 @@ vollständig aus ownCloud selbst.
 | `A valid session id is REQUIRED for non-initialize requests.` | Header `Mcp-Session-Id` fehlt. Erst `initialize` aufrufen, die ID aus dem Antwort-Header übernehmen und bei jeder Folge-Anfrage mitschicken. |
 | HTTP 401 | Zugangsdaten falsch oder Bearer-Token ohne oauth2-App. Basic-Auth mit App-Passwort verwenden. |
 | `MCP requires an app token or Basic auth …` | Anfrage kam mit Browser-Cookie-Session. Authorization-Header setzen. |
-| `Write access is disabled on this MCP connection.` | Read-only-Modus. Admin: `occ config:app:set oco_mcp enable_write --value=yes`. |
-| `This tool requires ownCloud administrator privileges.` | `users_*`/`groups_*` als Nicht-Admin aufgerufen. |
+| `-32601` / „Tool not found" für `files_write`, `shares_create_*`, `tags_assign` … | Read-only-Modus: Schreib-Tools sind nicht sichtbar. Admin: `occ config:app:set oco_mcp enable_write --value=yes`, danach den Client neu verbinden (initialize), damit die Tool-Liste neu geladen wird. |
+| `-32601` / „Tool not found" für `users_*` / `groups_*` | Diese Tools werden nur Administratoren angeboten. Als Admin verbinden. |
+| `Write access is disabled on this MCP connection.` / `This tool requires ownCloud administrator privileges.` | Interne Schutzmeldung, falls ein Tool doch direkt erreicht wird (z. B. veraltete Session nach dem Umschalten von `enable_write`). Client neu verbinden. |
 | Tool `ai_ask` fehlt | App `ai_documents` ist nicht installiert/aktiv — gewollt, kein Fehler. |
 | Client meldet SSE-/Stream-Fehler | Transport auf HTTP(-only) stellen; der Server bietet keinen SSE-GET-Stream an. |
 

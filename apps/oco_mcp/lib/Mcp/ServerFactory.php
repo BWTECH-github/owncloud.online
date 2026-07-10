@@ -99,11 +99,11 @@ class ServerFactory {
 		$container = new InstanceContainer($map);
 
 		$builder = \Mcp\Server::builder()
-			->setServerInfo('owncloud.online', '1.0.0', 'MCP access to owncloud.online files, shares, tags, comments and user management.')
+			->setServerInfo('owncloud.online', '1.0.1', 'MCP access to owncloud.online files, shares, tags, comments and user management.')
 			->setInstructions(
 				'You are connected to an owncloud.online instance as user "' . $uid . '". '
 				. 'Paths are relative to that user\'s file root ("/"). '
-				. ($writeEnabled ? 'Write and management tools are ENABLED.' : 'This connection is READ-ONLY; write tools will refuse.')
+				. ($writeEnabled ? 'Write and management tools are ENABLED.' : 'This connection is READ-ONLY; write tools are not exposed.')
 			)
 			->setContainer($container)
 			->setSession(new \Mcp\Server\Session\FileSessionStore($this->sessionDir(), 3600));
@@ -114,46 +114,64 @@ class ServerFactory {
 			->addTool([FilesTool::class, 'info'], 'files_info')
 			->addTool([FilesTool::class, 'read'], 'files_read')
 			->addTool([FilesTool::class, 'viewImage'], 'files_view_image')
-			->addTool([FilesTool::class, 'search'], 'files_search')
-			->addTool([FilesTool::class, 'write'], 'files_write')
-			->addTool([FilesTool::class, 'mkdir'], 'files_mkdir')
-			->addTool([FilesTool::class, 'move'], 'files_move')
-			->addTool([FilesTool::class, 'copy'], 'files_copy')
-			->addTool([FilesTool::class, 'delete'], 'files_delete');
+			->addTool([FilesTool::class, 'search'], 'files_search');
+		if ($writeEnabled) {
+			$builder
+				->addTool([FilesTool::class, 'write'], 'files_write')
+				->addTool([FilesTool::class, 'mkdir'], 'files_mkdir')
+				->addTool([FilesTool::class, 'move'], 'files_move')
+				->addTool([FilesTool::class, 'copy'], 'files_copy')
+				->addTool([FilesTool::class, 'delete'], 'files_delete');
+		}
 
 		// Shares
-		$builder
-			->addTool([SharesTool::class, 'list'], 'shares_list')
-			->addTool([SharesTool::class, 'createLink'], 'shares_create_link')
-			->addTool([SharesTool::class, 'createUser'], 'shares_create_user')
-			->addTool([SharesTool::class, 'delete'], 'shares_delete');
+		$builder->addTool([SharesTool::class, 'list'], 'shares_list');
+		if ($writeEnabled) {
+			$builder
+				->addTool([SharesTool::class, 'createLink'], 'shares_create_link')
+				->addTool([SharesTool::class, 'createUser'], 'shares_create_user')
+				->addTool([SharesTool::class, 'delete'], 'shares_delete');
+		}
 
 		// Tags
-		$builder
-			->addTool([TagsTool::class, 'list'], 'tags_list')
-			->addTool([TagsTool::class, 'assign'], 'tags_assign')
-			->addTool([TagsTool::class, 'remove'], 'tags_remove');
+		$builder->addTool([TagsTool::class, 'list'], 'tags_list');
+		if ($writeEnabled) {
+			$builder
+				->addTool([TagsTool::class, 'assign'], 'tags_assign')
+				->addTool([TagsTool::class, 'remove'], 'tags_remove');
+		}
 
 		// Comments
-		$builder
-			->addTool([CommentsTool::class, 'list'], 'comments_list')
-			->addTool([CommentsTool::class, 'add'], 'comments_add');
+		$builder->addTool([CommentsTool::class, 'list'], 'comments_list');
+		if ($writeEnabled) {
+			$builder->addTool([CommentsTool::class, 'add'], 'comments_add');
+		}
 
 		// Users (admin-gated inside the tool)
-		$builder
-			->addTool([UsersTool::class, 'list'], 'users_list')
-			->addTool([UsersTool::class, 'get'], 'users_get')
-			->addTool([UsersTool::class, 'create'], 'users_create')
-			->addTool([UsersTool::class, 'disable'], 'users_disable')
-			->addTool([UsersTool::class, 'enable'], 'users_enable')
-			->addTool([UsersTool::class, 'setQuota'], 'users_set_quota');
+		if ($isAdmin) {
+			$builder
+				->addTool([UsersTool::class, 'list'], 'users_list')
+				->addTool([UsersTool::class, 'get'], 'users_get');
+			if ($writeEnabled) {
+				$builder
+					->addTool([UsersTool::class, 'create'], 'users_create')
+					->addTool([UsersTool::class, 'disable'], 'users_disable')
+					->addTool([UsersTool::class, 'enable'], 'users_enable')
+					->addTool([UsersTool::class, 'setQuota'], 'users_set_quota');
+			}
+		}
 
 		// Groups (admin-gated inside the tool)
-		$builder
-			->addTool([GroupsTool::class, 'list'], 'groups_list')
-			->addTool([GroupsTool::class, 'members'], 'groups_members')
-			->addTool([GroupsTool::class, 'addMember'], 'groups_add_member')
-			->addTool([GroupsTool::class, 'removeMember'], 'groups_remove_member');
+		if ($isAdmin) {
+			$builder
+				->addTool([GroupsTool::class, 'list'], 'groups_list')
+				->addTool([GroupsTool::class, 'members'], 'groups_members');
+			if ($writeEnabled) {
+				$builder
+					->addTool([GroupsTool::class, 'addMember'], 'groups_add_member')
+					->addTool([GroupsTool::class, 'removeMember'], 'groups_remove_member');
+			}
+		}
 
 		// Meta
 		$builder

@@ -20,6 +20,8 @@ use OCP\Files\NotFoundException;
  */
 class FilesTool {
 	use WriteGuard;
+	private const MAX_WRITE_BYTES = 1048576;
+	private const MAX_LIST_ENTRIES = 1000;
 
 	private IRootFolder $rootFolder;
 	private string $userId;
@@ -34,18 +36,31 @@ class FilesTool {
 	 * List the files and folders directly inside a directory.
 	 *
 	 * @param string $path Directory path relative to the user's root, e.g. "/" or "/Documents".
+	 * @param int $limit Maximum entries per page (default 200, max 1000).
+	 * @param int $offset Zero-based page offset.
 	 * @return array The directory entries with name, path, type, size, mtime and mimetype.
 	 */
-	public function list(string $path = '/'): array {
+	public function list(string $path = '/', int $limit = 200, int $offset = 0): array {
 		$node = $this->getNode($path);
 		if (!$node instanceof Folder) {
 			throw new ToolCallException('Not a directory: ' . $path);
 		}
+		$limit = \max(1, \min($limit, self::MAX_LIST_ENTRIES));
+		$offset = \max(0, $offset);
 		$entries = [];
-		foreach ($node->getDirectoryListing() as $child) {
+		$listing = $node->getDirectoryListing();
+		foreach (\array_slice($listing, $offset, $limit) as $child) {
 			$entries[] = $this->describe($child);
 		}
-		return ['path' => $this->relPath($node), 'count' => \count($entries), 'entries' => $entries];
+		return [
+			'path' => $this->relPath($node),
+			'count' => \count($entries),
+			'total' => \count($listing),
+			'offset' => $offset,
+			'limit' => $limit,
+			'has_more' => $offset + \count($entries) < \count($listing),
+			'entries' => $entries,
+		];
 	}
 
 	/**
@@ -141,16 +156,22 @@ class FilesTool {
 	 * Create or overwrite a text file. Requires write access.
 	 *
 	 * @param string $path Destination path relative to the user's root.
-	 * @param string $content The file contents to write.
+	 * @param string $content The file contents to write (max 1 MiB decoded).
 	 * @param bool $base64 Set true if "content" is base64-encoded binary data.
 	 * @return array Metadata of the written file.
 	 */
 	public function write(string $path, string $content, bool $base64 = false): array {
 		$this->assertWrite();
 		$path = $this->clean($path);
+		if ($path === '/') {
+			throw new ToolCallException('Cannot write to the user root.');
+		}
 		$data = $base64 ? \base64_decode($content, true) : $content;
 		if ($data === false) {
 			throw new ToolCallException('Invalid base64 content.');
+		}
+		if (\strlen($data) > self::MAX_WRITE_BYTES) {
+			throw new ToolCallException('File content is too large (max 1 MiB).');
 		}
 		$folder = $this->userFolder();
 		try {
@@ -173,7 +194,11 @@ class FilesTool {
 	 */
 	public function mkdir(string $path): array {
 		$this->assertWrite();
-		return $this->describe($this->userFolder()->newFolder($this->clean($path)));
+		$path = $this->clean($path);
+		if ($path === '/') {
+			throw new ToolCallException('Cannot create the user root.');
+		}
+		return $this->describe($this->userFolder()->newFolder($path));
 	}
 
 	/**
@@ -186,9 +211,12 @@ class FilesTool {
 	public function move(string $source, string $target): array {
 		$this->assertWrite();
 		$folder = $this->userFolder();
+		$source = $this->clean($source);
+		$target = $this->clean($target);
+		$this->assertMutablePath($source, $target);
 		$node = $this->getNode($source);
-		$node->move($folder->getFullPath($this->clean($target)));
-		return $this->describe($folder->get($this->clean($target)));
+		$node->move($folder->getFullPath($target));
+		return $this->describe($folder->get($target));
 	}
 
 	/**
@@ -201,9 +229,12 @@ class FilesTool {
 	public function copy(string $source, string $target): array {
 		$this->assertWrite();
 		$folder = $this->userFolder();
+		$source = $this->clean($source);
+		$target = $this->clean($target);
+		$this->assertMutablePath($source, $target);
 		$node = $this->getNode($source);
-		$node->copy($folder->getFullPath($this->clean($target)));
-		return $this->describe($folder->get($this->clean($target)));
+		$node->copy($folder->getFullPath($target));
+		return $this->describe($folder->get($target));
 	}
 
 	/**
@@ -214,6 +245,10 @@ class FilesTool {
 	 */
 	public function delete(string $path): array {
 		$this->assertWrite();
+		$path = $this->clean($path);
+		if ($path === '/') {
+			throw new ToolCallException('Deleting the user root is forbidden.');
+		}
 		$node = $this->getNode($path);
 		$rel = $this->relPath($node);
 		$node->delete();
@@ -233,8 +268,22 @@ class FilesTool {
 	}
 
 	private function clean(string $path): string {
-		$path = '/' . \ltrim(\trim($path), '/');
+		$path = \str_replace('\\', '/', \trim($path));
+		// Bewusst strikt: '.'- und '..'-Segmente werden abgelehnt (keine
+		// Normalisierung), damit der Client nur kanonische Pfade schickt.
+		foreach (\explode('/', $path) as $segment) {
+			if ($segment === '.' || $segment === '..') {
+				throw new ToolCallException('Relative path segments (".", "..") are forbidden.');
+			}
+		}
+		$path = '/' . \ltrim($path, '/');
 		return $path === '/' ? '/' : \rtrim($path, '/');
+	}
+
+	private function assertMutablePath(string $source, string $target): void {
+		if ($source === '/' || $target === '/') {
+			throw new ToolCallException('Moving or copying the user root is forbidden.');
+		}
 	}
 
 	private function relPath(Node $node): string {
