@@ -29,8 +29,8 @@ Modified by BW-Tech GmbH for owncloud.online (PHP 8.4).
 	<category>integration</category>
 	<category>tools</category>
 	<website>https://bw.tech</website>
-	<bugs>https://github.com/BWTECH-github/owncloud.online/issues</bugs>
-	<repository type="git">https://github.com/BWTECH-github/owncloud.online.git</repository>
+	<bugs>https://github.com/BWTECH-github/oco_mcp/issues</bugs>
+	<repository type="git">https://github.com/BWTECH-github/oco_mcp.git</repository>
 	<dependencies>
 		<php min-version="8.4"/>
 		<owncloud min-version="10" max-version="11"/>
