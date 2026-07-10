@@ -490,7 +490,24 @@ class MarketService {
 		if (empty($release)) {
 			throw new AppUpdateNotFoundException($this->l10n->t('No compatible version for %s', [$appId]));
 		}
+		// Downgrade-Schutz: Ist die App bereits installiert und wurde keine
+		// explizite Ziel-Version verlangt, nur echte Updates (> installiert) zulassen.
+		// Verhindert, dass ein versehentliches Update auf ein aelteres Katalog-Release
+		// zurueckfaellt und dessen (evtl. entfernte) Datei einen 404 wirft.
+		if ($targetVersion === null) {
+			$installed = $this->getInstalledAppInfo($appId);
+			if ($installed !== null && !empty($installed['version'])) {
+				$release = \array_filter(
+					$release,
+					fn ($element): bool => \version_compare($element['version'], $installed['version'], '>')
+				);
+				if (empty($release)) {
+					throw new AppUpdateNotFoundException($this->l10n->t('No newer version available for %s', [$appId]));
+				}
+			}
+		}
 		\usort($release, static fn ($a, $b): int => \version_compare($b['version'], $a['version']));
+		$release = \array_values($release);
 		$downloadLink = $release[0]['download'];
 
 		$pathInfo = \pathinfo($downloadLink);
