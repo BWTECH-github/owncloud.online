@@ -22,6 +22,9 @@ occ app:enable oco_mcp
 occ config:app:set oco_mcp enable_write --value=yes
 ```
 
+Im Standardmodus werden schreibende Tools nicht in `tools/list` veröffentlicht.
+Requests sind auf 2 MiB begrenzt; `files_write` akzeptiert maximal 1 MiB Inhalt.
+
 ## Tool catalog
 
 | Tool | Read/Write | Notes |
@@ -40,9 +43,12 @@ occ config:app:set oco_mcp enable_write --value=yes
 | `whoami`, `quota`, `capabilities` | read | identity & limits |
 | `ai_ask` | read | RAG question-answering over the user's documents — **only present when the optional `ai_documents` app is enabled** |
 
-Write tools return a clear error when write access is disabled; admin tools
-return a clear error for non-admins. Both surface as MCP tool errors the model
-can read and act on.
+Tool visibility follows the connection's rights: when write access is disabled,
+the write tools are not advertised in `tools/list` at all; the admin-only
+`users_*` / `groups_*` tools are only advertised to administrators. Calling a
+tool that is not exposed returns the standard JSON-RPC `-32601 (method not
+found)` error. As a defence in depth every write/admin method still re-checks
+the flag internally and refuses with a clear message if reached directly.
 
 ## Resources
 

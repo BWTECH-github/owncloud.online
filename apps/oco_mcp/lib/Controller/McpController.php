@@ -26,6 +26,8 @@ use OCP\IUserSession;
  * core-provided library on unrelated requests.
  */
 class McpController extends Controller {
+	private const MAX_REQUEST_BYTES = 2 * 1048576;
+
 	private IUserSession $userSession;
 	private IGroupManager $groupManager;
 	private ServerFactory $serverFactory;
@@ -77,10 +79,21 @@ class McpController extends Controller {
 
 		// Lazy-load the bundled MCP SDK only for this endpoint.
 		require_once __DIR__ . '/../../vendor/autoload.php';
+		$contentLength = (int)($this->request->getHeader('Content-Length') ?? 0);
+		if ($contentLength > self::MAX_REQUEST_BYTES) {
+			return $this->error(Http::STATUS_REQUEST_ENTITY_TOO_LARGE, -32600, 'MCP request body is too large.');
+		}
 
-		$rawBody = \file_get_contents('php://input');
-		if ($rawBody === false) {
-			$rawBody = '';
+		// Gebounded lesen: hoechstens MAX+1 Bytes in den Speicher holen. So kann ein
+		// Client ohne (oder mit gefaelschtem) Content-Length — etwa via chunked
+		// transfer-encoding — den Speicher nicht mit einem riesigen Body erschoepfen.
+		$stream = \fopen('php://input', 'rb');
+		$rawBody = $stream !== false ? (string)\stream_get_contents($stream, self::MAX_REQUEST_BYTES + 1) : '';
+		if ($stream !== false) {
+			\fclose($stream);
+		}
+		if (\strlen($rawBody) > self::MAX_REQUEST_BYTES) {
+			return $this->error(Http::STATUS_REQUEST_ENTITY_TOO_LARGE, -32600, 'MCP request body is too large.');
 		}
 
 		$isAdmin = $this->groupManager->isAdmin($user->getUID());
@@ -92,24 +105,28 @@ class McpController extends Controller {
 			$factory = new \GuzzleHttp\Psr7\HttpFactory();
 			$psrRequest = $this->buildPsrRequest($rawBody);
 
-			// Disable the SDK's own CORS/DNS-rebinding/protocol middleware: this
-			// endpoint is protected by ownCloud auth + the token requirement above,
-			// and MCP clients are native (not browsers), so those checks only add
-			// host-allowlist friction. A null logger keeps the "middleware empty"
-			// warning out of the ownCloud log.
+			$middleware = [
+				new \Mcp\Server\Transport\Http\Middleware\CorsMiddleware(),
+				new \Mcp\Server\Transport\Http\Middleware\DnsRebindingProtectionMiddleware(
+					$this->allowedHosts(),
+					$factory,
+					$factory
+				),
+				new \Mcp\Server\Transport\Http\Middleware\ProtocolVersionMiddleware(null, $factory, $factory),
+			];
 			$transport = new \Mcp\Server\Transport\StreamableHttpTransport(
 				$psrRequest,
 				$factory,
 				$factory,
 				new \Psr\Log\NullLogger(),
-				[]
+				$middleware
 			);
 
 			/** @var \Psr\Http\Message\ResponseInterface $psrResponse */
 			$psrResponse = $server->run($transport);
 		} catch (\Throwable $e) {
 			$this->logger->logException($e, ['app' => 'oco_mcp']);
-			return $this->error(Http::STATUS_INTERNAL_SERVER_ERROR, -32603, 'Internal MCP error: ' . $e->getMessage());
+			return $this->error(Http::STATUS_INTERNAL_SERVER_ERROR, -32603, 'Internal MCP error.');
 		}
 
 		$response = new DataDisplayResponse(
@@ -147,6 +164,38 @@ class McpController extends Controller {
 			$headers,
 			$rawBody
 		);
+	}
+
+	/**
+	 * ownCloud validates trusted_domains before this controller runs. Reuse the
+	 * same hosts for the SDK's DNS-rebinding middleware.
+	 *
+	 * @return string[]
+	 */
+	private function allowedHosts(): array {
+		$hosts = ['localhost', '127.0.0.1', '[::1]'];
+		$trusted = $this->config->getSystemValue('trusted_domains', []);
+		if (!\is_array($trusted)) {
+			$trusted = [];
+		}
+		// NUR die vom Administrator konfigurierten Hosts erlauben. Der rohe
+		// Host-Header darf hier NICHT einfliessen — sonst wuerde sich jeder
+		// Angreifer-Host selbst freischalten und der DNS-Rebinding-Schutz waere
+		// wirkungslos.
+		$trusted[] = (string)$this->config->getSystemValue('overwritehost', '');
+
+		foreach ($trusted as $candidate) {
+			$candidate = \trim((string)$candidate);
+			if ($candidate === '' || \str_contains($candidate, '*')) {
+				continue;
+			}
+			$host = \parse_url('http://' . $candidate, PHP_URL_HOST);
+			if (\is_string($host) && $host !== '') {
+				$hosts[] = \str_contains($host, ':') ? '[' . \trim($host, '[]') . ']' : $host;
+			}
+		}
+
+		return \array_values(\array_unique(\array_map('strtolower', $hosts)));
 	}
 
 	private function error(int $httpStatus, int $rpcCode, string $message): DataDisplayResponse {

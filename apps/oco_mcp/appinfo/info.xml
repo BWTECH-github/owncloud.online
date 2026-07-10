@@ -22,7 +22,7 @@ never a plain browser cookie session — so it is safe from cross-site request f
 
 Modified by BW-Tech GmbH for owncloud.online (PHP 8.4).
 	</description>
-	<version>1.0.0</version>
+	<version>1.0.1</version>
 	<licence>AGPL-3.0-only</licence>
 	<author>BW-Tech GmbH</author>
 	<namespace>OcoMcp</namespace>

@@ -30,6 +30,7 @@ use OCP\Files\NotPermittedException;
  */
 class FileResourceProvider {
 	private const MAX_BYTES = 5 * 1048576;
+	private const MAX_LIST_ENTRIES = 1000;
 
 	private IRootFolder $rootFolder;
 	private string $userId;
@@ -60,6 +61,9 @@ class FileResourceProvider {
 		if (!$node instanceof File) {
 			throw new ResourceReadException('Unsupported resource: ' . $real);
 		}
+		if ($node->getSize() > self::MAX_BYTES) {
+			throw new ResourceReadException('Resource is too large; use files_read for bounded access.');
+		}
 		$mime = $node->getMimetype();
 		$data = $this->boundedContent($node);
 		if ($data === '' || \mb_check_encoding($data, 'UTF-8')) {
@@ -73,6 +77,12 @@ class FileResourceProvider {
 	}
 
 	private function resolve(string $path): Node {
+		// Bewusst strikt (wie FilesTool::clean): '.'/'..' werden abgelehnt.
+		foreach (\explode('/', \str_replace('\\', '/', $path)) as $segment) {
+			if ($segment === '.' || $segment === '..') {
+				throw new ResourceReadException('Relative path segments (".", "..") are forbidden.');
+			}
+		}
 		try {
 			return $this->userFolder()->get('/' . \ltrim($path, '/'));
 		} catch (NotFoundException | NotPermittedException) {
@@ -96,7 +106,8 @@ class FileResourceProvider {
 	private function listingJson(Folder $folder): string {
 		$root = $this->userFolder()->getPath();
 		$entries = [];
-		foreach ($folder->getDirectoryListing() as $child) {
+		$listing = $folder->getDirectoryListing();
+		foreach (\array_slice($listing, 0, self::MAX_LIST_ENTRIES) as $child) {
 			$rel = \substr($child->getPath(), \strlen($root));
 			$isFolder = $child->getType() === \OCP\Files\FileInfo::TYPE_FOLDER;
 			$entries[] = [
@@ -116,6 +127,8 @@ class FileResourceProvider {
 		$json = \json_encode([
 			'path' => $rootRel === '' ? '/' : $rootRel,
 			'count' => \count($entries),
+			'total' => \count($listing),
+			'truncated' => \count($listing) > self::MAX_LIST_ENTRIES,
 			'entries' => $entries,
 		], \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES | \JSON_INVALID_UTF8_SUBSTITUTE);
 		if ($json === false) {
