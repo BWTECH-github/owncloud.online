@@ -1,6 +1,6 @@
 # MCP Connector for owncloud.online (`oco_mcp`)
 
-> **Deutsch?** Ausführliche deutsche Dokumentation: [DOKUMENTATION.md](DOKUMENTATION.md)
+> **Deutsch?** Ausführliche deutsche Dokumentation: [docs/plugins/mcp-connector.md](../../docs/plugins/mcp-connector.md)
 
 Turns owncloud.online into a **Model Context Protocol (MCP)** server so AI
 assistants (Claude Desktop, editors, agents, custom clients) can work with a

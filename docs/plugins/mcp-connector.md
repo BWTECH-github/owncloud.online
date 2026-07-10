@@ -1,4 +1,4 @@
-# MCP Connector für owncloud.online — Dokumentation (Deutsch)
+# MCP Connector (`oco_mcp`)
 
 `oco_mcp` macht aus einer owncloud.online-Instanz einen **MCP-Server**
 (Model Context Protocol). KI-Assistenten wie **Claude** (Desktop/Code),
@@ -6,7 +6,7 @@ Editoren oder eigene Agenten verbinden sich damit und arbeiten mit den
 Dateien, Freigaben, Tags und Kommentaren des angemeldeten Nutzers — mit
 exakt dessen Berechtigungen, standardmäßig **nur lesend**.
 
-> **English?** See [README.md](README.md) for the English version.
+> **English?** See the app's [README](https://github.com/BWTECH-github/owncloud.online/blob/main/apps/oco_mcp/README.md) for the English version. Quellcode: `apps/oco_mcp/` im Server-Repository.
 
 ---
 
@@ -330,7 +330,7 @@ vollständig aus ownCloud selbst.
 ## 13. Eigene Tools ergänzen
 
 Zwei Schritte, kein Framework-Kleber — ausführlich (mit Codebeispiel)
-im englischen [README](README.md#extending-it--add-your-own-tool):
+im englischen [README](https://github.com/BWTECH-github/owncloud.online/blob/main/apps/oco_mcp/README.md#extending-it--add-your-own-tool):
 
 1. **Public-Methode** in einer Klasse unter `lib/Tools/` anlegen —
    Signatur + DocBlock werden automatisch zum Tool-Schema.
