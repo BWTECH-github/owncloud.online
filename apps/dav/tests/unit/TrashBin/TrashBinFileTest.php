@@ -105,4 +105,28 @@ class TrashBinFileTest extends TestCase {
 		$this->trashBinManager->method('restore')->willThrowException($coreException);
 		$this->trashBinFile->restore('');
 	}
+
+	public function providesOriginalLocations() : array {
+		return [
+			'Wurzel' => ['.', 'name.txt'],
+			'Unterordner' => ['sub/dir', 'sub/dir/name.txt'],
+			// In manchen Fällen steht die Location mit führendem Schrägstrich in oc_files_trash
+			'führender Schrägstrich' => ['/sub/dir', 'sub/dir/name.txt'],
+		];
+	}
+
+	/**
+	 * @dataProvider providesOriginalLocations
+	 */
+	public function testGetOriginalLocationIsRelative(string $location, string $expected) {
+		$fileInfo = $this->createMock(FileInfo::class);
+		$fileInfo->method('getPath')->willReturn('/alice/files_trashbin/files/name.txt.d1700000000');
+		$this->trashBinManager->expects($this->once())
+			->method('getLocation')
+			->with('alice', 'name.txt', 1700000000)
+			->willReturn($location);
+		$node = new TrashBinFile('alice', $fileInfo, $this->trashBinManager);
+
+		$this->assertSame($expected, $node->getOriginalLocation());
+	}
 }

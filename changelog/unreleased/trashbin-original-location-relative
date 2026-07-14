@@ -1,0 +1,9 @@
+Bugfix: Papierkorb meldet den ursprünglichen Ort ohne führenden Schrägstrich
+
+Die WebDAV-Eigenschaft trashbin-original-location enthielt in manchen Fällen
+einen führenden Schrägstrich, in anderen nicht. Sie wird jetzt immer als
+relativer Pfad ohne führenden Schrägstrich geliefert. Die Web-Oberfläche war
+nicht betroffen; Clients, die den Wert auswerten, bekommen nun einen
+einheitlichen Pfad.
+
+Upstream: 72b3ad0e2c
