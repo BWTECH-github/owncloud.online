@@ -32,6 +32,7 @@ use OC\Cache\CappedMemoryCache;
 use OC\Files\Mount\MoveableMount;
 use OC\Files\View;
 use OC\Helper\UserTypeHelper;
+use OCO\Security\Bruteforce\Throttler;
 use OCP\Activity\IEvent;
 use OCP\Files\File;
 use OCP\Files\Folder;
@@ -1634,10 +1635,17 @@ class Manager implements IManager {
 		if ($password === null || $share->getPassword() === null) {
 			return false;
 		}
+
+		$ip = \OC::$server->getRequest()->getRemoteAddress();
+		/** @var Throttler $throttler */
+		$throttler = \OC::$server->query(Throttler::class);
+		$throttler->sleepDelay('share_password', $ip, $share->getToken());
+
 		$beforeEvent = new GenericEvent(null, ['shareObject' => $share]);
 		$this->eventDispatcher->dispatch($beforeEvent, 'share.beforepasswordcheck');
 		$newHash = '';
 		if (!$this->hasher->verify($password, $share->getPassword(), $newHash)) {
+			$throttler->registerAttempt('share_password', $ip, $share->getToken());
 			$failEvent = new GenericEvent(null, ['shareObject' => $share]);
 			$this->eventDispatcher->dispatch($failEvent, 'share.failedpasswordcheck');
 			return false;
