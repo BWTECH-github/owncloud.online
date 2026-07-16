@@ -23,7 +23,8 @@
             "OC\\": "lib/private",
             "OC\\Core\\": "core/",
             "OC\\Settings\\": "settings/",
-            "OCP\\": "lib/public"
+            "OCP\\": "lib/public",
+            "OCO\\": "lib/private/OCO"
         },
         "classmap": [
             "lib/private/legacy"

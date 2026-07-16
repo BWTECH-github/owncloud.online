@@ -35,6 +35,7 @@ namespace OC\User;
 
 use OC\Cache\CappedMemoryCache;
 use OC\Hooks\PublicEmitter;
+use OCO\Security\Bruteforce\Throttler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\Events\EventEmitterTrait;
@@ -254,6 +255,11 @@ class Manager extends PublicEmitter implements IUserManager {
 		$loginName = \str_replace("\0", '', $loginName);
 		$password = \str_replace("\0", '', $password);
 
+		$ip = \OC::$server->getRequest()->getRemoteAddress();
+		/** @var Throttler $throttler */
+		$throttler = \OC::$server->query(Throttler::class);
+		$throttler->sleepDelay('login', $ip, $loginName);
+
 		if (empty($this->backends)) {
 			$this->registerBackend(new Database());
 		}
@@ -269,7 +275,8 @@ class Manager extends PublicEmitter implements IUserManager {
 			}
 		}
 
-		$this->logger->warning('Login failed: \''. $loginName .'\' (Remote IP: \''. \OC::$server->getRequest()->getRemoteAddress(). '\')', ['app' => 'core']);
+		$throttler->registerAttempt('login', $ip, $loginName);
+		$this->logger->warning('Login failed: \''. $loginName .'\' (Remote IP: \''. $ip. '\')', ['app' => 'core']);
 		return false;
 	}
 
