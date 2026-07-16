@@ -83,6 +83,7 @@ use OC\Security\CSRF\CsrfTokenManager;
 use OC\Security\CSRF\TokenStorage\SessionStorage;
 use OC\Security\Hasher;
 use OC\Security\CredentialsManager;
+use OCO\Security\Bruteforce\Throttler;
 use OC\Security\SecureRandom;
 use OC\Security\TrustedDomainHelper;
 use OC\Session\CryptoWrapper;
@@ -549,6 +550,9 @@ class Server extends ServerContainer implements IServerContainer, IServiceLoader
 		});
 		$this->registerService('CredentialsManager', function (Server $c) {
 			return new CredentialsManager($c->getCrypto(), $c->getDatabaseConnection());
+		});
+		$this->registerService(Throttler::class, function (Server $c) {
+			return new Throttler($c->getDatabaseConnection(), $c->getTimeFactory(), $c->getLogger());
 		});
 		$this->registerService('DatabaseConnection', function (Server $c) {
 			$systemConfig = $c->getSystemConfig();

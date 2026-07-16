@@ -65,6 +65,9 @@ class Database extends Backend implements IUserBackend, IProvidesHomeBackend, IP
 	/** @var CappedMemoryCache */
 	private $cache;
 
+	/** @var string|null */
+	private static $dummyPasswordHash;
+
 	/**
 	 * OC_User_Database constructor.
 	 */
@@ -220,10 +223,13 @@ class Database extends Backend implements IUserBackend, IProvidesHomeBackend, IP
 		$result = $connection->executeQuery('SELECT `uid`, `password` FROM `*PREFIX*users` WHERE LOWER(`uid`) = LOWER(?)', [$uid]);
 
 		$row = $result->fetchAssociative();
-		if ($row) {
-			$storedHash = $row['password'];
-			$newHash = '';
-			if (\OC::$server->getHasher()->verify($password, $storedHash, $newHash)) {
+		$hasher = \OC::$server->getHasher();
+		// Always run a real hash comparison, even for a uid that doesn't exist,
+		// so the response time can't be used to enumerate valid usernames.
+		$storedHash = $row ? $row['password'] : $this->getDummyPasswordHash($hasher);
+		$newHash = '';
+		if ($hasher->verify($password, $storedHash, $newHash)) {
+			if ($row) {
 				if (!empty($newHash)) {
 					$this->setPassword($uid, $password);
 					unset($this->cache[$uid]); // invalidate cache
@@ -233,6 +239,21 @@ class Database extends Backend implements IUserBackend, IProvidesHomeBackend, IP
 		}
 
 		return false;
+	}
+
+	/**
+	 * A bcrypt hash of a random value nobody could ever type as a password,
+	 * generated once per process and reused for every "uid not found" lookup
+	 * so that path costs the same as a real hash comparison.
+	 *
+	 * @param \OCP\Security\IHasher $hasher
+	 * @return string
+	 */
+	private function getDummyPasswordHash($hasher) {
+		if (self::$dummyPasswordHash === null) {
+			self::$dummyPasswordHash = $hasher->hash(\bin2hex(\random_bytes(32)));
+		}
+		return self::$dummyPasswordHash;
 	}
 
 	/**
