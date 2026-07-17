@@ -156,13 +156,17 @@ class QuotaPluginTest extends TestCase {
 
 	public function quotaChunkedOkProvider() {
 		return [
+			// OC-Total-Length present: $length is the announced total size of the whole
+			// upload; remaining = total - already stored.
+			[1024, 0, ['OC-TOTAL-LENGTH' => '1024', 'CONTENT-LENGTH' => '512']],
+			[400, 128, ['OC-TOTAL-LENGTH' => '512', 'CONTENT-LENGTH' => '500']],
+			// No OC-Total-Length: $length is only this one chunk's own size (e.g. the
+			// legacy public-link web upload never sends OC-Total-Length). Cumulative size
+			// (already stored chunks + this chunk) must still fit the quota.
 			[1024, 0, ['X-EXPECTED-ENTITY-LENGTH' => '1024']],
 			[1024, 0, ['CONTENT-LENGTH' => '512']],
-			[1024, 0, ['OC-TOTAL-LENGTH' => '1024', 'CONTENT-LENGTH' => '512']],
-			// with existing chunks (allowed size = total length - chunk total size)
-			[400, 128, ['X-EXPECTED-ENTITY-LENGTH' => '512']],
-			[400, 128, ['CONTENT-LENGTH' => '512']],
-			[400, 128, ['OC-TOTAL-LENGTH' => '512', 'CONTENT-LENGTH' => '500']],
+			[1024, 128, ['X-EXPECTED-ENTITY-LENGTH' => '512']], // 128 + 512 = 640 <= 1024
+			[1024, 128, ['CONTENT-LENGTH' => '512']],
 			// \OCP\Files\FileInfo::SPACE-UNKNOWN = -2
 			[-2, 0, ['X-EXPECTED-ENTITY-LENGTH' => '1024']],
 			[-2, 0, ['CONTENT-LENGTH' => '512']],
@@ -192,6 +196,9 @@ class QuotaPluginTest extends TestCase {
 		$mockChunking->expects($this->once())
 			->method('getCurrentSize')
 			->will($this->returnValue($chunkTotalSize));
+		// only consulted on the no-OC-Total-Length branch; not a retry of the same index
+		$mockChunking->method('getChunkSize')
+			->will($this->returnValue(0));
 
 		$this->plugin->expects($this->once())
 			->method('getFileChunking')
@@ -208,7 +215,7 @@ class QuotaPluginTest extends TestCase {
 			[400, 0, ['X-EXPECTED-ENTITY-LENGTH' => '1024']],
 			[400, 0, ['CONTENT-LENGTH' => '512']],
 			[400, 0, ['OC-TOTAL-LENGTH' => '1024', 'CONTENT-LENGTH' => '512']],
-			// with existing chunks (allowed size = total length - chunk total size)
+			// with existing chunks
 			[380, 128, ['X-EXPECTED-ENTITY-LENGTH' => '512']],
 			[380, 128, ['CONTENT-LENGTH' => '512']],
 			[380, 128, ['OC-TOTAL-LENGTH' => '512', 'CONTENT-LENGTH' => '500']],
@@ -229,6 +236,8 @@ class QuotaPluginTest extends TestCase {
 		$mockChunking->expects($this->once())
 			->method('getCurrentSize')
 			->will($this->returnValue($chunkTotalSize));
+		$mockChunking->method('getChunkSize')
+			->will($this->returnValue(0));
 
 		$this->plugin->expects($this->once())
 			->method('getFileChunking')
@@ -237,6 +246,68 @@ class QuotaPluginTest extends TestCase {
 		$headers['OC-CHUNKED'] = 1;
 		$this->server->httpRequest = new \Sabre\HTTP\Request('', '', $headers);
 		$this->plugin->checkQuota('/sub/test.txt-chunking-12345-3-1');
+	}
+
+	/**
+	 * Regression test for the public-link chunked-upload quota bypass: without
+	 * OC-Total-Length, each chunk PUT only carries its own Content-Length. A naive
+	 * "$length -= currentSize" check goes negative from the second chunk onward and
+	 * never rejects again, letting an anonymous upload-enabled public link fill disk
+	 * arbitrarily far past the share owner's quota. The cumulative check must catch
+	 * this on the chunk that actually crosses the quota boundary.
+	 */
+	public function testCheckQuotaChunkedNoTotalLengthRejectsOnceCumulativeExceedsQuota() {
+		$this->init(1000, 'sub/test.txt');
+
+		$mockChunking = $this->getMockBuilder(\OC_FileChunking::class)
+			->disableOriginalConstructor()
+			->getMock();
+		// three chunks of 400 bytes each already stored when chunk 3 arrives
+		$mockChunking->method('getCurrentSize')
+			->willReturnOnConsecutiveCalls(0, 400, 800);
+		$mockChunking->method('getChunkSize')
+			->willReturn(0);
+
+		$this->plugin->method('getFileChunking')
+			->willReturn($mockChunking);
+
+		$headers = ['CONTENT-LENGTH' => '400', 'OC-CHUNKED' => 1];
+		$this->server->httpRequest = new \Sabre\HTTP\Request('', '', $headers);
+
+		// chunk 1: 0 + 400 = 400 <= 1000 -> ok
+		$this->assertTrue($this->plugin->checkQuota('/sub/test.txt-chunking-12345-3-0'));
+		// chunk 2: 400 + 400 = 800 <= 1000 -> ok
+		$this->assertTrue($this->plugin->checkQuota('/sub/test.txt-chunking-12345-3-1'));
+		// chunk 3: 800 + 400 = 1200 > 1000 -> must reject
+		$this->expectException(\Sabre\DAV\Exception\InsufficientStorage::class);
+		$this->plugin->checkQuota('/sub/test.txt-chunking-12345-3-2');
+	}
+
+	/**
+	 * A retried chunk (same index re-uploaded, e.g. after a connection drop) must not
+	 * be double-counted against the cumulative total.
+	 */
+	public function testCheckQuotaChunkedNoTotalLengthRetrySameIndexNotDoubleCounted() {
+		$this->init(1000, 'sub/test.txt');
+
+		$mockChunking = $this->getMockBuilder(\OC_FileChunking::class)
+			->disableOriginalConstructor()
+			->getMock();
+		// index 1 was already stored with 300 bytes from a previous, partial attempt;
+		// currentSize therefore already includes those 300 bytes.
+		$mockChunking->method('getCurrentSize')
+			->willReturn(700);
+		$mockChunking->method('getChunkSize')
+			->with('1')
+			->willReturn(300);
+
+		$this->plugin->method('getFileChunking')
+			->willReturn($mockChunking);
+
+		// retry of chunk index 1, now 500 bytes: 500 + 700 - 300 = 900 <= 1000 -> ok
+		$headers = ['CONTENT-LENGTH' => '500', 'OC-CHUNKED' => 1];
+		$this->server->httpRequest = new \Sabre\HTTP\Request('', '', $headers);
+		$this->assertTrue($this->plugin->checkQuota('/sub/test.txt-chunking-12345-3-1'));
 	}
 
 	private function buildFileViewMock($quota, $checkedPath) {
