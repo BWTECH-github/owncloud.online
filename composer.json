@@ -16,6 +16,10 @@
         "audit": {
             "abandoned": "ignore",
             "block-insecure": false
+        },
+        "preferred-install": {
+            "icewind/*": "source",
+            "*": "dist"
         }
     },
     "autoload": {
