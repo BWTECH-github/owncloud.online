@@ -3395,6 +3395,7 @@ class ManagerTest extends \Test\TestCase {
 		$share = $this->createMock('\OCP\Share\IShare');
 		$share->method('getShareType')->willReturn(\OCP\Share::SHARE_TYPE_LINK);
 		$share->method('getPassword')->willReturn('password');
+		$share->method('getToken')->willReturn('sharedToken123');
 
 		$this->hasher->method('verify')->with('invalidpassword', 'password', '')->willReturn(false);
 
