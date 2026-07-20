@@ -16,13 +16,13 @@ files, and — for admins — manage users and groups, all as the authenticated 
 and subject to the same ownCloud permissions.
 
 The endpoint speaks Streamable HTTP JSON-RPC at /apps/oco_mcp/mcp. It is read-only
-by default; set the app config "oco_mcp enable_write true" (occ) to allow write and
-management tools. Authentication uses an ownCloud app/device token or Basic auth —
-never a plain browser cookie session — so it is safe from cross-site request forgery.
+by default; set the app config "oco_mcp enable_write yes" (occ) to allow write and
+management tools. Authentication uses HTTP Basic with an ownCloud app/device token;
+credentials are revalidated per request and browser cookie sessions are rejected.
 
 Modified by BW-Tech GmbH for owncloud.online (PHP 8.4).
 	</description>
-	<version>1.0.1</version>
+	<version>1.0.2</version>
 	<licence>AGPL-3.0-only</licence>
 	<author>BW-Tech GmbH</author>
 	<namespace>OcoMcp</namespace>

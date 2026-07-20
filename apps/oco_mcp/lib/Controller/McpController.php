@@ -8,6 +8,7 @@
 namespace OCA\OcoMcp\Controller;
 
 use OCA\OcoMcp\Mcp\ServerFactory;
+use OCA\OcoMcp\Security\BasicAuthCredentials;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDisplayResponse;
@@ -58,23 +59,40 @@ class McpController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * CSRF exemption is safe because we refuse plain browser-cookie sessions:
-	 * an MCP call must carry an Authorization header (ownCloud app/device token
-	 * or Basic auth), which a cross-site page cannot forge.
+	 * an MCP call must carry valid HTTP Basic credentials whose password is an
+	 * ownCloud app/device token, which a cross-site page cannot forge.
 	 */
 	public function handle(): DataDisplayResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return $this->error(Http::STATUS_UNAUTHORIZED, -32001, 'Authentication required.');
-		}
-
-		// Reject cookie-only (CSRF-forgeable) sessions: require token/basic auth.
-		$authHeader = $this->request->getHeader('Authorization');
-		if ($authHeader === '' || $authHeader === null) {
+		// Do not trust a pre-existing browser session. Validate the credentials from
+		// this request again, otherwise a cookie plus any made-up Authorization
+		// header would satisfy the old presence-only check.
+		$authHeader = (string)$this->request->getHeader('Authorization');
+		$credentials = BasicAuthCredentials::parse($authHeader);
+		if ($credentials === null) {
 			return $this->error(
 				Http::STATUS_UNAUTHORIZED,
 				-32001,
-				'MCP requires an app token or Basic auth (Authorization header), not a browser session.'
+				'MCP requires HTTP Basic authentication with an ownCloud app token.'
 			);
+		}
+
+		[$login, $secret] = $credentials;
+		// MCP is a non-interactive client. Require a revocable app/device token so
+		// the account password and two-factor policy can never be bypassed here.
+		$isTokenPassword = \is_callable([$this->userSession, 'isTokenPassword'])
+			&& (bool)\call_user_func([$this->userSession, 'isTokenPassword'], $secret);
+		if (!$isTokenPassword) {
+			return $this->error(Http::STATUS_UNAUTHORIZED, -32001, 'Invalid MCP credentials.');
+		}
+
+		try {
+			$authenticated = $this->userSession->login($login, $secret);
+		} catch (\Throwable $e) {
+			$authenticated = false;
+		}
+		$user = $authenticated ? $this->userSession->getUser() : null;
+		if ($user === null) {
+			return $this->error(Http::STATUS_UNAUTHORIZED, -32001, 'Invalid MCP credentials.');
 		}
 
 		// Lazy-load the bundled MCP SDK only for this endpoint.
