@@ -154,10 +154,16 @@ class Verifier {
 				$url = \Sabre\Uri\build($url);
 
 				$hash = $this->computeHash($algo, $url, $signingKey);
-				if ($hash === $urlSignature) {
+				// Constant-time comparison to avoid a timing side channel (CWE-208)
+				// on the very check that is supposed to prevent forgeries.
+				if (\is_string($hash) && \hash_equals($hash, $urlSignature)) {
 					return true;
 				}
-				\OC::$server->getLogger()->debug("Hashes do not match: $hash !== $urlSignature (used key: $signingKey url: $url", ['app' => 'signed-url']);
+				// Never log the raw signing key: it is the only trust anchor of the
+				// pre-signed URL feature and would allow anyone with log access to
+				// forge valid URLs. Log a non-reversible fingerprint instead.
+				$keyFingerprint = \substr(\hash('sha256', (string)$signingKey), 0, 8);
+				\OC::$server->getLogger()->debug("Signature does not match for url: $url (provided signature: $urlSignature, key fingerprint: $keyFingerprint)", ['app' => 'signed-url']);
 			}
 		}
 

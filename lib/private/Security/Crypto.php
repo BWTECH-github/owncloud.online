@@ -46,6 +46,14 @@ class Crypto implements ICrypto {
 	public const CRYPT_HASH = 'sha1';
 	public const SALT = 'phpseclib';
 
+	// v3 derives the AES key with a per-message random salt (embedded in the
+	// envelope) and SHA-256 instead of the compile-time constant 'phpseclib'
+	// salt + SHA-1 used by v2/legacy. This prevents a single precomputed
+	// rainbow table from working against every installation that follows the
+	// documented ICrypto pattern of passing a low-entropy custom password.
+	public const CRYPT_HASH_V3 = 'sha256';
+	public const SALT_LENGTH = 16;
+
 	/** @var AES $cipher */
 	private $cipher;
 	/** @var int */
@@ -99,15 +107,21 @@ class Crypto implements ICrypto {
 		// https://github.com/owncloud/encryption/issues/215
 		$derived = \hash_hkdf('sha512', $password, 0);
 		list($password, $hmacKey) = \str_split($derived, 32);
-		$this->cipher->setPassword($password, self::CRYPT_METHOD, self::CRYPT_HASH, self::SALT);
+
+		// v3: per-message random salt (stored in the envelope) + SHA-256 for the
+		// PBKDF2 key derivation instead of the constant 'phpseclib' salt + SHA-1.
+		$salt = \random_bytes(self::SALT_LENGTH);
+		$this->cipher->setPassword($password, self::CRYPT_METHOD, self::CRYPT_HASH_V3, $salt);
 
 		$iv = \random_bytes($this->ivLength);
 		$this->cipher->setIV($iv);
 
 		$ciphertext = \bin2hex($this->cipher->encrypt($plaintext));
-		$hmac = \bin2hex($this->calculateHMAC($ciphertext.$iv, $hmacKey));
+		// The salt is authenticated as well so it cannot be tampered with (which
+		// would otherwise silently yield garbage plaintext on decrypt).
+		$hmac = \bin2hex($this->calculateHMAC($ciphertext.$iv.$salt, $hmacKey));
 
-		return 'v2|' . $ciphertext.'|'. \bin2hex($iv).'|'.$hmac;
+		return 'v3|' . $ciphertext.'|'. \bin2hex($iv).'|'.$hmac.'|'.\bin2hex($salt);
 	}
 
 	/**
@@ -123,6 +137,26 @@ class Crypto implements ICrypto {
 		}
 
 		$parts = \explode('|', $authenticatedCiphertext ?? '');
+
+		// v3 adds a per-message random salt (5th field) to the v2 envelope
+		if (\sizeof($parts) === 5 && $parts[0] === 'v3') {
+			$derived = \hash_hkdf('sha512', $password, 0);
+			list($password, $hmacKey) = \str_split($derived, 32);
+
+			$ciphertext = \hex2bin($parts[1]);
+			$iv = \hex2bin($parts[2]);
+			$hmac = \hex2bin($parts[3]);
+			$salt = \hex2bin($parts[4]);
+
+			if (!\hash_equals($this->calculateHMAC($parts[1].$iv.$salt, $hmacKey), $hmac)) {
+				throw new \Exception('HMAC does not match.');
+			}
+
+			$this->cipher->setPassword($password, self::CRYPT_METHOD, self::CRYPT_HASH_V3, $salt);
+			$this->cipher->setIV($iv);
+
+			return $this->cipher->decrypt($ciphertext);
+		}
 
 		// v2 uses stronger binary random iv
 		if (\sizeof($parts) === 4 && $parts[0] === 'v2') {

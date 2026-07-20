@@ -81,6 +81,11 @@ class VerifierTest extends TestCase {
 		yield 'invalid signature' => [true, false, 'get',
 			'http://cloud.example.net/?OC-Credential=alice&OC-Date=2019-05-14T11%3A01%3A58.135Z&OC-Expires=1200&OC-Verb=GET&OC-Signature=f9e53a1ee23caef10f72ec392c1b537317491b687bfdd224c782be197d9ca2b'];
 
+		// Same length as the valid signature but wrong: exercises the
+		// constant-time hash_equals() path on equal-length input (CWE-208 fix).
+		yield 'invalid signature same length' => [true, false, 'get',
+			'http://cloud.example.net/?OC-Credential=alice&OC-Date=2019-05-14T11%3A01%3A58.135Z&OC-Expires=1200&OC-Verb=GET&OC-Signature=0000000000000000000000000000000000000000000000000000000000000000'];
+
 		yield 'different algo' => [true, false, 'post',
 			'http://cloud.example.net/?OC-Credential=alice&OC-Date=2019-05-14T11%3A01%3A58.135Z&OC-Expires=1200&OC-Verb=GET&OC-Algo=PBKDF2/5-SHA512&OC-Signature=f9e53a1ee23caef10f72ec392c1b537317491b687bfdd224c782be197d9ca2b6'];
 

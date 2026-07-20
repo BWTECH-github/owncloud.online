@@ -35,6 +35,40 @@ class CryptoTest extends \Test\TestCase {
 		$this->assertEquals($stringToEncrypt, $this->crypto->decrypt($ciphertext));
 	}
 
+	public function testEncryptEmitsV3FormatWithSalt() {
+		$ciphertext = $this->crypto->encrypt('secret message');
+		$parts = \explode('|', $ciphertext);
+		$this->assertCount(5, $parts, 'v3 envelope has five fields');
+		$this->assertSame('v3', $parts[0]);
+		// 16 byte salt, hex-encoded
+		$this->assertSame(2 * Crypto::SALT_LENGTH, \strlen($parts[4]));
+		$this->assertMatchesRegularExpression('/^[0-9a-f]+$/', $parts[4]);
+	}
+
+	public function testEncryptUsesRandomSaltPerCall() {
+		$a = $this->crypto->encrypt('same plaintext', 'the-password');
+		$b = $this->crypto->encrypt('same plaintext', 'the-password');
+		$saltA = \explode('|', $a)[4];
+		$saltB = \explode('|', $b)[4];
+		$this->assertNotSame($saltA, $saltB, 'each encryption uses a fresh random salt');
+		$this->assertNotSame($a, $b, 'identical input yields different ciphertext');
+		// both still round-trip
+		$this->assertSame('same plaintext', $this->crypto->decrypt($a, 'the-password'));
+		$this->assertSame('same plaintext', $this->crypto->decrypt($b, 'the-password'));
+	}
+
+	public function testV3TamperedSaltFailsHmac() {
+		$this->expectException(\Exception::class);
+		$this->expectExceptionMessage('HMAC does not match.');
+
+		$ciphertext = $this->crypto->encrypt('secret message', 'the-password');
+		$parts = \explode('|', $ciphertext);
+		// flip the salt to a different value: the HMAC covers the salt, so this
+		// must be detected instead of silently returning garbage plaintext.
+		$parts[4] = \bin2hex(\random_bytes(Crypto::SALT_LENGTH));
+		$this->crypto->decrypt(\implode('|', $parts), 'the-password');
+	}
+
 	/**
 	 */
 	public function testWrongPassword() {
