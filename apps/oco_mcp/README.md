@@ -10,8 +10,9 @@ Everything runs **as the authenticated ownCloud user** and is subject to the
 same permissions as the web UI. The connection is **read-only by default**.
 
 - **Endpoint:** `POST /apps/oco_mcp/mcp` (Streamable HTTP, JSON-RPC 2.0)
-- **Auth:** ownCloud **app/device token** or **Basic auth** via the
-  `Authorization` header — never a plain browser cookie session (CSRF-safe).
+- **Auth:** HTTP **Basic auth** with the ownCloud login name and an
+  **app/device token** as password. Every request revalidates these credentials;
+  a browser cookie or a merely present `Authorization` header is insufficient.
 - **Modified by BW-Tech GmbH for owncloud.online (PHP 8.4).**
 
 ## Enabling
@@ -94,11 +95,13 @@ on ai_documents — the tool is absent on servers without it.
 ```
 
 Create the app password in ownCloud under **Settings → Security → App passwords**
-and send it via HTTP **Basic** auth (`base64("username:app-password")`). A plain
-`Bearer` token is NOT understood by the core login path (only real OAuth2 access
-tokens are, when the oauth2 app is installed). `--transport http-only` matches
+and send it via HTTP **Basic** auth (`base64("username:app-password")`). Bearer
+authentication is not accepted by this endpoint. `--transport http-only` matches
 this server: it speaks Streamable HTTP JSON responses and deliberately has no
 SSE GET stream.
+
+The normal account password is deliberately rejected. This keeps two-factor
+authentication intact and lets users revoke the MCP connection independently.
 
 Verified end-to-end with `mcp-remote` (the same bridge Claude Desktop uses):
 initialize → notifications/initialized → tools/list → tools/call all pass.

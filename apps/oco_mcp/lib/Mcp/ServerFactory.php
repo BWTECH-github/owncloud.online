@@ -99,7 +99,7 @@ class ServerFactory {
 		$container = new InstanceContainer($map);
 
 		$builder = \Mcp\Server::builder()
-			->setServerInfo('owncloud.online', '1.0.1', 'MCP access to owncloud.online files, shares, tags, comments and user management.')
+			->setServerInfo('owncloud.online', '1.0.2', 'MCP access to owncloud.online files, shares, tags, comments and user management.')
 			->setInstructions(
 				'You are connected to an owncloud.online instance as user "' . $uid . '". '
 				. 'Paths are relative to that user\'s file root ("/"). '

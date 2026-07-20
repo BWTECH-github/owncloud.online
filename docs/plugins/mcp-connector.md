@@ -129,13 +129,14 @@ Der Endpoint akzeptiert **ausschließlich**:
   `Authorization: Basic base64("benutzer:app-passwort")`.
   App-Passwörter erzeugt jeder Nutzer selbst unter
   *Einstellungen → Sicherheit → App-Passwörter*.
-- **OAuth2-Access-Token** als `Bearer` — nur wenn die oauth2-App
-  installiert ist. Ein „nacktes" Bearer-Token ohne oauth2 versteht der
-  Core-Login-Pfad **nicht**.
 
-**Abgelehnt** werden reine Browser-Cookie-Sitzungen. Dadurch ist der
-Endpoint gegen CSRF (Cross-Site Request Forgery) geschützt: keine im
-Browser mitgeschickte Session kann heimlich MCP-Aufrufe auslösen.
+Die Basic-Zugangsdaten werden bei jeder Anfrage neu validiert. Reine
+Browser-Cookie-Sitzungen, Bearer-Header und beliebige Platzhalter-Header werden
+abgelehnt. Dadurch kann keine im Browser mitgeschickte Session heimlich
+MCP-Aufrufe auslösen.
+
+Das normale Kontopasswort wird ebenfalls abgelehnt. Nur ein widerrufbares
+App-Passwort ist zulässig; dadurch bleibt eine aktive Zwei-Faktor-Pflicht erhalten.
 
 ## 5. Rechte-Modell
 
@@ -300,7 +301,8 @@ vollständig aus ownCloud selbst.
 
 ## 11. Sicherheit
 
-- **Kein Cookie-Zugriff:** Browser-Sessions werden abgelehnt → kein CSRF.
+- **Kein Cookie-Zugriff:** Basic-Zugangsdaten werden pro Request geprüft;
+  Browser-Sessions und beliebige Ersatz-Header werden abgelehnt → kein CSRF.
 - **App-Passwörter statt Login-Passwort:** einzeln widerrufbar unter
   *Einstellungen → Sicherheit*.
 - **Read-only als Standard:** Schreiben ist eine bewusste
@@ -320,8 +322,8 @@ vollständig aus ownCloud selbst.
 | Symptom | Ursache / Lösung |
 |---|---|
 | `A valid session id is REQUIRED for non-initialize requests.` | Header `Mcp-Session-Id` fehlt. Erst `initialize` aufrufen, die ID aus dem Antwort-Header übernehmen und bei jeder Folge-Anfrage mitschicken. |
-| HTTP 401 | Zugangsdaten falsch oder Bearer-Token ohne oauth2-App. Basic-Auth mit App-Passwort verwenden. |
-| `MCP requires an app token or Basic auth …` | Anfrage kam mit Browser-Cookie-Session. Authorization-Header setzen. |
+| HTTP 401 | Basic-Zugangsdaten falsch, Browser-Cookie verwendet oder Bearer-Header gesendet. Basic-Auth mit App-Passwort verwenden. |
+| `MCP requires HTTP Basic authentication …` | Basic-Header fehlt oder ist ungültig. Loginname und App-Passwort senden. |
 | `-32601` / „Tool not found" für `files_write`, `shares_create_*`, `tags_assign` … | Read-only-Modus: Schreib-Tools sind nicht sichtbar. Admin: `occ config:app:set oco_mcp enable_write --value=yes`, danach den Client neu verbinden (initialize), damit die Tool-Liste neu geladen wird. |
 | `-32601` / „Tool not found" für `users_*` / `groups_*` | Diese Tools werden nur Administratoren angeboten. Als Admin verbinden. |
 | `Write access is disabled on this MCP connection.` / `This tool requires ownCloud administrator privileges.` | Interne Schutzmeldung, falls ein Tool doch direkt erreicht wird (z. B. veraltete Session nach dem Umschalten von `enable_write`). Client neu verbinden. |
