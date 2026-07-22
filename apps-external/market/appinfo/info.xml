@@ -10,7 +10,7 @@ This is a community fork maintained by BW-Tech GmbH for owncloud.online. Origina
 To use this application click on "Apps" in the top left corner and click on "Market" (cart icon) (Administrator privileges required).</description>
 	<licence>AGPL</licence>
 	<author>ownCloud GmbH, modified by BW-Tech GmbH</author>
-	<version>0.10.3</version>
+	<version>0.10.5</version>
 	<default_enable/>
 	<category>tools</category>
 	<website>https://bw.tech</website>

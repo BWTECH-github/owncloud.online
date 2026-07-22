@@ -8,7 +8,7 @@
 				.uk-modal-header
 					h2.uk-modal-title {{ t('Marketplace API Key') }}
 				.uk-modal-body
-					p {{ t('Your API-Key is needed inside the ownCloud Market App. Copy and paste it to retrieve your purchased products inside your ownCloud instance.') }}
+					p {{ t('Your API-Key is needed inside the owncloud.online Market App. Copy and paste it to retrieve your purchased products inside your owncloud.online instance.') }}
 					label.uk-text-meta.uk-display-block.uk-margin-small-bottom(for="api-key") {{ t('Your personal API Key') }}
 					input#api-key.uk-input.uk-text-center.-monospace(v-model="newKey", :class="{ 'uk-form-success' : valid && key === newKey }")
 					.uk-alert-danger(v-if="!valid && valid != undefined", uk-alert)
