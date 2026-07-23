@@ -1,5 +1,6 @@
 # Table of Contents
 
+* [Changelog for ownCloud.online Unreleased](#changelog-for-owncloudonline-unreleased)
 * [Changelog for ownCloud.online 11.0.11](#changelog-for-owncloudonline-11011-2026-07-23)
 * [Changelog for ownCloud.online 11.0.10](#changelog-for-owncloudonline-11010-2026-07-09)
 * [Changelog for ownCloud.online 11.0.6](#changelog-for-owncloudonline-1106-2026-06-16)
@@ -33,6 +34,10 @@
 * [Changelog for 10.4.1](#changelog-for-owncloud-core-1041-2020-03-30)
 * [Changelog for 10.4.0](#changelog-for-owncloud-core-1040-2020-02-10)
 * [Changelog for 10.3.2](#changelog-for-owncloud-core-1032-2019-12-04)
+# Changelog for ownCloud.online [Unreleased]
+
+This section collects changes for the next ownCloud.online release. No entries yet.
+
 # Changelog for ownCloud.online [11.0.11] (2026-07-23)
 
 The following sections list the changes in ownCloud.online 11.0.11 relevant to
