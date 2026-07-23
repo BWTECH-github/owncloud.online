@@ -1,5 +1,6 @@
 # Table of Contents
 
+* [Changelog for ownCloud.online 11.0.11](#changelog-for-owncloudonline-11011-2026-07-23)
 * [Changelog for ownCloud.online 11.0.10](#changelog-for-owncloudonline-11010-2026-07-09)
 * [Changelog for ownCloud.online 11.0.6](#changelog-for-owncloudonline-1106-2026-06-16)
 * [Changelog for ownCloud.online 11.0.5](#changelog-for-owncloudonline-1105-2026-06-16)
@@ -32,6 +33,34 @@
 * [Changelog for 10.4.1](#changelog-for-owncloud-core-1041-2020-03-30)
 * [Changelog for 10.4.0](#changelog-for-owncloud-core-1040-2020-02-10)
 * [Changelog for 10.3.2](#changelog-for-owncloud-core-1032-2019-12-04)
+# Changelog for ownCloud.online [11.0.11] (2026-07-23)
+
+The following sections list the changes in ownCloud.online 11.0.11 relevant to
+admins and users.
+
+[11.0.11]: https://github.com/BWTECH-github/owncloud.online
+
+## Summary
+
+* Security - Brute-force / rate-limiting protection across the authentication stack: repeated failed logins and public-share-link password attempts, keyed by remote IP + target, are slowed by an increasing delay (DB-backed, never a hard lockout). Requires the new `oc_bruteforce_attempts` table (`occ upgrade` / `occ migrations:migrate core` on deploy).
+* Security - Username enumeration via timing was removed from the database user backend: a login for a non-existent user now runs a real hash comparison so the response time no longer reveals whether the account exists.
+* Security - Quota bypass on chunked public-link uploads fixed: when the total-size header is missing (legacy "OC-Chunked" web uploads over public links) the quota is now checked cumulatively instead of going negative after the first chunks, so a public link can no longer be used to fill storage past the owner's quota.
+* Security - Pre-signed URL verification is now constant-time (`hash_equals`, CWE-208) and the user's signing key is no longer written to the debug log (only a non-reversible fingerprint), closing an authentication-bypass path.
+* Security - The high-level `ICrypto` layer now uses a per-message random salt and SHA-256 for key derivation (new `v3` envelope); existing `v2`/legacy ciphertexts keep decrypting unchanged.
+* Security - The MCP connector endpoint now requires HTTP Basic authentication whose password is a revocable ownCloud app/device token and re-validates it on every request; a browser cookie session is rejected.
+* Enhancement - The bundled Market app is updated to 0.10.5 with complete German (de/de_DE) UI translations, removing the "Untranslated key" console warnings on the marketplace and Installed-Apps views.
+* Enhancement - `guzzlehttp/guzzle` updated to 7.15.1 (four medium HTTP-client advisories).
+
+## Details
+
+* Security - `lib/private/OCO/Security/Bruteforce/Throttler` (+ `core/Migrations/Version20260716120000`, `oc_bruteforce_attempts`): exponential sleep delay (2^n, capped at 30 min, 12 h look-back) wired into `User\Manager::checkPassword` (`login`) and `Share20\Manager` (`share_password`). No hard lockout by design.
+* Security - `lib/private/User/Database`: an "unknown uid" login path now hashes a per-process dummy password so it costs the same as a real comparison.
+* Security - `apps/dav` `Connector/Sabre/QuotaPlugin`: without `OC-Total-Length` the free-space check now adds the cumulative already-stored chunk size (retry-safe via `getChunkSize($index)`) instead of subtracting the current chunk size (which went negative and disabled the check).
+* Security - `lib/private/Security/SignedUrl/Verifier`: signature comparison switched from `===` to `hash_equals`; the raw `core.signing-key` is replaced by an 8-char SHA-256 fingerprint in the debug log.
+* Security - `lib/private/Security/Crypto`: `encrypt()` emits `v3|ciphertext|iv|hmac|salt` with a `random_bytes(16)` salt (HMAC-authenticated) and SHA-256 PBKDF2; `decrypt()` still reads v2 (fixed salt/SHA-1) and the legacy 3-part format.
+* Security - `apps/oco_mcp` `Controller/McpController` (+ `Security/BasicAuthCredentials`): parses HTTP Basic credentials, requires the password to be an app/device token (`isTokenPassword`) and validates the login on every call.
+* Note - Version parity with the SaaS bundle (11.0.11), which additionally re-bundles the updated market/workflow/activity/file_firewall/wnd/ai_documents apps.
+
 # Changelog for ownCloud.online [11.0.10] (2026-07-09)
 
 The following sections list the changes in ownCloud.online 11.0.10 relevant to
