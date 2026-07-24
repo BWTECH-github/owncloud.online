@@ -96,6 +96,14 @@
   AddType image/svg+xml svg svgz
   AddEncoding gzip svgz
 </IfModule>
+# Antwort-Kompression fuer textbasierte Assets (JS/CSS/JSON/SVG); brotli vor
+# deflate, der jeweils zweite Filter ueberspringt bereits kodierte Antworten
+<IfModule mod_brotli.c>
+  AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/css text/xml application/xml application/javascript text/javascript application/x-javascript application/json application/ld+json application/wasm image/svg+xml
+</IfModule>
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml application/xml application/javascript text/javascript application/x-javascript application/json application/ld+json application/wasm image/svg+xml
+</IfModule>
 <IfModule mod_dir.c>
   DirectoryIndex index.php index.html
 </IfModule>
