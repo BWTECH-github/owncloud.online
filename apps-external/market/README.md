@@ -170,6 +170,21 @@ make test-php-unit           # phpunit
 CI runs the same checks on every push and pull request — see
 `.github/workflows/`.
 
+### Release bundle
+
+`js/market.bundle.js` is a checked-in build artifact. After changing
+anything under `src/`, rebuild and commit the bundle in the same commit:
+
+```bash
+npm ci                       # exact versions from package-lock.json
+npm run build                # production webpack build
+```
+
+The core repo's `market-bundle` workflow rebuilds the bundle from `src/` on
+every market change and fails when the committed bundle does not match —
+build with `npm ci` (never a bare `npm install`) so the output stays
+byte-reproducible.
+
 ## Attribution
 
 This is a fork of [`owncloud/market`](https://github.com/owncloud/market)

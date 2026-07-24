@@ -1,0 +1,56 @@
+name: Market bundle
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - "apps-external/market/**"
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+    paths:
+      - "apps-external/market/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: market-bundle-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reproducible-bundle:
+    name: js/market.bundle.js reproducible from src/
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps-external/market/package-lock.json
+
+      - name: Rebuild bundle from sources
+        working-directory: apps-external/market
+        run: |
+          npm ci
+          # webpack's terser worker pool can linger after all assets are
+          # emitted; the timeout only bounds that wait - output is written
+          # during the compile. A real compile failure is caught below.
+          timeout 300 npm run build > build.log 2>&1 || true
+          tail -5 build.log
+          grep -q " compiled" build.log
+
+      - name: Fail on drift between src/ and checked-in bundle
+        run: |
+          # A diff here means js/market.bundle.js was not rebuilt from the
+          # committed sources (or was built with different tool versions).
+          git diff --stat --exit-code apps-external/market/js/

@@ -63,10 +63,11 @@ abstract class Image implements IProvider2 {
 		if (\is_array($rawSize) && !$this->validateRawDimensions((int)$rawSize[0], (int)$rawSize[1])) {
 			// Pixel-Flood-Schutz (Dekompressionsbombe): der imagick-Fallback ist
 			// fuer echte Kamerafotos gedacht. Alles jenseits der 4-fachen
-			// konfigurierten Flaeche (~145 MP bei Default 6016x6016; reale
-			// Mittelformat-Kameras liegen bei 100-150 MP, Bomben im
-			// Gigapixel-Bereich) wird ohne Decoder-Versuch abgelehnt — dasselbe
-			// Ergebnis, das frueher der fehlschlagende GD-Voll-Decode lieferte.
+			// konfigurierten Flaeche (~145 MP bei Default 6016x6016; Smartphone-
+			// Fotos liegen bei 48-108 MP, Bomben im Gigapixel-Bereich; wer
+			// groessere Mittelformat-Dateien braucht, hebt preview_max_dimensions
+			// an) wird ohne Decoder-Versuch abgelehnt — dasselbe Ergebnis, das
+			// frueher der fehlschlagende GD-Voll-Decode lieferte.
 			if (!$this->withinImagickBounds((int)$rawSize[0], (int)$rawSize[1])) {
 				return false;
 			}

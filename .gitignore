@@ -121,6 +121,7 @@ nbproject
 # Modified by BW-Tech GmbH
 /build/yarn-error.log
 /build/node_modules/
+/apps-external/market/node_modules/
 /build/performance/
 
 # nodejs
