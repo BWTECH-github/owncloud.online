@@ -282,6 +282,8 @@ $(dist_dir)/owncloud: $(composer_deps) $(core_vendor) $(core_all_src)
 		-name demo -o \
 		-name demos -o \
 		-name doc -o \
+		-name docs -o \
+		-name package-lock.json -o \
 		-name travis -o \
 		-iname \*.sh \
 		\) -print | xargs rm -Rf
