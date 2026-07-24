@@ -233,7 +233,7 @@ test-php-phan: vendor-bin/phan/vendor
 
 .PHONY: test-php-phpstan
 test-php-phpstan: vendor-bin/phpstan/vendor
-	$(PHPSTAN) analyse --memory-limit=2G --configuration=./phpstan.neon --level=0 apps core settings lib/private lib/public ocs ocs-provider
+	$(PHPSTAN) analyse --memory-limit=2G --configuration=./phpstan.neon apps core settings lib/private lib/public ocs ocs-provider
 
 .PHONY: test
 test: test-php-style test-php-unit test-js test-acceptance-api test-acceptance-cli test-acceptance-webui
