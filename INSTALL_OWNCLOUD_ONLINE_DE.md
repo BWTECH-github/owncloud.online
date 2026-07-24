@@ -132,9 +132,13 @@ chown -R www-data:www-data /var/www/owncloud.online /var/owncloud-online-data
 
 ```bash
 apt install -y apache2 libapache2-mod-fcgid
-a2enmod rewrite headers env dir mime proxy_fcgi setenvif
+a2enmod rewrite headers env dir mime proxy_fcgi setenvif http2 deflate brotli
 a2enconf php8.4-fpm
 ```
+
+`http2` aktiviert HTTP/2-Multiplexing, `deflate`/`brotli` die Antwort-Kompression
+(die passenden Direktiven liegen bereits in der `.htaccess`). Beides zusammen ist
+laut `docs/administration/performance.md` der wirksamste Frontend-Hebel.
 
 VirtualHost `/etc/apache2/sites-available/owncloud.online.conf`:
 
@@ -167,6 +171,19 @@ apt install -y certbot python3-certbot-apache
 certbot --apache -d cloud.example.com
 ```
 
+Danach HTTP/2 im SSL-VirtualHost aktivieren: In der von certbot angelegten
+`/etc/apache2/sites-available/owncloud.online-le-ssl.conf` direkt unter
+`<VirtualHost *:443>` ergaenzen:
+
+```apache
+Protocols h2 http/1.1
+```
+
+```bash
+apachectl configtest
+systemctl reload apache2
+```
+
 ## 6. Erstinstallation
 
 CLI:
@@ -187,8 +204,24 @@ Basis-Config:
 ```bash
 sudo -u www-data php8.4 /var/www/owncloud.online/occ config:system:set trusted_domains 1 --value cloud.example.com
 sudo -u www-data php8.4 /var/www/owncloud.online/occ config:system:set overwrite.cli.url --value https://cloud.example.com
+sudo -u www-data php8.4 /var/www/owncloud.online/occ config:system:set memcache.local --value '\OC\Memcache\APCu'
+sudo -u www-data php8.4 /var/www/owncloud.online/occ config:system:set version.hide --value true --type boolean
 sudo -u www-data php8.4 /var/www/owncloud.online/occ maintenance:repair
 ```
+
+Wichtig: Ohne `memcache.local` laeuft die Instanz mit `NullCache` — dann werden
+Sprachdateien und App-Metadaten bei jedem Request neu geparst. APCu ist ueber
+`php8.4-apcu` bereits installiert. Damit auch `occ` und `cron.php` den Cache
+nutzen, APCu fuer die CLI aktivieren:
+
+```bash
+echo 'apc.enable_cli=1' > /etc/php/8.4/cli/conf.d/99-owncloud-apcu-cli.ini
+```
+
+Fuer produktive Instanzen zusaetzlich Redis als Locking-Backend einrichten
+(`memcache.locking`) — Anleitung in `docs/administration/security-hardening.md`
+(Abschnitte "Memory Cache" und "Transactional File Locking"), weitere
+Performance-Optionen in `docs/administration/performance.md`.
 
 ## 7. Apps installieren
 
@@ -262,9 +295,13 @@ http://localhost:8088
 php8.4 occ status
 php8.4 occ app:list
 php8.4 occ maintenance:repair
-php8.4 occ integrity:check-core
 curl -I https://cloud.example.com/status.php
 ```
+
+Hinweis: `occ integrity:check-core` ist auf dem Kanal `bwtech` deaktiviert und
+meldet immer Erfolg — zur echten Update-Kontrolle stattdessen die
+SHA256SUMS/SBOM-Artefakte des Releases pruefen (Details in
+`docs/administration/security-hardening.md`, Abschnitt "Integritätsprüfung").
 
 Cron:
 
