@@ -23,6 +23,11 @@
     Header always set X-Robots-Tag "none"
     Header      unset X-Frame-Options
     Header always set X-Frame-Options "SAMEORIGIN"
+    Header      unset Strict-Transport-Security
+    # HSTS only when Apache terminates TLS itself (env HTTPS is set by mod_ssl).
+    # Behind a TLS-terminating reverse proxy the backend sees plain HTTP, so the
+    # proxy must own this header instead (see docs/administration/security-hardening.md).
+    Header always set Strict-Transport-Security "max-age=15552000; includeSubDomains" env=HTTPS
     Header      unset X-Download-Options
     Header always set X-Download-Options "noopen"
     Header      unset X-Permitted-Cross-Domain-Policies

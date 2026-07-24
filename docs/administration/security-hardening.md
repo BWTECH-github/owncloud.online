@@ -125,3 +125,23 @@ einen Fremdserver. Daher entweder einen eigenen Endpoint hinterlegen
 ```php
 'updatechecker' => false,
 ```
+
+## HSTS (Strict-Transport-Security)
+
+Die ausgelieferte `.htaccess` setzt HSTS **nur**, wenn Apache selbst TLS
+terminiert (`env=HTTPS`, von `mod_ssl` gesetzt):
+
+```apache
+Header always set Strict-Transport-Security "max-age=15552000; includeSubDomains" env=HTTPS
+```
+
+**nginx / Reverse-Proxy:** Die `.htaccess` wird von nginx ignoriert und hinter
+einem TLS-terminierenden Proxy sieht das Backend nur HTTP – dort muss der
+**Proxy/nginx** den Header setzen (einmalig, sonst Doppel-Header):
+
+```nginx
+add_header Strict-Transport-Security "max-age=15552000; includeSubDomains" always;
+```
+
+Vor dem Setzen sicherstellen, dass **alle** Subdomains dauerhaft HTTPS können
+(HSTS ist für `max-age` bindend). Optional `preload` erst nach Test ergänzen.
