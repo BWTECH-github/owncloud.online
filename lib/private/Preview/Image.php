@@ -61,6 +61,15 @@ abstract class Image implements IProvider2 {
 		// dekodiert und das Ergebnis wieder verwirft.
 		$rawSize = \getimagesizefromstring($content);
 		if (\is_array($rawSize) && !$this->validateRawDimensions((int)$rawSize[0], (int)$rawSize[1])) {
+			// Pixel-Flood-Schutz (Dekompressionsbombe): der imagick-Fallback ist
+			// fuer echte Kamerafotos gedacht. Alles jenseits der 4-fachen
+			// konfigurierten Flaeche (~145 MP bei Default 6016x6016; reale
+			// Mittelformat-Kameras liegen bei 100-150 MP, Bomben im
+			// Gigapixel-Bereich) wird ohne Decoder-Versuch abgelehnt — dasselbe
+			// Ergebnis, das frueher der fehlschlagende GD-Voll-Decode lieferte.
+			if (!$this->withinImagickBounds((int)$rawSize[0], (int)$rawSize[1])) {
+				return false;
+			}
 			if (\extension_loaded('imagick')) {
 				return $this->getThumbnailViaImagick($content, (int)$maxX, (int)$maxY);
 			}
@@ -163,6 +172,11 @@ abstract class Image implements IProvider2 {
 	private function validateRawDimensions(int $imageWidth, int $imageHeight): bool {
 		[$width, $height] = $this->getMaxDimensions();
 		return !($imageWidth > $width || $imageHeight > $height);
+	}
+
+	private function withinImagickBounds(int $imageWidth, int $imageHeight): bool {
+		[$width, $height] = $this->getMaxDimensions();
+		return ($imageWidth * $imageHeight) <= (4 * $width * $height);
 	}
 
 	private function getMaxDimensions(): array {
