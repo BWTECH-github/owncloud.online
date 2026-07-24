@@ -75,5 +75,9 @@ elif [[ "${SCALITY}" == "true" ]]; then
     $phpunit_cmd --configuration phpunit-autotest.xml ${GROUP}
 else
     cd tests
-    $phpunit_cmd --configuration phpunit-autotest.xml ${GROUP} --coverage-clover output/coverage/autotest-clover-"${DB_TYPE}".xml
+    if [[ "${COVERAGE}" == "true" ]]; then
+        $phpunit_cmd --configuration phpunit-autotest.xml ${GROUP} --coverage-clover output/coverage/autotest-clover-"${DB_TYPE}".xml
+    else
+        $phpunit_cmd --configuration phpunit-autotest.xml ${GROUP}
+    fi
 fi

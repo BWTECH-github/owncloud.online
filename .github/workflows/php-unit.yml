@@ -14,7 +14,7 @@ jobs:
     name: PHP Unit
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         php: ${{ fromJSON(inputs.php-versions) }}
         database: [sqlite]
@@ -50,6 +50,11 @@ jobs:
           POSTGRES_DB: owncloud
           POSTGRES_USER: owncloud
           POSTGRES_PASSWORD: owncloud
+        options: >-
+          --health-cmd="pg_isready -U owncloud"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
         ports:
           - 5432:5432
 
@@ -63,11 +68,20 @@ jobs:
           php-version: ${{ matrix.php }}
           extensions: curl, gd, json, xml, zip, imagick
           ini-values: "memory_limit=2048M"
+          coverage: none
 
       - name: Install ffmpeg & imagemagick
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg imagemagick
+
+      - name: Cache Composer downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ runner.os }}-php${{ matrix.php }}-${{ hashFiles('composer.lock', 'vendor-bin/**/composer.lock') }}
+          restore-keys: |
+            composer-${{ runner.os }}-php${{ matrix.php }}-
 
       - name: Install Composer dependencies
         run: |
@@ -111,7 +125,16 @@ jobs:
           php occ app:enable federatedfilesharing
 
       - name: Run PHPUnit
+        env:
+          DB: ${{ matrix.database }}
         run: |
+          # Same mapping as the install step: non-sqlite jobs only run the DB
+          # group (test-phpunit.sh falls back to the full suite when DB_TYPE is
+          # empty, which is only intended for the sqlite job).
+          DB_TYPE=${DB%:*}
+          if [ "$DB_TYPE" == "postgres" ] ; then DB_TYPE="pgsql"; fi
+          if [ "$DB_TYPE" == "mariadb" ] ; then DB_TYPE="mysql"; fi
+          export DB_TYPE
           bash tests/drone/test-phpunit.sh
 
       - name: Tail logs
