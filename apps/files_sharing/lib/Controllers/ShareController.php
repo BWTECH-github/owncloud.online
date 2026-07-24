@@ -392,7 +392,7 @@ class ShareController extends Controller {
 				['x' => 200, 'y' => 200, 'file' => $shareTmpl['directory_path'], 't' => $shareTmpl['dirToken']]
 			);
 		} else {
-			$shareTmpl['previewImage'] = $this->urlGenerator->getAbsoluteURL($this->urlGenerator->imagePath('core', 'favicon-fb.png'));
+			$shareTmpl['previewImage'] = $this->urlGenerator->getAbsoluteURL($this->urlGenerator->imagePath('core', 'favicon.png'));
 		}
 
 		$this->eventDispatcher->dispatch(new Event(), 'OCA\Files_Sharing::loadAdditionalScripts');
