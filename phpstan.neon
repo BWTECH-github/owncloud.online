@@ -1,4 +1,7 @@
 parameters:
+  # Level lives here (not as a CLI flag in the Makefile) so bumps are visible
+  # in review; raise it step by step and freeze new findings via baseline.
+  level: 0
   bootstrapFiles:
     - %currentWorkingDirectory%/lib/base.php
   excludePaths:
