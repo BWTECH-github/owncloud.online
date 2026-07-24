@@ -14,7 +14,7 @@
             "dg/composer-cleaner": true
         },
         "audit": {
-            "abandoned": "ignore",
+            "abandoned": "report",
             "block-insecure": false
         },
         "preferred-install": {
@@ -72,7 +72,7 @@
         "ext-posix": "*",
         "ext-simplexml": "*",
         "ext-zip": "*",
-        "bantu/ini-get-wrapper": "v1.0.1",
+        "bantu/ini-get-wrapper": "^1.0.1",
         "nextcloud/id3parser": "^0.1.4",
         "composer/semver": "^3.4",
         "deepdiver/zipstreamer": "^3.0",
@@ -82,7 +82,7 @@
         "google/apiclient": "^2.19",
         "guzzlehttp/guzzle": "^7.10",
         "icewind/smb": "^3.8",
-        "icewind/streams": "0.7.8",
+        "icewind/streams": "^0.7.8",
         "interfasys/lognormalizer": "^v1.0",
         "laminas/laminas-inputfilter": "^2.35",
         "laminas/laminas-servicemanager": "^3.24",
@@ -90,8 +90,8 @@
         "laravel/serializable-closure": "^2.0",
         "league/flysystem": "^1.1",
         "nikic/php-parser": "^5.7",
-        "owncloud/tarstreamer": "v2.1.0",
-        "pear/archive_tar": "1.6.0",
+        "owncloud/tarstreamer": "^2.1",
+        "pear/archive_tar": "^1.6",
         "pear/pear-core-minimal": "^v1.10",
         "phpseclib/phpseclib": "^3.0",
         "pimple/pimple": "^3.6",
@@ -111,11 +111,12 @@
         "symfony/polyfill-ctype": "*",
         "symfony/polyfill-iconv": "*",
         "symfony/polyfill-intl-grapheme": "*",
-        "symfony/polyfill-intl-idn": "*",
+        "symfony/polyfill-intl-idn": "1.99",
         "symfony/polyfill-intl-normalizer": "*",
         "symfony/polyfill-mbstring": "*",
         "symfony/polyfill-php72": "*",
-        "symfony/polyfill-php73": "*"
+        "symfony/polyfill-php73": "*",
+        "symfony/polyfill-php80": "*"
     },
     "scripts": {
         "pre-autoload-dump": "Google\\Task\\Composer::cleanup"
