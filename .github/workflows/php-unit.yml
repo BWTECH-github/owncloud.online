@@ -26,7 +26,7 @@ jobs:
           - php: "8.4"
             database: "mariadb:10.11"
           - php: "8.4"
-            database: "postgres:10.21"
+            database: "postgres:16"
 
     services:
       mysql:
