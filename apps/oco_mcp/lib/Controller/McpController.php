@@ -77,11 +77,23 @@ class McpController extends Controller {
 		}
 
 		[$login, $secret] = $credentials;
+
+		// Token logins bypass User\Manager::checkPassword, so this endpoint must
+		// hook into the DB-backed throttle itself: sleep on the accumulated failed
+		// attempts BEFORE validating the secret, and register every failed guess
+		// below. Requests without any Basic credentials (first 401 above) are the
+		// normal HTTP auth handshake and are deliberately not counted.
+		$ip = $this->request->getRemoteAddress();
+		/** @var \OCO\Security\Bruteforce\Throttler $throttler */
+		$throttler = \OC::$server->query(\OCO\Security\Bruteforce\Throttler::class);
+		$throttler->sleepDelay('oco_mcp', $ip, $login);
+
 		// MCP is a non-interactive client. Require a revocable app/device token so
 		// the account password and two-factor policy can never be bypassed here.
 		$isTokenPassword = \is_callable([$this->userSession, 'isTokenPassword'])
 			&& (bool)\call_user_func([$this->userSession, 'isTokenPassword'], $secret);
 		if (!$isTokenPassword) {
+			$this->registerFailedLogin($throttler, $ip, $login);
 			return $this->error(Http::STATUS_UNAUTHORIZED, -32001, 'Invalid MCP credentials.');
 		}
 
@@ -92,6 +104,7 @@ class McpController extends Controller {
 		}
 		$user = $authenticated ? $this->userSession->getUser() : null;
 		if ($user === null) {
+			$this->registerFailedLogin($throttler, $ip, $login);
 			return $this->error(Http::STATUS_UNAUTHORIZED, -32001, 'Invalid MCP credentials.');
 		}
 
@@ -115,7 +128,8 @@ class McpController extends Controller {
 		}
 
 		$isAdmin = $this->groupManager->isAdmin($user->getUID());
-		$writeEnabled = $this->config->getAppValue('oco_mcp', 'enable_write', 'no') === 'yes';
+		$writeEnabled = $this->config->getAppValue('oco_mcp', 'enable_write', 'no') === 'yes'
+			&& $this->userHasWriteAccess($user->getUID());
 
 		try {
 			$server = $this->serverFactory->build($user, $isAdmin, $writeEnabled);
@@ -214,6 +228,35 @@ class McpController extends Controller {
 		}
 
 		return \array_values(\array_unique(\array_map('strtolower', $hosts)));
+	}
+
+	/**
+	 * enable_write alone arms the write tools for EVERY token on the instance
+	 * (and user/group management for every admin token). The optional app value
+	 * "write_groups" (comma-separated group IDs) narrows that to members of the
+	 * listed groups; empty/unset keeps the instance-wide behaviour.
+	 */
+	private function userHasWriteAccess(string $uid): bool {
+		$raw = \trim($this->config->getAppValue('oco_mcp', 'write_groups', ''));
+		if ($raw === '') {
+			return true;
+		}
+		foreach (\explode(',', $raw) as $gid) {
+			$gid = \trim($gid);
+			if ($gid !== '' && $this->groupManager->isInGroup($uid, $gid)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Same wording as User\Manager ("Login failed: ...") so existing fail2ban
+	 * filters match MCP credential guessing too.
+	 */
+	private function registerFailedLogin(\OCO\Security\Bruteforce\Throttler $throttler, string $ip, string $login): void {
+		$throttler->registerAttempt('oco_mcp', $ip, $login);
+		$this->logger->warning('MCP login failed: \'' . $login . '\' (Remote IP: \'' . $ip . '\')', ['app' => 'oco_mcp']);
 	}
 
 	private function error(int $httpStatus, int $rpcCode, string $message): DataDisplayResponse {

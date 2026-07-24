@@ -294,7 +294,8 @@ echo -n "benutzer:app-passwort" | base64
 
 | Schlüssel (occ `config:app:set oco_mcp …`) | Werte | Standard | Wirkung |
 |---|---|---|---|
-| `enable_write` | `yes` / `no` | `no` | Schaltet alle schreibenden Tools frei (Datei-Schreiben, Freigaben, Tags/Kommentare schreiben, Benutzer-/Gruppenverwaltung). |
+| `enable_write` | `yes` / `no` | `no` | Schaltet alle schreibenden Tools frei (Datei-Schreiben, Freigaben, Tags/Kommentare schreiben, Benutzer-/Gruppenverwaltung). **Wirkt instanzweit für jedes Token**, sofern `write_groups` nicht gesetzt ist. |
+| `write_groups` | Gruppen-IDs, kommagetrennt | *(leer)* | Begrenzt den Schreibmodus auf Mitglieder der genannten Gruppen. Leer = alle Nutzer (sobald `enable_write=yes`). Nicht-Mitglieder bleiben read-only. |
 
 Mehr ist nicht zu konfigurieren — Authentifizierung und Rechte kommen
 vollständig aus ownCloud selbst.

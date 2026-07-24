@@ -21,10 +21,18 @@ same permissions as the web UI. The connection is **read-only by default**.
 occ app:enable oco_mcp
 # read-only by default; turn on write + management tools with:
 occ config:app:set oco_mcp enable_write --value=yes
+# optional: limit write access to members of specific groups
+occ config:app:set oco_mcp write_groups --value='mcp-writers,admin'
 ```
 
 Im Standardmodus werden schreibende Tools nicht in `tools/list` veröffentlicht.
 Requests sind auf 2 MiB begrenzt; `files_write` akzeptiert maximal 1 MiB Inhalt.
+
+**Achtung:** `enable_write=yes` allein schaltet die Schreib-Tools instanzweit
+für **jedes** Nutzer-Token frei — Admin-Tokens erhalten zusätzlich Benutzer-
+und Gruppenverwaltung. Mit `write_groups` (kommagetrennte Gruppen-IDs) lässt
+sich das auf Mitglieder der genannten Gruppen eingrenzen; alle anderen Tokens
+bleiben read-only.
 
 ## Tool catalog
 

@@ -17,7 +17,10 @@ and subject to the same ownCloud permissions.
 
 The endpoint speaks Streamable HTTP JSON-RPC at /apps/oco_mcp/mcp. It is read-only
 by default; set the app config "oco_mcp enable_write yes" (occ) to allow write and
-management tools. Authentication uses HTTP Basic with an ownCloud app/device token;
+management tools. Note that enable_write arms write tools instance-wide for every
+token (and user/group management for every admin token) unless the app config
+"write_groups" (comma-separated group IDs) limits it to members of those groups.
+Authentication uses HTTP Basic with an ownCloud app/device token;
 credentials are revalidated per request and browser cookie sessions are rejected.
 
 Modified by BW-Tech GmbH for owncloud.online (PHP 8.4).
