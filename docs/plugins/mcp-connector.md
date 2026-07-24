@@ -24,7 +24,7 @@ exakt dessen Berechtigungen, standardmäßig **nur lesend**.
 10. [Konfiguration](#10-konfiguration)
 11. [Sicherheit](#11-sicherheit)
 12. [Fehlerbehebung](#12-fehlerbehebung)
-13. [Eigene Tools ergänzen](#13-eigene-tools-ergänzen)
+13. [Eigene Tools ergänzen](#13-eigene-tools-erganzen)
 
 ---
 

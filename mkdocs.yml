@@ -58,7 +58,6 @@ nav:
   - Plugins:
       - plugins/index.md
       - Plugin-Matrix: plugins/plugin-matrix.md
-      - Market Backend: plugins/market-backend.md
       - MCP Connector (KI-Anbindung): plugins/mcp-connector.md
   - Entwickler:
       - developer/index.md
