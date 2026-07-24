@@ -105,6 +105,34 @@ opcache.enable_cli=0                 ; CLI/Cron braucht keinen persistenten OPca
 OPcache-Reset sichtbar. Das Deploy-Werkzeug muss den Reset auslösen, sonst laufen
 alte Klassen weiter.
 
+## OPcache-Preloading (PHP 8.4)
+
+Aufbauend auf der Dimensionierung oben kann OPcache den stabilen Server-Code
+bereits beim FPM-Start kompilieren und verlinken (Preloading). Worker sparen
+sich damit das Klassen-Linking pro Request und die Warmup-Phase nach jedem
+Reload. Das mitgelieferte Script `build/preload.php` lädt `lib/private`,
+`lib/public`, `core/` und den Composer-Vendor-Baum — App-Verzeichnisse bewusst
+nicht, da Apps zur Laufzeit (de)aktiviert und aktualisiert werden.
+
+Aktivierung in der FPM-Pool-Konfiguration bzw. `php.ini`:
+
+```ini
+opcache.preload=/var/www/owncloud.online/build/preload.php
+opcache.preload_user=www-data
+```
+
+Hinweise:
+
+- Preloading setzt die Deploy-Disziplin von `validate_timestamps=0` voraus:
+  nach jedem Deploy FPM neu laden, sonst läuft alter Code weiter.
+- Meldungen wie `Can't preload unlinked class` beim Start sind harmlos — die
+  Klassen werden ungelinkt gecacht und beim ersten Zugriff verlinkt.
+- Das Script ist fehlertolerant: einzelne nicht kompilierbare Dateien werden
+  übersprungen und verhindern den FPM-Start nicht. Ins Error-Log wird eine
+  Zeile `owncloud.online preload: compiled N of M files` geschrieben.
+- Erst auf einer Staging-Instanz aktivieren und den FPM-Start prüfen
+  (`systemctl restart php8.4-fpm && systemctl status php8.4-fpm`).
+
 ## Frontend-Auslieferung
 
 Die Weboberfläche lädt JavaScript und CSS als viele einzelne, unkomprimierte
