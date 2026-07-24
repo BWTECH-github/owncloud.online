@@ -134,6 +134,12 @@ jobs:
       - name: Regenerate .min siblings and diff
         run: |
           make minify-assets
-          # A diff here means someone changed core/settings JS/CSS without
-          # regenerating the tracked .min siblings (preferMinified serves them).
-          git diff --stat --exit-code -- '*.min.js' '*.min.css'
+          # Any status output means someone changed core/settings/apps JS or CSS
+          # without regenerating the .min siblings (preferMinified serves them).
+          # git status also catches newly generated (untracked) siblings.
+          status="$(git status --porcelain -- '*.min.js' '*.min.css')"
+          if [ -n "${status}" ]; then
+            echo "${status}"
+            echo "Stale or uncommitted .min siblings detected - run 'make minify-assets' and commit."
+            exit 1
+          fi
