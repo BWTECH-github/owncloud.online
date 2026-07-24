@@ -47,8 +47,14 @@ class Throttler {
 	/** How far back failed attempts are still counted. */
 	private const LOOKBACK_SECONDS = 12 * 3600;
 
-	/** Upper bound for a single sleep, regardless of attempt count. */
-	private const MAX_DELAY_SECONDS = 30 * 60;
+	/**
+	 * Upper bound for a single sleep, regardless of attempt count. Capped low
+	 * so a flood of failed attempts from one IP+identifier cannot tie up an
+	 * FPM worker for minutes per request (self-DoS): a few dozen parallel
+	 * requests would otherwise exhaust the pool. The exponential back-off still
+	 * climbs to this cap, and the "no hard lockout" design is preserved.
+	 */
+	private const MAX_DELAY_SECONDS = 30;
 
 	/** @var IDBConnection */
 	private $db;
@@ -149,5 +155,23 @@ class Throttler {
 		$result->free();
 
 		return $row ? (int)$row['num_attempts'] : 0;
+	}
+
+	/**
+	 * Delete attempt rows older than the lookback window. Run periodically by
+	 * CleanupJob so oc_bruteforce_attempts does not grow unbounded - rows past
+	 * LOOKBACK_SECONDS no longer influence getDelay() anyway. Uses the existing
+	 * bruteforce_occurred_index on `occurred`.
+	 *
+	 * @return int number of rows deleted
+	 */
+	public function cleanupOldAttempts() {
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete(self::DB_TABLE)
+			->where($qb->expr()->lt('occurred', $qb->createNamedParameter(
+				$this->timeFactory->getTime() - self::LOOKBACK_SECONDS,
+				IQueryBuilder::PARAM_INT
+			)));
+		return (int)$qb->execute();
 	}
 }

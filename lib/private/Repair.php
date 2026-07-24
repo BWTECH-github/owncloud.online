@@ -137,6 +137,7 @@ class Repair implements IOutput {
 			new CleanTags(\OC::$server->getDatabaseConnection(), \OC::$server->getUserManager()),
 			new DropOldTables(\OC::$server->getDatabaseConnection()),
 			new DropOldJobs(\OC::$server->getJobList()),
+			new \OC\Repair\Bruteforce\RegisterCleanupJob(\OC::$server->getJobList()),
 			new RemoveGetETagEntries(\OC::$server->getDatabaseConnection()),
 			new RepairInvalidShares(\OC::$server->getConfig(), \OC::$server->getDatabaseConnection()),
 			new RepairSubShares(
