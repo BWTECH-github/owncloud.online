@@ -5,11 +5,23 @@ on:
     branches:
       - main
       - master
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "changelog/**"
+      - "mkdocs.yml"
+      - "requirements-docs.txt"
   pull_request:
     types:
       - opened
       - synchronize
       - reopened
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "changelog/**"
+      - "mkdocs.yml"
+      - "requirements-docs.txt"
 
 permissions:
     contents: read
@@ -36,7 +48,14 @@ jobs:
           php-version: ${{ matrix.php-version }}
           extensions: curl, gd, json, xml, zip
           ini-values: "memory_limit=1024M"
-          tools: phpstan, codesniffer
+
+      - name: Cache Composer downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ runner.os }}-php${{ matrix.php-version }}-${{ hashFiles('composer.lock', 'vendor-bin/**/composer.lock') }}
+          restore-keys: |
+            composer-${{ runner.os }}-php${{ matrix.php-version }}-
 
       - name: Install Composer dependencies
         run: |
@@ -73,3 +92,48 @@ jobs:
 
       - name: Composer security audit (locked dependencies)
         run: composer audit --locked --no-interaction
+
+      - name: Composer security audit (bundled app lockfiles)
+        run: |
+          composer audit --locked --no-interaction -d apps/oco_mcp
+          composer audit --locked --no-interaction -d apps-external/market
+
+  oco-mcp-tests:
+    name: oco_mcp security tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: "8.4"
+          coverage: none
+
+      - name: Run oco_mcp standalone tests
+        run: |
+          php apps/oco_mcp/tests/basic_auth_test.php
+          php apps/oco_mcp/tests/security_test.php
+
+  minified-assets:
+    name: Minified assets up to date
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+
+      - name: Install pinned minifiers
+        run: npm install -g terser@5.49.0 clean-css-cli@5.6.3
+
+      - name: Regenerate .min siblings and diff
+        run: |
+          make minify-assets
+          # A diff here means someone changed core/settings JS/CSS without
+          # regenerating the tracked .min siblings (preferMinified serves them).
+          git diff --stat --exit-code -- '*.min.js' '*.min.css'
