@@ -170,3 +170,4 @@ clover.xml
 # Documentation build/runtime output
 /site/
 /docs/mkdocs-serve*.log
+/composer.phar
