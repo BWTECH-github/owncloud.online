@@ -18,10 +18,12 @@ ROOT="${1:-.}"
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
+# Prefer the versions pinned in build/package.json (build/node_modules) so the
+# output is reproducible; fall back to a global install, then npx.
 TERSER=""
-if have terser; then TERSER="terser"; elif have npx; then TERSER="npx --no-install terser"; fi
+if [ -x "$ROOT/build/node_modules/.bin/terser" ]; then TERSER="$ROOT/build/node_modules/.bin/terser"; elif have terser; then TERSER="terser"; elif have npx; then TERSER="npx --no-install terser"; fi
 CLEANCSS=""
-if have cleancss; then CLEANCSS="cleancss"; elif have clean-css-cli; then CLEANCSS="clean-css-cli"; elif have npx; then CLEANCSS="npx --no-install clean-css-cli"; fi
+if [ -x "$ROOT/build/node_modules/.bin/cleancss" ]; then CLEANCSS="$ROOT/build/node_modules/.bin/cleancss"; elif have cleancss; then CLEANCSS="cleancss"; elif have clean-css-cli; then CLEANCSS="clean-css-cli"; elif have npx; then CLEANCSS="npx --no-install clean-css-cli"; fi
 
 minify_js() {
   local f="$1" out="${1%.js}.min.js"
