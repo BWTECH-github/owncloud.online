@@ -84,9 +84,16 @@ jobs:
         run: |
           set -euo pipefail
           make minify-assets
-          # Fail loudly if the tracked .min siblings were stale — the repo copy
+          # Fail loudly if .min siblings were stale or missing — the repo copy
           # is what git deployments serve, so it must be regenerated + committed.
-          git diff --stat --exit-code -- '*.min.js' '*.min.css'
+          # git status also catches newly generated (untracked) siblings that
+          # a plain git diff would miss.
+          status="$(git status --porcelain -- '*.min.js' '*.min.css')"
+          if [ -n "${status}" ]; then
+            echo "${status}"
+            echo "Stale or uncommitted .min siblings detected - run 'make minify-assets' and commit."
+            exit 1
+          fi
 
       - name: Build owncloud.online core distribution
         shell: bash

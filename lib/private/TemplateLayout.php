@@ -178,12 +178,14 @@ class TemplateLayout extends \OC_Template {
 	/**
 	 * Prefer a pre-generated `.min.js` / `.min.css` sibling when one exists on disk.
 	 *
-	 * Scoped to assets resolved against SERVERROOT, i.e. core and settings only:
-	 * app-provided and third-party resources resolve with their own root and are
-	 * returned untouched, so no per-app allowlist is needed. When no minified
-	 * sibling exists (e.g. a development checkout that never ran `make minify-assets`)
-	 * the original file is returned, so behaviour is identical to before. The global
-	 * `?v=` cache-busting hash is applied by the caller to whatever is returned.
+	 * Scoped to roots inside SERVERROOT: core, settings and the bundled apps
+	 * (whose resource root is their app directory). Resources resolving against
+	 * a root outside the server directory (custom apps_paths) are returned
+	 * untouched. When no minified sibling exists (e.g. a development checkout
+	 * that never ran `make minify-assets`, or an app installed at runtime)
+	 * the original file is returned, so behaviour is identical to before. The
+	 * global `?v=` cache-busting hash is applied by the caller to whatever is
+	 * returned.
 	 *
 	 * @param array{0:string,1:string,2:string} $info [root, webRoot, relFile]
 	 * @return string the relative file to emit (possibly the .min variant)
@@ -191,7 +193,7 @@ class TemplateLayout extends \OC_Template {
 	private static function preferMinified(array $info): string {
 		$root = $info[0];
 		$file = $info[2];
-		if ($root !== \OC::$SERVERROOT) {
+		if ($root !== \OC::$SERVERROOT && \strpos($root, \OC::$SERVERROOT . '/') !== 0) {
 			return $file;
 		}
 		if (\substr($file, -3) === '.js') {

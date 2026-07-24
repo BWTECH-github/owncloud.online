@@ -42,19 +42,19 @@ minify_css() {
 }
 
 count=0
-for dir in core/js settings/js; do
-  [ -d "$ROOT/$dir" ] || continue
+for dir in "$ROOT"/core/js "$ROOT"/settings/js "$ROOT"/apps/*/js; do
+  [ -d "$dir" ] || continue
   while IFS= read -r -d '' f; do
-    case "$f" in */tests/*) continue;; esac
+    case "$f" in */tests/*|*/vendor/*) continue;; esac
     minify_js "$f"; count=$((count+1))
-  done < <(find "$ROOT/$dir" -type f -name '*.js' ! -name '*.min.js' -print0)
+  done < <(find "$dir" -type f -name '*.js' ! -name '*.min.js' -print0)
 done
-for dir in core/css settings/css; do
-  [ -d "$ROOT/$dir" ] || continue
+for dir in "$ROOT"/core/css "$ROOT"/settings/css "$ROOT"/apps/*/css; do
+  [ -d "$dir" ] || continue
   while IFS= read -r -d '' f; do
-    case "$f" in */tests/*) continue;; esac
+    case "$f" in */tests/*|*/vendor/*) continue;; esac
     minify_css "$f"; count=$((count+1))
-  done < <(find "$ROOT/$dir" -type f -name '*.css' ! -name '*.min.css' -print0)
+  done < <(find "$dir" -type f -name '*.css' ! -name '*.min.css' -print0)
 done
 
-echo "minify-assets: generated ${count} .min siblings under ${ROOT}/{core,settings}"
+echo "minify-assets: generated ${count} .min siblings under ${ROOT}/{core,settings,apps}"
