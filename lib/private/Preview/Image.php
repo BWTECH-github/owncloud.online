@@ -39,28 +39,57 @@ abstract class Image implements IProvider2 {
 		if (Preview::isImageFileSizeTooBig($file)) {
 			return false;
 		}
-		$image = new \OC_Image();
+		// Datei genau einmal lesen; frueher las der Imagick-Fallback sie ein
+		// zweites Mal komplett ein.
 		$handle = $file->fopen('r');
-		$image->load($handle);
-		$image->fixOrientation();
-		if (!$this->validateImageDimensions($image)) {
-			// Bild ueber dem GD-Dimensionslimit (grosses Kamera-/Handyfoto, z. B.
-			// 48 MP): GD hat es zwar dekodiert, verwirft es hier aber -> keine
-			// Vorschau (graue Kachel). Ist imagick vorhanden, erzeugen wir die
-			// Vorschau stattdessen speicherschonend (der jpeg:size-Hint laesst
-			// libjpeg beim Dekodieren herunterskalieren). Nur dieser bisher leere
-			// Fall aendert sich; normale Bilder behalten exakt den GD-Weg darunter.
-			if (\is_resource($handle)) {
-				\fclose($handle);
-			}
+		if (!\is_resource($handle)) {
+			return false;
+		}
+		try {
+			$content = \stream_get_contents($handle);
+		} finally {
+			\fclose($handle);
+		}
+		if ($content === false || $content === '') {
+			return false;
+		}
+
+		// Dimensionen vorab per Header-Parse pruefen: ein Bild ueber dem
+		// GD-Dimensionslimit (grosses Kamera-/Handyfoto, z. B. 48 MP) geht direkt
+		// in den speicherschonenden imagick-Pfad (jpeg:size-Hint laesst libjpeg
+		// beim Dekodieren herunterskalieren), ohne dass GD es erst vollstaendig
+		// dekodiert und das Ergebnis wieder verwirft.
+		$rawSize = \getimagesizefromstring($content);
+		if (\is_array($rawSize) && !$this->validateRawDimensions((int)$rawSize[0], (int)$rawSize[1])) {
 			if (\extension_loaded('imagick')) {
-				return $this->getThumbnailViaImagick($file, (int)$maxX, (int)$maxY);
+				return $this->getThumbnailViaImagick($content, (int)$maxX, (int)$maxY);
 			}
 			return false;
 		}
 
-		if (\is_resource($handle)) {
-			\fclose($handle);
+		$image = new \OC_Image();
+		// php://temp statt Datei-Handle: identischer Lade- und EXIF-Pfad wie
+		// zuvor (loadFromFileHandle), nur ohne erneutes Einlesen der Datei.
+		$tmp = \fopen('php://temp', 'r+b');
+		if (!\is_resource($tmp)) {
+			return false;
+		}
+		try {
+			\fwrite($tmp, $content);
+			\rewind($tmp);
+			$image->load($tmp);
+		} finally {
+			\fclose($tmp);
+		}
+		$image->fixOrientation();
+		if (!$this->validateImageDimensions($image)) {
+			// Header-Parse konnte die Groesse nicht bestimmen, GD hat das Bild
+			// trotzdem dekodiert und es liegt ueber dem Limit -> wie bisher als
+			// letzte Chance imagick versuchen.
+			if (\extension_loaded('imagick')) {
+				return $this->getThumbnailViaImagick($content, (int)$maxX, (int)$maxY);
+			}
+			return false;
 		}
 
 		if ($image->valid()) {
@@ -74,28 +103,14 @@ abstract class Image implements IProvider2 {
 	/**
 	 * Erzeugt die Vorschau eines grossen Bildes speicherschonend via imagick.
 	 * Fuer JPEG skaliert libjpeg dank jpeg:size bereits beim Dekodieren herunter,
-	 * sodass auch 48-MP-Fotos eine Vorschau bekommen. Nur der Fall "GD verwirft das
-	 * Bild wegen Ueberdimension" laeuft hier durch; scheitert imagick, gibt es wie
+	 * sodass auch 48-MP-Fotos eine Vorschau bekommen. Hier laeuft nur der Fall
+	 * "Bild ueber dem GD-Dimensionslimit" durch; scheitert imagick, gibt es wie
 	 * bisher keine Vorschau (false).
 	 *
 	 * @return \OC_Image|false
 	 */
-	private function getThumbnailViaImagick(File $file, int $maxX, int $maxY) {
+	private function getThumbnailViaImagick(string $content, int $maxX, int $maxY) {
 		if ($maxX < 1 || $maxY < 1) {
-			return false;
-		}
-		$handle = $file->fopen('r');
-		if (!\is_resource($handle)) {
-			return false;
-		}
-		try {
-			$content = \stream_get_contents($handle);
-		} finally {
-			if (\is_resource($handle)) {
-				\fclose($handle);
-			}
-		}
-		if ($content === false || $content === '') {
 			return false;
 		}
 
@@ -142,8 +157,12 @@ abstract class Image implements IProvider2 {
 	}
 
 	private function validateImageDimensions(\OC_Image $image): bool {
+		return $this->validateRawDimensions($image->width(), $image->height());
+	}
+
+	private function validateRawDimensions(int $imageWidth, int $imageHeight): bool {
 		[$width, $height] = $this->getMaxDimensions();
-		return !($image->width() > $width || $image->height() > $height);
+		return !($imageWidth > $width || $imageHeight > $height);
 	}
 
 	private function getMaxDimensions(): array {
