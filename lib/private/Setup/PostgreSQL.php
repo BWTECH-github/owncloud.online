@@ -30,6 +30,11 @@ class PostgreSQL extends AbstractDatabase {
 	public $dbprettyname = 'PostgreSQL';
 
 	public function setupDatabase($username) {
+		// kept for the schema grant below - createDBUser() replaces
+		// $this->dbUser/dbPassword with the dedicated oc_ role
+		$adminUser = $this->dbUser;
+		$adminPassword = $this->dbPassword;
+
 		$e_host = \addslashes($this->dbHost);
 		$e_user = \addslashes($this->dbUser);
 		$e_password = \addslashes($this->dbPassword);
@@ -80,6 +85,31 @@ class PostgreSQL extends AbstractDatabase {
 
 		//create the database
 		$this->createDatabase($connection);
+
+		// PostgreSQL >= 15 no longer grants CREATE on the "public" schema to
+		// every role. When the database already existed, createDatabase() could
+		// not make the oc_ role its owner, so that role must be granted the
+		// schema privileges explicitly or the installer dies with "permission
+		// denied for schema public". Schema ACLs are per database, so the grant
+		// needs its own admin connection to the target database.
+		if ($this->dbUser !== $adminUser) {
+			$e_dbname = \addslashes($this->dbName);
+			$e_admin_user = \addslashes($adminUser);
+			$e_admin_password = \addslashes($adminPassword);
+			$schema_connection_string = "host='$e_host' dbname='$e_dbname' user='$e_admin_user' port='$port' password='$e_admin_password'";
+			$schemaConnection = @\pg_connect($schema_connection_string);
+			if ($schemaConnection) {
+				$e_user = \pg_escape_string($schemaConnection, $this->dbUser);
+				$query = "GRANT CREATE, USAGE ON SCHEMA public TO \"$e_user\"";
+				$result = \pg_query($schemaConnection, $query);
+				if (!$result) {
+					$entry = $this->trans->t('DB Error: "%s"', [\pg_last_error($schemaConnection)]) . '<br />';
+					$entry .= $this->trans->t('Offending command was: "%s"', [$query]) . '<br />';
+					\OCP\Util::writeLog('setup.pg', $entry, \OCP\Util::WARN);
+				}
+				\pg_close($schemaConnection);
+			}
+		}
 
 		// the connection to dbname=postgres is not needed anymore
 		\pg_close($connection);
