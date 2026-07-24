@@ -49,6 +49,16 @@ systemctl reload php8.4-fpm
 'memcache.local' => '\\OC\\Memcache\\APCu',
 ```
 
+Ohne gesetztes `memcache.local` fällt die Cache-Factory auf `NullCache` zurück
+(`lib/private/Memcache/Factory.php`) – die fork-eigenen APCu-Optimierungen
+(L10N-Cache, App-Info-Cache) bleiben dann wirkungslos, jede Sprachdatei und jede
+`info.xml` wird pro Request neu geparst. Damit auch `occ` und `cron.php` nicht
+cachelos laufen, muss APCu in der **CLI**-`php.ini` aktiv sein:
+
+```ini
+apc.enable_cli=1
+```
+
 ## Transactional File Locking
 
 Für Produktionssysteme Redis verwenden:
@@ -82,4 +92,36 @@ sudo -u www-data php8.4 occ integrity:check-core
 sudo -u www-data php8.4 occ integrity:check-app market
 ```
 
+> **Achtung:** `integrity:check-core` ist für den Kanal `bwtech` **deaktiviert**
+> (`lib/private/IntegrityCheck/Checker.php`, `$notSignedChannels`) und meldet
+> daher **immer** Erfolg – der Core-Build ist nicht signiert. Der Befehl taugt
+> auf diesem Kanal **nicht** als Update-Kontrolle. Verlassen Sie sich stattdessen
+> auf die SHA256SUMS/SBOM-Artefakte des Releases; `integrity:check-app` für
+> einzelne (signierte) Apps bleibt aussagekräftig.
+
 Wenn lokale Branding-Dateien bewusst geändert wurden, muss die Abweichung dokumentiert und im Release-Prozess berücksichtigt werden.
+
+## Versionsinformationen verbergen
+
+`status.php` liefert unauthentifiziert die exakte Version/Edition aus (mit
+`Access-Control-Allow-Origin: *`) – zusammen mit dem detaillierten CHANGELOG
+ideal zum Fingerprinting ungepatchter Instanzen. Für Kundeninstanzen empfehlen:
+
+```php
+'version.hide' => true,
+```
+
+Danach lässt `status.php` `version`/`versionstring`/`edition` weg. Trade-off:
+Monitoring, das die Version aus `status.php` parst, sieht sie dann nicht mehr.
+
+## Update-Prüfung
+
+Der Update-Checker fragt standardmäßig `updates.owncloud.com` mit dem Kanal
+`bwtech` ab. Der Upstream kennt weder diesen Kanal noch die Fork-Versionen –
+Betreiber erhalten so **nie** Update-Hinweise, senden aber Instanz-Metadaten an
+einen Fremdserver. Daher entweder einen eigenen Endpoint hinterlegen
+(`'updater.server.url' => '…'`) oder die Prüfung abschalten:
+
+```php
+'updatechecker' => false,
+```
