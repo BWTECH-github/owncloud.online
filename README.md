@@ -2,7 +2,7 @@
 
 **This is a fork of [ownCloud Core](https://github.com/owncloud/core) with PHP 8.4 compatibility and a custom owncloud.online design. [ownCloud](http://ownCloud.com) offers file sharing and collaboration trusted by 200+ million users worldwide regardless of device or location.**
 
-![](core/img/design-preview.png)
+![](.github/design-preview.png)
 
 ## Why Is This so Awesome?
 * :file_folder: **Access your Data** You can store your files, contacts, calendars and more on a server of your choosing.
