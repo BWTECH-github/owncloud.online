@@ -52,7 +52,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y make rsync tar zip unzip bzip2
-          npm install -g yarn@1.22.22
+          npm install -g yarn@1.22.22 terser@5.49.0 clean-css-cli@5.6.3
 
       - name: Resolve release version
         id: version
@@ -78,6 +78,15 @@ jobs:
 
           echo "release_version=${version}" >> "${GITHUB_OUTPUT}"
           echo "Resolved release version: ${version}"
+
+      - name: Regenerate minified assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          make minify-assets
+          # Fail loudly if the tracked .min siblings were stale — the repo copy
+          # is what git deployments serve, so it must be regenerated + committed.
+          git diff --stat --exit-code -- '*.min.js' '*.min.css'
 
       - name: Build owncloud.online core distribution
         shell: bash

@@ -35,6 +35,7 @@
     "modclean-patterns-owncloud": "./modclean-patterns-owncloud/"
   },
   "devDependencies": {
+    "clean-css-cli": "5.6.3",
     "handlebars": "^4.7.9",
     "jasmine-core": "^6.3.0",
     "jasmine-sinon": "^0.4.0",
@@ -44,7 +45,8 @@
     "karma-jasmine": "^1.1.2",
     "karma-jasmine-sinon": "^1.0.4",
     "karma-junit-reporter": "*",
-    "sinon": "^19.0.5"
+    "sinon": "^19.0.5",
+    "terser": "5.49.0"
   },
   "resolutions": {
     "socket.io-parser": "4.2.3",
