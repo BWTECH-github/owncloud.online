@@ -155,6 +155,16 @@ class OC_Template extends \OC\Template\Base {
 			OC_Util::addScript('files/fileinfo');
 			OC_Util::addScript('files/client');
 
+			// core.json laedt moment ohne Locales (moment.min.js statt
+			// moment-with-locales, spart ~310 KB pro Erstaufruf). Hier nur die
+			// Dateien der aktiven Nutzersprache registrieren. Prepend-Reihenfolge:
+			// die core.json-Schleife unten setzt sich VOR diese Eintraege, damit
+			// laden die Locale-Dateien nach moment selbst, aber vor js.js
+			// (moment.locale(OC.getLocale()) laeuft dort beim Parsen).
+			foreach (self::findMomentLocales() as $momentLocale) {
+				OC_Util::addVendorScript('moment/locale/' . $momentLocale, null, true);
+			}
+
 			// Add the stuff we need always
 			// following logic will import all vendor libraries that are
 			// specified in core/js/core.json
@@ -175,6 +185,42 @@ class OC_Template extends \OC\Template\Base {
 
 			self::$initTemplateEngineFirstRun = false;
 		}
+	}
+
+	/**
+	 * Moment-Locale-Dateien fuer die aktive Nutzersprache: exakter Treffer
+	 * (de_DE -> de-de) plus Basissprache (de) als Fallback — dieselbe Kette,
+	 * die moment.locale() clientseitig durchprobiert. Englisch ist in moment
+	 * eingebaut und braucht keine Datei.
+	 *
+	 * @return string[] Dateinamen (ohne .js) unterhalb von core/vendor/moment/locale/
+	 */
+	private static function findMomentLocales() {
+		try {
+			$lang = \OC::$server->getL10NFactory()->findLanguage();
+		} catch (\Exception $e) {
+			return [];
+		}
+		if ($lang === 'sr@latin') {
+			// gleiche Sonderbehandlung wie TemplateLayout fuer das html-lang-Attribut
+			$lang = 'sr';
+		}
+		$norm = \strtolower(\str_replace('_', '-', (string)$lang));
+		$candidates = [$norm];
+		$base = \explode('-', $norm)[0];
+		if ($base !== $norm) {
+			$candidates[] = $base;
+		}
+		$locales = [];
+		foreach ($candidates as $candidate) {
+			if ($candidate !== '' && $candidate !== 'en'
+				&& \preg_match('/^[a-z0-9-]+$/', $candidate) === 1
+				&& \is_file(OC::$SERVERROOT . '/core/vendor/moment/locale/' . $candidate . '.js')
+			) {
+				$locales[] = $candidate;
+			}
+		}
+		return $locales;
 	}
 
 	/**

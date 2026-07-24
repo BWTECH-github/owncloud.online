@@ -4,7 +4,7 @@
 		"jquery-migrate/jquery-migrate.min.js",
 		"jquery-ui/ui/minified/jquery-ui.custom.min.js",
 		"underscore/underscore-min.js",
-		"moment/min/moment-with-locales.min.js",
+		"moment/min/moment.min.js",
 		"handlebars/handlebars.min.js",
 		"blueimp-md5/js/md5.min.js",
 		"bootstrap/js/tooltip.js",
