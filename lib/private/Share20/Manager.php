@@ -1650,6 +1650,7 @@ class Manager implements IManager {
 			$this->eventDispatcher->dispatch($failEvent, 'share.failedpasswordcheck');
 			return false;
 		}
+		$throttler->resetDelay('share_password', $ip, $share->getToken());
 		$afterEvent = new GenericEvent(null, ['shareObject' => $share]);
 		$this->eventDispatcher->dispatch($afterEvent, 'share.afterpasswordcheck');
 		if (!empty($newHash)) {

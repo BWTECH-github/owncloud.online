@@ -84,17 +84,71 @@ class ThrottlerTest extends TestCase {
 	}
 
 	/**
-	 * Attempts are keyed on action+ip+identifier; unrelated combinations must
-	 * not be throttled.
+	 * Attempts are keyed on action+ip; unrelated IPs and actions must not be
+	 * throttled. (A different identifier from the SAME ip is deliberately
+	 * NOT unrelated - see testHorizontalSprayFromOneIpIsThrottled().)
 	 */
-	public function testDelayIsKeyedPerActionIpIdentifier() {
+	public function testDelayIsKeyedPerActionAndIp() {
 		$this->throttler->registerAttempt('login', '1.2.3.4', 'alice');
 		$this->throttler->registerAttempt('login', '1.2.3.4', 'alice');
 
 		$this->assertGreaterThan(0, $this->throttler->getDelay('login', '1.2.3.4', 'alice'));
 		$this->assertSame(0, $this->throttler->getDelay('login', '9.9.9.9', 'alice'), 'different IP');
-		$this->assertSame(0, $this->throttler->getDelay('login', '1.2.3.4', 'bob'), 'different identifier');
 		$this->assertSame(0, $this->throttler->getDelay('share_password', '1.2.3.4', 'alice'), 'different action');
+	}
+
+	/**
+	 * Password-spraying protection: one IP guessing against many different
+	 * accounts must escalate too, even though each individual (ip,
+	 * identifier) pair only ever sees a single failed attempt.
+	 */
+	public function testHorizontalSprayFromOneIpIsThrottled() {
+		foreach (['alice', 'bob', 'carol', 'dave', 'eve'] as $victim) {
+			$this->throttler->registerAttempt('login', '1.2.3.4', $victim);
+		}
+
+		$this->assertGreaterThan(
+			0,
+			$this->throttler->getDelay('login', '1.2.3.4', 'frank'),
+			'an untried identifier from the spraying IP must still be throttled'
+		);
+		$this->assertSame(0, $this->throttler->getDelay('login', '9.9.9.9', 'frank'), 'unrelated IP stays unaffected');
+		$this->assertSame(0, $this->throttler->getDelay('share_password', '1.2.3.4', 'frank'), 'unrelated action stays unaffected');
+	}
+
+	/**
+	 * A legitimate user who mistyped their password a few times must not
+	 * stay throttled after they finally log in correctly.
+	 */
+	public function testResetDelayClearsDelayWhenNoOtherAttemptsFromThatIp() {
+		$this->throttler->registerAttempt('login', '1.2.3.4', 'alice');
+		$this->throttler->registerAttempt('login', '1.2.3.4', 'alice');
+		$this->assertGreaterThan(0, $this->throttler->getDelay('login', '1.2.3.4', 'alice'));
+
+		$this->throttler->resetDelay('login', '1.2.3.4', 'alice');
+
+		$this->assertSame(0, $this->throttler->getDelay('login', '1.2.3.4', 'alice'));
+	}
+
+	/**
+	 * resetDelay() must clear only the exact (action, ip, identifier) it is
+	 * given. If an attacker spraying an IP gets lucky and logs into one
+	 * account, that success must not erase the origin's failure history for
+	 * the OTHER accounts they are still guessing - otherwise a single lucky
+	 * guess would let them continue the spray unthrottled.
+	 */
+	public function testResetDelayDoesNotEraseOtherIdentifiersOriginHistory() {
+		$this->throttler->registerAttempt('login', '1.2.3.4', 'alice');
+		$this->throttler->registerAttempt('login', '1.2.3.4', 'bob');
+
+		// Attacker gets lucky on the second guess and logs in as bob.
+		$this->throttler->resetDelay('login', '1.2.3.4', 'bob');
+
+		$this->assertGreaterThan(
+			0,
+			$this->throttler->getDelay('login', '1.2.3.4', 'carol'),
+			'alice\'s failed attempt from the same IP must still throttle other, untried accounts'
+		);
 	}
 
 	/**

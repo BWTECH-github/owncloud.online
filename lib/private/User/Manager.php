@@ -269,6 +269,7 @@ class Manager extends PublicEmitter implements IUserManager {
 				/* @phan-suppress-next-line PhanUndeclaredMethod */
 				$uid = $backend->checkPassword($loginName, $password);
 				if ($uid !== false) {
+					$throttler->resetDelay('login', $ip, $loginName);
 					$account = $this->syncService->createOrSyncAccount($uid, $backend);
 					return $this->getUserObject($account);
 				}

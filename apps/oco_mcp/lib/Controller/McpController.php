@@ -107,6 +107,7 @@ class McpController extends Controller {
 			$this->registerFailedLogin($throttler, $ip, $login);
 			return $this->error(Http::STATUS_UNAUTHORIZED, -32001, 'Invalid MCP credentials.');
 		}
+		$throttler->resetDelay('oco_mcp', $ip, $login);
 
 		// Lazy-load the bundled MCP SDK only for this endpoint.
 		require_once __DIR__ . '/../../vendor/autoload.php';
