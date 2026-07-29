@@ -96,6 +96,31 @@ class Throttler {
 	}
 
 	/**
+	 * Clear recorded failures for this exact (action, ip, identifier) after a
+	 * successful authentication, so a legitimate user who mistyped their
+	 * password a few times isn't still throttled on their next, correct
+	 * login.
+	 *
+	 * Deliberately scoped to this one identifier only - it must NOT clear
+	 * other identifiers' failure history from the same IP. Otherwise, during
+	 * a password-spraying attack, a single lucky guess would reset the
+	 * whole origin's attempt count via countAttemptsByIp() and let the
+	 * attacker continue against the remaining accounts unthrottled.
+	 *
+	 * @param string $action
+	 * @param string $ip
+	 * @param string $identifier
+	 */
+	public function resetDelay($action, $ip, $identifier) {
+		$qb = $this->db->getQueryBuilder();
+		$qb->delete(self::DB_TABLE)
+			->where($qb->expr()->eq('action', $qb->createNamedParameter($action)))
+			->andWhere($qb->expr()->eq('ip', $qb->createNamedParameter($ip)))
+			->andWhere($qb->expr()->eq('identifier', $qb->createNamedParameter($identifier)));
+		$qb->execute();
+	}
+
+	/**
 	 * How many seconds the caller should be made to wait right now, based on
 	 * failed attempts for this exact IP + identifier combination within the
 	 * lookback window.
@@ -106,7 +131,10 @@ class Throttler {
 	 * @return int seconds, 0 if no delay is warranted
 	 */
 	public function getDelay($action, $ip, $identifier) {
-		$count = $this->countAttempts($action, $ip, $identifier);
+		$count = \max(
+			$this->countAttempts($action, $ip, $identifier),
+			$this->countAttemptsByIp($action, $ip)
+		);
 		if ($count === 0) {
 			return 0;
 		}
@@ -146,6 +174,33 @@ class Throttler {
 			->where($qb->expr()->eq('action', $qb->createNamedParameter($action)))
 			->andWhere($qb->expr()->eq('ip', $qb->createNamedParameter($ip)))
 			->andWhere($qb->expr()->eq('identifier', $qb->createNamedParameter($identifier)))
+			->andWhere($qb->expr()->gt('occurred', $qb->createNamedParameter(
+				$this->timeFactory->getTime() - self::LOOKBACK_SECONDS,
+				IQueryBuilder::PARAM_INT
+			)));
+		$result = $qb->execute();
+		$row = $result->fetchAssociative();
+		$result->free();
+
+		return $row ? (int)$row['num_attempts'] : 0;
+	}
+
+	/**
+	 * Failed attempts for this action from this exact IP, regardless of
+	 * which identifier was targeted. Closes the horizontal password-spraying
+	 * gap: countAttempts() alone only ever sees 0/1 per (ip, identifier)
+	 * pair when one IP tries many different accounts with the same guess.
+	 *
+	 * @param string $action
+	 * @param string $ip
+	 * @return int
+	 */
+	private function countAttemptsByIp($action, $ip) {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select([$qb->createFunction('count(*) as `num_attempts`')])
+			->from(self::DB_TABLE)
+			->where($qb->expr()->eq('action', $qb->createNamedParameter($action)))
+			->andWhere($qb->expr()->eq('ip', $qb->createNamedParameter($ip)))
 			->andWhere($qb->expr()->gt('occurred', $qb->createNamedParameter(
 				$this->timeFactory->getTime() - self::LOOKBACK_SECONDS,
 				IQueryBuilder::PARAM_INT
