@@ -56,6 +56,24 @@ class Throttler {
 	 */
 	private const MAX_DELAY_SECONDS = 30;
 
+	/**
+	 * Attempts within a subnet bucket (see computeIpBucket()) before that
+	 * dimension starts adding delay. Deliberately higher than the per-IP
+	 * threshold: a /24 or /64 bucket can contain many unrelated legitimate
+	 * users (NAT, corporate gateway, mobile carrier) whose combined,
+	 * unrelated failed logins must not immediately throttle the whole
+	 * subnet.
+	 */
+	private const BUCKET_FREE_ATTEMPTS = 20;
+
+	/**
+	 * Upper bound for the subnet-bucket dimension, deliberately lower than
+	 * MAX_DELAY_SECONDS: a false positive here punishes bystanders sharing
+	 * the origin's subnet, not just the attacker, so the worst case must be
+	 * less severe than the per-IP cap.
+	 */
+	private const BUCKET_MAX_DELAY_SECONDS = 10;
+
 	/** @var IDBConnection */
 	private $db;
 
@@ -90,6 +108,7 @@ class Throttler {
 				'action' => $qb->createNamedParameter($action),
 				'occurred' => $qb->createNamedParameter($this->timeFactory->getTime(), IQueryBuilder::PARAM_INT),
 				'ip' => $qb->createNamedParameter($ip),
+				'ip_bucket' => $qb->createNamedParameter($this->computeIpBucket($ip)),
 				'identifier' => $qb->createNamedParameter($identifier),
 			]);
 		$qb->execute();
@@ -131,16 +150,31 @@ class Throttler {
 	 * @return int seconds, 0 if no delay is warranted
 	 */
 	public function getDelay($action, $ip, $identifier) {
-		$count = \max(
+		$exactCount = \max(
 			$this->countAttempts($action, $ip, $identifier),
 			$this->countAttemptsByIp($action, $ip)
 		);
-		if ($count === 0) {
+		$bucketCount = $this->countAttemptsByIpBucket($action, $ip);
+
+		return \max(
+			$this->exponentialDelay($exactCount, self::MAX_DELAY_SECONDS),
+			$this->exponentialDelay($bucketCount - self::BUCKET_FREE_ATTEMPTS, self::BUCKET_MAX_DELAY_SECONDS)
+		);
+	}
+
+	/**
+	 * 1, 2, 4, 8, ... seconds for each attempt past the first, capped at
+	 * $cap so a single request can't tie up a worker for longer than that.
+	 *
+	 * @param int $count
+	 * @param int $cap
+	 * @return int seconds, 0 if $count is 0 or negative
+	 */
+	private function exponentialDelay($count, $cap) {
+		if ($count <= 0) {
 			return 0;
 		}
-		// 1, 2, 4, 8, ... seconds, capped so a single request can't tie up
-		// a worker for longer than MAX_DELAY_SECONDS.
-		return \min(self::MAX_DELAY_SECONDS, (int)(2 ** \min($count, 20)));
+		return \min($cap, (int)(2 ** \min($count, 20)));
 	}
 
 	/**
@@ -210,6 +244,88 @@ class Throttler {
 		$result->free();
 
 		return $row ? (int)$row['num_attempts'] : 0;
+	}
+
+	/**
+	 * Failed attempts for this action from ANY IP in the same subnet
+	 * bucket as $ip (see computeIpBucket()), regardless of exact IP or
+	 * targeted identifier. Closes the gap countAttemptsByIp() leaves open:
+	 * an attacker rotating through multiple IPs of the same /24 (IPv4) or
+	 * /64 (IPv6) - e.g. a botnet or cloud egress pool - would otherwise
+	 * never accumulate enough failures on any single IP to be throttled.
+	 *
+	 * @param string $action
+	 * @param string $ip
+	 * @return int
+	 */
+	private function countAttemptsByIpBucket($action, $ip) {
+		$bucket = $this->computeIpBucket($ip);
+		if ($bucket === null) {
+			return 0;
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select([$qb->createFunction('count(*) as `num_attempts`')])
+			->from(self::DB_TABLE)
+			->where($qb->expr()->eq('action', $qb->createNamedParameter($action)))
+			->andWhere($qb->expr()->eq('ip_bucket', $qb->createNamedParameter($bucket)))
+			->andWhere($qb->expr()->gt('occurred', $qb->createNamedParameter(
+				$this->timeFactory->getTime() - self::LOOKBACK_SECONDS,
+				IQueryBuilder::PARAM_INT
+			)));
+		$result = $qb->execute();
+		$row = $result->fetchAssociative();
+		$result->free();
+
+		return $row ? (int)$row['num_attempts'] : 0;
+	}
+
+	/**
+	 * Normalize an IP address to a subnet bucket key: /24 for IPv4, /64 for
+	 * IPv6. Computed via inet_pton()-based binary masking rather than
+	 * string-prefix matching on the textual address - the same IPv6 /64 can
+	 * be written multiple different ways (:: compression, leading zeros),
+	 * so string comparison would silently miss matches.
+	 *
+	 * @param string $ip
+	 * @return string|null canonical bucket key, or null if $ip cannot be
+	 *                      parsed as an IPv4/IPv6 address - callers treat
+	 *                      that as "no bucket dimension" rather than
+	 *                      throwing, since a malformed remote address must
+	 *                      never break login.
+	 */
+	private function computeIpBucket($ip) {
+		$packed = @\inet_pton($ip);
+		if ($packed === false) {
+			return null;
+		}
+		$maskBits = \strlen($packed) === 4 ? 24 : 64;
+		$masked = $packed & $this->prefixMask(\strlen($packed), $maskBits);
+		return \bin2hex($masked) . '/' . $maskBits;
+	}
+
+	/**
+	 * Build a $totalBytes-long binary mask with the leading $maskBits bits
+	 * set to 1 and the rest 0, for ANDing with a packed inet_pton() address.
+	 *
+	 * @param int $totalBytes
+	 * @param int $maskBits
+	 * @return string binary mask, same length as $totalBytes
+	 */
+	private function prefixMask($totalBytes, $maskBits) {
+		$mask = '';
+		$fullBytes = \intdiv($maskBits, 8);
+		$remainder = $maskBits % 8;
+		for ($i = 0; $i < $totalBytes; $i++) {
+			if ($i < $fullBytes) {
+				$mask .= "\xFF";
+			} elseif ($i === $fullBytes && $remainder > 0) {
+				$mask .= \chr((0xFF << (8 - $remainder)) & 0xFF);
+			} else {
+				$mask .= "\x00";
+			}
+		}
+		return $mask;
 	}
 
 	/**
