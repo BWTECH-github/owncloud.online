@@ -152,6 +152,87 @@ class ThrottlerTest extends TestCase {
 	}
 
 	/**
+	 * Password-spraying protection across a subnet: an attacker rotating
+	 * through many different IPv4 addresses in the same /24 must still be
+	 * detected, even though no single IP alone accumulates enough attempts
+	 * to trip the per-IP dimension.
+	 */
+	public function testSubnetSprayAcrossMultipleIpv4AddressesInSame24IsThrottled() {
+		for ($i = 1; $i <= 25; $i++) {
+			$this->throttler->registerAttempt('login', "10.0.0.{$i}", "victim{$i}");
+		}
+
+		$this->assertGreaterThan(
+			0,
+			$this->throttler->getDelay('login', '10.0.0.250', 'frank'),
+			'a fresh IP/identifier pair in the same /24 must still be throttled by the subnet dimension'
+		);
+		$this->assertSame(0, $this->throttler->getDelay('login', '10.0.1.1', 'frank'), 'different /24 stays unaffected');
+		$this->assertSame(0, $this->throttler->getDelay('share_password', '10.0.0.250', 'frank'), 'unrelated action stays unaffected');
+	}
+
+	/**
+	 * Same protection for IPv6, bucketed on /64 instead of /24.
+	 */
+	public function testSubnetSprayAcrossMultipleIpv6AddressesInSame64IsThrottled() {
+		for ($i = 1; $i <= 25; $i++) {
+			$this->throttler->registerAttempt('login', \sprintf('2001:db8:1234:5678::%x', $i), "victim{$i}");
+		}
+
+		$this->assertGreaterThan(
+			0,
+			$this->throttler->getDelay('login', '2001:db8:1234:5678::ffff', 'frank'),
+			'a fresh IPv6 address in the same /64 must still be throttled by the subnet dimension'
+		);
+		$this->assertSame(0, $this->throttler->getDelay('login', '2001:db8:1234:9999::1', 'frank'), 'different /64 stays unaffected');
+	}
+
+	/**
+	 * inet_pton()-based masking must treat two textually different but
+	 * network-identical IPv6 addresses (:: compression + leading zeros vs
+	 * fully expanded) as the SAME bucket - a naive string-prefix comparison
+	 * on the raw address would not.
+	 */
+	public function testIpv6BucketIsCanonicalRegardlessOfCompressionStyle() {
+		for ($i = 1; $i <= 13; $i++) {
+			$this->throttler->registerAttempt('login', "2001:db8:0:42::{$i}", "compressed{$i}");
+		}
+		for ($i = 1; $i <= 13; $i++) {
+			$suffix = \sprintf('%04x', $i);
+			$this->throttler->registerAttempt('login', "2001:0db8:0000:0042:0000:0000:0000:{$suffix}", "expanded{$i}");
+		}
+
+		$this->assertGreaterThan(
+			0,
+			$this->throttler->getDelay('login', '2001:db8:0:42::ffff', 'frank'),
+			'compressed and expanded forms of the same /64 must aggregate into one bucket'
+		);
+	}
+
+	/**
+	 * A malformed/unparseable remote address must not crash the throttle
+	 * path - it just falls back to no bucket dimension, while the exact-IP
+	 * dimension keeps working as before.
+	 */
+	public function testMalformedIpDoesNotCrashRegisterAttempt() {
+		$this->throttler->registerAttempt('login', 'not-an-ip', 'alice');
+		$this->assertGreaterThan(0, $this->throttler->getDelay('login', 'not-an-ip', 'alice'));
+	}
+
+	/**
+	 * The subnet-bucket dimension has its own, lower cap than the per-IP
+	 * dimension - a false positive here punishes bystanders sharing the
+	 * origin's subnet, not just the attacker.
+	 */
+	public function testBucketDimensionCapIsLowerThanPerIpCap() {
+		for ($i = 1; $i <= 100; $i++) {
+			$this->throttler->registerAttempt('login', "10.0.0.{$i}", "victim{$i}");
+		}
+
+		$this->assertSame(10, $this->throttler->getDelay('login', '10.0.0.250', 'frank'));
+	}
+
+	/**
 	 * cleanupOldAttempts() must remove only rows outside the lookback window and
 	 * leave live-window rows (and thus the current delay) intact.
 	 */
