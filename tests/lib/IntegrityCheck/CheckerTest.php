@@ -86,6 +86,43 @@ class CheckerTest extends TestCase {
 		);
 	}
 
+	public function testHasPassedCheckIsTrueOnUnsignedChannel() {
+		// On an unsigned distribution channel (e.g. owncloud.online's 'bwtech')
+		// the check is not enforced, so hasPassedCheck() must report success
+		// even if an earlier enforced run left a failure cached - otherwise the
+		// admin "Security & setup warnings" panel keeps a stale code-integrity
+		// warning that config nor a re-check can clear.
+		$this->environmentHelper
+			->expects($this->once())
+			->method('getChannel')
+			->willReturn('bwtech');
+		$this->config
+			->method('getAppValue')
+			->willReturn(\json_encode([
+				'core' => ['EXCEPTION' => ['class' => 'OC\IntegrityCheck\Exceptions\MissingSignatureException', 'message' => 'Signature data not found.']],
+			]));
+
+		$this->assertTrue($this->checker->hasPassedCheck());
+	}
+
+	public function testHasPassedCheckReflectsStoredFailureWhenEnforced() {
+		$this->environmentHelper
+			->method('getChannel')
+			->willReturn('stable');
+		$this->config
+			->method('getSystemValue')
+			->will($this->returnValueMap([
+				['integrity.check.disabled', false, false],
+			]));
+		$this->config
+			->method('getAppValue')
+			->willReturn(\json_encode([
+				'core' => ['EXCEPTION' => ['class' => 'OC\IntegrityCheck\Exceptions\MissingSignatureException', 'message' => 'Signature data not found.']],
+			]));
+
+		$this->assertFalse($this->checker->hasPassedCheck());
+	}
+
 	/**
 	 */
 	public function testWriteAppSignatureOfNotExistingApp() {
