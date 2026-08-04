@@ -272,6 +272,14 @@ class SyncService {
 					'User backend ' .\get_class($backend)." provided no home for <$uid>",
 					['app' => self::class]
 				);
+			} else {
+				// A backend-supplied absolute home (e.g. an LDAP homeDirectory
+				// attribute) must resolve inside the data directory or one of the
+				// explicitly allowed base directories. Otherwise a hostile or
+				// misconfigured backend could point a user's files at the
+				// application code tree and turn a directory listing into write
+				// access to the PHP files - a remote-code-execution path.
+				$this->verifyHomeLocation($home, $uid, \get_class($backend));
 			}
 			// This will set the home if not provided by the backend
 			$a->setHome($home);
@@ -282,6 +290,99 @@ class SyncService {
 				);
 			}
 		}
+	}
+
+	/**
+	 * Ensure a backend-provided absolute home directory resolves inside the data
+	 * directory or one of the base directories listed in the 'user.home_base_dirs'
+	 * system config. '..' segments are collapsed and, where the path already
+	 * exists, symlinks are resolved before the check, so neither can be used to
+	 * escape an allowed base.
+	 *
+	 * @param string $home     the absolute home path returned by the backend
+	 * @param string $uid
+	 * @param string $backendClass
+	 * @throws \InvalidArgumentException when $home is outside every allowed base
+	 */
+	private function verifyHomeLocation($home, $uid, $backendClass) {
+		$allowedBases = [$this->config->getSystemValue('datadirectory', \OC::$SERVERROOT . '/data')];
+		foreach ((array)$this->config->getSystemValue('user.home_base_dirs', []) as $baseDir) {
+			// only absolute base directories are meaningful, ignore relative entries
+			if (\is_string($baseDir) && isset($baseDir[0]) && $baseDir[0] === '/') {
+				$allowedBases[] = $baseDir;
+			}
+		}
+
+		// Two forms of the home have to stay inside an allowed base: the '..'
+		// resolved path (catches traversal on a not-yet-existing home) and, when
+		// the home already exists, its realpath (catches symlink escapes).
+		$candidates = [$this->canonicalizePath($home)];
+		$realHome = @\realpath($home);
+		if ($realHome !== false) {
+			$candidates[] = \str_replace('\\', '/', $realHome);
+		}
+
+		foreach ($candidates as $candidate) {
+			if (!$this->isWithinAllowedBase($candidate, $allowedBases)) {
+				throw new \InvalidArgumentException(
+					"User backend $backendClass returned home <$home> for <$uid> outside the data directory and any configured user.home_base_dirs"
+				);
+			}
+		}
+	}
+
+	/**
+	 * @param string $candidatePath an already resolved (canonical or realpath) path
+	 * @param string[] $allowedBases
+	 * @return bool whether $candidatePath equals or sits below one of the bases
+	 */
+	private function isWithinAllowedBase($candidatePath, array $allowedBases) {
+		$candidatePath = \rtrim($candidatePath, '/');
+		foreach ($allowedBases as $baseDir) {
+			// compare against the '..' resolved base and, if it exists on disk,
+			// its realpath too, so the check works whichever form the candidate is
+			$baseForms = [$this->canonicalizePath($baseDir)];
+			$realBase = @\realpath($baseDir);
+			if ($realBase !== false) {
+				$baseForms[] = \str_replace('\\', '/', $realBase);
+			}
+			foreach ($baseForms as $base) {
+				$base = \rtrim($base, '/');
+				if ($base === '' || $base === '/') {
+					continue;
+				}
+				if ($candidatePath === $base || \strpos($candidatePath, $base . '/') === 0) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Resolve '.' and '..' segments in a path. Filesystem::normalizePath only
+	 * cleans slashes and '.' but keeps '..', and realpath() cannot help for a
+	 * home that does not exist yet - so a plain prefix comparison would be fooled
+	 * by a literal '<datadir>/../..' prefix.
+	 *
+	 * @param string $path
+	 * @return string
+	 */
+	private function canonicalizePath($path) {
+		$normalized = \OC\Files\Filesystem::normalizePath((string)$path, false);
+		$isAbsolute = isset($normalized[0]) && $normalized[0] === '/';
+		$result = [];
+		foreach (\explode('/', $normalized) as $part) {
+			if ($part === '' || $part === '.') {
+				continue;
+			}
+			if ($part === '..') {
+				\array_pop($result);
+			} else {
+				$result[] = $part;
+			}
+		}
+		return ($isAbsolute ? '/' : '') . \implode('/', $result);
 	}
 
 	/**

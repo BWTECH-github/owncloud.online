@@ -127,6 +127,38 @@ class SyncServiceTest extends TestCase {
 		static::invokePrivate($s, 'syncHome', [$account, $backend]);
 	}
 
+	private function configWithBaseDirs(array $baseDirs) {
+		$this->config->method('getSystemValue')->willReturnMap([
+			['datadirectory', \OC::$SERVERROOT . '/data', '/var/www/owncloud/data'],
+			['user.home_base_dirs', [], $baseDirs],
+		]);
+		return new SyncService($this->config, $this->logger, $this->mapper);
+	}
+
+	public function testVerifyHomeLocationAcceptsHomeInsideDataDir() {
+		$s = $this->configWithBaseDirs([]);
+		static::invokePrivate($s, 'verifyHomeLocation', ['/var/www/owncloud/data/alice', 'alice', 'TestBackend']);
+		$this->addToAssertionCount(1); // no exception thrown
+	}
+
+	public function testVerifyHomeLocationRejectsHomeOutsideDataDir() {
+		$s = $this->configWithBaseDirs([]);
+		$this->expectException(\InvalidArgumentException::class);
+		static::invokePrivate($s, 'verifyHomeLocation', ['/var/www/owncloud/apps/evil', 'alice', 'TestBackend']);
+	}
+
+	public function testVerifyHomeLocationRejectsTraversalOutsideDataDir() {
+		$s = $this->configWithBaseDirs([]);
+		$this->expectException(\InvalidArgumentException::class);
+		static::invokePrivate($s, 'verifyHomeLocation', ['/var/www/owncloud/data/../apps/evil', 'alice', 'TestBackend']);
+	}
+
+	public function testVerifyHomeLocationAcceptsConfiguredBaseDir() {
+		$s = $this->configWithBaseDirs(['/srv/homes']);
+		static::invokePrivate($s, 'verifyHomeLocation', ['/srv/homes/bob', 'bob', 'TestBackend']);
+		$this->addToAssertionCount(1); // no exception thrown
+	}
+
 	/**
 	 * Pass in a backend that has new users anc check that they accounts are inserted
 	 */

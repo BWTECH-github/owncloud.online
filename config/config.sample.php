@@ -87,6 +87,17 @@ $CONFIG = [
 'datadirectory' => '/var/www/owncloud/data',
 
 /**
+ * Additional base directories that a user backend (for example user_ldap via the
+ * `homeDirectory` attribute) is allowed to place a user home in, besides the
+ * `datadirectory`. Each entry must be an absolute path. A backend-provided home
+ * that does not resolve inside the `datadirectory` or one of these bases is
+ * rejected, so a hostile or misconfigured backend cannot point a user's files at
+ * the application code tree. Empty by default (only the `datadirectory` is
+ * allowed). Only affects accounts that do not yet have a home stored.
+ */
+'user.home_base_dirs' => [],
+
+/**
  * Define the directory where the crash logs will be stored
  * By default, this will be the same as the one configured as "datadirectory".
  * The directory MUST EXIST and be WRITABLE by the web server.
