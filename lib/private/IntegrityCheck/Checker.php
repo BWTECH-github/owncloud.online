@@ -448,6 +448,18 @@ class Checker {
 	 * @return bool
 	 */
 	public function hasPassedCheck() {
+		// When the code check is not enforced - an unsigned distribution channel
+		// (e.g. 'bwtech') or integrity.check.disabled - there is no meaningful
+		// failure to report. Without this guard a result cached from an earlier
+		// enforced run (typically an upgrade performed before the instance moved
+		// onto an unsigned channel) keeps the admin "Security & setup warnings"
+		// panel showing a code-integrity warning that the administrator can
+		// neither silence via config nor re-run away, because a non-enforced
+		// re-check returns early without rewriting the stored results.
+		if (!$this->isCodeCheckEnforced()) {
+			return true;
+		}
+
 		$results = $this->getResults();
 		if (empty($results)) {
 			return true;
