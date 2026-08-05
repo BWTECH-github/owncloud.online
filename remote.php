@@ -15,7 +15,7 @@
  * @copyright Copyright (c) 2026, BW-Tech GmbH
  *
  * Modified by BW-Tech GmbH on 2026-08-05.
- * Changes: fix(security): Information disclosure via the WebDAV error path 
+ * Changes: fix(security): Information disclosure via the WebDAV error path
  * Changes: refactor(security): Null check does not match the actual return value (minor robustness issue)
  *
  * @license AGPL-3.0
