@@ -12,6 +12,12 @@
  * @author Vincent Petry <pvince81@owncloud.com>
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-08-05.
+ * Changes: fix(security): Information disclosure via the WebDAV error path 
+ * Changes: refactor(security): Null check does not match the actual return value (minor robustness issue)
+ *
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -63,9 +69,12 @@ function handleException($e) {
 						throw new \Sabre\DAV\Exception\NotFound($e->getMessage());
 				}
 			}
-			$class = \get_class($e);
-			$msg = $e->getMessage();
-			throw new ServiceUnavailable("$class: $msg");
+			if (\OC::$server->getSystemConfig()->getValue('debug', false)) {
+				$class = \get_class($e);
+				$msg = \OC\Log::replaceSensitiveData($e->getMessage());
+				throw new ServiceUnavailable("$class: $msg");
+			}
+			throw new ServiceUnavailable('Internal Server Error');
 		});
 		$server->exec();
 	} else {
@@ -130,7 +139,7 @@ try {
 
 	$request = \OC::$server->getRequest();
 	$pathInfo = $request->getPathInfo();
-	if ($pathInfo === false || $pathInfo === '') {
+	if ($pathInfo === false || $pathInfo === '' || $pathInfo === null) {
 		throw new RemoteException('Path not found', OC_Response::STATUS_NOT_FOUND);
 	}
 	if (!$pos = \strpos($pathInfo, '/', 1)) {
@@ -139,11 +148,7 @@ try {
 	$service=\substr($pathInfo, 1, $pos-1);
 
 	$file = resolveService($service);
-
-	if ($file === null) {
-		throw new RemoteException('Path not found', OC_Response::STATUS_NOT_FOUND);
-	}
-
+	
 	if (\strpos($file, '../') !== false || \strpos($file, '/..') !== false) {
 		throw new RemoteException('Path not allowed');
 	}
@@ -174,7 +179,7 @@ try {
 				throw new RemoteException('App not installed: ' . $app);
 			}
 			OC_App::loadApp($app);
-			$file = OC_App::getAppPath($app) .'/'. $parts[1];
+			$file = OC_App::getAppPath($app) .'/'. ($parts[1] ?? '');
 			break;
 	}
 	$baseuri = OC::$WEBROOT . '/remote.php/'.$service.'/';
