@@ -1,0 +1,13 @@
+Security: Prevent user enumeration via the login form
+
+The login form derived the visibility of the "Reset it?" link from the user
+backend's canChangePassword() capability, which made the response for an
+existing account differ from the response for a non-existing one. The
+capability check has been removed; the link is shown uniformly.
+
+Unlike upstream, the submitted login name is echoed back verbatim and is
+never resolved against the user backend, because resolving it would echo the
+canonical spelling for existing accounts only and thereby reintroduce the
+enumeration oracle on an unthrottled GET request.
+
+https://github.com/owncloud/core/pull/41586

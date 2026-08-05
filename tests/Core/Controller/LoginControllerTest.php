@@ -4,6 +4,11 @@
  * @author Semih Serhat Karakaya <karakayasemi@itu.edu.tr>
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-08-05.
+ * Changes: fix(security): show the password reset link uniformly on the login form
+ * 
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -333,31 +338,7 @@ class LoginControllerTest extends TestCase {
 		$this->assertEquals($expectedResponse, $this->loginController->showLoginForm('', '', ''));
 	}
 
-	/**
-	 * @return array
-	 */
-	public function passwordResetDataProvider() {
-		return [
-			[
-				true,
-				true,
-			],
-			[
-				false,
-				false,
-			],
-		];
-	}
-
-	/**
-	 * @dataProvider passwordResetDataProvider
-	 * @param $canChangePassword
-	 * @param $expectedResult
-	 */
-	public function testShowLoginFormWithPasswordResetOption(
-		$canChangePassword,
-		$expectedResult
-	) {
+	public function testShowLoginFormWithPasswordResetOptionAlwaysTrue() {
 		$this->userSession
 			->expects($this->once())
 			->method('isLoggedIn')
@@ -370,16 +351,9 @@ class LoginControllerTest extends TestCase {
 				['login.alternatives', '', ''],
 				['strict_login_enforced', false],
 			]);
-		$user = $this->createMock(IUser::class);
-		$user
-			->expects($this->once())
-			->method('canChangePassword')
-			->willReturn($canChangePassword);
 		$this->userManager
-			->expects($this->exactly(2))
-			->method('get')
-			->with('LdapUser')
-			->willReturn($user);
+			->expects($this->never())
+			->method('get');
 
 		$this->licenseManager->method('getLicenseMessageFor')
 			->willReturn([
@@ -393,7 +367,7 @@ class LoginControllerTest extends TestCase {
 				'messages' => [],
 				'loginName' => 'LdapUser',
 				'user_autofocus' => false,
-				'canResetPassword' => $expectedResult,
+				'canResetPassword' => true,
 				'alt_login' => [],
 				'rememberLoginAllowed' => \OC_Util::rememberLoginAllowed(),
 				'rememberLoginState' => 0,
@@ -418,16 +392,9 @@ class LoginControllerTest extends TestCase {
 				['login.alternatives', '', ''],
 				['strict_login_enforced', false],
 			]);
-		$user = $this->createMock(IUser::class);
-		$user
-			->expects($this->once())
-			->method('canChangePassword')
-			->willReturn(false);
 		$this->userManager
-			->expects($this->exactly(2))
-			->method('get')
-			->with('0')
-			->willReturn($user);
+			->expects($this->never())
+			->method('get');
 
 		$this->licenseManager->method('getLicenseMessageFor')
 			->willReturn([
@@ -441,7 +408,7 @@ class LoginControllerTest extends TestCase {
 				'messages' => [],
 				'loginName' => '0',
 				'user_autofocus' => false,
-				'canResetPassword' => false,
+				'canResetPassword' => true,
 				'alt_login' => [],
 				'rememberLoginAllowed' => \OC_Util::rememberLoginAllowed(),
 				'rememberLoginState' => 0,
@@ -451,6 +418,37 @@ class LoginControllerTest extends TestCase {
 			'guest'
 		);
 		$this->assertEquals($expectedResponse, $this->loginController->showLoginForm('0', '', ''));
+	}
+
+	/**
+	 * OP-158/SEC-33: The login form response must not differ for an existing and a
+	 * non-existing account - neither in content nor by querying the user backend at all.
+	 */
+	public function testShowLoginFormDoesNotQueryUserBackend() {
+		$this->userSession
+			->expects($this->once())
+			->method('isLoggedIn')
+			->willReturn(false);
+		$this->config
+			->expects($this->exactly(3))
+			->method('getSystemValue')
+			->willReturnMap([
+				['lost_password_link', false],
+				['login.alternatives', '', ''],
+				['strict_login_enforced', false],
+			]);
+		$this->userManager
+			->expects($this->never())
+			->method('get');
+
+		$this->licenseManager->method('getLicenseMessageFor')
+			->willReturn([
+				'license_state' => ILicenseManager::LICENSE_STATE_MISSING
+			]);
+
+		$params = $this->loginController->showLoginForm('fRANK', '', '')->getParams();
+		$this->assertTrue($params['canResetPassword']);
+		$this->assertSame('fRANK', $params['loginName'], 'input must be echoed back unchanged');
 	}
 
 	public function testShowLoginFormWithApacheBackend() {
