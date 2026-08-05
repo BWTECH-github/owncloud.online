@@ -11,7 +11,7 @@
  *
  * Modified by BW-Tech GmbH on 2026-08-05.
  * Changes: fix(security): show the password reset link uniformly on the login form
- * 
+ *
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
