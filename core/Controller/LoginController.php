@@ -7,6 +7,11 @@
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-08-05.
+ * Changes: fix(security): show the password reset link uniformly on the login form
+ * 
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -161,35 +166,17 @@ class LoginController extends Controller {
 		}
 
 		$parameters['messages'] = $messages;
-		if ($user !== null && $user !== '') {
-			// if the user exists, replace the userid with the username, e.g. for LDAP accounts
-			// that have the owncloud internal username set to a uuid.
-			$u = $this->userManager->get($user);
-			if ($u !== null) {
-				$parameters['loginName'] = $u->getUserName();
-			}
-			if (!\is_string($parameters['loginName']) || $parameters['loginName'] === '') {
-				$parameters['loginName'] = $user;
-			}
-			$parameters['user_autofocus'] = false;
-		} else {
-			$parameters['loginName'] = '';
-			$parameters['user_autofocus'] = true;
-		}
 		if (!empty($redirect_url)) {
 			$parameters['redirect_url'] = $redirect_url;
 		}
 
+		// The reset link is shown unconditionally. Deriving its visibility from
+		// canChangePassword() would make the response for an existing account differ
+		// from the response for a non-existing one and thus allow unauthenticated
+		// account enumeration (upstream owncloud/core#41586).
 		$parameters['canResetPassword'] = true;
 		$parameters['resetPasswordLink'] = $this->config->getSystemValue('lost_password_link', '');
-		if (!$parameters['resetPasswordLink']) {
-			if ($user !== null && $user !== '') {
-				$userObj = $this->userManager->get($user);
-				if ($userObj instanceof IUser) {
-					$parameters['canResetPassword'] = $userObj->canChangePassword();
-				}
-			}
-		} elseif ($parameters['resetPasswordLink'] === 'disabled') {
+		if ($parameters['resetPasswordLink'] === 'disabled') {
 			$parameters['canResetPassword'] = false;
 		}
 
@@ -202,6 +189,10 @@ class LoginController extends Controller {
 		$parameters['rememberLoginAllowed'] = OC_Util::rememberLoginAllowed();
 		$parameters['rememberLoginState'] = !empty($remember_login) ? $remember_login : 0;
 
+		// Echo back the submitted login name verbatim and never resolve it against the
+		// user backend: resolving it (e.g. uid -> username for LDAP accounts) would echo
+		// the canonical spelling for existing accounts and the raw input for unknown
+		// ones, which is an enumeration oracle on a plain GET request.
 		if ($user !== null && $user !== '') {
 			$parameters['loginName'] = $user;
 			$parameters['user_autofocus'] = false;
