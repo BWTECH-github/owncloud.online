@@ -1,0 +1,17 @@
+Change: New "allow_subadmins" option and generic external storage status messages
+
+Two changes from the security batch are visible to administrators:
+
+The group administrator ("subadmin") feature can be switched off with the new
+system configuration option "allow_subadmins". It defaults to true in
+ownCloud.online, so an update never silently takes permissions away from an
+existing installation; upstream ownCloud disables the feature by default from v11
+on. With the option set to false nobody is treated as a group administrator any
+more, while existing assignments stay in the database. Real administrators are not
+affected.
+
+The status column of an external storage no longer shows the raw error of a failed
+connection test. The message contained the resolved internal address, the port and
+the difference between an unknown host and a refused connection, which let a user
+who may create external storages map the internal network. The full error goes to
+the server log, the storage shows a generic message.
