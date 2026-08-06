@@ -1,6 +1,11 @@
 name: CI
 
 on:
+  # Manuell ausloesbar: waehrend einer GitHub-Actions-Stoerung werden
+  # push-Events teilweise gar nicht erst zu Laeufen verarbeitet. Ohne diesen
+  # Eintrag bleibt als einziger Ausweg ein kuenstlicher Commit, nur um die
+  # Pruefungen erneut anzustossen.
+  workflow_dispatch:
   push:
     branches:
       - main
