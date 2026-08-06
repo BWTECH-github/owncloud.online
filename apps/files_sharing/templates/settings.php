@@ -6,7 +6,7 @@
  * @copyright Copyright (c) 2026, BW-Tech GmbH
  *
  * Modified by BW-Tech GmbH on 2026-08-06.
- * Changes: style(frontend): Accessibility at ownCloud.online - WACG 2.1 AA Check
+ * Changes: style(frontend): Accessibility at ownCloud.online - WCAG 2.1 AA Check
  *
  * @license AGPL-3.0
  *
