@@ -10,6 +10,7 @@ namespace OCA\OcoMcp\Tools;
 use Mcp\Exception\ToolCallException;
 use OCP\Constants;
 use OCP\Files\IRootFolder;
+use OCP\Files\Node;
 use OCP\IURLGenerator;
 use OCP\Share;
 use OCP\Share\IManager as IShareManager;
@@ -57,7 +58,7 @@ class SharesTool {
 	public function list(string $path = '', int $limit = 100): array {
 		$node = null;
 		if ($path !== '') {
-			$node = $this->rootFolder->getUserFolder($this->userId)->get('/' . \ltrim($path, '/'));
+			$node = $this->node($path);
 		}
 		$limit = \max(1, \min($limit, 500));
 		$shares = [];
@@ -86,7 +87,7 @@ class SharesTool {
 	 */
 	public function createLink(string $path, string $password = '', int $permissions = Constants::PERMISSION_READ): array {
 		$this->assertWrite();
-		$node = $this->rootFolder->getUserFolder($this->userId)->get('/' . \ltrim($path, '/'));
+		$node = $this->node($path);
 		$share = $this->shareManager->newShare();
 		$share->setNode($node)
 			->setShareType(Share::SHARE_TYPE_LINK)
@@ -108,7 +109,7 @@ class SharesTool {
 	 */
 	public function createUser(string $path, string $share_with, int $permissions = Constants::PERMISSION_ALL): array {
 		$this->assertWrite();
-		$node = $this->rootFolder->getUserFolder($this->userId)->get('/' . \ltrim($path, '/'));
+		$node = $this->node($path);
 		$share = $this->shareManager->newShare();
 		$share->setNode($node)
 			->setShareType(Share::SHARE_TYPE_USER)
@@ -132,6 +133,13 @@ class SharesTool {
 		}
 		$this->shareManager->deleteShare($share);
 		return ['deleted' => $share_id];
+	}
+
+	/**
+	 * Resolve a client path through the shared strict gate (see PathHelper).
+	 */
+	private function node(string $path): Node {
+		return PathHelper::node($this->rootFolder->getUserFolder($this->userId), $path);
 	}
 
 	private function describe(IShare $share): array {

@@ -68,7 +68,8 @@ class CommentsTool {
 	}
 
 	private function fileId(string $path): int {
-		return $this->rootFolder->getUserFolder($this->userId)->get('/' . \ltrim($path, '/'))->getId();
+		// Immer ueber den gemeinsamen strikten Gate (siehe PathHelper), nie roh.
+		return PathHelper::node($this->rootFolder->getUserFolder($this->userId), $path)->getId();
 	}
 
 	private function describe(IComment $comment): array {

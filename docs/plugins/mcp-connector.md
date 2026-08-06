@@ -89,7 +89,7 @@ Mcp-Session-Id: f1fff858-70bc-49ed-bdfc-bed963d5b57b
 
 {"jsonrpc":"2.0","id":1,"result":{
   "protocolVersion":"2025-11-25",
-  "serverInfo":{"name":"owncloud.online","version":"1.0.1"},
+  "serverInfo":{"name":"owncloud.online","version":"1.0.3"},
   "instructions":"You are connected to an owncloud.online instance as user \"…\" …"}}
 ```
 
@@ -149,6 +149,15 @@ App-Passwort ist zulässig; dadurch bleibt eine aktive Zwei-Faktor-Pflicht erhal
 
 Fehler erscheinen als reguläre MCP-Tool-Fehler, die das Modell lesen
 und dem Nutzer erklären kann — kein stiller Abbruch.
+
+Pfade werden dabei **strikt** geprüft: `.` und `..` sind in jedem Tool
+verboten (nicht aufgelöst, sondern abgelehnt), und zwar bevor der Server
+überhaupt auf den Speicher zugreift. Fehler aus angebundenen Backends —
+allen voran `ai_ask` — erreichen den Client nur als kurze, allgemeine
+Meldung; die vollständige Ursache steht ausschließlich im
+[Serverprotokoll](../administration/logging.md). So können weder
+Gateway-Adressen noch Datenbankfehler oder interne Dateipfade über einen
+MCP-Client abfließen.
 
 ## 6. Werkzeug-Referenz (Tools)
 
@@ -329,6 +338,8 @@ vollständig aus ownCloud selbst.
 | `-32601` / „Tool not found" für `users_*` / `groups_*` | Diese Tools werden nur Administratoren angeboten. Als Admin verbinden. |
 | `Write access is disabled on this MCP connection.` / `This tool requires ownCloud administrator privileges.` | Interne Schutzmeldung, falls ein Tool doch direkt erreicht wird (z. B. veraltete Session nach dem Umschalten von `enable_write`). Client neu verbinden. |
 | Tool `ai_ask` fehlt | App `ai_documents` ist nicht installiert/aktiv — gewollt, kein Fehler. |
+| `AI query failed. Ask an administrator to check the server log.` | Absichtlich allgemein gehalten. Die echte Ursache (Gateway nicht erreichbar, Modell/Key falsch, Index leer) steht mit vollem Stacktrace unter `app: oco_mcp` im [Serverprotokoll](../administration/logging.md). |
+| `Relative path segments (".", "..") are forbidden.` | Der Client hat einen nicht-kanonischen Pfad geschickt. Pfade immer relativ zum Nutzer-Root und ohne `.`/`..` angeben. |
 | Client meldet SSE-/Stream-Fehler | Transport auf HTTP(-only) stellen; der Server bietet keinen SSE-GET-Stream an. |
 
 ## 13. Eigene Tools ergänzen

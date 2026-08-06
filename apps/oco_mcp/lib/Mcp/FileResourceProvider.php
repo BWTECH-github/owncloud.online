@@ -8,6 +8,8 @@
 namespace OCA\OcoMcp\Mcp;
 
 use Mcp\Exception\ResourceReadException;
+use Mcp\Exception\ToolCallException;
+use OCA\OcoMcp\Tools\PathHelper;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -77,16 +79,17 @@ class FileResourceProvider {
 	}
 
 	private function resolve(string $path): Node {
-		// Bewusst strikt (wie FilesTool::clean): '.'/'..' werden abgelehnt.
-		foreach (\explode('/', \str_replace('\\', '/', $path)) as $segment) {
-			if ($segment === '.' || $segment === '..') {
-				throw new ResourceReadException('Relative path segments (".", "..") are forbidden.');
-			}
+		// Derselbe strikte Gate wie in den Tools; nur die Exception-Klasse
+		// unterscheidet sich, weil die Resource-Seite des SDK eine eigene kennt.
+		try {
+			$clean = PathHelper::clean($path);
+		} catch (ToolCallException $e) {
+			throw new ResourceReadException($e->getMessage());
 		}
 		try {
-			return $this->userFolder()->get('/' . \ltrim($path, '/'));
+			return $this->userFolder()->get($clean);
 		} catch (NotFoundException | NotPermittedException) {
-			throw new ResourceReadException('Path not found or not accessible: ' . $path);
+			throw new ResourceReadException('Path not found or not accessible: ' . $clean);
 		}
 	}
 
