@@ -36,6 +36,15 @@ class EncryptionTest extends \Test\TestCase {
 
 	public function testGetPanel() {
 		$templateHtml = $this->panel->getPanel()->fetchPage();
-		$this->assertStringContainsString('com', $templateHtml);
+		$this->assertStringContainsString('id="encryptionAPI"', $templateHtml);
+		// Der Hilfe-Link muss auf die eigene Doku zeigen. Vorher pruefte dieser
+		// Test nur auf die Zeichenfolge "com" - das traf allein die
+		// doc.owncloud.com-URL und schlug daher fehl, sobald der Link korrekt auf
+		// docs.owncloud.online umgebogen wurde.
+		$this->assertStringContainsString(
+			\link_to_docs(\OCP\Constants::DOCS_ADMIN_ENCRYPTION),
+			$templateHtml
+		);
+		$this->assertStringNotContainsString('doc.owncloud.com', $templateHtml);
 	}
 }
