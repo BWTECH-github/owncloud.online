@@ -78,7 +78,13 @@ class FileChunkingTest extends \Test\TestCase {
 			return $store[$key] ?? null;
 		});
 		$cache->method('set')->willReturnCallback(function ($key, $value) use (&$store) {
-			$store[$key] = $value;
+			// OC\Cache\File streams a resource into its backing file, so the stored
+			// value is always bytes - the mock has to do the same, otherwise size()
+			// sees a resource and reports 0 for every chunk.
+			if (\is_resource($value)) {
+				$value = \stream_get_contents($value);
+			}
+			$store[$key] = (string)$value;
 			return true;
 		});
 		$cache->method('size')->willReturnCallback(function ($key) use (&$store) {
