@@ -1,0 +1,14 @@
+Bugfix: Make the chunked-upload transfer lock effective for all file names
+
+The lock that serialises the size accounting of a chunked upload was keyed on the
+raw chunk prefix, so its key grew with the file name. Both the database and the
+memcache locking provider reject keys longer than 64 characters, which meant the
+lock silently never engaged for longer file names - exactly the large uploads it
+is meant to protect. The variable part of the key is now hashed, so the key has a
+constant length.
+
+In addition, a disabled file locking ("filelocking.enabled" => false) hands out a
+locking provider that accepts every lock without locking anything. That was
+treated as a successfully held lock, so the size subtotal was written
+incrementally while nothing was serialised. Such installations now take the
+documented fallback and recount the subtotal instead.
