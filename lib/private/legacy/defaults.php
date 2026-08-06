@@ -69,7 +69,7 @@ class OC_Defaults {
 		$this->defaultiOSClientUrl = 'https://itunes.apple.com/de/app/owncloud-online/id1436996124?mt=8';
 		$this->defaultiTunesAppId = '1436996124';
 		$this->defaultAndroidClientUrl = 'https://play.google.com/store/apps/details?id=com.owncloud.android';
-		$this->defaultDocBaseUrl = 'https://doc.owncloud.com';
+		$this->defaultDocBaseUrl = 'https://docs.owncloud.online';
 		$this->defaultDocVersion = $version[0] . '.' . $version[1]; // used to generate doc links
 		$this->defaultSlogan = $this->l->t('Cloud storage made to trust.');
 		$this->defaultLogoClaim = '';
@@ -293,13 +293,35 @@ class OC_Defaults {
 			return $this->theme->buildDocLinkToKey($key);
 		}
 
-		if ($ocVersion) {
-			$version = $ocVersion;
-		} else {
-			$version = $this->defaultDocVersion;
-		}
+		// The owncloud.online documentation is a plain mkdocs site and has no
+		// upstream-style /server/<version>/go.php?to=<key> redirector, so the doc
+		// keys are mapped onto its own pages here. Anything without a dedicated
+		// page falls back to the documentation start page - a link that lands
+		// somewhere useful is always better than one that 404s.
+		$map = [
+			\OCP\Constants::DOCS_ADMIN_LOG_FILES => '/administration/logging/',
+			\OCP\Constants::DOCS_ADMIN_SECURITY => '/administration/security-hardening/',
+			\OCP\Constants::DOCS_ADMIN_PERFORMANCE => '/administration/performance/',
+			\OCP\Constants::DOCS_ADMIN_PHP_FPM => '/administration/performance/',
+			\OCP\Constants::DOCS_ADMIN_TRANSACTIONAL_LOCKING => '/administration/performance/',
+			\OCP\Constants::DOCS_ADMIN_BACKUP => '/administration/backups-updates/',
+			\OCP\Constants::DOCS_ADMIN_CLI_UPGRADE => '/administration/backups-updates/',
+			\OCP\Constants::DOCS_ADMIN_UNTRUSTED_DOMAIN => '/administration/troubleshooting/',
+			\OCP\Constants::DOCS_ADMIN_INSTALL => '/installation/',
+			\OCP\Constants::DOCS_ADMIN_SOURCE_INSTALL => '/installation/linux-server/',
+			\OCP\Constants::DOCS_ADMIN_EMAIL => '/installation/linux-server/',
+			\OCP\Constants::DOCS_ADMIN_SHARING => '/user/files-sharing/',
+			\OCP\Constants::DOCS_ADMIN_SHARING_FEDERATED => '/user/files-sharing/',
+			\OCP\Constants::DOCS_USER_WEB_DAV => '/user/files-sharing/',
+			\OCP\Constants::DOCS_DEVELOPER_THEMING => '/developer/',
+			// no dedicated page yet - the administration overview is the closest match
+			\OCP\Constants::DOCS_ADMIN_CONFIG => '/administration/',
+			\OCP\Constants::DOCS_ADMIN_ENCRYPTION => '/administration/',
+			\OCP\Constants::DOCS_ADMIN_BACKGROUND_JOBS => '/administration/',
+			\OCP\Constants::DOCS_ADMIN_DB_CONVERSION => '/administration/',
+		];
 
-		return $this->getDocBaseUrl() . '/server/' . $version . '/go.php?to=' . $key;
+		return $this->getDocBaseUrl() . ($map[$key] ?? '/');
 	}
 
 	/**

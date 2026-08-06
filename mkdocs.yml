@@ -50,6 +50,7 @@ nav:
       - Upstream-CVE-Status: administration/upstream-cve-status.md
       - Apps und Marketplace: administration/apps-market.md
       - Backups und Updates: administration/backups-updates.md
+      - Serverprotokoll und Fehlermeldungen: administration/logging.md
       - Troubleshooting: administration/troubleshooting.md
   - Benutzer:
       - user/index.md

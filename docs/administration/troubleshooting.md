@@ -1,5 +1,10 @@
 # Troubleshooting
 
+Bei „Interner Serverfehler" oder einem unklaren Symptom zuerst das Protokoll
+lesen: [Serverprotokoll und Fehlermeldungen](logging.md) erklärt, wo es liegt,
+wie sich über die **Anfragekennung** vom Fehlerbildschirm der passende Eintrag
+finden lässt und was in einen Fehlerbericht gehört.
+
 ## Login leitet immer wieder auf Login zurück
 
 Prüfen:
