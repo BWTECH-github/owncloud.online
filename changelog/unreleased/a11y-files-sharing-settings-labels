@@ -1,0 +1,15 @@
+Fix: Add accessible names to the group selection fields in the sharing settings
+
+The group selection fields in the admin sharing settings had no accessible
+name. Screen readers announced an unlabeled text box and voice control could
+not address the elements at all.
+
+The fields are turned into select2 multi-select widgets at runtime. select2
+copies the text of label[for=<id of the original input>] into the offscreen
+label of the search field it creates. Without a matching label element that
+lookup returns nothing and the widget stays unnamed.
+
+Adding the label restores the mechanism the library already provides. The
+rendered layout is unchanged.
+
+WCAG 2.1 AA, SC 3.3.2, SC 4.1.2, SC 1.3.1
