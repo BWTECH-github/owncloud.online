@@ -314,11 +314,10 @@ class OC_Defaults {
 			\OCP\Constants::DOCS_ADMIN_SHARING_FEDERATED => '/user/files-sharing/',
 			\OCP\Constants::DOCS_USER_WEB_DAV => '/user/files-sharing/',
 			\OCP\Constants::DOCS_DEVELOPER_THEMING => '/developer/',
-			// no dedicated page yet - the administration overview is the closest match
-			\OCP\Constants::DOCS_ADMIN_CONFIG => '/administration/',
-			\OCP\Constants::DOCS_ADMIN_ENCRYPTION => '/administration/',
-			\OCP\Constants::DOCS_ADMIN_BACKGROUND_JOBS => '/administration/',
-			\OCP\Constants::DOCS_ADMIN_DB_CONVERSION => '/administration/',
+			\OCP\Constants::DOCS_ADMIN_CONFIG => '/administration/config-reference/',
+			\OCP\Constants::DOCS_ADMIN_ENCRYPTION => '/administration/encryption/',
+			\OCP\Constants::DOCS_ADMIN_BACKGROUND_JOBS => '/administration/background-jobs/',
+			\OCP\Constants::DOCS_ADMIN_DB_CONVERSION => '/administration/database/',
 			// keys used outside the Constants class
 			'admin-marketplace-apps' => '/administration/apps-market/',
 			'developer-manual' => '/developer/',

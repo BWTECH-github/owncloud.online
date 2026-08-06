@@ -336,6 +336,38 @@ class FileTest extends TestCase {
 	}
 
 	/**
+	 * A pre-write hook that vetoes the upload has to stop a chunked upload just
+	 * like it stops a plain one - otherwise every file policy (file name
+	 * blacklist, file_firewall, workflow rules) can be bypassed by uploading the
+	 * same file in chunks.
+	 */
+	public function testChunkedPutWithModifyRunIsRejected() {
+		$listener = function (GenericEvent $event) {
+			$event->setArgument('run', false);
+		};
+		\OC::$server->getEventDispatcher()->addListener('file.beforeCreate', $listener);
+
+		$_SERVER['HTTP_OC_CHUNKED'] = true;
+
+		try {
+			// the first chunk is only stored, the veto is evaluated once the
+			// transfer is complete and the file would actually be written
+			$this->assertNull($this->doPut('/test.txt-chunking-45678-2-0'));
+
+			$thrown = false;
+			try {
+				$this->doPut('/test.txt-chunking-45678-2-1');
+			} catch (\Sabre\DAV\Exception\Forbidden $e) {
+				$thrown = true;
+			}
+			$this->assertTrue($thrown, 'the vetoed chunked upload must be rejected with Forbidden');
+		} finally {
+			unset($_SERVER['HTTP_OC_CHUNKED']);
+			\OC::$server->getEventDispatcher()->removeListener('file.beforeCreate', $listener);
+		}
+	}
+
+	/**
 	 * Test putting a file using chunking
 	 *
 	 * @dataProvider fopenFailuresProvider

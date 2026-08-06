@@ -145,3 +145,38 @@ add_header Strict-Transport-Security "max-age=15552000; includeSubDomains" alway
 
 Vor dem Setzen sicherstellen, dass **alle** Subdomains dauerhaft HTTPS können
 (HSTS ist für `max-age` bindend). Optional `preload` erst nach Test ergänzen.
+
+## Reverse-Proxy: trusted_proxies
+
+Hinter einem Reverse-Proxy sieht ownCloud als Absender jeder Anfrage den Proxy.
+Die echte Client-Adresse steht dann in `X-Forwarded-For` — und ownCloud wertet
+diesen Header **nur** für Adressen aus, die als `trusted_proxies` eingetragen
+sind:
+
+```php
+'trusted_proxies' => ['10.0.0.5'],
+'overwriteprotocol' => 'https',
+```
+
+Das ist sicherheitsrelevant, weil mehrere Schutzmechanismen die Client-IP als
+Schlüssel benutzen — allen voran die Bremse gegen Passwort-Raten bei Anmeldung,
+Freigabe-Passwörtern und am MCP-Endpunkt. Sie zählt Fehlversuche pro
+(IP, Konto).
+
+| Konstellation | Folge |
+| --- | --- |
+| `trusted_proxies` korrekt gesetzt | Zählung trifft die echte Client-IP — Schutz wirkt |
+| `trusted_proxies` **nicht** gesetzt | Alle Anfragen zählen auf die Proxy-IP — legitime Nutzer bremsen sich gegenseitig aus |
+| App-Server **direkt** aus dem Netz erreichbar | Ein Angreifer setzt `X-Forwarded-For` selbst und bekommt pro Anfrage eine neue „IP" — die Bremse greift nie |
+
+Deshalb gehören beide Punkte in die Inbetriebnahme:
+
+1. `trusted_proxies` auf die **tatsächlichen** Proxy-Adressen setzen (keine
+   Netzbereiche „auf Verdacht", keine `0.0.0.0/0`).
+2. Den PHP-FPM-/App-Server **niemals** direkt exponieren — er darf nur über den
+   Reverse-Proxy erreichbar sein (Firewall oder Bind an `127.0.0.1`).
+
+Prüfen, welche Adresse tatsächlich ankommt: Nach einer fehlgeschlagenen
+Anmeldung steht sie im Protokoll (`remoteAddr`), siehe
+[Serverprotokoll und Fehlermeldungen](logging.md). Erscheint dort die Proxy-IP
+statt der Client-IP, ist `trusted_proxies` falsch.
