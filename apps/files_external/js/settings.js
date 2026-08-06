@@ -199,6 +199,19 @@ function addSelect2 ($elements, userListLimit) {
 		});
 	});
 
+	// OC-WCAG: barrierefreier Name fuer die "Verfuegbar fuer"-Auswahl
+	// (SC 3.3.2 / 4.1.2). Bedienbar ist nicht das Ursprungselement - select2
+	// blendet es aus -, sondern das erst hier erzeugte Suchfeld im Container.
+	// Das Muster von label[for=<id>] aus den Sharing-Einstellungen greift nicht:
+	// die Auswahl steht einmal pro Speicherzeile, eine feste id waere mehrfach
+	// im Dokument. Der String ist derselbe wie die Spaltenueberschrift und in
+	// allen Sprachdateien vorhanden.
+	$elements.each(function () {
+		$(this).select2('container')
+			.find('input.select2-input')
+			.attr('aria-label', t('files_external', 'Available for'));
+	});
+
 	var $selectAll = $elements.closest('tr').find('.select2-drop').
 	prepend(
 		'<ul class="select2-controls">' +
@@ -1124,6 +1137,22 @@ MountConfigListView.prototype = _.extend({
 			newElement = $('<input type="hidden" class="'+classes.join(' ')+'" data-parameter="'+parameter+'" />');
 		} else {
 			newElement = $('<input type="text" class="'+classes.join(' ')+'" data-parameter="'+parameter+'" placeholder="'+ trimmedPlaceholder+'" />');
+		}
+		// OC-WCAG: die Konfigurationsfelder (Host, Benutzername, Passwort, ...)
+		// entstehen erst zur Laufzeit und trugen bisher nur einen placeholder -
+		// der ist kein barrierefreier Name (SC 3.3.2 / 4.1.2) und verschwindet
+		// ausserdem, sobald etwas eingetragen ist. aria-label statt <label for>,
+		// weil es pro Speicherzeile einen eigenen Satz dieser Felder gibt und
+		// feste ids damit mehrfach im Dokument staenden. Der Text ist der bereits
+		// uebersetzte Parametername. Checkbox (eigenes umschliessendes Label) und
+		// verstecktes Feld (nicht bedienbar) brauchen ihn nicht.
+		// Wie highlightInput() am Elementtyp entlang, nicht am Parametertyp: der
+		// else-Zweig oben erzeugt auch fuer unbekannte Typen ein Textfeld.
+		switch (newElement.attr('type')) {
+			case 'text':
+			case 'password':
+				newElement.attr('aria-label', trimmedPlaceholder);
+				break;
 		}
 		highlightInput(newElement);
 		$td.append(newElement);

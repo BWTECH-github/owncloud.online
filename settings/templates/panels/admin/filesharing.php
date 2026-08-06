@@ -231,6 +231,18 @@
 	<p id="selectExcludedGroups" class="indent <?php if (!$_['shareExcludeGroups'] || $_['shareAPIEnabled'] === 'no') {
 		p('hidden');
 	} ?>">
+		<?php /* OC-WCAG: dasselbe select2-Muster wie in den Sharing-Einstellungen
+				von files_sharing (SC 3.3.2 / 4.1.2 / 1.3.1). Die id war schon
+				vorhanden, nur das Label fehlte - select2 3.5.4 kopiert den Text
+				von label[for=<id>] in sein eigenes Offscreen-Label des sichtbaren
+				Suchfelds, ohne passendes Label bleibt das Widget unbenannt.
+
+				Das Label MUSS in diesem <p> bleiben, damit es zusammen mit dem
+				Feld ein- und ausgeblendet wird. Bewusst visuell ausgeblendet und
+				mit eigenem String: der sichtbare Text darueber beschriftet die
+				Checkbox, ein zweiter sichtbarer Satz waere doppelt und derselbe
+				String trueg Checkbox und Feld denselben Namen. */ ?>
+		<label for="excludedGroups" class="hidden-visually"><?php p($l->t('Groups excluded from sharing')); ?></label>
 		<input name="shareapi_exclude_groups_list" class="noautosave" type="hidden" id="excludedGroups" value="<?php p($_['shareExcludedGroupsList']) ?>" style="width: 400px"/>
 		<br />
 		<em><?php p($l->t('These groups will still be able to receive shares, but not to initiate them.')); ?></em>
