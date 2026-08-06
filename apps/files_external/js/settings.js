@@ -931,7 +931,13 @@ MountConfigListView.prototype = _.extend({
 			return $tr;
 		}
 
+		// OC-WCAG: das Auswahlfeld entsteht erst zur Laufzeit und haette sonst keinen
+		// barrierefreien Namen (SC 3.3.2 / 4.1.2). Hier ist aria-label richtig statt
+		// eines <label>: es gibt pro Speicherzeile eine eigene Instanz, eine feste id
+		// waere also mehrfach im Dokument. Der String ist derselbe wie die
+		// Spaltenueberschrift und in allen Sprachdateien vorhanden.
 		var selectAuthMechanism = $('<select class="selectAuthMechanism"></select>');
+		selectAuthMechanism.attr('aria-label', t('files_external', 'Authentication'));
 		var neededVisibility = (this._isPersonal) ? StorageConfig.Visibility.PERSONAL : StorageConfig.Visibility.ADMIN;
 		$.each(this._allAuthMechanisms, function(authIdentifier, authMechanism) {
 			if ((backend.authSchemes[authMechanism.scheme] || backend.authSchemes[authMechanism.identifier]) && (authMechanism.visibility & neededVisibility)) {
