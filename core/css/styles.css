@@ -1137,3 +1137,44 @@ summary:focus-visible,
 	outline: 2px solid #262B45 !important;
 	outline-offset: 2px;
 }
+
+/*
+ * Ausnahme fuer select2-Widgets (Gruppen-/Benutzerauswahl in den
+ * Einstellungen). select2 baut aus einem versteckten Input ein eigenes
+ * Bedienelement: fokussierbar ist ein Mini-Suchfeld, das mitschrumpft, sobald
+ * Eintraege gewaehlt sind - bei einem gewaehlten Eintrag nur noch 20x25px.
+ * Die Regel oben legt darum dann einen 28x33px grossen dunklen Rahmen mitten
+ * ins Feld, der wie ein schwarzer Klotz aussieht.
+ *
+ * Der Rahmen wandert deshalb auf den Container - also auf das, was ein
+ * sehender Nutzer als "das Feld" wahrnimmt. select2 setzt dort beim
+ * Fokussieren select2-container-active. Der Fokus bleibt damit sichtbar
+ * (WCAG 2.4.7), sitzt aber am richtigen Element und in der richtigen Groesse.
+ */
+.select2-container .select2-input:focus,
+.select2-container .select2-input:focus-visible,
+.select2-container .select2-focusser:focus,
+.select2-container .select2-focusser:focus-visible,
+.select2-container .select2-choice:focus-visible,
+.select2-drop .select2-input:focus,
+.select2-drop .select2-input:focus-visible {
+	outline: none !important;
+}
+
+.select2-container.select2-container-active,
+.select2-container.select2-dropdown-open {
+	outline: 2px solid #262B45;
+	outline-offset: 1px;
+	border-radius: 3px;
+}
+
+/*
+ * Gleiche Ursache an den Entfernen-Links der gewaehlten Eintraege: die sind nur
+ * 12x13px gross, mit 2px Rahmen und 2px Abstand waeren sie beim Tabben ein
+ * 20x21px grosser dunkler Block. Der Rahmen liegt hier direkt am Element an und
+ * bleibt damit erkennbar, ohne den Eintrag zu ueberdecken.
+ */
+.select2-search-choice-close:focus-visible {
+	outline-offset: 0 !important;
+	border-radius: 2px;
+}
