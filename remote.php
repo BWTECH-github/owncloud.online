@@ -148,7 +148,16 @@ try {
 	$service=\substr($pathInfo, 1, $pos-1);
 
 	$file = resolveService($service);
-	
+
+	// Fuer einen unbekannten Dienst liefert resolveService() den Standardwert von
+	// getAppValue(), also '' - nicht null. Die frueher hier stehende Pruefung auf
+	// null konnte deshalb nie greifen; ohne sie liefe der Request bis
+	// isInstalled('') weiter und endete in einer RemoteException ohne Code, was
+	// OC_Response::setStatus(0) und damit ein ungueltiges 'HTTP/1.1 0' erzeugt.
+	if ($file === '') {
+		throw new RemoteException('Path not found', OC_Response::STATUS_NOT_FOUND);
+	}
+
 	if (\strpos($file, '../') !== false || \strpos($file, '/..') !== false) {
 		throw new RemoteException('Path not allowed');
 	}
