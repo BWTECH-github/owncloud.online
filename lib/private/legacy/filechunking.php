@@ -132,10 +132,16 @@ class OC_FileChunking {
 	/**
 	 * Lock-Key dieser Übertragung (name + transferid), bewusst nicht global.
 	 *
+	 * Der variable Anteil wird gehasht, damit der Schlüssel eine feste Länge hat:
+	 * DBLockingProvider und MemcacheLockingProvider lehnen Schlüssel über 64
+	 * Zeichen ab. Aus dem rohen Präfix ('<name>-chunking-<transferid>-') würde ein
+	 * längerer Dateiname den Schlüssel über diese Grenze treiben, das Sperren
+	 * schlüge dann für genau die großen Uploads fehl, die es schützen soll.
+	 *
 	 * @return string
 	 */
 	private function getTransferLockKey() {
-		return 'chunked-upload::' . $this->getPrefix();
+		return 'chunked-upload::' . \md5($this->getPrefix());
 	}
 
 	/**
@@ -147,9 +153,20 @@ class OC_FileChunking {
 	 * @return bool ob der Lock gehalten wird
 	 */
 	private function acquireTransferLock() {
+		$provider = \OC::$server->getLockingProvider();
+
+		// NoopLockingProvider (filelocking.enabled => false) nimmt jeden Lock
+		// widerspruchslos an, ohne etwas zu sperren. Würde das als Erfolg gelten,
+		// schriebe store() die Zwischensumme inkrementell fort und verliesse sich
+		// auf eine Serialisierung, die es nicht gibt. Stattdessen wie "kein Lock"
+		// behandeln: der Aufrufer verwirft die Zwischensumme und zählt neu.
+		if ($provider instanceof \OC\Lock\NoopLockingProvider) {
+			return false;
+		}
+
 		for ($attempt = 0; $attempt < self::LOCK_ATTEMPTS; $attempt++) {
 			try {
-				\OC::$server->getLockingProvider()->acquireLock(
+				$provider->acquireLock(
 					$this->getTransferLockKey(),
 					\OCP\Lock\ILockingProvider::LOCK_EXCLUSIVE
 				);
