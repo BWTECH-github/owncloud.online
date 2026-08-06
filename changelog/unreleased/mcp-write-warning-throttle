@@ -1,0 +1,7 @@
+Bugfix: Log the instance-wide MCP write warning at most once a day
+
+The warning that "enable_write" is active without "write_groups" was emitted from
+the request path, so an instance deliberately running instance-wide MCP write
+access wrote one warning per request into owncloud.log and buried real messages.
+The warning is now throttled to once every 24 hours; the timestamp lives in the
+app configuration so the throttle also holds across web processes.
