@@ -29,6 +29,9 @@ use OCP\IUserSession;
 class McpController extends Controller {
 	private const MAX_REQUEST_BYTES = 2 * 1048576;
 
+	/** Mindestabstand zwischen zwei Warnungen zur instanzweiten Schreibfreigabe */
+	private const WRITE_WARNING_INTERVAL = 86400;
+
 	private IUserSession $userSession;
 	private IGroupManager $groupManager;
 	private ServerFactory $serverFactory;
@@ -249,12 +252,7 @@ class McpController extends Controller {
 			// die Schreib-Tools ohne Vorwarnung abschalten. Stattdessen eine
 			// deutliche Warnung, die verschwindet, sobald write_groups gesetzt
 			// ist.
-			$this->logger->warning(
-				'MCP write access is enabled instance-wide: "enable_write" is set but "write_groups" is empty, '
-				. 'so every app token on this instance can use the write tools. '
-				. 'Restrict it with: occ config:app:set oco_mcp write_groups --value=<group>',
-				['app' => 'oco_mcp']
-			);
+			$this->warnAboutInstanceWideWrite();
 			return true;
 		}
 		foreach (\explode(',', $raw) as $gid) {
@@ -264,6 +262,34 @@ class McpController extends Controller {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Warnung zur instanzweiten Schreibfreigabe, hoechstens einmal am Tag.
+	 *
+	 * userHasWriteAccess() laeuft in jedem MCP-Request. Ungebremst schriebe die
+	 * Warnung bei einer bewusst instanzweit konfigurierten Instanz eine Zeile pro
+	 * Anfrage ins Log - genau die Konfiguration, die weiter unterstuetzt werden
+	 * soll, wuerde owncloud.log zumuellen und echte Meldungen verdecken. Der
+	 * Zeitstempel liegt im AppConfig, damit die Drosselung auch ueber mehrere
+	 * Web-Prozesse hinweg gilt; geschrieben wird nur, wenn wirklich geloggt wird.
+	 */
+	private function warnAboutInstanceWideWrite(): void {
+		$now = \time();
+		$last = (int)$this->config->getAppValue('oco_mcp', 'write_warning_logged_at', '0');
+		// Bei zurueckgedrehter Uhr (Zeitumstellung, NTP-Korrektur) sofort wieder
+		// warnen, statt bis zum Einholen des Zukunftswerts zu schweigen.
+		if ($last <= $now && ($now - $last) < self::WRITE_WARNING_INTERVAL) {
+			return;
+		}
+
+		$this->config->setAppValue('oco_mcp', 'write_warning_logged_at', (string)$now);
+		$this->logger->warning(
+			'MCP write access is enabled instance-wide: "enable_write" is set but "write_groups" is empty, '
+			. 'so every app token on this instance can use the write tools. '
+			. 'Restrict it with: occ config:app:set oco_mcp write_groups --value=<group>',
+			['app' => 'oco_mcp']
+		);
 	}
 
 	/**
