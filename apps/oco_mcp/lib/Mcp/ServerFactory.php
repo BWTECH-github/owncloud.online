@@ -20,6 +20,7 @@ use OCP\Comments\ICommentsManager;
 use OCP\Files\IRootFolder;
 use OCP\IConfig;
 use OCP\IGroupManager;
+use OCP\ILogger;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -45,6 +46,7 @@ class ServerFactory {
 	private IConfig $config;
 	private IURLGenerator $urlGenerator;
 	private IAppManager $appManager;
+	private ILogger $logger;
 
 	public function __construct(
 		IRootFolder $rootFolder,
@@ -56,7 +58,8 @@ class ServerFactory {
 		ICommentsManager $commentsManager,
 		IConfig $config,
 		IURLGenerator $urlGenerator,
-		IAppManager $appManager
+		IAppManager $appManager,
+		ILogger $logger
 	) {
 		$this->rootFolder = $rootFolder;
 		$this->shareManager = $shareManager;
@@ -68,6 +71,7 @@ class ServerFactory {
 		$this->config = $config;
 		$this->urlGenerator = $urlGenerator;
 		$this->appManager = $appManager;
+		$this->logger = $logger;
 	}
 
 	public function build(IUser $user, bool $isAdmin, bool $writeEnabled): \Mcp\Server {
@@ -93,13 +97,13 @@ class ServerFactory {
 		// broken tool and oco_mcp keeps no hard dependency on it.
 		$aiDocsEnabled = $this->appManager->isEnabledForUser('ai_documents', $user);
 		if ($aiDocsEnabled) {
-			$map[AiDocumentsTool::class] = new AiDocumentsTool();
+			$map[AiDocumentsTool::class] = new AiDocumentsTool($this->logger);
 		}
 
 		$container = new InstanceContainer($map);
 
 		$builder = \Mcp\Server::builder()
-			->setServerInfo('owncloud.online', '1.0.2', 'MCP access to owncloud.online files, shares, tags, comments and user management.')
+			->setServerInfo('owncloud.online', '1.0.3', 'MCP access to owncloud.online files, shares, tags, comments and user management.')
 			->setInstructions(
 				'You are connected to an owncloud.online instance as user "' . $uid . '". '
 				. 'Paths are relative to that user\'s file root ("/"). '

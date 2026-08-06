@@ -25,7 +25,7 @@ credentials are revalidated per request and browser cookie sessions are rejected
 
 Modified by BW-Tech GmbH for owncloud.online (PHP 8.4).
 	</description>
-	<version>1.0.2</version>
+	<version>1.0.3</version>
 	<licence>AGPL-3.0-only</licence>
 	<author>BW-Tech GmbH</author>
 	<namespace>OcoMcp</namespace>

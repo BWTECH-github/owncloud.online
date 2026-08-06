@@ -36,7 +36,8 @@ class Application extends App {
 				$server->getCommentsManager(),
 				$server->getConfig(),
 				$server->getURLGenerator(),
-				$server->getAppManager()
+				$server->getAppManager(),
+				$server->getLogger()
 			);
 		});
 

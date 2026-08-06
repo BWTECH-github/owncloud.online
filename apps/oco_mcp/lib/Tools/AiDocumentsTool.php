@@ -8,6 +8,7 @@
 namespace OCA\OcoMcp\Tools;
 
 use Mcp\Exception\ToolCallException;
+use OCP\ILogger;
 
 /**
  * Bridges the optional `ai_documents` app (RAG / semantic document search) into
@@ -27,6 +28,12 @@ class AiDocumentsTool {
 	private const SERVICE_CLASS = '\\OCA\\AiDocuments\\Service\\PromptService';
 	private const MODES = ['qa', 'summary', 'extract', 'report'];
 	private const SCOPES = ['all', 'folder', 'selection'];
+
+	private ILogger $logger;
+
+	public function __construct(ILogger $logger) {
+		$this->logger = $logger;
+	}
 
 	/**
 	 * Ask an AI question over the user's documents (retrieval-augmented generation).
@@ -55,7 +62,7 @@ class AiDocumentsTool {
 			if (\trim($path) === '') {
 				throw new ToolCallException('scope "folder" requires a "path".');
 			}
-			$scopePath = '/' . \ltrim(\trim($path), '/');
+			$scopePath = PathHelper::clean($path);
 		} elseif ($scope === 'selection') {
 			$resourceIds = \array_values(\array_filter(\array_map(
 				static fn ($id) => (int)\trim($id),
@@ -70,7 +77,15 @@ class AiDocumentsTool {
 		try {
 			$result = $prompt->query($question, $mode, $scope, $scopePath, $resourceIds);
 		} catch (\Throwable $e) {
-			throw new ToolCallException('AI query failed: ' . $e->getMessage());
+			// Rohe Backend-Meldungen koennen Gateway-URL/Host, DB-Fehler, interne
+			// Dateipfade oder Provider-API-Texte enthalten. Der MCP-Client
+			// bekommt deshalb nur eine generische Meldung; die vollstaendige
+			// Exception steht im Serverprotokoll.
+			$this->logger->logException($e, [
+				'app' => 'oco_mcp',
+				'message' => 'ai_documents query failed',
+			]);
+			throw new ToolCallException('AI query failed. Ask an administrator to check the server log.');
 		}
 
 		$analysis = $result['analysis'] ?? [];
@@ -95,7 +110,13 @@ class AiDocumentsTool {
 			$app = new $appClass();
 			$service = $app->getContainer()->query(self::SERVICE_CLASS);
 		} catch (\Throwable $e) {
-			throw new ToolCallException('Could not initialise ai_documents: ' . $e->getMessage());
+			// Siehe oben: Container-/Konfigurationsfehler nennen typischerweise
+			// interne Pfade und Klassennamen — nur ins Log, nicht an den Client.
+			$this->logger->logException($e, [
+				'app' => 'oco_mcp',
+				'message' => 'Could not initialise ai_documents',
+			]);
+			throw new ToolCallException('Could not initialise ai_documents. Ask an administrator to check the server log.');
 		}
 		if (!\is_object($service)) {
 			throw new ToolCallException('ai_documents PromptService unavailable.');

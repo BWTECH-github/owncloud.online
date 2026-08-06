@@ -260,24 +260,11 @@ class FilesTool {
 	}
 
 	private function getNode(string $path): Node {
-		try {
-			return $this->userFolder()->get($this->clean($path));
-		} catch (NotFoundException) {
-			throw new ToolCallException('Path not found: ' . $path);
-		}
+		return PathHelper::node($this->userFolder(), $path);
 	}
 
 	private function clean(string $path): string {
-		$path = \str_replace('\\', '/', \trim($path));
-		// Bewusst strikt: '.'- und '..'-Segmente werden abgelehnt (keine
-		// Normalisierung), damit der Client nur kanonische Pfade schickt.
-		foreach (\explode('/', $path) as $segment) {
-			if ($segment === '.' || $segment === '..') {
-				throw new ToolCallException('Relative path segments (".", "..") are forbidden.');
-			}
-		}
-		$path = '/' . \ltrim($path, '/');
-		return $path === '/' ? '/' : \rtrim($path, '/');
+		return PathHelper::clean($path);
 	}
 
 	private function assertMutablePath(string $source, string $target): void {
