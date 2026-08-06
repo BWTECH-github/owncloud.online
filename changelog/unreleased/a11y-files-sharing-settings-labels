@@ -1,4 +1,4 @@
-Fix: Add accessible names to the group selection fields in the sharing settings
+Bugfix: Add accessible names to the group selection fields in the sharing settings
 
 The group selection fields in the admin sharing settings had no accessible
 name. Screen readers announced an unlabeled text box and voice control could
