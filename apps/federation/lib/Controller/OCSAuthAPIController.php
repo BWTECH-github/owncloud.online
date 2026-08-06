@@ -106,8 +106,15 @@ class OCSAuthAPIController extends OCSController {
 
 		// if both server initiated the exchange of the shared secret the greater
 		// token wins
+		//
+		// SEC-22: Verglichen werden die SHA-256-Hashes, nicht die Tokens selbst.
+		// Ein Vergleich der Klartexte macht die Antwort zu einem Orakel ueber die
+		// lexikographische Ordnung: ein unauthentifizierter Aufrufer kann den
+		// gespeicherten Token damit per Binaersuche in wenigen Dutzend Requests
+		// rekonstruieren. Ueber die Hashes bleibt das Tiebreaking deterministisch,
+		// verraet aber nichts mehr ueber den Klartext.
 		$localToken = $this->dbHandler->getToken($url);
-		if (\strcmp($localToken, $token) > 0) {
+		if (\strcmp(\hash('sha256', $localToken), \hash('sha256', $token)) > 0) {
 			$this->logger->info(
 				'remote server (' . $url . ') presented lower token. We will initiate the exchange of the shared secret.',
 				['app' => 'federation']
@@ -153,9 +160,13 @@ class OCSAuthAPIController extends OCSController {
 		}
 
 		if ($this->isValidToken($url, $token) === false) {
-			$expectedToken = $this->dbHandler->getToken($url);
+			// SEC-23: Weder der uebermittelte noch der erwartete Token gehoeren
+			// ins Log. Der Endpunkt ist oeffentlich, ein Angreifer kann diesen
+			// Eintrag also beliebig oft erzeugen - und wer das Log liest
+			// (Admins, Log-Aggregation, Support-Dumps) haette danach den
+			// gueltigen Federation-Token im Klartext.
 			$this->logger->error(
-				'remote server (' . $url . ') didn\'t send a valid token (got "' . $token . '" but expected "'. $expectedToken . '") while getting shared secret',
+				'remote server (' . $url . ') didn\'t send a valid token while getting shared secret',
 				['app' => 'federation']
 			);
 			return ['statuscode' => Http::STATUS_FORBIDDEN];

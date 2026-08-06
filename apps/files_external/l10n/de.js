@@ -55,6 +55,8 @@ OC.L10N.register(
     "Unsatisfied backend parameters" : "Unbefriedigende Backend- Parameter",
     "Unsatisfied authentication mechanism parameters" : "Unbefriedigende Parameter beim Authentifizierungsmechanismus",
     "Insufficient data: %s" : "Unzureichende Daten: %s",
+    "Insufficient data" : "Unzureichende Daten",
+    "Storage connection error. See server log for details." : "Fehler bei der Speicherverbindung. Einzelheiten stehen im Serverprotokoll.",
     "%s" : "%s",
     "Storage with id \"%i\" is not user editable" : "Speicher mit der ID \"%i\" kann nicht vom Benutzer bearbeitet werden",
     "OAuth1" : "OAuth1",

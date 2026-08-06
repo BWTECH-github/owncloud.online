@@ -253,22 +253,32 @@ abstract class StoragesController extends Controller {
 					$testOnly
 				)
 			);
+		// SEC-26: Die rohe Exception-Meldung darf nicht an den Client zurueck.
+		// Bei Guzzle-/cURL-Fehlern steht darin die aufgeloeste interne IP, der
+		// Port und der Unterschied zwischen "Host existiert nicht" und
+		// "Verbindung abgelehnt". Ein Nutzer, der externe Speicher anlegen darf,
+		// koennte damit durch gezielt gesetzte Ziel-Hosts die interne
+		// Netz-Topologie kartieren - die Aufklaerungsphase fuer SSRF.
+		// Vollstaendig ins Log, generisch an den Client.
 		} catch (InsufficientDataForMeaningfulAnswerException $e) {
 			$status = $e->getCode() ? $e->getCode() : StorageNotAvailableException::STATUS_INDETERMINATE;
+			$this->logger->logException($e, ['app' => 'files_external']);
 			$storage->setStatus(
 				$status,
-				$this->l10n->t('Insufficient data: %s', [$e->getMessage()])
+				$this->l10n->t('Insufficient data')
 			);
 		} catch (StorageNotAvailableException $e) {
+			$this->logger->logException($e, ['app' => 'files_external']);
 			$storage->setStatus(
 				$e->getCode(),
-				$this->l10n->t('%s', [$e->getMessage()])
+				$this->l10n->t('Storage connection error. See server log for details.')
 			);
 		} catch (\Exception $e) {
 			// FIXME: convert storage exceptions to StorageNotAvailableException
+			$this->logger->logException($e, ['app' => 'files_external']);
 			$storage->setStatus(
 				StorageNotAvailableException::STATUS_ERROR,
-				\get_class($e).': '.$e->getMessage()
+				$this->l10n->t('Storage connection error. See server log for details.')
 			);
 		}
 	}

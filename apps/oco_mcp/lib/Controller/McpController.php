@@ -240,6 +240,21 @@ class McpController extends Controller {
 	private function userHasWriteAccess(string $uid): bool {
 		$raw = \trim($this->config->getAppValue('oco_mcp', 'write_groups', ''));
 		if ($raw === '') {
+			// SEC-17: Ohne write_groups gilt enable_write instanzweit - JEDES
+			// App-Token bekommt die Schreib-Tools, Admin-Tokens zusaetzlich die
+			// Benutzer- und Gruppenverwaltung. Das ist dokumentiert, aber eine
+			// grosse Angriffsflaeche, sobald ein einzelnes Token abhanden kommt.
+			//
+			// Bewusst NICHT fail-closed: das wuerde bestehenden Installationen
+			// die Schreib-Tools ohne Vorwarnung abschalten. Stattdessen eine
+			// deutliche Warnung, die verschwindet, sobald write_groups gesetzt
+			// ist.
+			$this->logger->warning(
+				'MCP write access is enabled instance-wide: "enable_write" is set but "write_groups" is empty, '
+				. 'so every app token on this instance can use the write tools. '
+				. 'Restrict it with: occ config:app:set oco_mcp write_groups --value=<group>',
+				['app' => 'oco_mcp']
+			);
 			return true;
 		}
 		foreach (\explode(',', $raw) as $gid) {

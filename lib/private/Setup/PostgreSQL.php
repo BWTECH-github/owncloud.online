@@ -99,8 +99,13 @@ class PostgreSQL extends AbstractDatabase {
 			$schema_connection_string = "host='$e_host' dbname='$e_dbname' user='$e_admin_user' port='$port' password='$e_admin_password'";
 			$schemaConnection = @\pg_connect($schema_connection_string);
 			if ($schemaConnection) {
-				$e_user = \pg_escape_string($schemaConnection, $this->dbUser);
-				$query = "GRANT CREATE, USAGE ON SCHEMA public TO \"$e_user\"";
+				// SEC-16: Der Rollenname steht hier in einem Identifier-Kontext,
+				// nicht in einem String-Literal. pg_escape_string() escapt fuer
+				// Single-Quote-Literale und ist hier das falsche Werkzeug;
+				// pg_escape_identifier() liefert den Wert bereits korrekt
+				// doppelt gequotet - die manuellen \"...\" entfallen deshalb.
+				$e_user = \pg_escape_identifier($schemaConnection, $this->dbUser);
+				$query = "GRANT CREATE, USAGE ON SCHEMA public TO $e_user";
 				$result = \pg_query($schemaConnection, $query);
 				if (!$result) {
 					$entry = $this->trans->t('DB Error: "%s"', [\pg_last_error($schemaConnection)]) . '<br />';

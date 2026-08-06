@@ -156,15 +156,26 @@ class GetSharedSecret extends Job {
 
 			$status = $result->getStatusCode();
 		} catch (ClientException $e) {
+			// SEC-23: Der Token geht als Query-Parameter raus, die Guzzle-Meldung
+			// enthaelt daher die vollstaendige URI inklusive '?token=...'.
+			// logException() wuerde sie woertlich ins Log schreiben - deshalb
+			// eine eigene Meldung ohne URI.
 			$status = $e->getCode();
 			if ($status === Http::STATUS_FORBIDDEN) {
 				$this->logger->info($target . ' refused to exchange a shared secret with you.', ['app' => 'federation']);
 			} else {
-				$this->logger->logException($e, ['app' => 'federation']);
+				$this->logger->error(
+					'Could not exchange a shared secret with ' . $target . ' (HTTP ' . $status . ')',
+					['app' => 'federation']
+				);
 			}
 		} catch (\Exception $e) {
+			// Siehe oben - auch hier kann die Meldung die URI mit dem Token tragen.
 			$status = Http::STATUS_INTERNAL_SERVER_ERROR;
-			$this->logger->logException($e, ['app' => 'federation']);
+			$this->logger->error(
+				'Could not exchange a shared secret with ' . $target,
+				['app' => 'federation']
+			);
 		}
 
 		// if we received a unexpected response we try again later
