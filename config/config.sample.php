@@ -226,6 +226,22 @@ $CONFIG = [
 'allow_user_to_change_display_name' => true,
 
 /**
+ * Allow or disallow the group administrator ("subadmin") feature.
+ *
+ * `true` (default in ownCloud.online) keeps the feature available: users can be
+ * made administrators of individual groups.
+ * `false` switches it off completely - existing assignments stop taking effect
+ * and nobody is treated as a group administrator any more. Real administrators
+ * are not affected.
+ *
+ * Upstream ownCloud disables this by default from v11 on, because the code path
+ * has a history of weaknesses. ownCloud.online keeps it enabled so that updates
+ * never silently take permissions away from an existing installation - set it to
+ * `false` if the feature is not used.
+ */
+'allow_subadmins' => true,
+
+/**
  * Allow or disallow users to change their email addresses
  * `true` allows users to change their email address (on their Personal pages),
  * `false` prevents them from changing their email address.

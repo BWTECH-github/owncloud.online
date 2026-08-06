@@ -106,6 +106,11 @@ class OccController extends Controller {
 			$this->console->setAutoExit(false);
 			$this->console->loadCommands(new ArrayInput([]), $output);
 
+			// SEC-29: $params kommt ungefiltert aus dem Request-Body. Stuende dort
+			// ein 'command'-Schluessel, wuerde er beim array_merge den zuvor
+			// gegen die Allow-List geprueften Wert ueberschreiben - die Pruefung
+			// waere wirkungslos.
+			unset($params['command']);
 			$inputArray = \array_merge(['command' => $command], $params);
 			$input = new ArrayInput($inputArray);
 
