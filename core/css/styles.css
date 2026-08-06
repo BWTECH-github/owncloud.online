@@ -1170,9 +1170,17 @@ summary:focus-visible,
 
 /*
  * Gleiche Ursache an den Entfernen-Links der gewaehlten Eintraege: die sind nur
- * 12x13px gross, mit 2px Rahmen und 2px Abstand waeren sie beim Tabben ein
- * 20x21px grosser dunkler Block. Der Rahmen liegt hier direkt am Element an und
- * bleibt damit erkennbar, ohne den Eintrag zu ueberdecken.
+ * 12x13px gross, mit 2px Rahmen und 2px Abstand waeren sie ein 20x21px grosser
+ * dunkler Block. Der Rahmen liegt hier direkt am Element an und bleibt damit
+ * erkennbar, ohne den Eintrag zu ueberdecken.
+ *
+ * Kein Tastaturpfad: select2 erzeugt die Links mit tabindex="-1"
+ * (core/vendor/select2/select2.js), erreichbar sind sie nur mit der Maus.
+ * Tastaturnutzer entfernen Eintraege stattdessen mit Backspace/Entf im
+ * Suchfeld, das die Bibliothek selbst behandelt - Bedienbarkeit ist also
+ * gegeben (SC 2.1.1). Die Regel greift damit nur, falls ein Browser diesen
+ * Links sichtbaren Fokus gibt; sie steht hier, damit der Rahmen aus der
+ * allgemeinen Regel oben dann nicht den Eintrag ueberdeckt.
  */
 .select2-search-choice-close:focus-visible {
 	outline-offset: 0 !important;

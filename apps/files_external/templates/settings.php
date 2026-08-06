@@ -1,11 +1,11 @@
 <?php
 /**
- * @author Frank Boettcher <bricef.boettcher@bw.tech>
+ * @author Frank Boettcher <f.boettcher@bw.tech>
  *
  * @copyright Copyright (c) 2026, BW-Tech GmbH
  *
- * Modified by BW-Tech GmbH on 2026-08-05.
- * Changes: style(frontend): Accessibility at ownCloud.online - WACG-AA Check
+ * Modified by BW-Tech GmbH on 2026-08-06.
+ * Changes: style(frontend): Accessibility at ownCloud.online - WCAG-AA Check
  *
  * @license AGPL-3.0
  *
