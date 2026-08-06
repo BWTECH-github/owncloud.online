@@ -47,6 +47,12 @@ script('files_sharing', 'settings');
 			  class="indent <?php if ($_['publicShareSharersGroupsAllowlistEnabled'] === 'no') {
 			  	p('hidden');
 			  } ?>">
+		  <?php /* OC-WCAG-003: barrierefreier Name fuer die Gruppen-Allowlist (SC 3.3.2 / 4.1.2 / 1.3.1).
+		           Das Label MUSS in diesem <span> bleiben - nur so wird es mit der Checkbox
+		           zusammen ein- und ausgeblendet. select2 3.5.4 kopiert in
+		           core/vendor/select2/select2.js:2894-2899 den Text von label[for=<id>]
+		           in sein Offscreen-Label des sichtbaren Suchfeldes. */ ?>
+		  <label for="allowlistPublicShareSharersGroups" class="hidden-visually"><?php p($l->t('Groups allowed to create public links')); ?></label>
 		  <input name="public_share_sharers_groups_allowlist"
 				 id="allowlistPublicShareSharersGroups"
 				 class="noautosave"
