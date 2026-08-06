@@ -1,6 +1,9 @@
 name: Lint and Code Style
 
 on:
+  # Siehe ci.yml: manuell ausloesbar, damit die Pruefungen nach einer
+  # Actions-Stoerung ohne kuenstlichen Commit nachgeholt werden koennen.
+  workflow_dispatch:
   push:
     branches:
       - main
