@@ -1,6 +1,7 @@
 # Table of Contents
 
 * [Changelog for ownCloud.online Unreleased](#changelog-for-owncloudonline-unreleased)
+* [Changelog for ownCloud.online 11.0.12](#changelog-for-owncloudonline-11012-2026-08-06)
 * [Changelog for ownCloud.online 11.0.11](#changelog-for-owncloudonline-11011-2026-07-23)
 * [Changelog for ownCloud.online 11.0.10](#changelog-for-owncloudonline-11010-2026-07-09)
 * [Changelog for ownCloud.online 11.0.6](#changelog-for-owncloudonline-1106-2026-06-16)
@@ -37,6 +38,41 @@
 # Changelog for ownCloud.online [Unreleased]
 
 This section collects changes for the next ownCloud.online release. No entries yet.
+
+# Changelog for ownCloud.online [11.0.12] (2026-08-06)
+
+The following sections list the changes in ownCloud.online 11.0.12 relevant to
+admins and users.
+
+[11.0.12]: https://github.com/BWTECH-github/owncloud.online
+
+## Summary
+
+* Security - The login form no longer reveals whether an account exists: the password-reset link is rendered identically for every login attempt.
+* Security - The WebDAV error path no longer discloses internal information about the instance.
+* Security - Public previews are refused when the share has no read permission, closing a file-drop leak for unauthenticated visitors; user home directories coming from an external backend are now validated against the allowed bases.
+* Security - Password spraying is detected across a whole IP subnet instead of a single address, and the delay resets after a successful authentication.
+* Security - A failing brute-force throttler can no longer break authentication: all four storage paths fail open and log prominently instead of turning a login into a server error.
+* Security - Legacy chunked uploads now honour the pre-write hooks. A veto from the file-name blacklist, the file firewall or a workflow rule rejects the upload with 403 instead of silently writing the file.
+* Security - The MCP connector resolves every client path through one strict gate ('.' and '..' rejected before any storage access) and no longer passes backend exception text to the client; the full error goes to the server log.
+* Security - `guzzlehttp/guzzle` updated to 7.15.2 (CVE-2026-69246 high, CVE-2026-69245).
+* Bugfix - Concurrent chunks of one upload can no longer lose a size update, so the quota check cannot be undercut by parallel chunk PUTs.
+* Bugfix - The code-integrity warning is gone on channels where the check is not enforced; it no longer needs to be silenced in `config.php`.
+* Bugfix - Setup works on PostgreSQL 15 and newer ("permission denied for schema public").
+* Enhancement - In-product help links point at `docs.owncloud.online`. The documentation gained pages for the server log and error reports, background jobs, encryption, the `config.php` reference and the database, including a `trusted_proxies` section explaining why the login and MCP throttles depend on it.
+* Enhancement - Faster page loads: bundled app JS/CSS is minified, only the active moment locale is loaded, responses are compressed and a minified jQuery-UI build is served. An opt-in OPcache preload script for PHP 8.4 is included.
+
+## Details
+
+* Security - `core/templates/login.php`: the password-reset link is emitted for every attempt, removing the enumeration oracle that distinguished existing from unknown accounts.
+* Security - `remote.php`: the error path no longer leaks instance internals.
+* Security - `apps/files_sharing/ajax/publicpreview.php`: returns 404 when `($linkedItem->getPermissions() & PERMISSION_READ) === 0`. `lib/private/User/SyncService`: `verifyHomeLocation()` canonicalises the path itself, because `Filesystem::normalizePath` does not resolve `..`, and rejects homes outside the configured bases.
+* Security - `lib/private/OCO/Security/Bruteforce/Throttler`: attempts are bucketed per subnet (`inet_pton` masking) and every storage operation is wrapped so a broken table degrades to "no throttling, loud log" instead of a 500 on login.
+* Security - `apps/dav` `Connector/Sabre/File`: the hook veto is evaluated deliberately *before* the try block whose catch runs `cleanFailedUpload()` — checking it inside would have deleted an existing target file past the trash bin.
+* Security - `apps/oco_mcp` (1.0.3): the new `Tools/PathHelper` is the single place where a client path becomes a node, used by the files, shares, tags, comments and AI tools and by the resource provider; `Tools/AiDocumentsTool` logs the backend exception via `ILogger::logException()` and returns a generic message.
+* Bugfix - `lib/private/legacy/filechunking.php`: the "read old size, write chunk, advance subtotal" section runs under a short exclusive lock keyed on name + transfer id. A chunk that cannot take the lock drops the subtotal so the next `getCurrentSize()` recounts exactly, rather than advancing it unsynchronised.
+* Bugfix - `lib/private/IntegrityCheck/Checker`: `hasPassedCheck()` returns true when `isCodeCheckEnforced()` is false.
+* Note - Version parity with the SaaS bundle (11.0.12).
 
 # Changelog for ownCloud.online [11.0.11] (2026-07-23)
 
