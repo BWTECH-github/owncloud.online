@@ -78,7 +78,7 @@ Für ein späteres Update auf einen Tag oder Branch:
 
 ```bash
 cd /root/owncloud-online-server-bundle
-sudo bash bootstrap-empty-linux-server.sh --domain cloud.example.com --ref 11.0.11
+sudo bash bootstrap-empty-linux-server.sh --domain cloud.example.com --ref 11.0.12
 ```
 
 Das Script erkennt eine vorhandene `config/config.php` und überschreibt keine bestehenden Datenbank-Zugangsdaten.
