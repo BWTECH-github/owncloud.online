@@ -225,6 +225,7 @@
     "Restrict users to only share with groups they are member of" : "Benutzer auf das Teilen mit Gruppen, in denen sie Mitglied sind beschränken",
     "Allow users to send mail notification for shared files to other users" : "Benutzern erlauben, E-Mail-Benachrichtigungen für geteilte Dateien an andere Benutzer zu senden",
     "Exclude groups from sharing" : "Gruppen von Freigaben ausschließen",
+    "Groups excluded from sharing" : "Von Freigaben ausgeschlossene Gruppen",
     "These groups will still be able to receive shares, but not to initiate them." : "Diese Gruppen können weiterhin Freigaben empfangen, aber selbst keine mehr initiieren.",
     "Allow username autocompletion in share dialog. If this is disabled the full username needs to be entered." : "Die Auto-Vervollständigung von Benutzernamen im Teilen-Dialog erlauben. Wenn dies deaktiviert ist, muss der vollständige Benutzername eingegeben werden.",
     "Restrict enumeration to group members" : "Aufzählung auf Gruppenmitglieder beschränken",
