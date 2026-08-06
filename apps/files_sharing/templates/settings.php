@@ -3,6 +3,11 @@
  * @author Juan Pablo Villafáñez <jvillafanez@solidgear.es>
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-08-06.
+ * Changes: style(frontend): Accessibility at ownCloud.online - WACG 2.1 AA Check
+ * 
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -24,8 +29,8 @@ script('files_sharing', 'settings');
 <div class="section" id="files_sharing">
 	<h2 class="app-name"><?php p($l->t('Group Sharing Blacklist')); ?></h2>
 	<div class="indent">
-		<p><?php p($l->t('Exclude groups from receiving shares')); ?></p>
-		<input name="blacklisted_receiver_groups" class="noautosave" value="<?php p($_['blacklistedReceivers']) ?>" style="width: 400px"/>
+		<p><label for="blacklistedReceiverGroups"><?php p($l->t('Exclude groups from receiving shares')); ?></label></p>
+		<input name="blacklisted_receiver_groups" id="blacklistedReceiverGroups" class="noautosave" value="<?php p($_['blacklistedReceivers']) ?>" style="width: 400px"/>
 		<br />
 		<em><?php p($l->t('These groups will not be available to share with. Members of the group are not restricted in initiating shares and receiving personal shares/invitations. Furthermore they can receive shares addressed to other groups they are members of as usual.')); ?></em>
 	</div>
