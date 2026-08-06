@@ -26,10 +26,16 @@ var GroupDeleteHandler;
 		},
 
 		addGroup: function (gid, name, usercount) {
+			// SEC-25: Gruppen-ID und -Name werden hier als Markup interpretiert.
+			// Anders als Benutzernamen unterliegen Gruppennamen keiner Allow-List
+			// (Group\Manager::createGroup lehnt nur leere/ungetrimmte Namen ab),
+			// ein Name mit HTML/Script wuerde also im Benutzerverwaltungs-Panel
+			// ausgefuehrt - Stored XSS im Admin-Kontext. Die Benutzerzeilen
+			// escapen bereits, hier fehlte es.
 			var $li = $(
-				'<li class="isgroup" data-gid="' + gid + '" data-usercount="0">' +
+				'<li class="isgroup" data-gid="' + escapeHTML(gid) + '" data-usercount="0">' +
 				'	<a href="#" class="dorename">' +
-				'		<span class="groupname">' + name + '</span>' +
+				'		<span class="groupname">' + escapeHTML(name) + '</span>' +
 				'		<span class="usercount tag"></span>' +
 				'	</a>' +
 				'	<span class="utils">' +

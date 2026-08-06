@@ -111,11 +111,28 @@ class OCSAuthAPITest extends TestCase {
 		$this->assertSame($expected, $result['statuscode']);
 	}
 
+	/**
+	 * SEC-22: Das Tiebreaking vergleicht seit der Absicherung die SHA-256-Hashes
+	 * der Tokens, nicht mehr die Tokens selbst - sonst waere die Antwort ein
+	 * Orakel ueber den gespeicherten Klartext.
+	 *
+	 * Fuer genau diese beiden Testwerte ist die Hash-Ordnung der Klartext-Ordnung
+	 * ENTGEGENGESETZT:
+	 *   'token1' < 'token2', aber sha256('token1') = df3e6b0b... > sha256('token2') = d8cc7aed...
+	 * Die Paare sind deshalb gegenueber der Klartext-Fassung vertauscht. Die
+	 * geprüfte Fachlogik ist unveraendert: gewinnt der lokale Token, kommt 403;
+	 * gewinnt der entfernte, laeuft der Austausch an.
+	 *
+	 * @return array
+	 */
 	public function dataTestRequestSharedSecret() {
 		return [
-			['token2', 'token1', true, Http::STATUS_OK],
+			// entfernter Token gewinnt (sha256('token2') < sha256('token1')) -> Austausch startet
+			['token1', 'token2', true, Http::STATUS_OK],
+			// nicht vertrauenswuerdiger Server -> bricht schon vorher ab
 			['token1', 'token2', false, Http::STATUS_FORBIDDEN],
-			['token1', 'token2', true, Http::STATUS_FORBIDDEN],
+			// lokaler Token gewinnt (sha256('token1') > sha256('token2')) -> 403
+			['token2', 'token1', true, Http::STATUS_FORBIDDEN],
 		];
 	}
 

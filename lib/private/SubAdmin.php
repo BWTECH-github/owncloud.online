@@ -32,6 +32,7 @@ use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IGroup;
 use OCP\IGroupManager;
+use OCP\IConfig;
 use OCP\IDBConnection;
 
 class SubAdmin extends PublicEmitter {
@@ -45,21 +46,28 @@ class SubAdmin extends PublicEmitter {
 	/** @var IDBConnection */
 	private $dbConn;
 
+	/** @var IConfig */
+	private $config;
+
 	/**
 	 * @param IUserManager $userManager
 	 * @param IGroupManager $groupManager
 	 * @param IDBConnection $dbConn
+	 * @param IConfig|null $config SEC-27; optional, damit bestehende Aufrufer
+	 *                             mit drei Argumenten unveraendert laufen
 	 */
 	public function __construct(
 		IUserManager $userManager,
 		IGroupManager $groupManager,
-		IDBConnection $dbConn
+		IDBConnection $dbConn,
+		?IConfig $config = null
 	) {
 		'@phan-var \OC\User\Manager $userManager';
 		$this->userManager = $userManager;
 		'@phan-var \OC\Group\Manager $groupManager';
 		$this->groupManager = $groupManager;
 		$this->dbConn = $dbConn;
+		$this->config = $config ?? \OC::$server->getConfig();
 
 		$this->userManager->listen('\OC\User', 'postDelete', function ($user) {
 			$this->post_deleteUser($user);
@@ -203,6 +211,13 @@ class SubAdmin extends PublicEmitter {
 	 * @return bool
 	 */
 	public function isSubAdminofGroup(IUser $user, IGroup $group) {
+		// SEC-27: siehe isSubAdmin() - ist das Feature abgeschaltet, gilt
+		// niemand als Group-Admin einer Gruppe. Hier gibt es keine
+		// vorgelagerte Admin-Pruefung, die Reihenfolge ist also unkritisch.
+		if ($this->config->getSystemValue('allow_subadmins', true) !== true) {
+			return false;
+		}
+
 		$qb = $this->dbConn->getQueryBuilder();
 
 		/*
@@ -230,6 +245,20 @@ class SubAdmin extends PublicEmitter {
 		// Check if the user is already an admin
 		if ($this->groupManager->isAdmin($user->getUID())) {
 			return true;
+		}
+
+		// SEC-27: Das Group-Admin-Feature laesst sich abschalten. Der Schalter
+		// steht BEWUSST hinter der Admin-Pruefung oben: davor gesetzt wuerde er
+		// auch echte Administratoren als "kein Subadmin" melden, und
+		// isUserAccessible() steigt dann mit false aus - Admins verloeren den
+		// Zugriff auf die Benutzerverwaltung.
+		//
+		// Abweichend von Upstream ist der Default hier TRUE. Upstream schaltet
+		// das Feature ab v11 standardmaessig ab; auf Bestandsinstanzen wuerden
+		// damit vorhandene Group-Admin-Zuweisungen ohne Vorwarnung wirkungslos.
+		// Wer das Feature nicht braucht, setzt 'allow_subadmins' => false.
+		if ($this->config->getSystemValue('allow_subadmins', true) !== true) {
+			return false;
 		}
 
 		$qb = $this->dbConn->getQueryBuilder();
