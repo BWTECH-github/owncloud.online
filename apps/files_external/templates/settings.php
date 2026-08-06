@@ -1,4 +1,27 @@
 <?php
+/**
+ * @author Frank Boettcher <bricef.boettcher@bw.tech>
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-08-05.
+ * Changes: style(frontend): Accessibility at ownCloud.online - WACG-AA Check
+ *
+ * @license AGPL-3.0
+ *
+ * This code is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License, version 3,
+ * as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License, version 3,
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *
+ */
 
 	use OCP\Files\External\Auth\AuthMechanism;
 	use OCP\Files\External\Backend\Backend;
@@ -92,6 +115,7 @@
 					placeholder="<?php p($l->t('Folder name')); ?>">
 				</td>
 				<td class="backend">
+					<label for="selectBackend" class="hidden-visually"><?php p($l->t('External storage')); ?></label>
 					<select id="selectBackend" class="selectBackend" data-configurations='<?php p(\json_encode($_['backends'])); ?>'>
 						<option value="" disabled selected
 							style="display:none;">
