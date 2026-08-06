@@ -249,4 +249,29 @@ class ThrottlerTest extends TestCase {
 		// the surviving live-window row must still count towards the delay
 		$this->assertGreaterThan(0, $this->throttler->getDelay('login', '1.2.3.4', 'alice'));
 	}
+
+	/**
+	 * A broken or outdated attempts table - most notably right after an upgrade
+	 * whose migrations have not been run yet, where the ip_bucket column is still
+	 * missing - must never take authentication down with it. Every entry point
+	 * has to swallow (and log) the storage error and let the caller continue
+	 * unthrottled instead of turning each login into a 500.
+	 */
+	public function testStorageFailureDoesNotBreakAuthentication() {
+		$brokenDb = $this->createMock(IDBConnection::class);
+		$brokenDb->method('getQueryBuilder')
+			->willThrowException(new \Doctrine\DBAL\Exception('table has no column named ip_bucket'));
+		$logger = $this->createMock(ILogger::class);
+		$logger->expects($this->atLeastOnce())->method('logException');
+		$timeFactory = $this->createMock(ITimeFactory::class);
+		$timeFactory->method('getTime')->willReturn(1000000);
+
+		$throttler = new Throttler($brokenDb, $timeFactory, $logger);
+
+		$throttler->registerAttempt('login', '1.2.3.4', 'alice');
+		$throttler->resetDelay('login', '1.2.3.4', 'alice');
+		$this->assertSame(0, $throttler->getDelay('login', '1.2.3.4', 'alice'), 'no delay can be derived, so none is imposed');
+		$this->assertSame(0, $throttler->cleanupOldAttempts());
+		$throttler->sleepDelay('login', '1.2.3.4', 'alice');
+	}
 }

@@ -102,16 +102,39 @@ class Throttler {
 	 * @param string $identifier the targeted login name or share token
 	 */
 	public function registerAttempt($action, $ip, $identifier) {
-		$qb = $this->db->getQueryBuilder();
-		$qb->insert(self::DB_TABLE)
-			->values([
-				'action' => $qb->createNamedParameter($action),
-				'occurred' => $qb->createNamedParameter($this->timeFactory->getTime(), IQueryBuilder::PARAM_INT),
-				'ip' => $qb->createNamedParameter($ip),
-				'ip_bucket' => $qb->createNamedParameter($this->computeIpBucket($ip)),
-				'identifier' => $qb->createNamedParameter($identifier),
-			]);
-		$qb->execute();
+		try {
+			$qb = $this->db->getQueryBuilder();
+			$qb->insert(self::DB_TABLE)
+				->values([
+					'action' => $qb->createNamedParameter($action),
+					'occurred' => $qb->createNamedParameter($this->timeFactory->getTime(), IQueryBuilder::PARAM_INT),
+					'ip' => $qb->createNamedParameter($ip),
+					'ip_bucket' => $qb->createNamedParameter($this->computeIpBucket($ip)),
+					'identifier' => $qb->createNamedParameter($identifier),
+				]);
+			$qb->execute();
+		} catch (\Exception $e) {
+			$this->logStorageFailure($e, 'record a failed attempt');
+		}
+	}
+
+	/**
+	 * The throttler must never take authentication down with it. Its table can be
+	 * missing or out of date - most notably right after an upgrade whose
+	 * migrations have not been run yet, where the ip_bucket column does not exist
+	 * yet - and a query failing there must not turn every login into a 500. Log
+	 * the problem prominently (an administrator has to run occ upgrade) and let
+	 * the caller continue unthrottled.
+	 *
+	 * @param \Exception $e
+	 * @param string $what description of the operation that failed
+	 */
+	private function logStorageFailure(\Exception $e, $what) {
+		$this->logger->logException($e, [
+			'app' => 'core',
+			'message' => "Brute-force throttler could not $what - is the database schema up to date (occ upgrade)? Continuing without throttling.",
+			'level' => \OCP\Util::ERROR,
+		]);
 	}
 
 	/**
@@ -131,12 +154,16 @@ class Throttler {
 	 * @param string $identifier
 	 */
 	public function resetDelay($action, $ip, $identifier) {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete(self::DB_TABLE)
-			->where($qb->expr()->eq('action', $qb->createNamedParameter($action)))
-			->andWhere($qb->expr()->eq('ip', $qb->createNamedParameter($ip)))
-			->andWhere($qb->expr()->eq('identifier', $qb->createNamedParameter($identifier)));
-		$qb->execute();
+		try {
+			$qb = $this->db->getQueryBuilder();
+			$qb->delete(self::DB_TABLE)
+				->where($qb->expr()->eq('action', $qb->createNamedParameter($action)))
+				->andWhere($qb->expr()->eq('ip', $qb->createNamedParameter($ip)))
+				->andWhere($qb->expr()->eq('identifier', $qb->createNamedParameter($identifier)));
+			$qb->execute();
+		} catch (\Exception $e) {
+			$this->logStorageFailure($e, 'clear recorded attempts');
+		}
 	}
 
 	/**
@@ -150,16 +177,21 @@ class Throttler {
 	 * @return int seconds, 0 if no delay is warranted
 	 */
 	public function getDelay($action, $ip, $identifier) {
-		$exactCount = \max(
-			$this->countAttempts($action, $ip, $identifier),
-			$this->countAttemptsByIp($action, $ip)
-		);
-		$bucketCount = $this->countAttemptsByIpBucket($action, $ip);
+		try {
+			$exactCount = \max(
+				$this->countAttempts($action, $ip, $identifier),
+				$this->countAttemptsByIp($action, $ip)
+			);
+			$bucketCount = $this->countAttemptsByIpBucket($action, $ip);
 
-		return \max(
-			$this->exponentialDelay($exactCount, self::MAX_DELAY_SECONDS),
-			$this->exponentialDelay($bucketCount - self::BUCKET_FREE_ATTEMPTS, self::BUCKET_MAX_DELAY_SECONDS)
-		);
+			return \max(
+				$this->exponentialDelay($exactCount, self::MAX_DELAY_SECONDS),
+				$this->exponentialDelay($bucketCount - self::BUCKET_FREE_ATTEMPTS, self::BUCKET_MAX_DELAY_SECONDS)
+			);
+		} catch (\Exception $e) {
+			$this->logStorageFailure($e, 'read recorded attempts');
+			return 0;
+		}
 	}
 
 	/**
@@ -337,12 +369,17 @@ class Throttler {
 	 * @return int number of rows deleted
 	 */
 	public function cleanupOldAttempts() {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete(self::DB_TABLE)
-			->where($qb->expr()->lt('occurred', $qb->createNamedParameter(
-				$this->timeFactory->getTime() - self::LOOKBACK_SECONDS,
-				IQueryBuilder::PARAM_INT
-			)));
-		return (int)$qb->execute();
+		try {
+			$qb = $this->db->getQueryBuilder();
+			$qb->delete(self::DB_TABLE)
+				->where($qb->expr()->lt('occurred', $qb->createNamedParameter(
+					$this->timeFactory->getTime() - self::LOOKBACK_SECONDS,
+					IQueryBuilder::PARAM_INT
+				)));
+			return (int)$qb->execute();
+		} catch (\Exception $e) {
+			$this->logStorageFailure($e, 'prune expired attempts');
+			return 0;
+		}
 	}
 }
