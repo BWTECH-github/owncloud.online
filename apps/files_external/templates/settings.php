@@ -111,10 +111,32 @@
 				<td class="status">
 					<span></span>
 				</td>
-				<td class="mountPoint"><input type="text" name="mountPoint" value=""
-					placeholder="<?php p($l->t('Folder name')); ?>">
+				<td class="mountPoint">
+					<?php /* OC-WCAG-066: barrierefreier Name fuer das Ordnernamen-Feld
+					        (SC 3.3.2 / 4.1.2). Ein placeholder ist KEIN Name, und die
+					        Spaltenueberschrift <th> geht nicht in die Namensberechnung
+					        eines Formularelements ein.
+
+					        Bewusst ein UMSCHLIESSENDES Label statt label[for=...]:
+					        js/settings.js klont diese Zeile als neue Vorlage und laesst
+					        die Datenzeile samt Eingabefeld stehen (nur td.backend wird
+					        per .text() geleert). Eine feste id waere danach in jeder
+					        angelegten Speicherzeile erneut vorhanden - doppelte ids,
+					        und label[for] traefe nur noch die erste. Die implizite
+					        Verknuepfung ueberlebt das Klonen dagegen unveraendert. */ ?>
+					<label>
+						<span class="hidden-visually"><?php p($l->t('Folder name')); ?></span>
+						<input type="text" name="mountPoint" value=""
+							placeholder="<?php p($l->t('Folder name')); ?>">
+					</label>
 				</td>
 				<td class="backend">
+					<?php /* OC-WCAG-001: barrierefreier Name fuer die Backend-Auswahl.
+					        Das Label muss in DIESER Zelle bleiben - js/settings.js
+					        ersetzt beim Anlegen einer Speicherzeile den kompletten
+					        Zelleninhalt per .text(), sodass Label und Select gemeinsam
+					        verschwinden. Ausserhalb platziert bliebe in jeder Datenzeile
+					        ein verwaistes label[for="selectBackend"] zurueck. */ ?>
 					<label for="selectBackend" class="hidden-visually"><?php p($l->t('External storage')); ?></label>
 					<select id="selectBackend" class="selectBackend" data-configurations='<?php p(\json_encode($_['backends'])); ?>'>
 						<option value="" disabled selected
