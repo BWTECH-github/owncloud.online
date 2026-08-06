@@ -34,6 +34,19 @@ updates:
     versions:
     - 3.0.2
     - 3.0.5
+# SEC-19: apps/oco_mcp buendelt einen eigenen composer.lock (mcp/sdk und dessen
+# PSR-/Symfony-Abhaengigkeiten). Der wurde von der Wurzel-Konfiguration oben
+# NICHT erfasst, das SDK lief also ohne Update-Beobachtung - obwohl es die aus
+# dem Netz erreichbare Komponente ist, die JSON-RPC parst. mcp/sdk ist jung und
+# in den Advisory-Datenbanken kaum abgedeckt; Updates deshalb zeitnah nachziehen
+# und dabei CHANGELOG/SECURITY des SDK durchsehen.
+- package-ecosystem: composer
+  directory: "/apps/oco_mcp"
+  schedule:
+    interval: weekly
+    time: "22:00"
+  open-pull-requests-limit: 5
+
 - package-ecosystem: npm
   directory: "/build"
   schedule:
