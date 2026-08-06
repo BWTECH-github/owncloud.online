@@ -565,10 +565,25 @@ class File extends Node implements IFile, IFileNode {
 
 			$exists = $this->fileView->file_exists($targetPath);
 
+			// Ein Veto der Pre-Write-Hooks (Dateinamen-Blacklist, file_firewall,
+			// Workflow-Regeln) muss den Upload genauso verwerfen wie beim nicht
+			// gechunkten Schreiben — sonst laesst sich jede Datei-Policy umgehen,
+			// indem man dieselbe Datei gechunkt hochlaedt.
+			//
+			// Bewusst VOR dem try-Block: dessen catch raeumt eine fehlgeschlagene
+			// Uebertragung per cleanFailedUpload() am Papierkorb vorbei auf. Ein
+			// Veto darf aber nichts loeschen — bei einer bereits existierenden
+			// Zieldatei waere das Datenverlust. Hier ist ausserdem noch nichts
+			// gesperrt und nichts geschrieben, es gibt also nichts zurueckzurollen
+			// ausser den hochgeladenen Chunks.
+			if ($this->emitPreHooks($exists, $targetPath) === false) {
+				$chunk_handler->cleanup();
+				throw new Forbidden('Writing the file was not allowed');
+			}
+
 			try {
 				$this->fileView->lockFile($targetPath, ILockingProvider::LOCK_SHARED);
 
-				$this->emitPreHooks($exists, $targetPath);
 				// Alle Chunks sind bereits übertragen — ein kurzlebiger Shared-Lock
 				// (z.B. paralleler Download) soll den Upload nicht komplett verwerfen
 				$this->changeLockExclusiveWithRetry($targetPath);

@@ -50,6 +50,10 @@ nav:
       - Upstream-CVE-Status: administration/upstream-cve-status.md
       - Apps und Marketplace: administration/apps-market.md
       - Backups und Updates: administration/backups-updates.md
+      - Konfiguration (config.php): administration/config-reference.md
+      - Hintergrund-Jobs (Cron): administration/background-jobs.md
+      - Datenbank: administration/database.md
+      - Verschlüsselung: administration/encryption.md
       - Serverprotokoll und Fehlermeldungen: administration/logging.md
       - Troubleshooting: administration/troubleshooting.md
   - Benutzer:

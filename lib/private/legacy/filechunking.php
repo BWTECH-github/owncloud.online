@@ -29,6 +29,15 @@
  */
 
 class OC_FileChunking {
+	/**
+	 * Wie oft versucht wird, den Übertragungs-Lock für die Größen-Buchhaltung zu
+	 * bekommen, und wie lange dazwischen gewartet wird. Bewusst knapp gehalten:
+	 * der geschützte Abschnitt ist reine Buchhaltung von Mikrosekunden-Dauer, und
+	 * wer den Lock nicht bekommt, verwirft nur die Zwischensumme statt zu warten.
+	 */
+	private const LOCK_ATTEMPTS = 5;
+	private const LOCK_RETRY_USEC = 20000; // 20 ms
+
 	protected $info;
 	protected $cache;
 
@@ -83,13 +92,99 @@ class OC_FileChunking {
 	public function store($index, $data) {
 		$cache = $this->getCache();
 		$name = $this->getPrefix().$index;
-		// bei Retries desselben Chunks die alte Größe aus der Zwischensumme herausrechnen
-		$oldSize = $cache->size($name);
-		$cache->set($name, $data, $this->ttl);
-		$size = $cache->size($name);
-		$this->updateCachedTotalSize($size - $oldSize);
+
+		// Der Abschnitt "alte Größe lesen → Chunk schreiben → Zwischensumme
+		// fortschreiben" wird pro Übertragung serialisiert. Ohne das lesen zwei
+		// gleichzeitig eintreffende Chunks DERSELBEN Übertragung denselben
+		// Ausgangswert und eines der beiden Updates geht verloren — OC\Cache\File
+		// ist dateisystembasiert und kann nicht atomar inkrementieren. Die
+		// Zwischensumme wäre dann zu klein und mit ihr der Quota-Check im
+		// QuotaPlugin, das getCurrentSize() vor jedem Chunk-PUT auswertet.
+		//
+		// Der Lock ist auf name+transferid gekeyt: nur Chunks derselben
+		// Übertragung warten aufeinander, parallele Uploads verschiedener
+		// Dateien oder Nutzer bleiben unbeeinflusst.
+		$locked = $this->acquireTransferLock();
+		try {
+			// bei Retries desselben Chunks die alte Größe aus der Zwischensumme herausrechnen
+			$oldSize = $cache->size($name);
+			$cache->set($name, $data, $this->ttl);
+			$size = $cache->size($name);
+
+			if ($locked) {
+				$this->updateCachedTotalSize($size - $oldSize);
+			} else {
+				// Ohne Serialisierung darf die Zwischensumme nicht inkrementell
+				// fortgeschrieben werden — sie wird verworfen und beim nächsten
+				// getCurrentSize() exakt neu gezählt. Lieber einmal langsamer als
+				// dauerhaft zu niedrig (und damit die Quota unterlaufen).
+				$this->invalidateCachedTotalSize();
+			}
+		} finally {
+			if ($locked) {
+				$this->releaseTransferLock();
+			}
+		}
 
 		return $size;
+	}
+
+	/**
+	 * Lock-Key dieser Übertragung (name + transferid), bewusst nicht global.
+	 *
+	 * @return string
+	 */
+	private function getTransferLockKey() {
+		return 'chunked-upload::' . $this->getPrefix();
+	}
+
+	/**
+	 * Kurzer exklusiver Lock um die Größen-Buchhaltung. Schlägt das Sperren fehl
+	 * (anderer Chunk hält gerade, oder kein Locking-Provider verfügbar), läuft der
+	 * Upload weiter — der Aufrufer verwirft dann die Zwischensumme, statt sie
+	 * unsynchronisiert fortzuschreiben.
+	 *
+	 * @return bool ob der Lock gehalten wird
+	 */
+	private function acquireTransferLock() {
+		for ($attempt = 0; $attempt < self::LOCK_ATTEMPTS; $attempt++) {
+			try {
+				\OC::$server->getLockingProvider()->acquireLock(
+					$this->getTransferLockKey(),
+					\OCP\Lock\ILockingProvider::LOCK_EXCLUSIVE
+				);
+				return true;
+			} catch (\OCP\Lock\LockedException $e) {
+				// anderer Chunk derselben Übertragung ist gerade dran — kurz warten
+				\usleep(self::LOCK_RETRY_USEC);
+			} catch (\Exception $e) {
+				// kein nutzbarer Locking-Provider — ohne Lock weitermachen
+				return false;
+			}
+		}
+		return false;
+	}
+
+	private function releaseTransferLock() {
+		try {
+			\OC::$server->getLockingProvider()->releaseLock(
+				$this->getTransferLockKey(),
+				\OCP\Lock\ILockingProvider::LOCK_EXCLUSIVE
+			);
+		} catch (\Exception $e) {
+			// Locks laufen spätestens am Request-Ende aus
+		}
+	}
+
+	/**
+	 * Verwirft die gecachte Zwischensumme, sodass getCurrentSize() sie neu zählt.
+	 */
+	private function invalidateCachedTotalSize() {
+		try {
+			$this->getCache()->remove($this->getSizeKey());
+		} catch (\Exception $e) {
+			// ignorieren — ein stehengebliebener Wert wäre höchstens zu groß
+		}
 	}
 
 	/**
