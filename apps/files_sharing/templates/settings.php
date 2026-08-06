@@ -63,14 +63,15 @@ script('files_sharing', 'settings');
 			  	p('hidden');
 			  } ?>">
 		  <?php /* OC-WCAG-003: dasselbe select2-Muster, hier fehlte nur das
-				  Label - die id war schon vorhanden. Bewusst visuell
-				  ausgeblendet: anders als beim Feld oben gibt es hier keinen
-				  eigenen sichtbaren Beschriftungstext, und ein zweiter
-				  sichtbarer Satz direkt unter der Checkbox waere doppelte
-				  Beschriftung. Nachgenutzt wird der bereits uebersetzte
-				  Checkbox-String; ein eigener, praeziserer String waere
-				  schoener, muesste aber erst uebersetzt werden. */ ?>
-		  <label for="allowlistPublicShareSharersGroups" class="hidden-visually"><?php p($l->t('Only certain groups are allowed to create public links')); ?></label>
+				  Label - die id war schon vorhanden. Das Label MUSS in diesem
+				  <span> bleiben, damit es zusammen mit der Checkbox ein- und
+				  ausgeblendet wird. Bewusst visuell ausgeblendet: anders als
+				  beim Feld oben gibt es hier keinen eigenen sichtbaren
+				  Beschriftungstext, und ein zweiter sichtbarer Satz direkt
+				  unter der Checkbox waere doppelte Beschriftung. Eigener,
+				  praeziserer String statt des Checkbox-Textes - sonst truegen
+				  Checkbox und Feld denselben Namen. */ ?>
+		  <label for="allowlistPublicShareSharersGroups" class="hidden-visually"><?php p($l->t('Groups allowed to create public links')); ?></label>
 		  <input name="public_share_sharers_groups_allowlist"
 				 id="allowlistPublicShareSharersGroups"
 				 class="noautosave"
