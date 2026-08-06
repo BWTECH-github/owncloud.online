@@ -110,6 +110,12 @@ class OccController extends Controller {
 			// ein 'command'-Schluessel, wuerde er beim array_merge den zuvor
 			// gegen die Allow-List geprueften Wert ueberschreiben - die Pruefung
 			// waere wirkungslos.
+			//
+			// Der Parameter ist untypisiert: schickt ein Aufrufer statt eines
+			// Objekts z.B. eine Zeichenkette, lief das frueher in einen
+			// TypeError im array_merge (und damit in eine 500). Ein nicht
+			// verwertbarer Wert wird deshalb verworfen statt zu sprengen.
+			$params = \is_array($params) ? $params : [];
 			unset($params['command']);
 			$inputArray = \array_merge(['command' => $command], $params);
 			$input = new ArrayInput($inputArray);

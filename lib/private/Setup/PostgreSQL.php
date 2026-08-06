@@ -105,12 +105,23 @@ class PostgreSQL extends AbstractDatabase {
 				// pg_escape_identifier() liefert den Wert bereits korrekt
 				// doppelt gequotet - die manuellen \"...\" entfallen deshalb.
 				$e_user = \pg_escape_identifier($schemaConnection, $this->dbUser);
-				$query = "GRANT CREATE, USAGE ON SCHEMA public TO $e_user";
-				$result = \pg_query($schemaConnection, $query);
-				if (!$result) {
-					$entry = $this->trans->t('DB Error: "%s"', [\pg_last_error($schemaConnection)]) . '<br />';
-					$entry .= $this->trans->t('Offending command was: "%s"', [$query]) . '<br />';
-					\OCP\Util::writeLog('setup.pg', $entry, \OCP\Util::WARN);
+				if ($e_user === false) {
+					// Kann der Name nicht escapt werden, wird KEINE Query
+					// zusammengebaut - sonst entstuende "GRANT ... TO " und
+					// der Fehler waere ein Syntaxfehler statt der Ursache.
+					\OCP\Util::writeLog(
+						'setup.pg',
+						'Could not escape the database role name, skipping the schema grant.',
+						\OCP\Util::WARN
+					);
+				} else {
+					$query = "GRANT CREATE, USAGE ON SCHEMA public TO $e_user";
+					$result = \pg_query($schemaConnection, $query);
+					if (!$result) {
+						$entry = $this->trans->t('DB Error: "%s"', [\pg_last_error($schemaConnection)]) . '<br />';
+						$entry .= $this->trans->t('Offending command was: "%s"', [$query]) . '<br />';
+						\OCP\Util::writeLog('setup.pg', $entry, \OCP\Util::WARN);
+					}
 				}
 				\pg_close($schemaConnection);
 			}

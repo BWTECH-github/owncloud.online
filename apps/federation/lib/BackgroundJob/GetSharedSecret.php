@@ -169,8 +169,10 @@ class GetSharedSecret extends Job {
 					['app' => 'federation']
 				);
 			}
-		} catch (\Exception $e) {
+		} catch (\Exception) {
 			// Siehe oben - auch hier kann die Meldung die URI mit dem Token tragen.
+			// Die Exception wird bewusst nicht gebunden: ihr Text darf nirgends
+			// hin, und eine ungenutzte Variable waere nur Ballast.
 			$status = Http::STATUS_INTERNAL_SERVER_ERROR;
 			$this->logger->error(
 				'Could not exchange a shared secret with ' . $target,
