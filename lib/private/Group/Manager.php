@@ -487,7 +487,11 @@ class Manager extends PublicEmitter implements IGroupManager {
 			$this->subAdmin = new \OC\SubAdmin(
 				$this->userManager,
 				$this,
-				\OC::$server->getDatabaseConnection()
+				\OC::$server->getDatabaseConnection(),
+				// SEC-27: explizit uebergeben statt im Konstruktor nachzuladen -
+				// der optionale Parameter dort ist nur fuer bestehende Aufrufer
+				// und Tests gedacht, die mit drei Argumenten konstruieren.
+				\OC::$server->getConfig()
 			);
 		}
 
