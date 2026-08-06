@@ -253,13 +253,13 @@ abstract class StoragesController extends Controller {
 					$testOnly
 				)
 			);
-		// SEC-26: Die rohe Exception-Meldung darf nicht an den Client zurueck.
-		// Bei Guzzle-/cURL-Fehlern steht darin die aufgeloeste interne IP, der
-		// Port und der Unterschied zwischen "Host existiert nicht" und
-		// "Verbindung abgelehnt". Ein Nutzer, der externe Speicher anlegen darf,
-		// koennte damit durch gezielt gesetzte Ziel-Hosts die interne
-		// Netz-Topologie kartieren - die Aufklaerungsphase fuer SSRF.
-		// Vollstaendig ins Log, generisch an den Client.
+			// SEC-26: Die rohe Exception-Meldung darf nicht an den Client zurueck.
+			// Bei Guzzle-/cURL-Fehlern steht darin die aufgeloeste interne IP, der
+			// Port und der Unterschied zwischen "Host existiert nicht" und
+			// "Verbindung abgelehnt". Ein Nutzer, der externe Speicher anlegen darf,
+			// koennte damit durch gezielt gesetzte Ziel-Hosts die interne
+			// Netz-Topologie kartieren - die Aufklaerungsphase fuer SSRF.
+			// Vollstaendig ins Log, generisch an den Client.
 		} catch (InsufficientDataForMeaningfulAnswerException $e) {
 			$status = $e->getCode() ? $e->getCode() : StorageNotAvailableException::STATUS_INDETERMINATE;
 			$this->logger->logException($e, ['app' => 'files_external']);
