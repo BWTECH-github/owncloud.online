@@ -319,6 +319,18 @@ class OC_Defaults {
 			\OCP\Constants::DOCS_ADMIN_ENCRYPTION => '/administration/',
 			\OCP\Constants::DOCS_ADMIN_BACKGROUND_JOBS => '/administration/',
 			\OCP\Constants::DOCS_ADMIN_DB_CONVERSION => '/administration/',
+			// keys used outside the Constants class
+			'admin-marketplace-apps' => '/administration/apps-market/',
+			'developer-manual' => '/developer/',
+			'use-https' => '/administration/security-hardening/',
+			'enable-http-strict-transport-security' => '/administration/security-hardening/',
+			'admin-setup-well-known-URL' => '/installation/linux-server/',
+			// core/js/config.php publishes buildDocLinkToKey('PLACEHOLDER') as
+			// oc_defaults.docPlaceholderUrl, and setupchecks.js swaps PLACEHOLDER for a
+			// key at runtime. Without an upstream-style go.php the substitution cannot
+			// work, so this resolves to the page those runtime keys are about
+			// (https/HSTS warnings) instead of dropping them on the start page.
+			'PLACEHOLDER' => '/administration/security-hardening/',
 		];
 
 		return $this->getDocBaseUrl() . ($map[$key] ?? '/');
