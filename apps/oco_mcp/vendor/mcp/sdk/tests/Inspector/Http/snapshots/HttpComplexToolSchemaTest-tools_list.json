@@ -1,0 +1,70 @@
+{
+  "tools": [
+    {
+      "name": "schedule_event",
+      "description": "Schedules a new event.\n\nThe inputSchema for this tool will reflect all parameter types and defaults.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "the title of the event"
+          },
+          "date": {
+            "type": "string",
+            "description": "the date of the event (YYYY-MM-DD)"
+          },
+          "type": {
+            "type": "string",
+            "description": "the type of event",
+            "enum": [
+              "meeting",
+              "reminder",
+              "call",
+              "other"
+            ]
+          },
+          "time": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "the time of the event (HH:MM), optional",
+            "default": null
+          },
+          "priority": {
+            "type": "string",
+            "description": "The priority of the event. Defaults to Normal.",
+            "default": "normal",
+            "enum": [
+              "low",
+              "normal",
+              "high"
+            ]
+          },
+          "attendees": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "description": "an optional list of attendee email addresses",
+            "default": null,
+            "items": {
+              "type": "string"
+            }
+          },
+          "sendInvites": {
+            "type": "boolean",
+            "description": "send calendar invites to attendees? Defaults to true if attendees are provided",
+            "default": true
+          }
+        },
+        "required": [
+          "title",
+          "date",
+          "type"
+        ]
+      }
+    }
+  ]
+}

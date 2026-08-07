@@ -1,0 +1,83 @@
+# https://help.github.com/en/categories/automating-your-workflow-with-github-actions
+
+name: "Test Slevomat Coding Standard"
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "2.3.x"
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: "Tests"
+    runs-on: "ubuntu-latest"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version:
+          - "7.4"
+          - "8.0"
+          - "8.1"
+          - "8.2"
+          - "8.3"
+          - "8.4"
+          - "8.5"
+
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: "Checkout"
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: "Checkout Slevomat Coding Standard"
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: slevomat/coding-standard
+          path: slevomat-cs
+          ref: ae7325d76167f02e3b20b0ad19122dcf472188e4
+
+      - name: "Install PHP"
+        uses: "shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240" # v2
+        with:
+          coverage: "none"
+          php-version: "${{ matrix.php-version }}"
+
+      - name: "Unset platform"
+        working-directory: slevomat-cs
+        run: "composer config --unset platform"
+
+      - name: "Install dependencies"
+        working-directory: slevomat-cs
+        run: "composer install --no-interaction --no-progress"
+
+      - name: "Remove stable phpdoc-parser"
+        working-directory: slevomat-cs
+        run: "rm -r vendor/phpstan/phpdoc-parser/src"
+
+      - name: "Remove top-level phpcs.xml"
+        run: "rm phpcs.xml"
+
+      - name: "Copy phpdoc-parser"
+        run: "cp -r src/ slevomat-cs/vendor/phpstan/phpdoc-parser/src"
+
+      - name: "Tests"
+        working-directory: slevomat-cs
+        run: "bin/phpunit --no-coverage"
+
+      - name: "PHPStan"
+        if: matrix.php-version == '8.5'
+        working-directory: slevomat-cs
+        run: "bin/phpstan analyse -c build/PHPStan/phpstan.neon"
+
+      - name: "PHPStan in tests"
+        if: matrix.php-version == '8.5'
+        working-directory: slevomat-cs
+        run: "bin/phpstan analyse -c build/PHPStan/phpstan.tests.neon"
