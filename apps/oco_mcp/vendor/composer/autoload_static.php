@@ -11,95 +11,95 @@ class ComposerStaticInit293aa830bf7cefc014843e50dc72660a
     );
 
     public static $prefixLengthsPsr4 = array (
-        'p' =>
+        'p' => 
         array (
             'phpDocumentor\\Reflection\\' => 25,
         ),
-        'W' =>
+        'W' => 
         array (
             'Webmozart\\Assert\\' => 17,
         ),
-        'S' =>
+        'S' => 
         array (
             'Symfony\\Polyfill\\Uuid\\' => 22,
             'Symfony\\Component\\Uid\\' => 22,
         ),
-        'P' =>
+        'P' => 
         array (
             'Psr\\Http\\Server\\' => 16,
             'Psr\\Clock\\' => 10,
             'PHPStan\\PhpDocParser\\' => 21,
         ),
-        'O' =>
+        'O' => 
         array (
             'Opis\\Uri\\' => 9,
             'Opis\\String\\' => 12,
             'Opis\\JsonSchema\\' => 16,
             'OCA\\OcoMcp\\' => 11,
         ),
-        'M' =>
+        'M' => 
         array (
             'Mcp\\' => 4,
         ),
-        'H' =>
+        'H' => 
         array (
             'Http\\Discovery\\' => 15,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'phpDocumentor\\Reflection\\' =>
+        'phpDocumentor\\Reflection\\' => 
         array (
             0 => __DIR__ . '/..' . '/phpdocumentor/reflection-docblock/src',
             1 => __DIR__ . '/..' . '/phpdocumentor/type-resolver/src',
             2 => __DIR__ . '/..' . '/phpdocumentor/reflection-common/src',
         ),
-        'Webmozart\\Assert\\' =>
+        'Webmozart\\Assert\\' => 
         array (
             0 => __DIR__ . '/..' . '/webmozart/assert/src',
         ),
-        'Symfony\\Polyfill\\Uuid\\' =>
+        'Symfony\\Polyfill\\Uuid\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-uuid',
         ),
-        'Symfony\\Component\\Uid\\' =>
+        'Symfony\\Component\\Uid\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/uid',
         ),
-        'Psr\\Http\\Server\\' =>
+        'Psr\\Http\\Server\\' => 
         array (
             0 => __DIR__ . '/..' . '/psr/http-server-middleware/src',
             1 => __DIR__ . '/..' . '/psr/http-server-handler/src',
         ),
-        'Psr\\Clock\\' =>
+        'Psr\\Clock\\' => 
         array (
             0 => __DIR__ . '/..' . '/psr/clock/src',
         ),
-        'PHPStan\\PhpDocParser\\' =>
+        'PHPStan\\PhpDocParser\\' => 
         array (
             0 => __DIR__ . '/..' . '/phpstan/phpdoc-parser/src',
         ),
-        'Opis\\Uri\\' =>
+        'Opis\\Uri\\' => 
         array (
             0 => __DIR__ . '/..' . '/opis/uri/src',
         ),
-        'Opis\\String\\' =>
+        'Opis\\String\\' => 
         array (
             0 => __DIR__ . '/..' . '/opis/string/src',
         ),
-        'Opis\\JsonSchema\\' =>
+        'Opis\\JsonSchema\\' => 
         array (
             0 => __DIR__ . '/..' . '/opis/json-schema/src',
         ),
-        'OCA\\OcoMcp\\' =>
+        'OCA\\OcoMcp\\' => 
         array (
             0 => __DIR__ . '/../..' . '/lib',
         ),
-        'Mcp\\' =>
+        'Mcp\\' => 
         array (
             0 => __DIR__ . '/..' . '/mcp/sdk/src',
         ),
-        'Http\\Discovery\\' =>
+        'Http\\Discovery\\' => 
         array (
             0 => __DIR__ . '/..' . '/php-http/discovery/src',
         ),
@@ -174,6 +174,8 @@ class ComposerStaticInit293aa830bf7cefc014843e50dc72660a
         'Mcp\\Client\\Handler\\Notification\\LoggingNotificationHandler' => __DIR__ . '/..' . '/mcp/sdk/src/Client/Handler/Notification/LoggingNotificationHandler.php',
         'Mcp\\Client\\Handler\\Notification\\NotificationHandlerInterface' => __DIR__ . '/..' . '/mcp/sdk/src/Client/Handler/Notification/NotificationHandlerInterface.php',
         'Mcp\\Client\\Handler\\Notification\\ProgressNotificationHandler' => __DIR__ . '/..' . '/mcp/sdk/src/Client/Handler/Notification/ProgressNotificationHandler.php',
+        'Mcp\\Client\\Handler\\Request\\ElicitationCallbackInterface' => __DIR__ . '/..' . '/mcp/sdk/src/Client/Handler/Request/ElicitationCallbackInterface.php',
+        'Mcp\\Client\\Handler\\Request\\ElicitationRequestHandler' => __DIR__ . '/..' . '/mcp/sdk/src/Client/Handler/Request/ElicitationRequestHandler.php',
         'Mcp\\Client\\Handler\\Request\\RequestHandlerInterface' => __DIR__ . '/..' . '/mcp/sdk/src/Client/Handler/Request/RequestHandlerInterface.php',
         'Mcp\\Client\\Handler\\Request\\SamplingCallbackInterface' => __DIR__ . '/..' . '/mcp/sdk/src/Client/Handler/Request/SamplingCallbackInterface.php',
         'Mcp\\Client\\Handler\\Request\\SamplingRequestHandler' => __DIR__ . '/..' . '/mcp/sdk/src/Client/Handler/Request/SamplingRequestHandler.php',
@@ -198,6 +200,7 @@ class ComposerStaticInit293aa830bf7cefc014843e50dc72660a
         'Mcp\\Exception\\ConfigurationException' => __DIR__ . '/..' . '/mcp/sdk/src/Exception/ConfigurationException.php',
         'Mcp\\Exception\\ConnectionException' => __DIR__ . '/..' . '/mcp/sdk/src/Exception/ConnectionException.php',
         'Mcp\\Exception\\ContainerException' => __DIR__ . '/..' . '/mcp/sdk/src/Exception/ContainerException.php',
+        'Mcp\\Exception\\ElicitationException' => __DIR__ . '/..' . '/mcp/sdk/src/Exception/ElicitationException.php',
         'Mcp\\Exception\\Exception' => __DIR__ . '/..' . '/mcp/sdk/src/Exception/Exception.php',
         'Mcp\\Exception\\ExceptionInterface' => __DIR__ . '/..' . '/mcp/sdk/src/Exception/ExceptionInterface.php',
         'Mcp\\Exception\\HandlerNotFoundException' => __DIR__ . '/..' . '/mcp/sdk/src/Exception/HandlerNotFoundException.php',
@@ -373,6 +376,7 @@ class ComposerStaticInit293aa830bf7cefc014843e50dc72660a
         'Mcp\\Server\\Transport\\Http\\OAuth\\OidcDiscoveryInterface' => __DIR__ . '/..' . '/mcp/sdk/src/Server/Transport/Http/OAuth/OidcDiscoveryInterface.php',
         'Mcp\\Server\\Transport\\Http\\OAuth\\OidcDiscoveryMetadataPolicyInterface' => __DIR__ . '/..' . '/mcp/sdk/src/Server/Transport/Http/OAuth/OidcDiscoveryMetadataPolicyInterface.php',
         'Mcp\\Server\\Transport\\Http\\OAuth\\ProtectedResourceMetadata' => __DIR__ . '/..' . '/mcp/sdk/src/Server/Transport/Http/OAuth/ProtectedResourceMetadata.php',
+        'Mcp\\Server\\Transport\\Http\\OAuth\\ProtectedResourceMetadataHandler' => __DIR__ . '/..' . '/mcp/sdk/src/Server/Transport/Http/OAuth/ProtectedResourceMetadataHandler.php',
         'Mcp\\Server\\Transport\\Http\\OAuth\\StrictOidcDiscoveryMetadataPolicy' => __DIR__ . '/..' . '/mcp/sdk/src/Server/Transport/Http/OAuth/StrictOidcDiscoveryMetadataPolicy.php',
         'Mcp\\Server\\Transport\\InMemoryTransport' => __DIR__ . '/..' . '/mcp/sdk/src/Server/Transport/InMemoryTransport.php',
         'Mcp\\Server\\Transport\\ManagesTransportCallbacks' => __DIR__ . '/..' . '/mcp/sdk/src/Server/Transport/ManagesTransportCallbacks.php',
@@ -382,6 +386,22 @@ class ComposerStaticInit293aa830bf7cefc014843e50dc72660a
         'Mcp\\Server\\Transport\\Stdio\\RunnerState' => __DIR__ . '/..' . '/mcp/sdk/src/Server/Transport/Stdio/RunnerState.php',
         'Mcp\\Server\\Transport\\StreamableHttpTransport' => __DIR__ . '/..' . '/mcp/sdk/src/Server/Transport/StreamableHttpTransport.php',
         'Mcp\\Server\\Transport\\TransportInterface' => __DIR__ . '/..' . '/mcp/sdk/src/Server/Transport/TransportInterface.php',
+        'OCA\\OcoMcp\\AppInfo\\Application' => __DIR__ . '/../..' . '/lib/AppInfo/Application.php',
+        'OCA\\OcoMcp\\Controller\\McpController' => __DIR__ . '/../..' . '/lib/Controller/McpController.php',
+        'OCA\\OcoMcp\\Mcp\\FileResourceProvider' => __DIR__ . '/../..' . '/lib/Mcp/FileResourceProvider.php',
+        'OCA\\OcoMcp\\Mcp\\InstanceContainer' => __DIR__ . '/../..' . '/lib/Mcp/InstanceContainer.php',
+        'OCA\\OcoMcp\\Mcp\\ServerFactory' => __DIR__ . '/../..' . '/lib/Mcp/ServerFactory.php',
+        'OCA\\OcoMcp\\Security\\BasicAuthCredentials' => __DIR__ . '/../..' . '/lib/Security/BasicAuthCredentials.php',
+        'OCA\\OcoMcp\\Tools\\AiDocumentsTool' => __DIR__ . '/../..' . '/lib/Tools/AiDocumentsTool.php',
+        'OCA\\OcoMcp\\Tools\\CommentsTool' => __DIR__ . '/../..' . '/lib/Tools/CommentsTool.php',
+        'OCA\\OcoMcp\\Tools\\FilesTool' => __DIR__ . '/../..' . '/lib/Tools/FilesTool.php',
+        'OCA\\OcoMcp\\Tools\\GroupsTool' => __DIR__ . '/../..' . '/lib/Tools/GroupsTool.php',
+        'OCA\\OcoMcp\\Tools\\MetaTool' => __DIR__ . '/../..' . '/lib/Tools/MetaTool.php',
+        'OCA\\OcoMcp\\Tools\\PathHelper' => __DIR__ . '/../..' . '/lib/Tools/PathHelper.php',
+        'OCA\\OcoMcp\\Tools\\SharesTool' => __DIR__ . '/../..' . '/lib/Tools/SharesTool.php',
+        'OCA\\OcoMcp\\Tools\\TagsTool' => __DIR__ . '/../..' . '/lib/Tools/TagsTool.php',
+        'OCA\\OcoMcp\\Tools\\UsersTool' => __DIR__ . '/../..' . '/lib/Tools/UsersTool.php',
+        'OCA\\OcoMcp\\Tools\\WriteGuard' => __DIR__ . '/../..' . '/lib/Tools/WriteGuard.php',
         'Opis\\JsonSchema\\CompliantValidator' => __DIR__ . '/..' . '/opis/json-schema/src/CompliantValidator.php',
         'Opis\\JsonSchema\\ContentEncoding' => __DIR__ . '/..' . '/opis/json-schema/src/ContentEncoding.php',
         'Opis\\JsonSchema\\ContentMediaType' => __DIR__ . '/..' . '/opis/json-schema/src/ContentMediaType.php',
@@ -632,6 +652,7 @@ class ComposerStaticInit293aa830bf7cefc014843e50dc72660a
         'PHPStan\\PhpDocParser\\Ast\\PhpDoc\\PhpDocTextNode' => __DIR__ . '/..' . '/phpstan/phpdoc-parser/src/Ast/PhpDoc/PhpDocTextNode.php',
         'PHPStan\\PhpDocParser\\Ast\\PhpDoc\\PropertyTagValueNode' => __DIR__ . '/..' . '/phpstan/phpdoc-parser/src/Ast/PhpDoc/PropertyTagValueNode.php',
         'PHPStan\\PhpDocParser\\Ast\\PhpDoc\\PureUnlessCallableIsImpureTagValueNode' => __DIR__ . '/..' . '/phpstan/phpdoc-parser/src/Ast/PhpDoc/PureUnlessCallableIsImpureTagValueNode.php',
+        'PHPStan\\PhpDocParser\\Ast\\PhpDoc\\PureUnlessParameterIsPassedTagValueNode' => __DIR__ . '/..' . '/phpstan/phpdoc-parser/src/Ast/PhpDoc/PureUnlessParameterIsPassedTagValueNode.php',
         'PHPStan\\PhpDocParser\\Ast\\PhpDoc\\RequireExtendsTagValueNode' => __DIR__ . '/..' . '/phpstan/phpdoc-parser/src/Ast/PhpDoc/RequireExtendsTagValueNode.php',
         'PHPStan\\PhpDocParser\\Ast\\PhpDoc\\RequireImplementsTagValueNode' => __DIR__ . '/..' . '/phpstan/phpdoc-parser/src/Ast/PhpDoc/RequireImplementsTagValueNode.php',
         'PHPStan\\PhpDocParser\\Ast\\PhpDoc\\ReturnTagValueNode' => __DIR__ . '/..' . '/phpstan/phpdoc-parser/src/Ast/PhpDoc/ReturnTagValueNode.php',

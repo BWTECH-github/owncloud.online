@@ -1,0 +1,55 @@
+# https://help.github.com/en/categories/automating-your-workflow-with-github-actions
+
+name: "Send pull request"
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  send-pr:
+    name: "Send pull request"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: "Install PHP"
+        uses: "shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240" # v2
+        with:
+          coverage: "none"
+          php-version: "8.1"
+
+      - name: "Checkout phpstan-src"
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: phpstan/phpstan-src
+          path: phpstan-src
+          token: ${{ secrets.PHPSTAN_BOT_TOKEN }}
+          ref: 2.2.x
+
+      - name: "Install dependencies"
+        working-directory: ./phpstan-src
+        run: "composer install --no-interaction --no-progress --no-suggest"
+
+      - name: "Change composer.json"
+        working-directory: ./phpstan-src
+        run: "composer require phpstan/phpdoc-parser:${{ github.ref_name }}"
+
+      - name: "Create Pull Request"
+        id: create-pr
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ secrets.PHPSTAN_BOT_TOKEN }}
+          path: ./phpstan-src
+          branch-suffix: random
+          delete-branch: true
+          title: "Update phpdoc-parser"
+          body: "Update phpstan/phpdoc-parser to ${{ github.ref_name }}"
+          committer: "phpstan-bot <ondrej+phpstanbot@mirtes.cz>"
+          commit-message: "Update phpdoc-parser"
