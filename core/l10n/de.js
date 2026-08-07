@@ -135,6 +135,8 @@ OC.L10N.register(
     "One file conflict" : "Ein Dateikonflikt",
     "New Files" : "Neue Dateien",
     "Already existing files" : "Bereits existierende Dateien",
+    "New file {name}" : "Neue Datei {name}",
+    "Already existing file {name}" : "Bereits existierende Datei {name}",
     "Which files do you want to keep?" : "Welche Dateien möchtest du behalten?",
     "If you select both versions, the copied file will have a number added to its name." : "Wenn du beide Versionen auswählst, erhält die kopierte Datei eine Zahl am Ende des Dateinamens.",
     "Cancel" : "Abbrechen",

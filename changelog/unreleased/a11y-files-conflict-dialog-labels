@@ -1,0 +1,19 @@
+Bugfix: Add accessible names to the checkboxes in the file conflict dialog
+
+The checkboxes that select which version of a conflicting file to keep had no
+accessible name. Screen readers announced up to four unnamed checkboxes in a
+row, so there was no way to tell which one keeps the new and which one keeps
+the existing file - a decision that overwrites data.
+
+The real input is positioned off screen and the visible box is drawn by the
+pseudo element of the following label, so the label is what users actually
+operate. Binding it via for/id gives the checkbox a name composed of the file
+name, the modification date and the size. The click handler that used to
+compensate for a missing binding has been removed, because the browser now
+forwards label clicks natively.
+
+Two text colours of the same dialog were raised to meet the minimum contrast
+ratio: the file name from #777777 (4.48:1) to #757575, and the read-only
+message from #e9322d (4.23:1) to #d93025.
+
+WCAG 2.1 AA, SC 3.3.2, SC 4.1.2, SC 1.3.1, SC 2.5.3, SC 1.4.3

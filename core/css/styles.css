@@ -1063,13 +1063,15 @@ div.crumb:active {
 }
 
 #body-public footer .info {
-	color: #777;
+	/* WCAG 2.1 AA (SC 1.4.3): #777777 on #ffffff is 4.48:1 and misses the 4.5:1 minimum. */
+	color: #757575;
 	text-align: center;
 	margin: 0 auto;
 }
 
 #body-public footer .info a {
-	color: #777;
+	/* WCAG 2.1 AA (SC 1.4.3): #777777 on #ffffff is 4.48:1 and misses the 4.5:1 minimum. */
+	color: #757575;
 	font-weight: 600;
 	padding: 13px;
 	margin: -13px;

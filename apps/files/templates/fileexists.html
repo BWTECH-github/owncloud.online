@@ -2,9 +2,9 @@
 	<span class="why">{why}<!-- Which files do you want to keep --></span><br/>
 	<span class="what">{what}<!-- If you select both versions, the copied file will have a number added to its name. --></span><br/>
 	<br/>
-	<table>
-		<th><input id="checkbox-allnewfiles" class="allnewfiles checkbox" type="checkbox" /><label for="checkbox-allnewfiles">{allnewfiles}<span class="count"></span></label></th>
-		<th><input id="checkbox-allexistingfiles" class="allexistingfiles checkbox" type="checkbox" /><label for="checkbox-allexistingfiles">{allexistingfiles}<span class="count"></span></label></th>
+	<table role="presentation">
+		<th><input id="checkbox-allnewfiles" class="allnewfiles checkbox" type="checkbox" /><label for="checkbox-allnewfiles">{allnewfiles}<span class="count" aria-live="polite"></span></label></th>
+		<th><input id="checkbox-allexistingfiles" class="allexistingfiles checkbox" type="checkbox" /><label for="checkbox-allexistingfiles">{allexistingfiles}<span class="count" aria-live="polite"></span></label></th>
 	</table>
 	<div class="conflicts">
 		<div class="template">
@@ -12,6 +12,7 @@
 			<div class="replacement">
 				<input type="checkbox" class="checkbox u-left"/>
 				<label>
+				<span class="hidden-visually conflict-name"></span>
 				<span class="svg icon"></span>
 				<div class="mtime"></div>
 				<div class="size"></div>
@@ -20,6 +21,7 @@
 			<div class="original">
 				<input type="checkbox" class="checkbox u-left" />
 				<label>
+				<span class="hidden-visually conflict-name"></span>
 				<span class="svg icon"></span>
 				<div class="mtime"></div>
 				<div class="size"></div>
