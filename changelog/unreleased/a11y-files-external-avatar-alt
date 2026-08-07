@@ -1,0 +1,15 @@
+Bugfix: Add text alternatives to the avatar icons in the external storage picker
+
+The "Available for" picker of the external storage settings builds two images in
+JavaScript that carried no alt attribute, so they entered the accessibility tree
+unnamed and screen readers fell back to the file name of the icon.
+
+The two images needed different treatment. The icon next to the "All users"
+shortcut only repeats the adjacent visible text and is now marked decorative.
+The icon on a group result carries real information: unlike formatSelection, the
+result list does not append "(group)" to the name, so the icon was the only thing
+telling a group apart from a user of the same name. That result now marks the
+image decorative and appends the already translated "(group)" as visually hidden
+text, giving the entry the same wording it gets once selected.
+
+WCAG 2.1 AA, SC 1.1.1

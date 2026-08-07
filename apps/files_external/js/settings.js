@@ -178,7 +178,14 @@ function addSelect2 ($elements, userListLimit) {
 				.attr('data-displayname', element.displayname);
 			if (element.type === 'group') {
 				var url = OC.imagePath('core','places/contacts-dark'); // TODO better group icon
-				$div.html('<img width="32" height="32" src="'+url+'">');
+				// OC-WCAG-097: Das Symbol ist in der Ergebnisliste das EINZIGE Merkmal, das
+				//              eine Gruppe von einem Benutzer unterscheidet - formatResult
+				//              haengt anders als formatSelection kein "(group)" an den Namen.
+				//              Die Information wandert deshalb als versteckter Text hinter
+				//              den Namen, das Bild wird dekorativ gekennzeichnet (SC 1.1.1).
+				//              Wortlaut und Reihenfolge bewusst identisch mit formatSelection.
+				$div.html('<img width="32" height="32" src="'+url+'" alt="">');
+				$result.append('<span class="hidden-visually"> '+escapeHTML(t('files_external', '(group)'))+'</span>');
 			}
 			return $result.get(0).outerHTML;
 		},
@@ -216,7 +223,10 @@ function addSelect2 ($elements, userListLimit) {
 	prepend(
 		'<ul class="select2-controls">' +
 		'	<li class="selectAllApplicableUsers">' +
-		'		<div class="avatardiv"><img width="32" height="32" src="'+OC.imagePath('core','places/contacts-dark')+'"></div>' +
+		// OC-WCAG-098: Das Symbol steht unmittelbar neben dem sichtbaren Text "All users"
+		//              und traegt keine eigene Information. alt="" nimmt es aus dem
+		//              Accessibility-Tree, statt den Dateinamen ansagen zu lassen.
+		'		<div class="avatardiv"><img width="32" height="32" src="'+OC.imagePath('core','places/contacts-dark')+'" alt=""></div>' +
 		'		<span>'+t('files_external', 'All users')+'</span>' +
 		'	</li>' +
 		'</ul>');
