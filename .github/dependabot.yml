@@ -21,9 +21,15 @@ updates:
   - dependency-name: league/flysystem
     versions:
     - ">= 2.a"
+  # doctrine/dbal 4.x entfernt unter anderem QueryBuilder::execute(), auf das
+  # sich lib/private/DB/QueryBuilder (und darueber ~400 Aufrufstellen im
+  # Code) stuetzt. Ein Major-Update ist ein eigenes Migrationsprojekt, kein
+  # Dependabot-PR - bis dahin nur 3.x-Updates anbieten (PR #75 wurde deshalb
+  # geschlossen).
   - dependency-name: doctrine/dbal
     versions:
     - 2.13.0
+    - ">= 4.a"
   - dependency-name: symfony/translation
     versions:
     - 4.4.21
