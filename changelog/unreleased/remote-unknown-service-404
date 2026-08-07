@@ -1,8 +1,0 @@
-Bugfix: Answer requests for an unknown remote.php service with 404
-
-A request to remote.php for a service that is not registered ran past the guard
-that was supposed to stop it: the guard compared against null while the lookup
-returns an empty string for an unknown service. The request ended in an exception
-without a status code, so the response carried the invalid status line
-"HTTP/1.1 0" instead of a 404. The guard now compares against the value the lookup
-actually returns.

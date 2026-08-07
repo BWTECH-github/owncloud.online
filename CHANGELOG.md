@@ -61,6 +61,18 @@ admins and users.
 * Bugfix - Setup works on PostgreSQL 15 and newer ("permission denied for schema public").
 * Enhancement - In-product help links point at `docs.owncloud.online`. The documentation gained pages for the server log and error reports, background jobs, encryption, the `config.php` reference and the database, including a `trusted_proxies` section explaining why the login and MCP throttles depend on it.
 * Enhancement - Faster page loads: bundled app JS/CSS is minified, only the active moment locale is loaded, responses are compressed and a minified jQuery-UI build is served. An opt-in OPcache preload script for PHP 8.4 is included.
+* Security - The federated secret exchange no longer leaks its token. When two trusted servers start the exchange at the same time the tie was broken by comparing the tokens in clear text, which made the public endpoint an oracle: an unauthenticated caller could reconstruct the stored token by binary search in roughly 96 requests. The tie is broken over the SHA-256 hashes now.
+* Security - The federation endpoint and its background job no longer write tokens to the log. The invalid-token branch logged both the received and the expected token, and the job logged the request URI including `?token=…`.
+* Security - Group names are escaped in the admin group list. A name carrying HTML or script markup was executed in the user management panel, and group names are not restricted by an allow-list.
+* Security - The external storage status no longer returns raw exception text to the client. For connection failures that message contained the resolved internal IP and port, which let a user who may configure storage map internal network topology.
+* Security - A `command` key in the body of an `occ` web request can no longer override the command that was just checked against the allow-list.
+* Security - Legacy chunked uploads honour the pre-write hooks: a veto from the file-name blacklist, the file firewall or a workflow rule now rejects the upload with 403.
+* Security - The MCP connector resolves every client path through one strict gate and no longer passes backend exception text to the client; the full error goes to the server log.
+* Change - The group administrator ("subadmin") feature can be switched off with the new `allow_subadmins` system value. It stays enabled by default in ownCloud.online so no installation loses permissions on update; upstream disables it by default.
+* Bugfix - The transfer lock that serialises the size accounting of a chunked upload now engages for every file name. Its key grew with the file name and exceeded the 64-character limit of the database and memcache lock providers, so it silently did nothing for exactly the large uploads it protects. A disabled file locking backend no longer counts as a held lock either.
+* Bugfix - A request to `remote.php` for an unknown service answers 404 instead of running on into an invalid `HTTP/1.1 0` response.
+* Bugfix - The warning about instance-wide MCP write access is logged at most once a day instead of on every request.
+* Bugfix - Accessible names for the group pickers in the sharing settings, the external storage fields and the runtime-generated storage configuration. The focus ring of those pickers sits on the widget instead of drawing a dark block inside the field.
 
 ## Details
 
