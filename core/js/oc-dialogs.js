@@ -505,6 +505,14 @@ var OCdialogs = {
 			var checkboxId = $conflicts.find('.conflict').length;
 			$originalDiv.find('input:checkbox').attr('id', 'checkbox_original_'+checkboxId);
 			$replacementDiv.find('input:checkbox').attr('id', 'checkbox_replacement_'+checkboxId);
+			$originalDiv.find('label')
+				.attr('for', 'checkbox_original_'+checkboxId)
+				.children('.conflict-name')
+				.text(t('core', 'Already existing file {name}', {name: original.name}, undefined, {escape: false}));
+			$replacementDiv.find('label')
+				.attr('for', 'checkbox_replacement_'+checkboxId)
+				.children('.conflict-name')
+				.text(t('core', 'New file {name}', {name: original.name}, undefined, {escape: false}));
 
 			$conflicts.append($conflict);
 
@@ -640,12 +648,11 @@ var OCdialogs = {
 					var $checkboxes = $(dialogId).find('.conflict .original:not(.readonly) input[type="checkbox"]');
 					$checkboxes.prop('checked', $(this).prop('checked'));
 				});
-				$(dialogId).find('.conflicts').on('click', '.replacement,.original:not(.readonly)', function() {
+				$(dialogId).find('.conflicts').on('click', '.replacement,.original:not(.readonly)', function(e) {
+					if ($(e.target).closest('label,input[type="checkbox"]').length) {
+						return;
+					}
 					var $checkbox = $(this).find('input[type="checkbox"]');
-					$checkbox.prop('checked', !$checkbox.prop('checked'));
-				});
-				$(dialogId).find('.conflicts').on('click', '.replacement input[type="checkbox"],.original:not(.readonly) input[type="checkbox"]', function() {
-					var $checkbox = $(this);
 					$checkbox.prop('checked', !$checkbox.prop('checked'));
 				});
 
@@ -654,13 +661,13 @@ var OCdialogs = {
 					var count = $(dialogId).find('.conflict .replacement input[type="checkbox"]:checked').length;
 					if (count === $(dialogId+ ' .conflict').length) {
 						$(dialogId).find('.allnewfiles').prop('checked', true);
-						$(dialogId).find('.allnewfiles + .count').text(t('core','(all selected)'));
+						$(dialogId).find('.allnewfiles + label .count').text(t('core','(all selected)'));
 					} else if (count > 0) {
 						$(dialogId).find('.allnewfiles').prop('checked', false);
-						$(dialogId).find('.allnewfiles + .count').text(t('core','({count} selected)',{count:count}));
+						$(dialogId).find('.allnewfiles + label .count').text(t('core','({count} selected)',{count:count}));
 					} else {
 						$(dialogId).find('.allnewfiles').prop('checked', false);
-						$(dialogId).find('.allnewfiles + .count').text('');
+						$(dialogId).find('.allnewfiles + label .count').text('');
 					}
 					updatePrimaryButton();
 				});
@@ -668,14 +675,14 @@ var OCdialogs = {
 					var count = $(dialogId).find('.conflict .original input[type="checkbox"]:checked').length;
 					if (count === $(dialogId+ ' .conflict').length) {
 						$(dialogId).find('.allexistingfiles').prop('checked', true);
-						$(dialogId).find('.allexistingfiles + .count').text(t('core','(all selected)'));
+						$(dialogId).find('.allexistingfiles + label .count').text(t('core','(all selected)'));
 					} else if (count > 0) {
 						$(dialogId).find('.allexistingfiles').prop('checked', false);
-						$(dialogId).find('.allexistingfiles + .count')
+						$(dialogId).find('.allexistingfiles + label .count')
 							.text(t('core','({count} selected)',{count:count}));
 					} else {
 						$(dialogId).find('.allexistingfiles').prop('checked', false);
-						$(dialogId).find('.allexistingfiles + .count').text('');
+						$(dialogId).find('.allexistingfiles + label .count').text('');
 					}
 					updatePrimaryButton();
 				});

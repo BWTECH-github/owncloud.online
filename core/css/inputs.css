@@ -149,6 +149,11 @@ input[type="checkbox"].checkbox:hover+label:before, input[type="checkbox"]:focus
 	color:#111 !important;
 }
 
+input[type="checkbox"].checkbox:focus-visible + label:before {
+	outline: 2px solid #005fcc;
+	outline-offset: 1px;
+}
+
 input[type="radio"].radio {
 	position: absolute;
 	left:-10000px;

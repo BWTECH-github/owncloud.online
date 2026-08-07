@@ -51,7 +51,8 @@
 
 #fileList .error,
 .newFileMenu .error {
-	color: #e9322d;
+	/* WCAG 2.1 AA (SC 1.4.3): #e9322d on #ffffff is 4.23:1 and misses the 4.5:1 minimum. */
+	color: #d93025;
 	border-color: #e9322d;
 	-webkit-box-shadow: 0 0 6px #f8b9b7;
 	-moz-box-shadow: 0 0 6px #f8b9b7;
@@ -168,7 +169,9 @@ tr:focus span.extension,
 tr:hover span.extension {
 	filter: alpha(opacity=100);
 	opacity: 1;
-	color: #777;
+	/* WCAG 2.1 AA (SC 1.4.3): this row's hover/focus background is #f8f8f8, not #ffffff.
+	   #777777 is only 4.22:1 there and #757575 (4.34:1) still misses 4.5:1. */
+	color: #6d6d6d;
 }
 
 table th,
