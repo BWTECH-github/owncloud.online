@@ -66,13 +66,13 @@ admins and users.
 * Security - Group names are escaped in the admin group list. A name carrying HTML or script markup was executed in the user management panel, and group names are not restricted by an allow-list.
 * Security - The external storage status no longer returns raw exception text to the client. For connection failures that message contained the resolved internal IP and port, which let a user who may configure storage map internal network topology.
 * Security - A `command` key in the body of an `occ` web request can no longer override the command that was just checked against the allow-list.
-* Security - Legacy chunked uploads honour the pre-write hooks: a veto from the file-name blacklist, the file firewall or a workflow rule now rejects the upload with 403.
-* Security - The MCP connector resolves every client path through one strict gate and no longer passes backend exception text to the client; the full error goes to the server log.
 * Change - The group administrator ("subadmin") feature can be switched off with the new `allow_subadmins` system value. It stays enabled by default in ownCloud.online so no installation loses permissions on update; upstream disables it by default.
 * Bugfix - The transfer lock that serialises the size accounting of a chunked upload now engages for every file name. Its key grew with the file name and exceeded the 64-character limit of the database and memcache lock providers, so it silently did nothing for exactly the large uploads it protects. A disabled file locking backend no longer counts as a held lock either.
 * Bugfix - A request to `remote.php` for an unknown service answers 404 instead of running on into an invalid `HTTP/1.1 0` response.
 * Bugfix - The warning about instance-wide MCP write access is logged at most once a day instead of on every request.
+* Bugfix - An app that itself needs an upgrade no longer breaks the bootstrap. When a session, theme or license app changed its version, `OC::init()` threw before anything else ran, so every `occ` command failed with `NeedsUpdateException` — including `occ upgrade`, the one command that would have applied the pending update. Those app types are now loaded only once no upgrade is pending, which is what the rest of the bootstrap already did.
 * Bugfix - Accessible names for the group pickers in the sharing settings, the external storage fields and the runtime-generated storage configuration. The focus ring of those pickers sits on the widget instead of drawing a dark block inside the field.
+* Bugfix - The checkboxes in the file conflict dialog have accessible names. Screen readers announced up to four unnamed checkboxes in a row, so there was no way to tell which one keeps the new and which one keeps the existing file — a decision that overwrites data. Two text colours of the same dialog were raised to the minimum contrast ratio.
 
 ## Details
 
@@ -84,6 +84,8 @@ admins and users.
 * Security - `apps/oco_mcp` (1.0.3): the new `Tools/PathHelper` is the single place where a client path becomes a node, used by the files, shares, tags, comments and AI tools and by the resource provider; `Tools/AiDocumentsTool` logs the backend exception via `ILogger::logException()` and returns a generic message.
 * Bugfix - `lib/private/legacy/filechunking.php`: the "read old size, write chunk, advance subtotal" section runs under a short exclusive lock keyed on name + transfer id. A chunk that cannot take the lock drops the subtotal so the next `getCurrentSize()` recounts exactly, rather than advancing it unsynchronised.
 * Bugfix - `lib/private/IntegrityCheck/Checker`: `hasPassedCheck()` returns true when `isCodeCheckEnforced()` is false.
+* Bugfix - `apps/files/templates/fileexists.html`, `core/js/oc-dialogs.js`: the real checkbox sits off screen and the visible box is drawn by the pseudo element of the following label, so the label is what users operate. Binding it via `for`/`id` names the checkbox with file name, modification date and size; the click handler that compensated for the missing binding is gone because the browser forwards label clicks natively.
+* Bugfix - `lib/base.php`: `OC::init()` guards `loadApps(['session', 'theme'])` and `loadApps(['license'])` with `checkUpgrade(false)`, the same guard `handleRequest()` already applies to every other app. Only minor and major version changes were affected — `OC_App::shouldUpgrade()` writes patch-level bumps through silently. The update page answers 200 instead of 503 as a side effect.
 * Note - Version parity with the SaaS bundle (11.0.12).
 
 # Changelog for ownCloud.online [11.0.11] (2026-07-23)

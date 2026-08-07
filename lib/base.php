@@ -595,11 +595,32 @@ class OC {
 		\stream_wrapper_register('quota', 'OC\Files\Stream\Quota');
 
 		\OC::$server->getEventLogger()->start('init_session', 'Initialize session');
-		OC_App::loadApps(['session', 'theme']);
+		// Eine Session-, Theme- oder Lizenz-App, die selbst noch ein Upgrade
+		// braucht, laesst loadApp() hier eine NeedsUpdateException werfen. Im
+		// Bootstrap faengt die niemand: console.php bricht damit ab - auch bei
+		// `occ upgrade`, also genau dem Befehl, der das Upgrade ausfuehren
+		// wuerde. Der restliche Bootstrap laedt Apps aus demselben Grund erst,
+		// wenn kein Upgrade mehr aussteht (siehe handleRequest()); hier gilt
+		// das ebenso. Die Update-Seite kommt dadurch zudem mit 200 statt 503.
+		try {
+			$upgradeNeeded = self::checkUpgrade(false);
+		} catch (\OC\HintException $e) {
+			// Downgrade-Versuch. Die Meldung gehoert nicht hierhin: an dieser
+			// Stelle stehen die Security-Header noch nicht, die Fehlerseite ginge
+			// also ohne CSP raus. checkServer() weiter unten wirft dieselbe
+			// Exception noch einmal - dann mit Headern. Hier reicht es zu wissen,
+			// dass keine App geladen werden darf.
+			$upgradeNeeded = true;
+		}
+		if (!$upgradeNeeded) {
+			OC_App::loadApps(['session', 'theme']);
+		}
 		if (!self::$CLI) {
 			self::initSession();
 		}
-		OC_App::loadApps(['license']);
+		if (!$upgradeNeeded) {
+			OC_App::loadApps(['license']);
+		}
 
 		\OC::$server->getEventLogger()->end('init_session');
 
