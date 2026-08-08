@@ -1,0 +1,9 @@
+Bugfix: Name the upload cancel button
+
+The button that aborts a running upload is an icon-only input of type button with
+an empty value. For that element type the value attribute is the accessible name,
+so the control was announced as an unnamed button while being visible, focusable
+and operable during every upload. It now carries an aria-label, at both places
+where the markup exists: the logged-in file list and the public upload view.
+
+WCAG 2.1 AA, SC 4.1.2

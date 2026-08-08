@@ -198,6 +198,35 @@ table th .columntitle.name {
 	margin-left: 50px;
 }
 
+/* Der Spaltentitel ist in apps/files ein <button>, damit er per Tabulator
+   erreichbar ist und auf Enter UND Leertaste reagiert. Die uebrigen
+   Listen-Templates verwenden noch <a>; die folgenden Regeln sind daher rein
+   additiv. Sie nehmen die Browser-Standardgestaltung von Buttons zurueck, so
+   dass die Darstellung der bisherigen <a>-Variante entspricht. Box-Modell,
+   Innenabstand und Hoehe kommen unveraendert aus .columntitle oben.
+   [OC-WCAG-046, OC-WCAG-047, OC-WCAG-048] */
+table th button.columntitle {
+	width: 100%;
+	margin: 0;
+	border: none;
+	background: none;
+	font: inherit;
+	color: #757575; /* OC-A11Y-03, wie "table th a" */
+	text-align: left;
+	cursor: pointer;
+}
+
+table th button.columntitle.name {
+	/* .columntitle.name setzt margin-left:50px; ohne diese Korrektur ragte der
+	   Button um 50px ueber den Spaltenkopf hinaus, weil ein <button> anders als
+	   ein Block-<a> nicht auf die Restbreite schrumpft. */
+	width: calc(100% - 50px);
+}
+
+table.multiselect th button.columntitle {
+	color: #000; /* wie "table.multiselect th a" */
+}
+
 table th .sort-indicator {
 	width: 10px;
 	height: 8px;
@@ -700,6 +729,44 @@ a.action > img {
 	margin-bottom: -1px;
 }
 
+/* Die Bedienelemente der Auswahl-Leiste in apps/files sind <button>: sie loesen
+   eine Aktion aus und navigieren nicht. Die uebrigen Listen-Templates verwenden
+   noch <a>, die Regeln oben bleiben daher unangetastet - die folgenden sind rein
+   additiv und spiegeln sie.
+   Zwei Abweichungen sind notwendig, nicht kosmetisch:
+   - Der vertikale Innenabstand entfaellt. Bei einem inline-<a> bleibt er ohne
+     Wirkung auf die Zeilenbox, bei einem Button-Kasten nicht - mit 18px oben und
+     unten waere das Bedienelement 86px statt 51px hoch (am System gemessen).
+   - color: inherit statt zweier Regeln. Das Bedienelement uebernimmt damit
+     #757575 aus "table th" und #000 aus "table.multiselect thead th" von selbst.
+   [OC-WCAG-181, OC-WCAG-182, OC-WCAG-183, OC-WCAG-184] */
+.selectedActions button {
+	display: inline-block;
+	font: inherit;
+	font-size: 11px;
+	line-height: 50px;
+	padding: 0 5px;
+	margin: 0;
+	border: 0;
+	background: none;
+	color: inherit;
+	cursor: pointer;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+}
+
+.selectedActions button.delete-selected {
+	padding-right: 15px;
+}
+
+.selectedActions button.delete-selected.mobile.button,
+.selectedActions button.download.mobile.button,
+.selectedActions button.undelete.mobile.button,
+.selectedActions button.hidden {
+	display: none;
+}
+
 html.ie8 .column-mtime .selectedActions {
 	top: -95px;
 }
@@ -788,7 +855,8 @@ html.ie8 .column-mtime .selectedActions {
 }
 
 #fileList tr a.action.action-download.disabled,
-#selectedActionsList a.download.disabled {
+#selectedActionsList a.download.disabled,
+#selectedActionsList button.download.disabled {
 	color: #000000;
 }
 
@@ -935,9 +1003,16 @@ html.ie8 #controls .button.new {
 	padding: 0;
 }
 
+/* Die Selektoren dieser drei Regeln waren auf "a" qualifiziert. In einem <button>
+   griffen sie nicht: das Symbol fiel auf display:inline und background-size:auto
+   zurueck und wurde 0x15 statt 16x16 px, also unsichtbar - min-width aus der
+   generischen Icon-Regel wirkt auf einem Inline-Element nicht. Betroffen ist auch
+   der Lade-Ring, den updateFileActionSpinner (fileactions.js:763) einhaengt.
+   Die button-Selektoren sind daher Pflicht, nicht Kosmetik. [OC-WCAG-181..184] */
 #controls .actions .button .icon,
 #filestable .filename .action .icon,
-#filestable .selectedActions a .icon {
+#filestable .selectedActions a .icon,
+#filestable .selectedActions button .icon {
 	display: inline-block;
 	vertical-align: middle;
 	background-size: 16px 16px;
@@ -945,13 +1020,15 @@ html.ie8 #controls .button.new {
 
 #controls .actions .button .icon.hidden,
 #filestable .filename .action .icon.hidden,
-#filestable .selectedActions a .icon.hidden {
+#filestable .selectedActions a .icon.hidden,
+#filestable .selectedActions button .icon.hidden {
 	display: none;
 }
 
 #controls .actions .button .icon.loading,
 #filestable .filename .action .icon.loading,
-#filestable .selectedActions a .icon.loading {
+#filestable .selectedActions a .icon.loading,
+#filestable .selectedActions button .icon.loading {
 	width: 15px;
 	height: 15px;
 }

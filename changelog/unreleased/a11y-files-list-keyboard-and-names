@@ -1,0 +1,18 @@
+Bugfix: Make the file list header keyboard operable and name its controls
+
+The three sortable column headers of the file list were anchors without an href.
+Such an anchor is not part of the tab order, so sorting by name, size or
+modification date could not be reached with a keyboard at all, even though the
+headers were fully operable with a mouse. They are now buttons, which are
+focusable without a tabindex and respond to both Enter and Space.
+
+The hidden file input that opens the upload dialog had no accessible name. Its
+label is created lazily by the "New" menu, so a keyboard user tabbing through the
+page - who cannot operate that menu, because its upload entry is a label - always
+met an unnamed control. It now carries an aria-label using the same string as the
+menu entry.
+
+The two icon-only controls of the selection bar, which are the only download and
+delete controls below 768px, received visually hidden text.
+
+WCAG 2.1 AA, SC 2.1.1, SC 3.3.2, SC 4.1.2
