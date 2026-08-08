@@ -5,13 +5,13 @@
 					<em class="label outer" style="display:none"><span class="desktop"><?php p($l->t('Uploading...'));?></span><span class="mobile"><?php p($l->t('...'));?></span></em>
 				</div>
 				<?php /* Das Bedienelement bricht einen laufenden Upload ab (Klickbindung
-				         in js/file-upload.js:1112, eingeblendet in Z. 1482). Es ist
-				         ein reines Symbol-Bedienelement: die Grafik kommt aus
-				         .icon-close, value bleibt leer, weil ein Wert hier als
-				         sichtbarer Text im Knopf erscheinen und die Symboldarstellung
-				         zerstoeren wuerde. Bei <input type="button"> IST value der
-				         barrierefreie Name - ohne ihn bleibt der Name leer. aria-label
-				         traegt ihn daher, ohne die Darstellung anzutasten. */ ?>
+				in js/file-upload.js:1112, eingeblendet in Z. 1482). Es ist
+				ein reines Symbol-Bedienelement: die Grafik kommt aus
+				.icon-close, value bleibt leer, weil ein Wert hier als
+				sichtbarer Text im Knopf erscheinen und die Symboldarstellung
+				zerstoeren wuerde. Bei <input type="button"> IST value der
+				barrierefreie Name - ohne ihn bleibt der Name leer. aria-label
+				traegt ihn daher, ohne die Darstellung anzutasten. */ ?>
 				<input type="button" class="stop icon-close" style="display:none" value=""
 					   aria-label="<?php p($l->t('Cancel')); ?>" />
 			</div>
@@ -92,13 +92,13 @@
 <input type="hidden" name="dir" id="dir" value="" />
 <div class="hiddenuploadfield">
 	<?php /* Das Feld ist per CSS auf 0x0 und opacity:0 gesetzt, bleibt aber im
-	         Tabulator-Pfad und ist der einzige tastaturbedienbare Weg zum Upload:
-	         der Menueeintrag ist ein <label>, und ein <label> ist nicht
-	         fokussierbar. Das dazugehoerige <label for="file_upload_start"> wird
-	         erst beim ersten Oeffnen des "Neu"-Menues erzeugt (newfilemenu.js:18),
-	         vorher hat das Feld keinen Namen. aria-label macht den Namen davon
-	         unabhaengig und deckt sich wortgleich mit dem Menueeintrag, der
-	         denselben l10n-String verwendet (newfilemenu.js:248). */ ?>
+	Tabulator-Pfad und ist der einzige tastaturbedienbare Weg zum Upload:
+	der Menueeintrag ist ein <label>, und ein <label> ist nicht
+	fokussierbar. Das dazugehoerige <label for="file_upload_start"> wird
+	erst beim ersten Oeffnen des "Neu"-Menues erzeugt (newfilemenu.js:18),
+	vorher hat das Feld keinen Namen. aria-label macht den Namen davon
+	unabhaengig und deckt sich wortgleich mit dem Menueeintrag, der
+	denselben l10n-String verwendet (newfilemenu.js:248). */ ?>
 	<input type="file" id="file_upload_start" class="hiddenuploadfield" name="files[]"
 		   aria-label="<?php p($l->t('Upload')); ?>" />
 </div>
