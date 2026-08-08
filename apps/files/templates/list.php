@@ -4,7 +4,16 @@
 				<div id="uploadprogressbar">
 					<em class="label outer" style="display:none"><span class="desktop"><?php p($l->t('Uploading...'));?></span><span class="mobile"><?php p($l->t('...'));?></span></em>
 				</div>
-				<input type="button" class="stop icon-close" style="display:none" value="" />
+				<?php /* Das Bedienelement bricht einen laufenden Upload ab (Klickbindung
+				         in js/file-upload.js:1112, eingeblendet in Z. 1482). Es ist
+				         ein reines Symbol-Bedienelement: die Grafik kommt aus
+				         .icon-close, value bleibt leer, weil ein Wert hier als
+				         sichtbarer Text im Knopf erscheinen und die Symboldarstellung
+				         zerstoeren wuerde. Bei <input type="button"> IST value der
+				         barrierefreie Name - ohne ihn bleibt der Name leer. aria-label
+				         traegt ihn daher, ohne die Darstellung anzutasten. */ ?>
+				<input type="button" class="stop icon-close" style="display:none" value=""
+					   aria-label="<?php p($l->t('Cancel')); ?>" />
 			</div>
 		</div>
 		<div id="file_action_panel"></div>
@@ -46,30 +55,32 @@
 					<label for="select_all_files">
 						<span class="hidden-visually"><?php p($l->t('Select all'))?></span>
 					</label>
-					<a class="name sort columntitle" data-sort="name"><span><?php p($l->t('Name')); ?></span><span class="sort-indicator"></span></a>
+					<button type="button" class="name sort columntitle" data-sort="name"><span><?php p($l->t('Name')); ?></span><span class="sort-indicator"></span></button>
 					<span id="selectedActionsList" class="selectedActions">
-						<a href="" class="download">
+						<button type="button" class="download">
 							<span class="icon icon-download"></span>
 							<span><?php p($l->t('Download'))?></span>
-						</a>
-						<a href="" class="download mobile button">
+						</button>
+						<button type="button" class="download mobile button">
 							<span class="icon icon-download "></span>
-						</a>
-						<a href="" class="delete-selected mobile button">
+							<span class="hidden-visually"><?php p($l->t('Download'))?></span>
+						</button>
+						<button type="button" class="delete-selected mobile button">
 							<span class="icon icon-delete"></span>
-						</a>
+							<span class="hidden-visually"><?php p($l->t('Delete'))?></span>
+						</button>
 					</span>
 				</div>
 			</th>
 			<th id="headerSize" class="hidden column-size">
-				<a class="size sort columntitle" data-sort="size"><span><?php p($l->t('Size')); ?></span><span class="sort-indicator"></span></a>
+				<button type="button" class="size sort columntitle" data-sort="size"><span><?php p($l->t('Size')); ?></span><span class="sort-indicator"></span></button>
 			</th>
 			<th id="headerDate" class="hidden column-mtime">
-				<a id="modified" class="columntitle" data-sort="mtime"><span><?php p($l->t('Modified')); ?></span><span class="sort-indicator"></span></a>
-					<span class="selectedActions"><a href="" class="delete-selected">
+				<button type="button" id="modified" class="columntitle" data-sort="mtime"><span><?php p($l->t('Modified')); ?></span><span class="sort-indicator"></span></button>
+					<span class="selectedActions"><button type="button" class="delete-selected">
 						<span class="icon icon-delete"></span>
 						<span><?php p($l->t('Delete'))?></span>
-					</a></span>
+					</button></span>
 			</th>
 		</tr>
 	</thead>
@@ -80,7 +91,16 @@
 </table>
 <input type="hidden" name="dir" id="dir" value="" />
 <div class="hiddenuploadfield">
-	<input type="file" id="file_upload_start" class="hiddenuploadfield" name="files[]" />
+	<?php /* Das Feld ist per CSS auf 0x0 und opacity:0 gesetzt, bleibt aber im
+	         Tabulator-Pfad und ist der einzige tastaturbedienbare Weg zum Upload:
+	         der Menueeintrag ist ein <label>, und ein <label> ist nicht
+	         fokussierbar. Das dazugehoerige <label for="file_upload_start"> wird
+	         erst beim ersten Oeffnen des "Neu"-Menues erzeugt (newfilemenu.js:18),
+	         vorher hat das Feld keinen Namen. aria-label macht den Namen davon
+	         unabhaengig und deckt sich wortgleich mit dem Menueeintrag, der
+	         denselben l10n-String verwendet (newfilemenu.js:248). */ ?>
+	<input type="file" id="file_upload_start" class="hiddenuploadfield" name="files[]"
+		   aria-label="<?php p($l->t('Upload')); ?>" />
 </div>
 <div id="editor"></div><!-- FIXME Do not use this div in your app! It is deprecated and will be removed in the future! -->
 <div id="uploadsize-message" title="<?php p($l->t('Upload too large'))?>">

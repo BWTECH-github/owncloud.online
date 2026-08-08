@@ -23,7 +23,10 @@
 		'                <span class="mobile">...</span>' +
 		'            </em>' +
 		'        </div>' +
-		'        <input type="button" class="stop icon-close" style="display:none" value="" />' +
+		// Wie in apps/files/templates/list.php:7 - value bleibt leer, damit die
+		// Symboldarstellung erhalten bleibt; den Namen traegt aria-label.
+		'        <input type="button" class="stop icon-close" style="display:none" value=""' +
+		'               aria-label="{{cancelLabel}}" />' +
 		'    </div>' +
 		'    <label>' +
 		'        <input type="file" id="file_upload_start" class="uploader hiddenuploadfield" name="files[]" />' +
@@ -144,7 +147,8 @@
 				title: t('files_sharing', 'Anonymous upload'),
 				uploadButtonLabel: t('files_sharing', 'Click to select files or use drag & drop to upload'),
 				uploadedFilesMessage: t('files_sharing', 'Uploaded files'),
-				uploadProgressText: t('core', 'Uploading...')
+				uploadProgressText: t('core', 'Uploading...'),
+				cancelLabel: t('files_sharing', 'Cancel')
 			}));
 
 			this.$el.find('.has-tooltip').tooltip();

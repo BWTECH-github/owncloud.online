@@ -343,7 +343,9 @@
 			this.$el.find('.download').click(_.bind(this._onClickDownloadSelected, this));
 			this.$el.find('.delete-selected').click(_.bind(this._onClickDeleteSelected, this));
 
-			this.$el.find('.selectedActions a').tooltip({placement:'top'});
+			// Auch <button>: in apps/files sind die Bedienelemente der Auswahl-Leiste
+			// Buttons, in den uebrigen Listen-Templates noch <a>. [OC-WCAG-181..184]
+			this.$el.find('.selectedActions a, .selectedActions button').tooltip({placement:'top'});
 
 			// Tooltips für Zeilen-Elemente delegiert registrieren statt pro Zeile
 			// im Render-Pfad — Bootstrap erzeugt die Instanz dann erst bei mouseenter
@@ -836,12 +838,11 @@
 			if (this.$table.hasClass('multiselect')) {
 				return;
 			}
-			var $target = $(e.target);
-			var sort;
-			if (!$target.is('a')) {
-				$target = $target.closest('a');
-			}
-			sort = $target.attr('data-sort');
+			// Der Spaltentitel ist in apps/files ein <button>, in den uebrigen
+			// Listen-Templates noch ein <a>. Der Klick landet in beiden Faellen
+			// auf einem inneren <span>; closest('[data-sort]') findet den
+			// Titel unabhaengig vom Elementtyp. [OC-WCAG-046/047/048]
+			var sort = $(e.target).closest('[data-sort]').attr('data-sort');
 			if (sort) {
 				if (this._sort === sort) {
 					this.setSort(sort, (this._sortDirection === 'desc')?'asc':'desc', true, true);
@@ -3049,15 +3050,18 @@
 
 			var showHidden = !!this._filesConfig.get('showhidden');
 			if (summary.totalFiles === 0 && summary.totalDirs === 0) {
-				this.$el.find('#headerName a.name>span:first').text(t('files','Name'));
-				this.$el.find('#headerSize a>span:first').text(t('files','Size'));
+				// Elementunabhaengige Selektoren: der Spaltentitel ist in apps/files
+				// ein <button>, in den uebrigen Listen-Templates noch ein <a>.
+				// [OC-WCAG-046/047/048]
+				this.$el.find('#headerName .name.columntitle>span:first').text(t('files','Name'));
+				this.$el.find('#headerSize .columntitle>span:first').text(t('files','Size'));
 				this.$el.find('#modified a>span:first').text(t('files','Modified'));
 				this.$el.find('table').removeClass('multiselect');
 				this.$el.find('.selectedActions').addClass('hidden');
 			}
 			else {
 				this.$el.find('.selectedActions').removeClass('hidden');
-				this.$el.find('#headerSize a>span:first').text(OC.Util.humanFileSize(summary.totalSize));
+				this.$el.find('#headerSize .columntitle>span:first').text(OC.Util.humanFileSize(summary.totalSize));
 
 				var directoryInfo = n('files', '%n folder', '%n folders', summary.totalDirs);
 				var fileInfo = n('files', '%n file', '%n files', summary.totalFiles);
@@ -3079,7 +3083,7 @@
 					selection += ' (' + hiddenInfo + ')';
 				}
 
-				this.$el.find('#headerName a.name>span:first').text(selection);
+				this.$el.find('#headerName .name.columntitle>span:first').text(selection);
 				this.$el.find('#modified a>span:first').text('');
 				this.$el.find('table').addClass('multiselect');
 				this.$el.find('.delete-selected').toggleClass('hidden', !this.isSelectedDeletable());

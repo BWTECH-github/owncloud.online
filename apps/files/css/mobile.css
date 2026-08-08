@@ -110,6 +110,33 @@ table #headerSize, #headerDate, #headerExpiration, .filesize, .modified, .date {
 	margin-right: 5px;
 }
 
+/* Dieselben Regeln fuer die <button>-Variante in apps/files. Rein additiv, die
+   Anker-Regeln oben bleiben fuer die uebrigen Listen-Templates unangetastet.
+   line-height ist hier notwendig: der inline-<a> bezog seine Hoehe aus dem Inhalt,
+   die 50px aus der Desktop-Regel blieben ohne Wirkung. Ein Button-Kasten wertet
+   sie aus und waere 60px hoch. Mit 20px ist das Bedienelement 30px hoch und das
+   Symbol sitzt 8,48px unter der Oberkante - beides identisch zum Anker, am
+   laufenden System bei 420px Viewportbreite gemessen. [OC-WCAG-182, OC-WCAG-183] */
+.selectedActions button.download,
+.selectedActions button.delete-selected,
+.selectedActions button.undelete {
+	display: none;
+}
+
+.selectedActions button.delete-selected.mobile.button,
+.selectedActions button.undelete.mobile.button,
+.selectedActions button.download.mobile.button {
+	display: inline-block;
+	padding: 5px;
+	font-size: 13px;
+	margin-left: 5px;
+	line-height: 20px;
+}
+
+.selectedActions button:last-child {
+	margin-right: 5px;
+}
+
 /* hide restore text in deleted files list mobile */
 #fileList a.action.action-restore.permanent span:nth-child(2){
 	display: none !important;

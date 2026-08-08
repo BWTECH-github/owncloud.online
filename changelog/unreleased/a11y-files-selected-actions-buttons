@@ -1,0 +1,13 @@
+Bugfix: Turn the file list selection bar controls into buttons
+
+The download and delete controls of the selection bar were anchors with an empty
+href. They performed an action instead of navigating, so screen readers announced
+a link that does not link, and without JavaScript the empty href reloaded the page
+and moved focus to the top.
+
+They are now buttons. The icon rules of the selection bar were qualified on the
+anchor element, so the icons would have rendered zero pixels wide inside a button;
+those rules now cover buttons as well, which also keeps the download spinner
+working.
+
+WCAG 2.1 AA, SC 2.4.4, SC 4.1.2
