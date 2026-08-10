@@ -41,7 +41,7 @@ script('settings', 'panels/cors');
 				<tr>
 					<td><?php p($domain); ?></td>
 					<td>
-						<input data-domain="<?php p($domain) ?>" type="button" class="button icon-delete removeDomainButton" value="">
+						<input data-domain="<?php p($domain) ?>" type="button" class="button icon-delete removeDomainButton" value="" aria-label="<?php p($l->t('Delete')); ?>">
 					</td>
 				</tr>
 			<?php } ?>
@@ -49,6 +49,7 @@ script('settings', 'panels/cors');
 	</table>
 
 	<h3><?php p($l->t('Add Domain')); ?></h3>
+		<label for="domain" class="hidden-visually"><?php p($l->t('Domain')); ?></label>
 		<input id="domain" name="domain" type="text" placeholder="<?php p($l->t('Domain')); ?>">
 		<input id="corsAddNewDomain" type="submit" class="button" value="<?php p($l->t('Add')); ?>">
 	</form>

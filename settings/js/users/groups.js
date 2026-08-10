@@ -39,8 +39,8 @@ var GroupDeleteHandler;
 				'		<span class="usercount tag"></span>' +
 				'	</a>' +
 				'	<span class="utils">' +
-				'		<a href="#" class="action delete" original-title="' + t('settings', 'Delete') + '">' +
-				'			<img src="' + OC.imagePath('core', 'actions/delete') + '"/>' +
+				'		<a href="#" class="action delete" aria-label="' + t('settings', 'Delete') + '">' +
+				'			<img src="' + OC.imagePath('core', 'actions/delete') + '" alt=""/>' +
 				'		</a>' +
 				'	</span>' +
 				'</li>');
