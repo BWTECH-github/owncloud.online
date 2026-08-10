@@ -29,7 +29,29 @@ use OCP\Command\ICommand;
  */
 class CommandJob extends QueuedJob {
 	protected function run($serializedCommand) {
-		$command = \unserialize($serializedCommand);
+		// Erster Durchgang ohne Objekte: so laeuft auf unvertrauten Daten kein
+		// __wakeup() und kein __destruct(), und der gespeicherte Klassenname
+		// laesst sich trotzdem auslesen.
+		$incomplete = \unserialize($serializedCommand, ['allowed_classes' => false]);
+		if (!($incomplete instanceof \__PHP_Incomplete_Class)) {
+			throw new \InvalidArgumentException('Invalid serialized command: expected a serialized object');
+		}
+		$className = ((array)$incomplete)['__PHP_Incomplete_Class_Name'] ?? null;
+		if (!\is_string($className) || $className === '') {
+			throw new \InvalidArgumentException('Invalid serialized command: could not determine class name');
+		}
+
+		// Nur eine geladene Klasse, die ICommand wirklich implementiert, darf
+		// ueberhaupt instanziiert werden - damit sind Gadget-Ketten aus
+		// beliebigen anderen Klassen ausgeschlossen.
+		if (!\class_exists($className) || !\is_a($className, ICommand::class, true)) {
+			throw new \InvalidArgumentException(
+				'Invalid serialized command: class "' . $className . '" does not implement ICommand'
+			);
+		}
+
+		// Zweiter Durchgang, jetzt gefahrlos: nur die gepruefte Klasse ist erlaubt.
+		$command = \unserialize($serializedCommand, ['allowed_classes' => [$className]]);
 		if ($command instanceof ICommand) {
 			$command->handle();
 		} else {
