@@ -4,6 +4,15 @@
  *
  * @copyright Copyright (c) 2026, BW-Tech GmbH
  * @license AGPL-3.0-only
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-08-06.
+ * Changes:
+ *   - stop the instance-wide write warning from flooding the log
+ *   - close the open items from the v11.0.0 security delta
+ *   - throttle password spraying per-IP, reset delay on successful auth
+ *   - throttle failed MCP logins + optional write_groups allowlist
  */
 namespace OCA\OcoMcp\Controller;
 

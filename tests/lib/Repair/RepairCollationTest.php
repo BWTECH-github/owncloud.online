@@ -1,4 +1,12 @@
 <?php
+/**
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-02-26.
+ * Changes:
+ *   - doctrine/dbal:3 (#41450)
+ */
 
 namespace Test\Repair;
 

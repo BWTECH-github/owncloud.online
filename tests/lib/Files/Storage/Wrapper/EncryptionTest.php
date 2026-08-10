@@ -1,4 +1,12 @@
 <?php
+/**
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-07-02.
+ * Changes:
+ *   - cut per-request hot-path costs across session, cache, storage and status
+ */
 
 namespace Test\Files\Storage\Wrapper;
 

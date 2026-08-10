@@ -1,9 +1,14 @@
 <?php
 /**
- * Modified by BW-Tech GmbH
  *
  * Einheitlicher owncloud.online Plaintext-E-Mail-Footer (Signatur). Gruss +
  * Slogan folgen der Sprache ($l->t); der rechtliche Block ist feststehend.
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-06-25.
+ * Changes:
+ *   - unified BW-TECH signature footer, drop casual Cheers sign-off
  */
 p($l->t('Best regards,'));
 p("\n");

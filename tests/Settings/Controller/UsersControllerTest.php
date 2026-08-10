@@ -6,6 +6,15 @@
  * This file is licensed under the Affero General Public License version 3 or
  * later.
  * See the COPYING-README file.
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-06-24.
+ * Changes:
+ *   - update stale expectations for PHP 8.4 and fork rebrand
+ *   - pass target user ID to sendEmail in setMailAddress subadmin path (#41574)
+ *   - use the right user id when changing the email (#41539)
+ *   - PHP 8.4 compatibility and owncloud.online design integration
  */
 
 namespace Tests\Settings\Controller;

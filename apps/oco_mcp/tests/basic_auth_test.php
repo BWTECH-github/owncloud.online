@@ -1,10 +1,17 @@
 <?php
+/**
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-07-20.
+ * Changes:
+ *   - require app-token authentication
+ */
 
 declare(strict_types=1);
 
 /**
  * MCP Connector Basic-auth parser regression test.
- * Modified by BW-Tech GmbH.
  */
 
 require_once __DIR__ . '/../lib/Security/BasicAuthCredentials.php';

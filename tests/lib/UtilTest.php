@@ -1,10 +1,16 @@
 <?php
 /**
  * Copyright (c) 2012 Lukas Reschke <lukas@statuscode.ch>
- * Modified by BW-Tech GmbH
  * This file is licensed under the Affero General Public License version 3 or
  * later.
  * See the COPYING-README file.
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-06-01.
+ * Changes:
+ *   - Prepare ownCloud.online 11.0.2 release
+ *   - Brand status output as ownCloud.online
  */
 
 namespace Test;

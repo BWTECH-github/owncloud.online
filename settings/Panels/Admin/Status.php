@@ -1,7 +1,6 @@
 <?php
 /**
  * @author Martin Mattel <martin.mattel@diemattels.at>
- * Modified by BW-Tech GmbH
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
@@ -18,6 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License, version 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-06-02.
+ * Changes:
+ *   - Show hostname in public status panel
+ *   - Prepare ownCloud.online 11.0.2 release
  */
 
 namespace OC\Settings\Panels\Admin;

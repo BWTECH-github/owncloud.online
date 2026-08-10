@@ -4,6 +4,13 @@
  * This file is licensed under the Affero General Public License version 3 or
  * later.
  * See the COPYING-README file.
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-07-13.
+ * Changes:
+ *   - don't cache the 'en' language fallback on anonymous pages (#41618) (#41663)
+ *   - PHP 8.4 compatibility and owncloud.online design integration
  */
 
 namespace Test\L10N;

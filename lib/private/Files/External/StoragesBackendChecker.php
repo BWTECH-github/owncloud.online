@@ -1,4 +1,12 @@
 <?php
+/**
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-05-21.
+ * Changes:
+ *   - check for the identifier alias for the storage backend (#41538)
+ */
 
 namespace OC\Files\External;
 

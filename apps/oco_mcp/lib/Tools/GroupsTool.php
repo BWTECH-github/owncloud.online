@@ -4,6 +4,12 @@
  *
  * @copyright Copyright (c) 2026, BW-Tech GmbH
  * @license AGPL-3.0-only
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-07-06.
+ * Changes:
+ *   - add oco_mcp — Model Context Protocol server for AI assistants
  */
 namespace OCA\OcoMcp\Tools;
 
