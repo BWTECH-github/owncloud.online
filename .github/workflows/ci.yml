@@ -45,3 +45,10 @@ jobs:
     uses: ./.github/workflows/php-unit.yml
     with:
       php-versions: '["8.4"]'
+
+  # Alle anderen Jobs installieren frisch. Dieser hier aktualisiert eine
+  # bestehende Installation - der einzige Weg, einen kaputten Update-Pfad zu
+  # bemerken, bevor er beim Kunden auffaellt.
+  upgrade:
+    name: Upgrade
+    uses: ./.github/workflows/upgrade-test.yml
