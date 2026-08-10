@@ -114,7 +114,9 @@ class Plugin extends ServerPlugin {
 		$path = $request->getPath();
 
 		// Only handling xml
-		$contentType = $request->getHeader('Content-Type');
+		// Ein POST ohne Content-Type liefert hier null; strpos() nimmt seit
+		// PHP 8.1 kein null mehr entgegen.
+		$contentType = $request->getHeader('Content-Type') ?? '';
 		if (\strpos($contentType, 'application/xml') === false && \strpos($contentType, 'text/xml') === false) {
 			return;
 		}

@@ -7,7 +7,6 @@
  * @author Vincent Petry <pvince81@owncloud.com>
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
- * Modified by BW-Tech GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -22,6 +21,14 @@
  * You should have received a copy of the GNU Affero General Public License, version 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-08-10.
+ * Changes:
+ *   - stop phpseclib from fetching the issuer certificate of an untrusted one
+ *   - ship the declared update channel so the integrity check stays off
+ *   - stop the integrity check from warning about an unsigned build
+ *   - don't warn about code integrity when the check is not enforced
  */
 
 namespace OC\IntegrityCheck;

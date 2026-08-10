@@ -1,4 +1,12 @@
 <?php
+/**
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-06-16.
+ * Changes:
+ *   - rename 'license key' -> 'support key' + remove owncloud sales leak + DE i18n
+ */
 script('settings', 'panels/license');
 ?>
 <div class="section">

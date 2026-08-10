@@ -5,22 +5,10 @@
  * @copyright Copyright (c) 2026, BW-Tech GmbH
  *
  * Modified by BW-Tech GmbH on 2026-08-06.
- * Changes: style(frontend): Accessibility at ownCloud.online - WCAG-AA Check
- *
- * @license AGPL-3.0
- *
- * This code is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License, version 3,
- * as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License, version 3,
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
+ * Changes:
+ *   - correct the WCAG headers and the select2 focus-ring comment
+ *   - give the external storage controls an accessible name
+ *   - Accessibility at ownCloud.online - WACG-AA Check
  */
 
 	use OCP\Files\External\Auth\AuthMechanism;

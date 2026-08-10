@@ -1,4 +1,15 @@
 <?php
+/**
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-08-06.
+ * Changes:
+ *   - enforce write hooks and serialise chunk accounting on chunked uploads
+ *   - map the remaining doc keys, drop the hardcoded upstream manual link
+ *   - point in-product help links at docs.owncloud.online, document the log
+ *   - owncloud.online links + valid Android app id
+ */
 
 use OCP\IConfig;
 
@@ -18,7 +29,6 @@ use OCP\IConfig;
  * @author Volkan Gezer <volkangezer@gmail.com>
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
- * Modified by BW-Tech GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify

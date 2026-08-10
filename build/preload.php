@@ -23,6 +23,12 @@
  *
  * @copyright Copyright (c) 2026, BW-Tech GmbH
  * @license AGPL-3.0
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-07-24.
+ * Changes:
+ *   - add opt-in OPcache preload script for PHP 8.4
  */
 
 if (!\function_exists('opcache_compile_file')) {

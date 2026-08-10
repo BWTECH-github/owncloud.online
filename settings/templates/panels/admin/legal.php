@@ -3,6 +3,12 @@
  * @var array $_
  * @var \OCP\IL10N $l
  * @var OC_Defaults $theme
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-06-18.
+ * Changes:
+ *   - widen legal imprint/privacy URL fields so the full URL is readable
  */
 script('settings', 'panels/legal');
 ?><div class="section">

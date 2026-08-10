@@ -4,6 +4,12 @@
  * This file is licensed under the Affero General Public License version 3 or
  * later.
  * See the COPYING-README file.
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-02-20.
+ * Changes:
+ *   - drop legacy OC_DB class and replace its usages (#41455)
  */
 
 namespace Test\Files\Cache;

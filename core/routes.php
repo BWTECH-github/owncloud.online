@@ -106,7 +106,13 @@ $this->create('files.viewcontroller.showFile', '/f/{fileId}')->action(static fun
 		// Check the old phoenix.baseUrl system key to provide compatibility across the name change
 		$webBaseUrl = \OC::$server->getConfig()->getSystemValue('phoenix.baseUrl', null);
 	}
-	if (isWebRewriteLinksEnabled()) {
+	// $webBaseUrl muss mitgeprueft werden: isWebRewriteLinksEnabled() liest nur
+	// 'web.rewriteLinks'. Ist der Schalter gesetzt, aber keine Basis-URL
+	// hinterlegt, bekaeme rtrim() null (seit PHP 8.1 abgemahnt) und die
+	// Umleitung ginge auf ein wirkungsloses "/index.html#/f/...". Ohne
+	// Basis-URL wird nun regulaer ausgeliefert - genauso haelt es der
+	// NavigationManager an derselben Stelle.
+	if ($webBaseUrl && isWebRewriteLinksEnabled()) {
 		$webBaseUrl = \rtrim($webBaseUrl, '/');
 		$fileId = $urlParams['fileId'];
 		\OC_Response::redirect("$webBaseUrl/index.html#/f/$fileId");
@@ -123,7 +129,8 @@ $this->create('files_sharing.sharecontroller.showShare', '/s/{token}')->action(s
 		// Check the old phoenix.baseUrl system key to provide compatibility across the name change
 		$webBaseUrl = \OC::$server->getConfig()->getSystemValue('phoenix.baseUrl', null);
 	}
-	if (isWebRewriteLinksEnabled()) {
+	// Gleicher Fall wie bei der Datei-Route daruber.
+	if ($webBaseUrl && isWebRewriteLinksEnabled()) {
 		$webBaseUrl = \rtrim($webBaseUrl, '/');
 		$token = $urlParams['token'];
 		\OC_Response::redirect("$webBaseUrl/index.html#/s/$token");

@@ -17,6 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License, version 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-06-11.
+ * Changes:
+ *   - Load mimetype table in one go
+ *   - Undefined array key "password" (#41499)
+ *   - doctrine/dbal:3 (#41450)
  */
 
 namespace OC\Files\Type;

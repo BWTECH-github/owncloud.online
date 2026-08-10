@@ -86,13 +86,17 @@ jobs:
       # Update ihre Version wechselt. OC::init() laedt solche Apps ganz frueh;
       # loadApp() wirft dann NeedsUpdateException, und die faengt im Bootstrap
       # niemand - occ stirbt, bevor es das Upgrade ausfuehren kann.
-      - name: Add a theme app that will change its version
+      #
+      # ownCloud laesst immer nur ein Theme zu ("... can't be enabled until ...
+      # is disabled"). Wo schon eines aktiv ist - im Bundle
+      # theme-owncloudonline - wird genau dieses genommen; naeher am echten
+      # Vorfall geht es nicht. Sonst eine Attrappe.
+      - name: Pick the theme app whose version will change
+        id: theme
         if: steps.vorher.outputs.tag != ''
         run: |
           set -euo pipefail
-          probe="$RUNNER_TEMP/alt/apps/ci_upgrade_probe"
-          mkdir -p "$probe/appinfo"
-          cat > "$probe/appinfo/info.xml" <<'XML'
+          cat > "$RUNNER_TEMP/probe-info.xml" <<'XML'
           <?xml version="1.0"?>
           <info>
             <id>ci_upgrade_probe</id>
@@ -109,14 +113,34 @@ jobs:
             </dependencies>
           </info>
           XML
-          # app.php muss existieren: nur dann prueft loadApp() ueberhaupt auf
-          # einen ausstehenden Upgrade.
-          printf '<?php\n' > "$probe/appinfo/app.php"
           cd "$RUNNER_TEMP/alt"
-          php occ app:enable ci_upgrade_probe
-          php occ config:app:get ci_upgrade_probe installed_version
+          gefunden=""
+          for xml in apps/*/appinfo/info.xml apps-external/*/appinfo/info.xml; do
+            [ -f "$xml" ] || continue
+            grep -qE '<theme[[:space:]]*/>' "$xml" || continue
+            id="$(basename "$(dirname "$(dirname "$xml")")")"
+            [ "$(php occ config:app:get "$id" enabled 2>/dev/null || true)" = "yes" ] || continue
+            gefunden="$id"
+            echo "Aktives Theme gefunden: $id"
+            break
+          done
+          if [ -z "$gefunden" ]; then
+            gefunden=ci_upgrade_probe
+            mkdir -p "apps/$gefunden/appinfo"
+            cp "$RUNNER_TEMP/probe-info.xml" "apps/$gefunden/appinfo/info.xml"
+            # app.php muss existieren: nur dann prueft loadApp() ueberhaupt auf
+            # einen ausstehenden Upgrade.
+            printf '<?php\n' > "apps/$gefunden/appinfo/app.php"
+            php occ app:enable "$gefunden"
+            echo "Kein Theme aktiv - Attrappe angelegt."
+          fi
+          stand="$(php occ config:app:get "$gefunden" installed_version)"
+          echo "Theme-App: $gefunden, steht auf $stand"
+          echo "app=$gefunden" >> "$GITHUB_OUTPUT"
+          echo "vorher=$stand" >> "$GITHUB_OUTPUT"
 
       - name: Swap in the current code
+        id: tausch
         if: steps.vorher.outputs.tag != ''
         run: |
           set -euo pipefail
@@ -142,11 +166,24 @@ jobs:
           # versioniert, und eine alte Classmap zeigt sonst auf geloeschte
           # Klassen (500 auf jeder Seite).
           composer install --no-interaction --no-dev --no-progress
-          # Die Probe-App bekommt einen Major-Sprung. Patch-Spruenge wuerden
+          # Die Theme-App bekommt einen Major-Sprung. Patch-Spruenge wuerden
           # nicht reichen: OC_App::shouldUpgrade() schreibt die still durch.
-          sed -i 's|<version>1.0.0</version>|<version>2.0.0</version>|' \
-            apps/ci_upgrade_probe/appinfo/info.xml
-          grep -o '<version>[^<]*</version>' apps/ci_upgrade_probe/appinfo/info.xml
+          app="${{ steps.theme.outputs.app }}"
+          vorher="${{ steps.theme.outputs.vorher }}"
+          neu="$(( ${vorher%%.*} + 1 )).0.0"
+          # Kein "ls a b": fehlt einer der beiden Pfade, liefert ls Exit 2 und
+          # reisst mit pipefail den ganzen Schritt ab.
+          if [ -d "apps/$app" ]; then
+            pfad="apps/$app"
+          else
+            pfad="apps-external/$app"
+          fi
+          # Nur das erste <version>-Element: weiter unten stehen teils
+          # Abhaengigkeiten mit eigenen Versionsangaben.
+          sed -i "0,/<version>[^<]*<\/version>/s//<version>$neu<\/version>/" \
+            "$pfad/appinfo/info.xml"
+          echo "$app: $vorher -> $(grep -o '<version>[^<]*</version>' "$pfad/appinfo/info.xml" | head -1)"
+          echo "neu=$neu" >> "$GITHUB_OUTPUT"
 
       - name: occ upgrade must succeed
         if: steps.vorher.outputs.tag != ''
@@ -168,9 +205,11 @@ jobs:
           echo "Version erwartet: $erwartet / in der Datenbank: $tatsaechlich"
           [ "$erwartet" = "$tatsaechlich" ] || { echo "Versionsstand stimmt nicht"; exit 1; }
 
-          probe="$(php occ config:app:get ci_upgrade_probe installed_version)"
-          echo "Probe-App: $probe"
-          [ "$probe" = "2.0.0" ] || { echo "App-Upgrade nicht angekommen"; exit 1; }
+          app="${{ steps.theme.outputs.app }}"
+          neu="${{ steps.tausch.outputs.neu }}"
+          stand="$(php occ config:app:get "$app" installed_version)"
+          echo "Theme-App $app: $stand (erwartet $neu)"
+          [ "$stand" = "$neu" ] || { echo "App-Upgrade nicht angekommen"; exit 1; }
 
           wartung="$(php occ config:system:get maintenance || echo false)"
           echo "Wartungsmodus danach: $wartung"
