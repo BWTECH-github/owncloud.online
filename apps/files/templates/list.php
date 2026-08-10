@@ -91,16 +91,16 @@
 </table>
 <input type="hidden" name="dir" id="dir" value="" />
 <div class="hiddenuploadfield">
-	<?php /* Das Feld ist per CSS auf 0x0 und opacity:0 gesetzt, bleibt aber im
-	Tabulator-Pfad und ist der einzige tastaturbedienbare Weg zum Upload:
-	der Menueeintrag ist ein <label>, und ein <label> ist nicht
-	fokussierbar. Das dazugehoerige <label for="file_upload_start"> wird
-	erst beim ersten Oeffnen des "Neu"-Menues erzeugt (newfilemenu.js:18),
-	vorher hat das Feld keinen Namen. aria-label macht den Namen davon
-	unabhaengig und deckt sich wortgleich mit dem Menueeintrag, der
-	denselben l10n-String verwendet (newfilemenu.js:248). */ ?>
+	<?php /* Das Feld ist per CSS auf 0x0 und opacity:0 gesetzt. Es gehoert
+	deshalb NICHT in den Tabulator-Pfad: ein Fokusrahmen auf einer 0x0-Flaeche
+	mit opacity:0 wird mitgezeichnet und ist trotzdem unsichtbar - der Nutzer
+	saehe nicht, wo der Fokus steht (SC 2.4.7). Bedient wird der Upload ueber
+	den Menueeintrag im "Neu"-Menue, der seit OC-WCAG-270 ein <button> ist und
+	den Klick an dieses Feld weiterreicht (newfilemenu.js). Das aria-label
+	bleibt: das Feld ist weiterhin programmatisch fokussierbar, und der Name
+	deckt sich wortgleich mit dem Menueeintrag. */ ?>
 	<input type="file" id="file_upload_start" class="hiddenuploadfield" name="files[]"
-		   aria-label="<?php p($l->t('Upload')); ?>" />
+		   tabindex="-1" aria-label="<?php p($l->t('Upload')); ?>" />
 </div>
 <div id="editor"></div><!-- FIXME Do not use this div in your app! It is deprecated and will be removed in the future! -->
 <div id="uploadsize-message" title="<?php p($l->t('Upload too large'))?>">
