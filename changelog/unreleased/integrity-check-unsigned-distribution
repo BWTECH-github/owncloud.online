@@ -6,14 +6,19 @@ MissingSignatureException, "Signature data not found." Nothing an administrator
 could do made it go away.
 
 ownCloud.online does not sign its releases: there is no signature package and no
-certificate to verify against, so the check could never pass. The repository
-already declares the unsigned channel 'bwtech', but the release build rewrites
-version.php to 'stable', which turned the check back on for exactly the artefacts
-that ship to customers. Switching the update channel in the admin panel had the
-same effect, so channel alone is not a sound criterion.
+private key for the certificate the check verifies against, so the check could
+never pass. The code already accounts for that - version.php declares the
+unsigned channel 'bwtech', which turns the check off. The release build then
+rewrote version.php to 'stable' and turned it back on, for exactly the artefacts
+that ship to customers. The build now keeps the declared channel.
 
-Enforcement now additionally requires core/signature.json to exist. An unsigned
-distribution reports nothing, and the day a signed one is built the check turns
-itself back on. A distribution that does carry signatures is unaffected.
+The update channel selector in the admin panel offered only ownCloud's channels,
+so switching once armed the check permanently with no way back through the user
+interface. 'bwtech' is now part of that list.
+
+An instance that already carries the warning can clear it with
+`occ config:app:delete core OC_Channel` (removes a channel override in the
+database) or, if the channel has to stay on an ownCloud one, with
+'integrity.check.disabled' => true in config.php.
 
 https://github.com/BWTECH-github/owncloud.online/issues

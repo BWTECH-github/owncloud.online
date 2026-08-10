@@ -100,7 +100,7 @@ jobs:
         run: |
           set -euo pipefail
           composer config --global github-oauth.github.com "${{ secrets.GITHUB_TOKEN }}"
-          make dist-dir RELEASE_CHANNEL=stable
+          make dist-dir RELEASE_CHANNEL=bwtech
           test -d build/dist/owncloud
 
       - name: Build release archives
