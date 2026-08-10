@@ -4,6 +4,12 @@
  * This file is licensed under the Affero General Public License version 3 or
  * later.
  * See the COPYING-README file.
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-07-20.
+ * Changes:
+ *   - pre-signed URL hardening + per-message salt in Crypto
  */
 
 namespace Test\Security;

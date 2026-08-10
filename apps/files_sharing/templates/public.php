@@ -1,4 +1,13 @@
 <?php
+/**
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-06-23.
+ * Changes:
+ *   - remove trailing whitespace in share template comment
+ *   - PHP 8.4 compatibility and owncloud.online design integration
+ */
 /** @var $l \OCP\IL10N */
 /** @var $theme OC_Defaults */
 /** @var $_ array */

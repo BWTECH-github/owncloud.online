@@ -5,6 +5,12 @@
  * This file is licensed under the Affero General Public License version 3 or
  * later.
  * See the COPYING-README file.
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-03-16.
+ * Changes:
+ *   - PHP 8.4 compatibility and owncloud.online design integration
  */
 
 namespace Test;

@@ -20,6 +20,13 @@
  * You should have received a copy of the GNU Affero General Public License, version 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-06-09.
+ * Changes:
+ *   - support federation between systems in subdirectories (#41599)
+ *   - Undefined array key "password" (#41499)
+ *   - doctrine/dbal:3 (#41450)
  */
 
 namespace OCA\Files_Sharing\Tests\External;

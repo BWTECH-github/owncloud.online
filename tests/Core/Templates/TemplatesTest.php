@@ -1,4 +1,12 @@
 <?php
+/**
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-06-24.
+ * Changes:
+ *   - update stale expectations for PHP 8.4 and fork rebrand
+ */
 
 namespace Tests\Core\Templates;
 

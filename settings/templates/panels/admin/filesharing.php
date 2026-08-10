@@ -1,4 +1,12 @@
 <?php
+/**
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-08-06.
+ * Changes:
+ *   - name the pickers and storage fields the WCAG pass missed
+ */
 /** @var \OCP\IL10N $l */
 /** @var array $_ */
 ?>

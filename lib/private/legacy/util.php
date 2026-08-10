@@ -40,7 +40,6 @@
  * @author Volkan Gezer <volkangezer@gmail.com>
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
- * Modified by BW-Tech GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -55,6 +54,14 @@
  * You should have received a copy of the GNU Affero General Public License, version 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-06-11.
+ * Changes:
+ *   - Reuse memoized upgrade check in checkServer
+ *   - PHP 8.4 strict types - fix getUserValue() boolean default for isGuest checks
+ *   - PHP 8.4 compatibility and owncloud.online design integration
+ *   - doctrine/dbal:3 (#41450)
  */
 
 use OC\Security\SignedUrl\Verifier;

@@ -1,4 +1,12 @@
 <?php
+/**
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-08-06.
+ * Changes:
+ *   - map the remaining doc keys, drop the hardcoded upstream manual link
+ */
 vendor_script('core', 'handlebars/handlebars');
 vendor_script('core', 'showdown/dist/showdown');
 script('settings', 'admin-apps');

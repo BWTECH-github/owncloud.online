@@ -1,4 +1,12 @@
 <?php
+/**
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-07-24.
+ * Changes:
+ *   - restore lib/base.php as the boot file, add lib/versioncheck.php
+ */
 
 // This file must stay parseable by ancient PHP versions: it is loaded before
 // anything else so users on an unsupported PHP get a readable message instead

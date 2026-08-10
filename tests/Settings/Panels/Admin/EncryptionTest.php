@@ -6,6 +6,12 @@
  * This file is licensed under the Affero General Public License version 3 or
  * later.
  * See the COPYING-README file.
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-08-06.
+ * Changes:
+ *   - make the chunk cache mock store bytes and pin the encryption help link
  */
 
 namespace Tests\Settings\Panels\Admin;

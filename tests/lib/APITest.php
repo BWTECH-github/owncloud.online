@@ -4,6 +4,12 @@
  * This file is licensed under the Affero General Public License version 3 or
  * later.
  * See the COPYING-README file.
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-02-23.
+ * Changes:
+ *   - remove deprecated legacy classes (#41462)
  */
 
 namespace Test;

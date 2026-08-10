@@ -4,6 +4,13 @@
  *
  * @copyright Copyright (c) 2026, BW-Tech GmbH
  * @license AGPL-3.0-only
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-08-06.
+ * Changes:
+ *   - route every MCP path through one strict gate and stop leaking backend errors
+ *   - file resources, image viewing, and optional AI document search
  */
 namespace OCA\OcoMcp\Tools;
 

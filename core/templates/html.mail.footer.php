@@ -1,10 +1,16 @@
 <?php
 /**
- * Modified by BW-Tech GmbH
  *
  * Einheitlicher owncloud.online E-Mail-Footer (Signatur). Gruss + Slogan sind
  * uebersetzbar ($l->t -> folgt der Sprache); der rechtliche Block (Anschrift,
  * Geschaeftsfuehrer, Register, USt-ID) ist feststehend.
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-06-25.
+ * Changes:
+ *   - use BW-TECH brand red #e6374b in the signature footer
+ *   - unified BW-TECH signature footer, drop casual Cheers sign-off
  */
 ?>
 <?php p($l->t('Best regards,')); ?><br>

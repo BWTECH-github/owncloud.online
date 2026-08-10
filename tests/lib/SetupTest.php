@@ -1,10 +1,18 @@
 <?php
 /**
  * Copyright (c) 2014 Lukas Reschke <lukas@owncloud.com>
- * Modified by BW-Tech GmbH
  * This file is licensed under the Affero General Public License version 3 or
  * later.
  * See the COPYING-README file.
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-06-09.
+ * Changes:
+ *   - htaccess RewriteBase rules block API requests for files with common exten...
+ *   - Improve large filecache performance
+ *   - PHP 8.4 compatibility and owncloud.online design integration
+ *   - php8.3 (#41449)
  */
 
 namespace Test;

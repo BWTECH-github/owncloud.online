@@ -16,6 +16,12 @@
  * You should have received a copy of the GNU Affero General Public License, version 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-06-16.
+ * Changes:
+ *   - rename 'license key' -> 'support key' + remove owncloud sales leak + DE i18n
+ *   - PHP 8.4 compatibility and owncloud.online design integration
  */
 namespace OC\License;
 
