@@ -1,0 +1,19 @@
+Bugfix: Stop the code integrity check from warning about an unsigned distribution
+
+A fresh installation from a release archive showed "There were problems with the
+code integrity check" and listed core plus every shipped app with
+MissingSignatureException, "Signature data not found." Nothing an administrator
+could do made it go away.
+
+ownCloud.online does not sign its releases: there is no signature package and no
+certificate to verify against, so the check could never pass. The repository
+already declares the unsigned channel 'bwtech', but the release build rewrites
+version.php to 'stable', which turned the check back on for exactly the artefacts
+that ship to customers. Switching the update channel in the admin panel had the
+same effect, so channel alone is not a sound criterion.
+
+Enforcement now additionally requires core/signature.json to exist. An unsigned
+distribution reports nothing, and the day a signed one is built the check turns
+itself back on. A distribution that does carry signatures is unaffected.
+
+https://github.com/BWTECH-github/owncloud.online/issues
