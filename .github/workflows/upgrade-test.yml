@@ -1,0 +1,197 @@
+name: Upgrade
+
+# Prueft, was die uebrigen Jobs nicht pruefen: dass eine BESTEHENDE Installation
+# auf diesen Stand aktualisiert werden kann. Alle anderen Jobs installieren
+# frisch - deshalb war v11.0.12 vollstaendig gruen, obwohl `occ upgrade` von
+# 11.0.11 aus mit NeedsUpdateException abbrach, sobald eine Theme-App ihre
+# Version aenderte.
+#
+# Zwei Teile:
+#   A  echtes Update vom letzten Release-Tag auf diesen Stand
+#   B  gezielt die Fehlerklasse: eine App vom Typ theme mit Versionssprung
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  upgrade:
+    name: Upgrade from previous release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout owncloud.online
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          # Vollstaendige Historie: der vorherige Release-Tag wird gebraucht.
+          fetch-depth: 0
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: "8.4"
+          extensions: curl, gd, json, xml, zip, sqlite3, pdo_sqlite
+          ini-values: "memory_limit=2048M"
+          coverage: none
+
+      - name: Cache Composer downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/composer
+          key: upgrade-composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            upgrade-composer-${{ runner.os }}-
+
+      - name: Determine previous release tag
+        id: vorher
+        run: |
+          set -euo pipefail
+          # Der juengste v*-Tag, der nicht auf HEAD zeigt.
+          aktuell="$(git tag --points-at HEAD | grep '^v' | head -1 || true)"
+          vorher=""
+          for t in $(git tag --list 'v*' --sort=-v:refname); do
+            if [ "$t" != "$aktuell" ]; then vorher="$t"; break; fi
+          done
+          if [ -z "$vorher" ]; then
+            echo "Kein vorheriger Release-Tag gefunden - Teil A wird uebersprungen."
+          else
+            echo "Vorversion: $vorher"
+          fi
+          echo "tag=${vorher}" >> "$GITHUB_OUTPUT"
+
+      - name: Install the previous release
+        if: steps.vorher.outputs.tag != ''
+        run: |
+          set -euo pipefail
+          git worktree add --detach "$RUNNER_TEMP/alt" "${{ steps.vorher.outputs.tag }}"
+          cd "$RUNNER_TEMP/alt"
+          composer install --no-interaction --no-dev --no-progress
+          php occ maintenance:install \
+            --database sqlite \
+            --admin-user admin \
+            --admin-pass 'CiUpgrade!2026' \
+            --data-dir "$RUNNER_TEMP/data"
+          echo "Installierte Version:"
+          php occ config:system:get version
+
+      # Genau der Fall, der uns getroffen hat: eine App vom Typ theme, die beim
+      # Update ihre Version wechselt. OC::init() laedt solche Apps ganz frueh;
+      # loadApp() wirft dann NeedsUpdateException, und die faengt im Bootstrap
+      # niemand - occ stirbt, bevor es das Upgrade ausfuehren kann.
+      - name: Add a theme app that will change its version
+        if: steps.vorher.outputs.tag != ''
+        run: |
+          set -euo pipefail
+          probe="$RUNNER_TEMP/alt/apps/ci_upgrade_probe"
+          mkdir -p "$probe/appinfo"
+          cat > "$probe/appinfo/info.xml" <<'XML'
+          <?xml version="1.0"?>
+          <info>
+            <id>ci_upgrade_probe</id>
+            <name>CI upgrade probe</name>
+            <description>Only exists during the upgrade job.</description>
+            <licence>AGPL</licence>
+            <author>BW-Tech GmbH</author>
+            <version>1.0.0</version>
+            <types>
+              <theme/>
+            </types>
+            <dependencies>
+              <owncloud min-version="10" max-version="11" />
+            </dependencies>
+          </info>
+          XML
+          # app.php muss existieren: nur dann prueft loadApp() ueberhaupt auf
+          # einen ausstehenden Upgrade.
+          printf '<?php\n' > "$probe/appinfo/app.php"
+          cd "$RUNNER_TEMP/alt"
+          php occ app:enable ci_upgrade_probe
+          php occ config:app:get ci_upgrade_probe installed_version
+
+      - name: Swap in the current code
+        if: steps.vorher.outputs.tag != ''
+        run: |
+          set -euo pipefail
+          # Wie ein echtes Deployment: Code tauschen, config und data behalten.
+          rsync -a --delete \
+            --exclude 'config/config.php' \
+            --exclude 'data' \
+            --exclude '.git' \
+            "$GITHUB_WORKSPACE/" "$RUNNER_TEMP/alt/"
+          cd "$RUNNER_TEMP/alt"
+          # Der Autoloader MUSS neu erzeugt werden - lib/composer ist nicht
+          # versioniert, und eine alte Classmap zeigt sonst auf geloeschte
+          # Klassen (500 auf jeder Seite).
+          composer install --no-interaction --no-dev --no-progress
+          # Die Probe-App bekommt einen Major-Sprung. Patch-Spruenge wuerden
+          # nicht reichen: OC_App::shouldUpgrade() schreibt die still durch.
+          sed -i 's|<version>1.0.0</version>|<version>2.0.0</version>|' \
+            apps/ci_upgrade_probe/appinfo/info.xml
+          grep -o '<version>[^<]*</version>' apps/ci_upgrade_probe/appinfo/info.xml
+
+      - name: occ upgrade must succeed
+        if: steps.vorher.outputs.tag != ''
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/alt"
+          # Bewusst OHNE vorher maintenance zu setzen: genau so faehrt es das
+          # Provisioning, und genau so ist der Fehler aufgetreten.
+          php occ upgrade --no-interaction
+
+      - name: Verify the instance afterwards
+        if: steps.vorher.outputs.tag != ''
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/alt"
+
+          erwartet="$(php -r 'require "version.php"; echo implode(".", $OC_Version);')"
+          tatsaechlich="$(php occ config:system:get version)"
+          echo "Version erwartet: $erwartet / in der Datenbank: $tatsaechlich"
+          [ "$erwartet" = "$tatsaechlich" ] || { echo "Versionsstand stimmt nicht"; exit 1; }
+
+          probe="$(php occ config:app:get ci_upgrade_probe installed_version)"
+          echo "Probe-App: $probe"
+          [ "$probe" = "2.0.0" ] || { echo "App-Upgrade nicht angekommen"; exit 1; }
+
+          wartung="$(php occ config:system:get maintenance || echo false)"
+          echo "Wartungsmodus danach: $wartung"
+          [ "$wartung" != "true" ] || { echo "Wartungsmodus blieb an"; exit 1; }
+
+          # occ muss weiterhin bedienbar sein
+          php occ status
+          php occ app:list > /dev/null
+
+      - name: The web interface must answer
+        if: steps.vorher.outputs.tag != ''
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/alt"
+          php -S 127.0.0.1:8099 -t . > "$RUNNER_TEMP/web.log" 2>&1 &
+          for i in $(seq 1 30); do
+            sleep 1
+            code="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8099/status.php || true)"
+            [ "$code" = "200" ] && break
+          done
+          echo "status.php: $code"
+          [ "$code" = "200" ] || { echo "status.php antwortet nicht"; cat "$RUNNER_TEMP/web.log"; exit 1; }
+
+          login="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8099/index.php/login)"
+          echo "Login-Seite: $login"
+          [ "$login" = "200" ] || { echo "Login-Seite antwortet $login"; exit 1; }
+
+          fatale="$(grep -ciE 'Uncaught|PHP Fatal' "$RUNNER_TEMP/web.log" || true)"
+          echo "fatale PHP-Fehler: $fatale"
+          [ "$fatale" = "0" ] || { grep -iE 'Uncaught|PHP Fatal' "$RUNNER_TEMP/web.log" | head -5; exit 1; }
+
+      - name: Server log
+        if: always() && steps.vorher.outputs.tag != ''
+        run: |
+          if [ -f "$RUNNER_TEMP/data/owncloud.log" ]; then
+            echo "--- letzte 40 Zeilen ---"
+            tail -40 "$RUNNER_TEMP/data/owncloud.log"
+          else
+            echo "kein owncloud.log"
+          fi

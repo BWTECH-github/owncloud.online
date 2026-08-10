@@ -117,6 +117,13 @@ class AdminController extends Controller implements ISettings {
 		);
 
 		$channels = [
+			// Der Auslieferungskanal von ownCloud.online. Er gehoert in die Liste,
+			// weil er sonst eine Einbahnstrasse waere: wer einmal auf einen der
+			// ownCloud-Kanaele wechselt, schaltet damit die Code-Integritaets-
+			// pruefung scharf - die auf einer unsignierten Auslieferung
+			// zwangslaeufig fehlschlaegt - und findet ueber die Oberflaeche keinen
+			// Weg zurueck.
+			'bwtech',
 			'daily',
 			'beta',
 			'stable',
@@ -127,6 +134,9 @@ class AdminController extends Controller implements ISettings {
 		// Remove the currently used channel from the channels list
 		if (($key = \array_search($currentChannel, $channels)) !== false) {
 			unset($channels[$key]);
+			// Neu indizieren: sonst bleibt eine Luecke in den Schluesseln, und
+			// die Liste wird als JSON-Objekt statt als Feld ausgeliefert.
+			$channels = \array_values($channels);
 		}
 		$updateState = $this->updateChecker->getUpdateState();
 
