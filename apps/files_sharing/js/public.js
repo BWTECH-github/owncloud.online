@@ -242,7 +242,7 @@ OCA.Sharing.PublicApp = {
 				urlSpec.x = Math.ceil(urlSpec.x);
 				urlSpec.y = Math.ceil(urlSpec.y);
 				urlSpec.t = $('#dirToken').val();
-				return OC.generateUrl('/apps/files_sharing/ajax/publicpreview.php?') + $.param(urlSpec);
+				return OC.filePath('files_sharing', 'ajax', 'publicpreview.php') + '?' + $.param(urlSpec);
 			};
 
 			this.fileList.updateEmptyContent = function () {
