@@ -1,0 +1,23 @@
+Bugfix: Name the delete button of the group list
+
+Every group in the user management carried a delete control with no accessible
+name, even though the markup looked like it had one: it used an original-title
+attribute. That attribute is not standardised and nothing in the code base reads
+it - the tooltip library looks at title and data-original-title only, and no
+tooltip is initialised on the group list in the first place. So it provided
+neither a name for assistive technology nor a tooltip for a mouse user.
+
+The only other candidate was an img without an alt attribute, which cannot
+supply a name either. The control is now named with aria-label and the image is
+marked decorative.
+
+A visually hidden span was deliberately not used here, although that is the
+pattern elsewhere in this code base. The sort key of the group list is built
+from every span inside every anchor of the row, so an extra span would end up in
+it and could reorder the list - language dependently, because the added text is
+the translated string.
+
+The same markup is built a second time in JavaScript when a group is created
+without a reload; both sites are fixed.
+
+WCAG 2.1 AA, SC 4.1.2 and SC 1.1.1
