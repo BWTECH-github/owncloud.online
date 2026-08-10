@@ -85,6 +85,9 @@ class AdminControllerTest extends TestCase {
 
 	public function testDisplayPanelWithUpdate() {
 		$channels = [
+			// Der Auslieferungskanal von ownCloud.online steht in der Liste,
+			// damit ein Wechsel auf einen der ownCloud-Kanaele umkehrbar bleibt.
+			'bwtech',
 			'daily',
 			'beta',
 			'stable',
@@ -95,6 +98,7 @@ class AdminControllerTest extends TestCase {
 		// Remove the currently used channel from the channels list
 		if (($key = \array_search($currentChannel, $channels)) !== false) {
 			unset($channels[$key]);
+			$channels = \array_values($channels);
 		}
 
 		$this->config
@@ -129,6 +133,9 @@ class AdminControllerTest extends TestCase {
 
 	public function testDisplayPanelWithoutUpdate() {
 		$channels = [
+			// Der Auslieferungskanal von ownCloud.online steht in der Liste,
+			// damit ein Wechsel auf einen der ownCloud-Kanaele umkehrbar bleibt.
+			'bwtech',
 			'daily',
 			'beta',
 			'stable',
@@ -139,6 +146,7 @@ class AdminControllerTest extends TestCase {
 		// Remove the currently used channel from the channels list
 		if (($key = \array_search($currentChannel, $channels)) !== false) {
 			unset($channels[$key]);
+			$channels = \array_values($channels);
 		}
 
 		$this->config

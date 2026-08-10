@@ -15,7 +15,12 @@
 	var TEMPLATE_MENU =
 		'<ul>' +
 		'<li>' +
-		'<label for="file_upload_start" class="menuitem" data-action="upload" title="{{uploadMaxHumanFilesize}}"><span class="svg icon icon-upload"></span><span class="displayname">{{uploadLabel}}</span></label>' +
+		// Ein <button> statt des frueheren <label for="file_upload_start">: ein
+		// Label ist nicht fokussierbar, der Eintrag war also per Tastatur nicht
+		// bedienbar. Das Weiterreichen des Klicks an das Dateifeld, das der
+		// Browser beim Label uebernommen hat, macht jetzt _onClickAction.
+		// [OC-WCAG-270]
+		'<button type="button" class="menuitem" data-action="upload" title="{{uploadMaxHumanFilesize}}"><span class="svg icon icon-upload"></span><span class="displayname">{{uploadLabel}}</span></button>' +
 		'</li>' +
 		'{{#each items}}' +
 		'<li>' +
@@ -46,6 +51,7 @@
 
 		events: {
 			'click .menuitem': '_onClickAction',
+			'keydown': '_onKeyDown',
 		},
 
 		/**
@@ -103,11 +109,19 @@
 				$target = $target.closest('.menuitem');
 			}
 			var action = $target.attr('data-action');
-			// note: clicking the upload label will automatically
-			// set the focus on the "file_upload_start" hidden field
-			// which itself triggers the upload dialog.
-			// Currently the upload logic is still in file-upload.js and filelist.js
+			// Der Eintrag war frueher ein <label for="file_upload_start">; den
+			// Klick auf das versteckte Dateifeld hat dabei der Browser
+			// weitergereicht. Seit er ein <button> ist - damit er per Tastatur
+			// ueberhaupt erreichbar ist - muss das hier geschehen. Der Aufruf
+			// steht im selben Ereignis wie die Nutzeraktion, die
+			// Nutzeraktivierung bleibt also erhalten und der Dateidialog des
+			// Betriebssystems oeffnet sich. Die Upload-Logik selbst liegt
+			// weiterhin in file-upload.js und filelist.js. [OC-WCAG-270]
 			if (action === 'upload') {
+				var uploadField = document.getElementById('file_upload_start');
+				if (uploadField) {
+					uploadField.click();
+				}
 				OC.hideMenus();
 			} else {
 				event.preventDefault();
@@ -266,6 +280,31 @@
 			this.$el.removeClass('hidden');
 
 			OC.showMenu(null, this.$el);
+
+			// Das Menue haengt an <body> und steht damit am Dokumentende: ohne
+			// Fokusfuehrung erreicht es die Tabulatorkette erst nach dem
+			// gesamten uebrigen Inhalt. Der Fokus wandert deshalb beim Oeffnen
+			// auf den ersten Eintrag, Escape schliesst und gibt ihn an den
+			// Ausloeser zurueck. [OC-WCAG-270, SC 2.4.3]
+			this._$menuToggle = $target;
+			this.$el.find('.menuitem').first().focus();
+		},
+
+		/**
+		 * Closes the menu on Escape and returns the focus to the element that
+		 * opened it.
+		 *
+		 * @param {Object} event keydown event
+		 */
+		_onKeyDown: function(event) {
+			if (event.keyCode !== 27) {
+				return;
+			}
+			event.preventDefault();
+			OC.hideMenus();
+			if (this._$menuToggle && this._$menuToggle.length) {
+				this._$menuToggle.focus();
+			}
 		}
 	});
 

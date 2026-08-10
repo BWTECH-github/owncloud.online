@@ -353,6 +353,16 @@ class Checker {
 		$signature = \base64_decode($signatureData['signature']);
 		$certificate = $signatureData['certificate'];
 
+		// Das Zertifikat stammt aus dem zu pruefenden Paket, ist also nicht
+		// vertrauenswuerdig. phpseclib holt sich beim Validieren sonst das
+		// Aussteller-Zertifikat ueber die AIA-Erweiterung des Zertifikats per
+		// HTTP nach (X509::fetchURL, standardmaessig aktiv) - eine URL, die der
+		// Einreicher frei waehlt. Damit liesse sich der Server zu Anfragen an
+		// beliebige interne Adressen bewegen. Wir brauchen das Nachladen nie:
+		// unsere Wurzel liegt als Datei bei. Der Schalter ist prozessweit und
+		// wird bewusst nicht zurueckgesetzt.
+		\phpseclib3\File\X509::disableURLFetch();
+
 		// Check if certificate is signed by ownCloud Root Authority
 		$x509 = new \phpseclib3\File\X509();
 		$rootCertificatePublicKey = $this->fileAccessHelper->file_get_contents($this->environmentHelper->getServerRoot().'/resources/codesigning/root.crt');
