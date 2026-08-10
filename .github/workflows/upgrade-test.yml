@@ -49,10 +49,15 @@ jobs:
         id: vorher
         run: |
           set -euo pipefail
-          # Der juengste v*-Tag, der nicht auf HEAD zeigt.
-          aktuell="$(git tag --points-at HEAD | grep '^v' | head -1 || true)"
+          # Nur unsere eigenen Release-Tags: streng vMAJOR.MINOR.PATCH. Ohne
+          # diesen Filter greift die Historie die geerbten Upstream-Tags mit ab
+          # (vv9.1.4RC1 und aehnliche), und `--sort=-v:refname` sortiert die
+          # wegen des doppelten v sogar nach vorne - der Test wuerde dann von
+          # ownCloud 9 aus aktualisieren.
+          eigene() { grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$'; }
+          aktuell="$(git tag --points-at HEAD | eigene | head -1 || true)"
           vorher=""
-          for t in $(git tag --list 'v*' --sort=-v:refname); do
+          for t in $(git tag --list 'v*' | eigene | sort -V -r); do
             if [ "$t" != "$aktuell" ]; then vorher="$t"; break; fi
           done
           if [ -z "$vorher" ]; then
@@ -116,7 +121,11 @@ jobs:
         run: |
           set -euo pipefail
           # Wie ein echtes Deployment: Code tauschen, config und data behalten.
-          rsync -a --delete \
+          # --force ist noetig, sonst bricht rsync an Verzeichnissen ab, die es
+          # loeschen soll, die aber noch Inhalt haben ("cannot delete non-empty
+          # directory") - beim Sprung ueber mehrere Versionen ist das der
+          # Normalfall.
+          rsync -a --delete --force \
             --exclude 'config/config.php' \
             --exclude 'data' \
             --exclude '.git' \
