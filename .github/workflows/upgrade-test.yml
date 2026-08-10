@@ -121,14 +121,21 @@ jobs:
         run: |
           set -euo pipefail
           # Wie ein echtes Deployment: Code tauschen, config und data behalten.
-          # --force ist noetig, sonst bricht rsync an Verzeichnissen ab, die es
-          # loeschen soll, die aber noch Inhalt haben ("cannot delete non-empty
-          # directory") - beim Sprung ueber mehrere Versionen ist das der
-          # Normalfall.
+          #
+          # Was NICHT mitgetauscht werden darf, weil die Quelle es gar nicht
+          # kennt und --delete es sonst wegraeumt:
+          #   lib/composer          nicht versioniert; ein echtes Deployment
+          #                         laesst es stehen und ruft composer install.
+          #   apps/ci_upgrade_probe die eben angelegte Probe-App - genau die,
+          #                         deren Versionssprung geprueft werden soll.
+          # --force fuer die uebrigen Verzeichnisse, die beim Sprung ueber
+          # mehrere Versionen wegfallen und noch Inhalt haben.
           rsync -a --delete --force \
             --exclude 'config/config.php' \
             --exclude 'data' \
             --exclude '.git' \
+            --exclude '/lib/composer' \
+            --exclude '/apps/ci_upgrade_probe' \
             "$GITHUB_WORKSPACE/" "$RUNNER_TEMP/alt/"
           cd "$RUNNER_TEMP/alt"
           # Der Autoloader MUSS neu erzeugt werden - lib/composer ist nicht
