@@ -252,7 +252,9 @@ class Server {
 		$this->server->addPlugin(new PreviewPlugin(OC::$server->getTimeFactory(), OC::$server->getPreviewManager()));
 
 		$this->server->on('beforeMethod:PROPFIND', function (Request $request) use ($config) {
-			$depthHeader = strtolower($request->getHeader('depth'));
+			// Fehlt der Kopf, liefert getHeader() null. ServerFactory.php
+			// sichert dieselbe Zeile bereits so ab.
+			$depthHeader = strtolower($request->getHeader('depth') ?? '');
 
 			if ($depthHeader === 'infinity' && !$config->getSystemValue('dav.propfind.depth_infinity', false)) {
 				throw new Exception\PreconditionFailed('Depth infinity not supported');

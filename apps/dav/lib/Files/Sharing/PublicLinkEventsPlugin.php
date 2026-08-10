@@ -62,7 +62,9 @@ class PublicLinkEventsPlugin extends ServerPlugin {
 		$token = $request->getRawServerValue('PHP_AUTH_USER');
 
 		if ($method === 'MOVE') {
-			$destination = $this->server->calculateUri($request->getHeader('Destination'));
+			// Ein MOVE ohne Destination-Kopf ist zwar ungueltig, kommt aber
+			// bis hierher - calculateUri() arbeitet dann auf null.
+			$destination = $this->server->calculateUri($request->getHeader('Destination') ?? '');
 			$event = new GenericEvent(null, [
 				'path' => $path,
 				'destination' => $destination,
@@ -103,7 +105,9 @@ class PublicLinkEventsPlugin extends ServerPlugin {
 		$token = $request->getRawServerValue('PHP_AUTH_USER');
 
 		if ($method === 'MOVE') {
-			$destination = $this->server->calculateUri($request->getHeader('Destination'));
+			// Ein MOVE ohne Destination-Kopf ist zwar ungueltig, kommt aber
+			// bis hierher - calculateUri() arbeitet dann auf null.
+			$destination = $this->server->calculateUri($request->getHeader('Destination') ?? '');
 			$event = new GenericEvent(null, [
 				'path' => $path,
 				'destination' => $destination,

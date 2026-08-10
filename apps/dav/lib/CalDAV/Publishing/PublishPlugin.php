@@ -141,7 +141,9 @@ class PublishPlugin extends ServerPlugin {
 		$path = $request->getPath();
 
 		// Only handling xml
-		$contentType = $request->getHeader('Content-Type');
+		// Wie in DAV\Sharing\Plugin: ohne Content-Type kaeme null bei strpos()
+		// an.
+		$contentType = $request->getHeader('Content-Type') ?? '';
 		if (\strpos($contentType, 'application/xml') === false && \strpos($contentType, 'text/xml') === false) {
 			return;
 		}

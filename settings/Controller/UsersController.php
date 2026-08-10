@@ -276,7 +276,12 @@ class UsersController extends Controller {
 			throw new \Exception($this->l10n->t('Couldn\'t change the email address because the user does not exist'));
 		}
 
-		$splittedToken = \explode(':', $this->config->getUserValue($userId, 'owncloud', 'changeMail', null));
+		// Rueckfallwert '' statt null: liegt kein Token vor - der Normalfall
+		// beim zweiten Aufruf des Bestaetigungslinks, denn die Fehlerzweige
+		// loeschen den Wert - bekaeme explode() sonst null, was PHP seit 8.1
+		// abmahnt. Am Ergebnis aendert sich nichts: explode(':', '') ergibt
+		// [''], die Laengenpruefung darunter greift wie zuvor.
+		$splittedToken = \explode(':', $this->config->getUserValue($userId, 'owncloud', 'changeMail', ''));
 		if (\count($splittedToken) !== 3) {
 			$this->config->deleteUserValue($userId, 'owncloud', 'changeMail');
 			throw new \Exception($this->l10n->t('Couldn\'t change the email address because the token is invalid'));
@@ -606,7 +611,10 @@ class UsersController extends Controller {
 	private function checkPasswordSetToken($token, $userId) {
 		$user = $this->userManager->get($userId);
 
-		$splittedToken = \explode(':', $this->config->getUserValue($userId, 'owncloud', 'lostpassword', null));
+		// Wie oben: ohne gesetzten Token kaeme null bei explode() an. Die
+		// Route dorthin ist mit @PublicPage annotiert, ein unangemeldeter
+		// Aufruf reicht also aus, um die Abmahnung auszuloesen.
+		$splittedToken = \explode(':', $this->config->getUserValue($userId, 'owncloud', 'lostpassword', ''));
 		if (\count($splittedToken) !== 2) {
 			$this->config->deleteUserValue($userId, 'owncloud', 'lostpassword');
 			throw new InvalidUserTokenException($this->l10n->t('The token provided is invalid.'));
@@ -1233,7 +1241,12 @@ class UsersController extends Controller {
 
 		$oldEmailAddress = $user->getEMailAddress();
 
-		$splittedToken = \explode(':', $this->config->getUserValue($userId, 'owncloud', 'changeMail', null));
+		// Rueckfallwert '' statt null: liegt kein Token vor - der Normalfall
+		// beim zweiten Aufruf des Bestaetigungslinks, denn die Fehlerzweige
+		// loeschen den Wert - bekaeme explode() sonst null, was PHP seit 8.1
+		// abmahnt. Am Ergebnis aendert sich nichts: explode(':', '') ergibt
+		// [''], die Laengenpruefung darunter greift wie zuvor.
+		$splittedToken = \explode(':', $this->config->getUserValue($userId, 'owncloud', 'changeMail', ''));
 		$mailAddress = $splittedToken[2];
 
 		$this->setEmailAddress($userId, $mailAddress);

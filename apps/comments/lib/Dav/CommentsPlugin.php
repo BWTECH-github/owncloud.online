@@ -226,7 +226,8 @@ class CommentsPlugin extends ServerPlugin {
 	 * @throws UnsupportedMediaType if the content type is not supported
 	 */
 	private function createComment($objectType, $objectId, $data, $contentType = 'application/json') {
-		if (\explode(';', $contentType)[0] === 'application/json') {
+		// Wie in SystemTagPlugin: der durchgereichte Content-Type darf fehlen.
+		if (\explode(';', (string)$contentType)[0] === 'application/json') {
 			$data = \json_decode($data, true);
 		} else {
 			throw new UnsupportedMediaType();
