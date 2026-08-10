@@ -171,7 +171,14 @@ function addSelect2 ($elements, userListLimit) {
 			return element.name;
 		},
 		formatResult: function (element) {
-			var $result = $('<span><div class="avatardiv"/><span>'+escapeHTML(element.displayname)+'</span></span>');
+			// <div class="avatardiv"></div> ausgeschrieben: als selbstschliessendes
+			// <div class="avatardiv"/> ist es kein leeres Element, sondern ein
+			// offenes - der HTML-Parser haengt den nachfolgenden Namens-<span>
+			// dann als KIND hinein. Genau den ueberschreibt das $div.html() der
+			// Gruppen weiter unten, und bei Benutzern tut es der Avatar-Aufruf im
+			// select2-loaded-Handler. Ergebnis war eine Auswahlliste ohne jeden
+			// Namen - nur Symbole. Am laufenden System gemessen.
+			var $result = $('<span><div class="avatardiv"></div><span>'+escapeHTML(element.displayname)+'</span></span>');
 			var $div = $result.find('.avatardiv')
 				.attr('data-type', element.type)
 				.attr('data-name', element.name)
