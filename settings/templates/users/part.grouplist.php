@@ -11,8 +11,9 @@
 	} ?>
 	<li id="newgroup-form" style="display: none">
 		<form>
+			<label for="newgroupname" class="hidden-visually"><?php p($l->t('Group')); ?></label>
 			<input type="text" id="newgroupname" placeholder="<?php p($l->t('Group')); ?>..." />
-			<input type="submit" class="button icon-add" value="" />
+			<input type="submit" class="button icon-add" value="" aria-label="<?php p($l->t('Add Group')); ?>" />
 		</form>
 	</li>
 	<!-- Everyone -->
@@ -57,8 +58,8 @@
 			</a>
 			<span class="utils">
 					<?php if ($_['isAdmin']): ?>
-				<a href="#" class="action delete" original-title="<?php p($l->t('Delete'))?>">
-					<img src="<?php print_unescaped(image_path('core', 'actions/delete.svg')) ?>" />
+				<a href="#" class="action delete" aria-label="<?php p($l->t('Delete'))?>">
+					<img src="<?php print_unescaped(image_path('core', 'actions/delete.svg')) ?>" alt="" />
 				</a>
 				<?php endif; ?>
 			</span>

@@ -1,7 +1,9 @@
 var PersonalCors = {
     renderRow: function(domain){
         var col1 = $('<td></td>').text(domain);
-        var input = $('<input type="button" class="button icon-delete removeDomainButton" />').data('domain', domain)
+        var input = $('<input type="button" class="button icon-delete removeDomainButton" />')
+            .attr('aria-label', t('settings', 'Delete'))
+            .data('domain', domain)
         var col2 = $('<td />').append(input);
         var row = $('<tr></tr>').append(col1).append(col2);
         $('#cors .grid tbody').append(row);
