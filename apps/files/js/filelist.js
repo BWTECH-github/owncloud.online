@@ -3055,7 +3055,13 @@
 				// [OC-WCAG-046/047/048]
 				this.$el.find('#headerName .name.columntitle>span:first').text(t('files','Name'));
 				this.$el.find('#headerSize .columntitle>span:first').text(t('files','Size'));
-				this.$el.find('#modified a>span:first').text(t('files','Modified'));
+				// Der Titel der Datumsspalte wird nicht angefasst: das Ein- und
+				// Ausblenden erledigt files.css im Zustand .multiselect. Der
+				// fruehere Selektor '#modified a>span:first' konnte ohnehin nie
+				// greifen - #modified WAR der Anker, ein <a> darin gibt es nicht -
+				// und haette in den Freigabe- und Papierkorb-Ansichten die
+				// dortigen Titel faelschlich mit "Geaendert" ueberschrieben.
+				// [OC-WCAG-240]
 				this.$el.find('table').removeClass('multiselect');
 				this.$el.find('.selectedActions').addClass('hidden');
 			}
@@ -3084,7 +3090,6 @@
 				}
 
 				this.$el.find('#headerName .name.columntitle>span:first').text(selection);
-				this.$el.find('#modified a>span:first').text('');
 				this.$el.find('table').addClass('multiselect');
 				this.$el.find('.delete-selected').toggleClass('hidden', !this.isSelectedDeletable());
 			}

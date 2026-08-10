@@ -338,7 +338,14 @@ table.multiselect #headerName {
 	/* when we use 100%, the styling breaks on mobile … table styling */
 }
 
-table.multiselect #modified {
+/* Der Titel der Datums- bzw. Status-Spalte weicht der Auswahl-Leiste, sobald
+   Dateien markiert sind. Diese Regel hing frueher an id="modified" - die haben
+   sich sechs Listen-Templates geteilt, und weil alle Ansichten in dasselbe
+   Dokument gerendert und nur per CSS umgeschaltet werden, stand die id zur
+   Laufzeit zehnmal auf einer Seite. Der Haken sitzt jetzt an der Klasse der
+   Kopfzelle, die es ohnehin schon gab. [OC-WCAG-240] */
+table.multiselect th.column-mtime .columntitle,
+table.multiselect th.column-sharestate .columntitle {
 	display: none;
 }
 
