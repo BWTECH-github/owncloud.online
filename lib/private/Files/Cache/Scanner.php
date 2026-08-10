@@ -30,6 +30,14 @@
  * You should have received a copy of the GNU Affero General Public License, version 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-07-02.
+ * Changes:
+ *   - cut per-request hot-path costs across session, cache, storage and status
+ *   - Re-resolve folder id when scanning with readonly filecache
+ *   - Avoid redundant folder id lookup while scanning
+ *   - doctrine/dbal:3 (#41450)
  */
 
 namespace OC\Files\Cache;

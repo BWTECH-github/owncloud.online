@@ -1,4 +1,14 @@
 <?php
+/**
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-07-27.
+ * Changes:
+ *   - do not trust cached binary paths from the distributed cache (#41732)
+ *   - PHP 8.4 compatibility and owncloud.online design integration
+ *   - php8.3 (#41449)
+ */
 
 namespace Test\legacy;
 

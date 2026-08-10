@@ -1,4 +1,12 @@
 <?php
+/**
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-07-02.
+ * Changes:
+ *   - index oc_share on uid_owner/uid_initiator (11.0.8.1)
+ */
 
 namespace OC\Migrations;
 

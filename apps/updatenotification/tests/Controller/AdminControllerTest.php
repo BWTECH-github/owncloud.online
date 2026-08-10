@@ -21,6 +21,11 @@
  * You should have received a copy of the GNU Affero General Public License, version 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-08-10.
+ * Changes:
+ *   - carry the bwtech channel into the panel expectation
  */
 
 namespace OCA\UpdateNotification\Tests\Controller;

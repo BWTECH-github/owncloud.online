@@ -4,7 +4,6 @@
  * This configuration file is only provided to document the different
  * configuration options and their usage for the core system.
  *
- * Modified by BW-Tech GmbH
  *
  * DO NOT COMPLETELY BASE YOUR CONFIGURATION FILE ON THESE SAMPLES. THIS MAY BREAK
  * YOUR INSTANCE. Instead, manually copy configuration switches that you
@@ -16,6 +15,15 @@
  *
  * This file is also used to generate the configuration documentation using `config-to-docs`.
  * Any changes to this file must follow the rules documented in the readme of the `config-to-docs` repository.
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-08-06.
+ * Changes:
+ *   - close the open items from the v11.0.0 security delta
+ *   - harden public preview permission check and backend user homes
+ *   - Pregenerate image previews in the background
+ *   - Apply selected ownCloud core PHP 8 fixes
  */
 
 $CONFIG = [

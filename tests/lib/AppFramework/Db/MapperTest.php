@@ -19,6 +19,12 @@
  * You should have received a copy of the GNU Affero General Public
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-02-26.
+ * Changes:
+ *   - doctrine/dbal:3 (#41450)
+ *   - drop legacy class OC_DB_StatementWrapper (#41464)
  */
 
 namespace Test\AppFramework\Db;

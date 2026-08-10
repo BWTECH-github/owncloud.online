@@ -22,7 +22,6 @@
  * @author Thomas Tanghus <thomas@tanghus.net>
  * @author Victor Dubiniuk <dubiniuk@owncloud.com>
  * @author Vincent Petry <pvince81@owncloud.com>
- * Modified by BW-Tech GmbH
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
@@ -39,6 +38,12 @@
  * You should have received a copy of the GNU Affero General Public License, version 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-06-24.
+ * Changes:
+ *   - add @since tag to OCP\Util::getPublicVersionString
+ *   - Prepare ownCloud.online 11.0.2 release
  */
 
 /**

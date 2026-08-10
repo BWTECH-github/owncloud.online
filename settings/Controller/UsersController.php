@@ -12,7 +12,6 @@
  * @author Vincent Petry <pvince81@owncloud.com>
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
- * Modified by BW-Tech GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -27,6 +26,14 @@
  * You should have received a copy of the GNU Affero General Public License, version 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-06-08.
+ * Changes:
+ *   - pass target user ID to sendEmail in setMailAddress subadmin path (#41574)
+ *   - use the right user id when changing the email (#41539)
+ *   - PHP 8.4 compatibility and owncloud.online design integration
+ *   - php8.3 (#41449)
  */
 
 namespace OC\Settings\Controller;
@@ -269,7 +276,12 @@ class UsersController extends Controller {
 			throw new \Exception($this->l10n->t('Couldn\'t change the email address because the user does not exist'));
 		}
 
-		$splittedToken = \explode(':', $this->config->getUserValue($userId, 'owncloud', 'changeMail', null));
+		// Rueckfallwert '' statt null: liegt kein Token vor - der Normalfall
+		// beim zweiten Aufruf des Bestaetigungslinks, denn die Fehlerzweige
+		// loeschen den Wert - bekaeme explode() sonst null, was PHP seit 8.1
+		// abmahnt. Am Ergebnis aendert sich nichts: explode(':', '') ergibt
+		// [''], die Laengenpruefung darunter greift wie zuvor.
+		$splittedToken = \explode(':', $this->config->getUserValue($userId, 'owncloud', 'changeMail', ''));
 		if (\count($splittedToken) !== 3) {
 			$this->config->deleteUserValue($userId, 'owncloud', 'changeMail');
 			throw new \Exception($this->l10n->t('Couldn\'t change the email address because the token is invalid'));
@@ -599,7 +611,10 @@ class UsersController extends Controller {
 	private function checkPasswordSetToken($token, $userId) {
 		$user = $this->userManager->get($userId);
 
-		$splittedToken = \explode(':', $this->config->getUserValue($userId, 'owncloud', 'lostpassword', null));
+		// Wie oben: ohne gesetzten Token kaeme null bei explode() an. Die
+		// Route dorthin ist mit @PublicPage annotiert, ein unangemeldeter
+		// Aufruf reicht also aus, um die Abmahnung auszuloesen.
+		$splittedToken = \explode(':', $this->config->getUserValue($userId, 'owncloud', 'lostpassword', ''));
 		if (\count($splittedToken) !== 2) {
 			$this->config->deleteUserValue($userId, 'owncloud', 'lostpassword');
 			throw new InvalidUserTokenException($this->l10n->t('The token provided is invalid.'));
@@ -1226,7 +1241,12 @@ class UsersController extends Controller {
 
 		$oldEmailAddress = $user->getEMailAddress();
 
-		$splittedToken = \explode(':', $this->config->getUserValue($userId, 'owncloud', 'changeMail', null));
+		// Rueckfallwert '' statt null: liegt kein Token vor - der Normalfall
+		// beim zweiten Aufruf des Bestaetigungslinks, denn die Fehlerzweige
+		// loeschen den Wert - bekaeme explode() sonst null, was PHP seit 8.1
+		// abmahnt. Am Ergebnis aendert sich nichts: explode(':', '') ergibt
+		// [''], die Laengenpruefung darunter greift wie zuvor.
+		$splittedToken = \explode(':', $this->config->getUserValue($userId, 'owncloud', 'changeMail', ''));
 		$mailAddress = $splittedToken[2];
 
 		$this->setEmailAddress($userId, $mailAddress);

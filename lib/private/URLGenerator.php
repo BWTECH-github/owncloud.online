@@ -27,6 +27,13 @@
  * You should have received a copy of the GNU Affero General Public License, version 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-06-12.
+ * Changes:
+ *   - avoid PHP 8 uninitialized string offset warning in getAbsoluteURL for emp...
+ *   - PHP 8.4 compatibility and owncloud.online design integration
+ *   - php8.3 (#41449)
  */
 
 namespace OC;

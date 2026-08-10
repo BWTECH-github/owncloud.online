@@ -4,6 +4,14 @@
  * This configuration will be read and overlaid on top of the
  * default configuration. Command line arguments will be applied
  * after this file is read.
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-07-06.
+ * Changes:
+ *   - actually exclude apps/oco_mcp from phan analysis
+ *   - add oco_mcp — Model Context Protocol server for AI assistants
+ *   - baseline pre-existing PHP 8.4 false positives
  */
 
 return [

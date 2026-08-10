@@ -23,6 +23,14 @@
  * You should have received a copy of the GNU Affero General Public License, version 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-08-06.
+ * Changes:
+ *   - harden the edges of the v11.0.0 security batch
+ *   - close the open items from the v11.0.0 security delta
+ *   - support PostgreSQL 15+ (permission denied for schema public)
+ *   - drop legacy OC_DB class and replace its usages (#41455)
  */
 namespace OC\Setup;
 

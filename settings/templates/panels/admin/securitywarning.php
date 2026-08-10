@@ -3,6 +3,12 @@
  * @var array $_
  * @var \OCP\IL10N $l
  * @var OC_Defaults $theme
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-02-18.
+ * Changes:
+ *   - drop experimental feature in core/Command/Db/ConvertType.php (#41451)
  */
 script('core', 'setupchecks');
 script('settings', 'panels/setupchecks');

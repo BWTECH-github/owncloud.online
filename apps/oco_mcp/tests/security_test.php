@@ -1,10 +1,18 @@
 <?php
+/**
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-08-06.
+ * Changes:
+ *   - route every MCP path through one strict gate and stop leaking backend errors
+ *   - 1.0.1 — read-only tool gating + request/path hardening
+ */
 
 declare(strict_types=1);
 
 /**
  * MCP Connector path validation regression test.
- * Modified by BW-Tech GmbH.
  */
 
 require_once __DIR__ . '/../vendor/autoload.php';

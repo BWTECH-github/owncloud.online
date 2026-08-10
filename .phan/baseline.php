@@ -11,6 +11,12 @@
  *
  * Suppressions are scoped per file AND per issue type, so any NEW issue of a
  * different type in these files is still reported.
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-06-24.
+ * Changes:
+ *   - baseline pre-existing PHP 8.4 false positives
  */
 return [
 	'file_suppressions' => [

@@ -5,21 +5,8 @@
  * @copyright Copyright (c) 2026, BW-Tech GmbH
  *
  * Modified by BW-Tech GmbH on 2026-08-10.
- * Changes: style(frontend): Accessibility at ownCloud.online - WACG 2.1 AA Check [OC-WCAG-271,-272, -273]
- *
- * @license AGPL-3.0
- *
- * This code is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License, version 3,
- * as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License, version 3,
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * Changes:
+ *   - Accessibility at ownCloud.online - WACG 2.1 AA Check [OC-WCAG-271,-272, -...
  */
 
 script('settings', 'panels/cors');

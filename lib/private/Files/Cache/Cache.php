@@ -31,6 +31,14 @@
  * You should have received a copy of the GNU Affero General Public License, version 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-07-03.
+ * Changes:
+ *   - back out Cache PG-insert-gate and prefix-move SQL (broke PostgreSQL)
+ *   - move descendants by replacing only the path prefix, not every occurrence
+ *   - bug-hunt batch — token log, PG scan poison, batch rollback, bulk parse
+ *   - cut per-request hot-path costs across session, cache, storage and status
  */
 
 namespace OC\Files\Cache;

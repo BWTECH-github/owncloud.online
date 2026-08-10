@@ -17,6 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License, version 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-07-03.
+ * Changes:
+ *   - back out the getShares getAllSharesBy batching (broke 13 tests)
+ *   - kill two N+1 query patterns on the file-list and share paths
+ *   - PHP 8.4 compatibility and owncloud.online design integration
+ *   - php8.3 (#41449)
  */
 
 namespace OCA\Files_Sharing\Controller;
