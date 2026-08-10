@@ -171,7 +171,13 @@ jobs:
           app="${{ steps.theme.outputs.app }}"
           vorher="${{ steps.theme.outputs.vorher }}"
           neu="$(( ${vorher%%.*} + 1 )).0.0"
-          pfad="$(ls -d "apps/$app" "apps-external/$app" 2>/dev/null | head -1)"
+          # Kein "ls a b": fehlt einer der beiden Pfade, liefert ls Exit 2 und
+          # reisst mit pipefail den ganzen Schritt ab.
+          if [ -d "apps/$app" ]; then
+            pfad="apps/$app"
+          else
+            pfad="apps-external/$app"
+          fi
           # Nur das erste <version>-Element: weiter unten stehen teils
           # Abhaengigkeiten mit eigenen Versionsangaben.
           sed -i "0,/<version>[^<]*<\/version>/s//<version>$neu<\/version>/" \
