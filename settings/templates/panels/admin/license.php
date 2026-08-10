@@ -23,8 +23,8 @@ script('settings', 'panels/license');
 
 	<div>
 		<?php /* OC-WCAG-007: Das Feld hatte keinen barrierefreien Namen. Der sichtbare Text
-		         war ein blosser Textknoten und damit nicht programmatisch zugeordnet.
-		         <label for> nutzt den bereits vorhandenen l10n-String weiter. */ ?>
+			war ein blosser Textknoten und damit nicht programmatisch zugeordnet.
+			<label for> nutzt den bereits vorhandenen l10n-String weiter. */ ?>
 		<label for="license_input_text"><?php p($l->t('Enter a new support key:')); ?></label>
 		<input id="license_input_text" type="text" style="width: 350px; max-width: 100%" />
 		<input id="license_input_button" type="button" value="<?php p($l->t('Save')); ?>"/>
