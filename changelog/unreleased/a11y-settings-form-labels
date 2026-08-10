@@ -1,0 +1,12 @@
+Bugfix: Label the domain and group name input fields
+
+Two input fields of the settings UI had no label at all. Their only description
+was a placeholder, which disappears with the first keystroke, is low contrast by
+design and is not a persistent programmatic label. Anyone returning to a
+partially filled field has no way left to tell what belongs in it.
+
+Both fields now carry a visually hidden label, using the existing utility class
+and the already translated strings. The placeholder is kept as an additional
+hint.
+
+WCAG 2.1 AA, SC 3.3.2

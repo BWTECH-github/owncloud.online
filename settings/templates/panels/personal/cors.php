@@ -1,6 +1,12 @@
 <?php
 /**
  * @author Noveen Sachdeva "noveen.sachdeva@research.iiit.ac.in"
+ *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-08-10.
+ * Changes: style(frontend): Accessibility at ownCloud.online - WACG 2.1 AA Check [OC-WCAG-271,-272, -273]
+ *
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify

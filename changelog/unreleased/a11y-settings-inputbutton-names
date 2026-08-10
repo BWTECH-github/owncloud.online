@@ -1,0 +1,17 @@
+Bugfix: Name the icon-only buttons in the CORS and group settings
+
+Three buttons of the settings UI carried their meaning in a CSS background image
+alone. All three are input elements with an empty value attribute, and for that
+element type value is the accessible name - an input has no element content that
+could supply one instead. Screen readers announced an unnamed button and voice
+control could not address them at all.
+
+Filling value was not an option: it is also the visible label text, and both
+buttons are constrained to fixed edge lengths of 25 by 30 and 32 by 32 pixels,
+so a text value would overflow or be clipped. They now carry an aria-label with
+the already translated function name, which leaves the rendering untouched.
+
+The minified sibling of the CORS panel script is updated along with the source,
+because that is the file served in production.
+
+WCAG 2.1 AA, SC 4.1.2
