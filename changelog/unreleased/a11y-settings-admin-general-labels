@@ -1,0 +1,13 @@
+Bugfix: Name the support key field and the log level selector
+
+The support key input in the enterprise support key panel and the log level
+selector in the log panel had no accessible name. In both cases the visible
+caption existed but was only a bare text node next to the control, so it never
+became a programmatic label. Screen readers announced an unnamed text box and
+an unnamed combo box, voice control could not address either element, and
+clicking the caption did not focus the control.
+
+Both captions are now wrapped in a label element that references the existing
+id. No new translation string is required and the rendered layout is unchanged.
+
+WCAG 2.1 AA, SC 3.3.2, SC 4.1.2, SC 1.3.1
