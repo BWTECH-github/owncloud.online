@@ -28,7 +28,9 @@ OCP\JSON::checkLoggedIn();
 OCP\JSON::callCheck();
 \OC::$server->getSession()->close();
 
-$files = $_POST['files'];
+// Ohne den Rueckfallwert meldet PHP 8 einen fehlenden Schluessel und reicht
+// null an json_decode() weiter - dort seit 8.1 abgekuendigt.
+$files = $_POST['files'] ?? '';
 $dir = '/';
 if (isset($_POST['dir'])) {
 	$dir = \rtrim((string)$_POST['dir'], '/'). '/';
