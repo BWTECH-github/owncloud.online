@@ -106,19 +106,6 @@ class Checker {
 			return false;
 		}
 
-		// Diese Auslieferung wird nicht signiert: es gibt kein Signaturpaket und
-		// kein Zertifikat, gegen das geprueft werden koennte. Ohne
-		// core/signature.json kann die Pruefung deshalb nie bestehen - sie
-		// erzeugt nur eine Dauerwarnung, die kein Administrator loswird. Der
-		// Kanal allein reicht als Kriterium nicht: die Release-Artefakte tragen
-		// 'stable', und der Kanalschalter im Updater-Panel setzt die Pruefung
-		// sonst jederzeit wieder scharf. Sobald eine signierte Auslieferung
-		// gebaut wird, greift sie von selbst wieder.
-		$coreSignature = $this->environmentHelper->getServerRoot() . '/core/signature.json';
-		if (!\file_exists($coreSignature)) {
-			return false;
-		}
-
 		/**
 		 * This config option is undocumented and supposed to be so, it's only
 		 * applicable for very specific scenarios and we should not advertise it
