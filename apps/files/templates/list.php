@@ -76,7 +76,7 @@
 				<button type="button" class="size sort columntitle" data-sort="size"><span><?php p($l->t('Size')); ?></span><span class="sort-indicator"></span></button>
 			</th>
 			<th id="headerDate" class="hidden column-mtime">
-				<button type="button" id="modified" class="columntitle" data-sort="mtime"><span><?php p($l->t('Modified')); ?></span><span class="sort-indicator"></span></button>
+				<button type="button" class="columntitle" data-sort="mtime"><span><?php p($l->t('Modified')); ?></span><span class="sort-indicator"></span></button>
 					<span class="selectedActions"><button type="button" class="delete-selected">
 						<span class="icon icon-delete"></span>
 						<span><?php p($l->t('Delete'))?></span>
