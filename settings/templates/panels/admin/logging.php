@@ -16,8 +16,8 @@ $levelLabels = [
 	<div class="section">
 		<h2 class="app-name"><?php p($l->t('Log')); ?></h2>
 		<?php /* OC-WCAG-008: Das Auswahlfeld hatte keinen barrierefreien Namen. Der sichtbare
-		         Text war ein blosser Textknoten und damit nicht programmatisch zugeordnet.
-		         <label for> nutzt den bereits vorhandenen l10n-String weiter. */ ?>
+			Text war ein blosser Textknoten und damit nicht programmatisch zugeordnet.
+			<label for> nutzt den bereits vorhandenen l10n-String weiter. */ ?>
 		<p><label for="loglevel"><?php p($l->t('What to log')); ?></label>
 			<select name='loglevel' id='loglevel'>
 				<?php for ($i = 0; $i < 5; $i++):
