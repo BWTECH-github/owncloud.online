@@ -2,6 +2,7 @@
 /**
  * @author Noveen Sachdeva "noveen.sachdeva@research.iiit.ac.in"
  *
+ * @license AGPL-3.0
  * @copyright Copyright (c) 2026, BW-Tech GmbH
  *
  * Modified by BW-Tech GmbH on 2026-08-10.

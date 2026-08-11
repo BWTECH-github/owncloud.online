@@ -4,7 +4,6 @@
  * This configuration file is only provided to document the different
  * configuration options and their usage for the core system.
  *
- *
  * DO NOT COMPLETELY BASE YOUR CONFIGURATION FILE ON THESE SAMPLES. THIS MAY BREAK
  * YOUR INSTANCE. Instead, manually copy configuration switches that you
  * consider important for your instance to your working `config.php`, and
