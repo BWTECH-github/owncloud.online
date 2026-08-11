@@ -30,8 +30,8 @@
 		<?php print_unescaped($_['headers']); ?>
 		<style>
 			/* owncloud.online: Login-Kachel zentriert ueberm Hintergrundbild, ohne Scroll */
-			html{height:100%;overflow:hidden;}
-			#body-login{display:flex;flex-direction:column;height:100vh;overflow:hidden;background-color:#e9edf2;background-image:url('<?php print_unescaped(image_path('', 'background.jpg')); ?>');background-repeat:no-repeat;background-position:center center;background-size:cover;}
+			html{height:auto;overflow:auto;}
+			#body-login{display:flex;flex-direction:column;min-height:100vh;overflow:visible;background-color:#e9edf2;background-image:url('<?php print_unescaped(image_path('', 'background.jpg')); ?>');background-repeat:no-repeat;background-position:center center;background-size:cover;}
 			#body-login .wrapper{flex:1 1 auto;min-height:0 !important;height:auto !important;margin:0 !important;display:flex !important;align-items:center;justify-content:center;width:100%;box-sizing:border-box;padding:24px;background:transparent !important;}
 			#body-login .v-align{display:block !important;width:100%;max-width:320px;margin:0 auto;padding:32px 30px 26px;background:#fff !important;border-radius:16px;box-shadow:0 18px 50px rgba(4,30,66,.22);box-sizing:border-box;text-align:left;}
 			#body-login .v-align #header{margin:0 0 18px;text-align:center;}
