@@ -10,7 +10,11 @@
 
 (function() {
 	var TEMPLATE =
-		'<div class="thumbnailContainer"><a href="#" class="thumbnail action-default"><div class="stretcher"/></a></div>' +
+		// <div class="stretcher"/> ist kein Void-Element: der Parser laesst das div
+		// offen, das folgende </a> loest die Adoption Agency aus und klont das <a>
+		// in den stretcher hinein. Folge: Datei-Icon doppelt, und .find('.stretcher')
+		// unten findet nichts mehr. Explizit schliessen.
+		'<div class="thumbnailContainer"><a href="#" class="thumbnail action-default"><div class="stretcher"></div></a></div>' +
 		'<div class="file-details-container">' +
 		'<div class="fileName">' +
 			'<h3 title="{{name}}" class="ellipsis">{{name}}</h3>' +
