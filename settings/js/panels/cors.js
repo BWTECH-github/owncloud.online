@@ -46,7 +46,11 @@ $(document).ready(function () {
             }, true
         );
 	});
-    $('#corsAddNewDomain').on('click', function() {
+    // Am Absenden der Form, nicht am Klick: so wirkt auch die Eingabetaste im
+    // Domainfeld. preventDefault ist Pflicht - sonst laedt der Browser die
+    // Seite neu und der Ajax-Aufruf wird abgebrochen.
+    $('#corsAddDomain').on('submit', function(event) {
+        event.preventDefault();
         $('#corsAddNewDomain').attr('disabled', true);
         $.post(
             OC.generateUrl('/settings/domains'),
