@@ -292,6 +292,69 @@ class FilesSearchReportPluginTest extends \Test\TestCase {
 		}
 	}
 
+	/**
+	 * A highlight fragment is built from file content and may therefore contain
+	 * markup that another user's client would render. Everything but the
+	 * intended line-break-to-<br/> conversion must come out encoded.
+	 */
+	public function testOnReportEncodesHighlights() {
+		$base = '/remote.php/dav/files/user';
+		$path = "{$base}/";
+
+		$parameters = new SearchRequest();
+		$parameters->properties = ['{http://owncloud.org/ns}search-highlights'];
+		$parameters->searchInfo = ['pattern' => 'x', 'limit' => 1];
+
+		$node = $this->createMock(Directory::class);
+		$node->method('getPath')->willReturn('/');
+
+		$payload = "<script>alert('xss')</script>\nsecond & \"third\"";
+		$this->searchService->method('searchPaged')
+			->will($this->returnCallback(function () use ($payload) {
+				$mock = $this->createMock(ResultFile::class);
+				$mock->path = '/x0';
+				$mock->highlights = [$payload];
+				$mock->score = '3.0';
+				return [$mock];
+			}));
+
+		$this->tree->method('getMultipleNodes')
+			->will($this->returnCallback(function ($paths) {
+				$nodes = [];
+				foreach ($paths as $key => $p) {
+					$mock = $this->createMock(Node::class);
+					$mock->method('getName')->willReturn($p);
+					$mock->method('getId')->willReturn($key);
+					$nodes[$p] = $mock;
+				}
+				return $nodes;
+			}));
+
+		$responses = [];
+		$this->server->expects($this->once())
+			->method('generateMultiStatus')
+			->will($this->returnCallback(function ($responsesArg) use (&$responses) {
+				foreach ($responsesArg as $responseArg) {
+					$responses[] = $responseArg;
+				}
+			}));
+
+		$this->setupBaseTreeNode($path, $node);
+		$this->plugin->initialize($this->server);
+		$this->plugin->onReport(FilesSearchReportPlugin::REPORT_NAME, $parameters, $path);
+
+		$this->assertCount(1, $responses);
+		$highlight = $responses[0][200]['{http://owncloud.org/ns}search-highlights'];
+
+		// the intended markup survives ...
+		$this->assertStringContainsString('<br/>', $highlight);
+		// ... but the injected markup does not
+		$this->assertStringNotContainsString('<script>', $highlight);
+		$this->assertStringNotContainsString('</script>', $highlight);
+		$expected = '&lt;script&gt;alert(&#039;xss&#039;)&lt;/script&gt;<br/>second &amp; &quot;third&quot;';
+		$this->assertEquals($expected, $highlight);
+	}
+
 	private function getSearchList($search, $numberOfItems) {
 		$results = [];
 		$pathParts = [];

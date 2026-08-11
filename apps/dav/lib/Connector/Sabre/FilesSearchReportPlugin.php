@@ -17,6 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License, version 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-08-11.
+ * Changes:
+ *   - encode search highlights before serving them as a DAV property
  */
 
 namespace OCA\DAV\Connector\Sabre;
@@ -183,7 +188,14 @@ class FilesSearchReportPlugin extends ServerPlugin {
 			$this->server->getPropertiesByNode($propFind, $node);
 			// assuming we only have one entry in the highlights array
 			if (isset($paths[$path]->highlights[0]) && \in_array(self::REPORT_HIGHLIGHTS, $requestedProps)) {
-				$propFind->set(self::REPORT_HIGHLIGHTS, \str_replace(["\r\n", "\r", "\n"], '<br/>', $paths[$path]->highlights[0]));
+				// The highlight fragment is built from file CONTENT and is meant
+				// to carry exactly one piece of markup: line breaks turned into
+				// <br/>. Everything else must be encoded first, otherwise a user
+				// who shares a crafted file injects arbitrary markup into another
+				// user's search result (stored XSS). Encode, THEN insert the
+				// intended <br/> so that one survives.
+				$highlight = \htmlspecialchars($paths[$path]->highlights[0], ENT_QUOTES, 'UTF-8');
+				$propFind->set(self::REPORT_HIGHLIGHTS, \str_replace(["\r\n", "\r", "\n"], '<br/>', $highlight));
 			}
 			if (isset($paths[$path]->score) && \in_array(self::REPORT_SCORE, $requestedProps)) {
 				$propFind->set(self::REPORT_SCORE, $paths[$path]->score);
