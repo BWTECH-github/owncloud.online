@@ -112,6 +112,15 @@ class Checker {
 		if (\in_array($this->environmentHelper->getChannel(), $notSignedChannels, true)) {
 			return false;
 		}
+		// Auch der Kanal des AUSGELIEFERTEN Pakets zaehlt, nicht nur der
+		// eingestellte. getChannel() laesst sich ueber core/OC_Channel aus der
+		// Datenbank ueberschreiben; eine von ownCloud uebernommene Installation
+		// bringt dort 'stable' mit. Ohne diese Zeile wuerde die Pruefung gegen
+		// ein Paket erzwungen, das nie eine Signatur hatte - Ergebnis waere
+		// zwangslaeufig "Signature data not found" fuer Core und jede App.
+		if (\in_array($this->environmentHelper->getShippedChannel(), $notSignedChannels, true)) {
+			return false;
+		}
 
 		/**
 		 * This config option is undocumented and supposed to be so, it's only
