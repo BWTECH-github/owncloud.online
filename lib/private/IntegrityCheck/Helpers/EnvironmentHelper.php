@@ -45,4 +45,21 @@ class EnvironmentHelper {
 	public function getChannel() {
 		return \OC_Util::getChannel();
 	}
+
+	/**
+	 * The channel of the deployed package, straight from version.php.
+	 *
+	 * OC_Util::getChannel() lets the database override this (core/OC_Channel).
+	 * That override is a preference for update notifications and says nothing
+	 * about whether THIS package carries signatures - an installation migrated
+	 * from ownCloud brings the old value along and would otherwise have the
+	 * signature check enforced against a package that never had any.
+	 *
+	 * @return string
+	 */
+	public function getShippedChannel() {
+		$OC_Channel = '';
+		require $this->getServerRoot() . '/version.php';
+		return (string)$OC_Channel;
+	}
 }
