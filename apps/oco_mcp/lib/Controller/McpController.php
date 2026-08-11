@@ -5,8 +5,6 @@
  * @copyright Copyright (c) 2026, BW-Tech GmbH
  * @license AGPL-3.0-only
  *
- * @copyright Copyright (c) 2026, BW-Tech GmbH
- *
  * Modified by BW-Tech GmbH on 2026-08-06.
  * Changes:
  *   - stop the instance-wide write warning from flooding the log
