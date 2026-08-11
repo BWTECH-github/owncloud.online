@@ -1,0 +1,63 @@
+# Line-ending policy for owncloud.online
+#
+# Added by BW-Tech GmbH.
+#
+# The repository stores every text file with LF. Without the rule below a
+# Windows clone with core.autocrlf=true rewrites the whole working tree to CRLF,
+# which makes the CI targets unusable locally:
+#   - `make test-php-style` flags nearly all 2400+ PHP files as needing fixes,
+#     hiding the real findings.
+#   - `make minify-assets` reports phantom diffs for .min siblings whose content
+#     is in fact unchanged.
+#   - Fixtures whose hashes are asserted by tests no longer match.
+# Pinning eol=lf keeps Windows checkouts byte-identical to what CI sees.
+* text=auto eol=lf
+
+# --- Byte-exact fixtures: never convert, in either direction -----------------
+
+# The integrity checker hashes these files; any converted byte breaks the
+# signature assertions in tests/lib/IntegrityCheck/.
+tests/data/integritycheck/** -text
+
+# CalDAV/CardDAV wire-format fixtures. RFC 5545 and RFC 6350 are CRLF-based,
+# so these must reach the parser exactly as committed.
+apps/dav/tests/ci/caldavtest/data/** -text
+
+# Certificates and private keys are parsed and fingerprinted byte-wise.
+*.crt -text
+*.key -text
+
+# --- Third-party code: leave upstream bytes untouched -----------------------
+
+# Nine files under core/vendor/snapjs/demo/ use legacy CR-only line endings and
+# are the only blobs in the repository that are not plain LF. Do not grep for
+# CRLF and conclude this rule is obsolete. Normalizing upstream demo assets
+# would create a diff against upstream for no benefit.
+core/vendor/** -text
+
+# --- Binary types: no EOL conversion, no textual diff -----------------------
+
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.webp binary
+*.bmp  binary
+*.pdf  binary
+*.odt  binary
+*.ttf  binary
+*.otf  binary
+*.eot  binary
+*.woff binary
+*.woff2 binary
+*.zip  binary
+*.gz   binary
+*.bz2  binary
+*.xz   binary
+*.7z   binary
+*.phar binary
+*.mo   binary
+*.so   binary
+*.dll  binary
+*.exe  binary
