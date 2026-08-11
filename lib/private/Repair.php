@@ -132,6 +132,14 @@ class Repair implements IOutput {
 	 */
 	public static function getRepairSteps() {
 		return [
+			// Zuerst: eine von ownCloud uebernommene Installation bringt in
+			// core/OC_Channel den alten Kanal mit. Der schaltet hier die
+			// Signaturpruefung scharf und richtet die Update-Abfrage auf einen
+			// fremden Kanal.
+			new \OC\Repair\AlignUpdateChannel(
+				\OC::$server->getConfig(),
+				(new \OC\IntegrityCheck\Helpers\EnvironmentHelper())->getShippedChannel()
+			),
 			new RepairMimeTypes(\OC::$server->getConfig()),
 			new RepairMismatchFileCachePath(
 				\OC::$server->getDatabaseConnection(),

@@ -111,6 +111,40 @@ class CheckerTest extends TestCase {
 		$this->assertTrue($this->checker->hasPassedCheck());
 	}
 
+	public function testCheckIsNotEnforcedWhenThePackageShipsNoSignatures() {
+		// An installation migrated from ownCloud keeps the old update channel in
+		// core/OC_Channel, and OC_Util::getChannel() reads that value in
+		// preference to version.php. Whether signatures exist is a property of
+		// the deployed package, not of a notification preference, so the shipped
+		// channel decides as well. Without this the admin of every migrated
+		// instance is shown "Signature data not found" for core and each app.
+		$this->environmentHelper
+			->method('getChannel')
+			->willReturn('stable');
+		$this->environmentHelper
+			->method('getShippedChannel')
+			->willReturn('bwtech');
+
+		$this->assertFalse($this->checker->isCodeCheckEnforced());
+	}
+
+	public function testCheckStaysEnforcedForASignedPackage() {
+		// Both channels signed: nothing changes, the check is still enforced.
+		$this->environmentHelper
+			->method('getChannel')
+			->willReturn('stable');
+		$this->environmentHelper
+			->method('getShippedChannel')
+			->willReturn('stable');
+		$this->config
+			->method('getSystemValue')
+			->will($this->returnValueMap([
+				['integrity.check.disabled', false, false],
+			]));
+
+		$this->assertTrue($this->checker->isCodeCheckEnforced());
+	}
+
 	public function testHasPassedCheckReflectsStoredFailureWhenEnforced() {
 		$this->environmentHelper
 			->method('getChannel')
