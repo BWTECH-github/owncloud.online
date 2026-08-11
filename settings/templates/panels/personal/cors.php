@@ -23,7 +23,12 @@ script('settings', 'panels/cors');
 		<?php p($l->t('No Domains.')); ?>
 	</p>
 
-	<table class="grid">
+	<?php /* Ohne Domains wuerde sonst die leere Tabelle samt Spaltenkopf NEBEN
+			 der Meldung "Keine Domains" stehen: das Template rendert sie
+			 unbedingt, und PersonalCors.render() blendet sie zwar aus, laeuft
+			 beim ersten Seitenaufbau aber nicht. Assistive Technik kuendigt
+			 dann eine Datentabelle ohne Daten an. */ ?>
+	<table class="grid<?php if (empty($_['domains'])) { ?> hidden<?php } ?>">
 		<thead>
 		<tr>
 			<th id="headerName" scope="col"><?php p($l->t('Domain')); ?></th>
@@ -43,6 +48,12 @@ script('settings', 'panels/cors');
 	</table>
 
 	<h3><?php p($l->t('Add Domain')); ?></h3>
+	<?php /* Das </form> stand hier ohne oeffnendes Gegenstueck - der Browser
+			 verwarf es. Damit gehoerten Feld und Schaltflaeche zu keiner Form,
+			 und die Eingabetaste im Domainfeld loeste nichts aus: der einzige
+			 Handler haengt am Klick. Mit einer echten Form gilt wieder die
+			 uebliche Erwartung. */ ?>
+	<form id="corsAddDomain">
 		<label for="domain" class="hidden-visually"><?php p($l->t('Domain')); ?></label>
 		<input id="domain" name="domain" type="text" placeholder="<?php p($l->t('Domain')); ?>">
 		<input id="corsAddNewDomain" type="submit" class="button" value="<?php p($l->t('Add')); ?>">

@@ -77,8 +77,10 @@ class Install extends Command {
 			$this->printErrors($output, $errors);
 
 			// ignore the OS X setup warning
-			if (\count($errors) !== 1 ||
-				(string)($errors[0]['error']) !== 'Mac OS X is not supported and ownCloud will not work properly on this platform. Use it at your own risk! ') {
+			// The warning text is built from the branded product name and is
+			// translated, so comparing it literally breaks on both counts. On macOS
+			// a single setup error can only be that platform warning.
+			if (\count($errors) !== 1 || !\OC_Util::runningOn('mac')) {
 				return 1;
 			}
 		}
