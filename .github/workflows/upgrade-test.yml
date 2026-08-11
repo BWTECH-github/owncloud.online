@@ -18,15 +18,64 @@ permissions:
   contents: read
 
 jobs:
-  upgrade:
-    name: Upgrade from previous release
+  # Welche Ausgangsversionen geprueft werden. Nicht nur die unmittelbar
+  # vorherige: in der Praxis ueberspringen Instanzen Versionen, und genau so ein
+  # Sprung (11.0.11 -> 11.0.13) war der Fall, der beim Kunden auffiel. Der Test
+  # deckte ihn nicht ab, weil er nur N-1 kannte.
+  versionen:
+    name: Determine source versions
     runs-on: ubuntu-latest
+    outputs:
+      liste: ${{ steps.ermitteln.outputs.liste }}
+    steps:
+      - name: Checkout owncloud.online
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Collect the last two releases
+        id: ermitteln
+        run: |
+          set -euo pipefail
+          # Nur unsere eigenen Release-Tags: streng vMAJOR.MINOR.PATCH. Ohne
+          # diesen Filter greift die Historie die geerbten Upstream-Tags mit ab
+          # (vv9.1.4RC1 und aehnliche), und `--sort=-v:refname` sortiert die
+          # wegen des doppelten v sogar nach vorne - der Test wuerde dann von
+          # ownCloud 9 aus aktualisieren.
+          eigene() { grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$'; }
+          aktuell="$(git tag --points-at HEAD | eigene | head -1 || true)"
+          gewaehlt=""
+          for t in $(git tag --list 'v*' | eigene | sort -V -r); do
+            [ "$t" = "$aktuell" ] && continue
+            gewaehlt="$gewaehlt $t"
+            [ "$(echo $gewaehlt | wc -w)" -ge 2 ] && break
+          done
+          if [ -z "$gewaehlt" ]; then
+            echo "Kein vorheriger Release-Tag gefunden - der Test entfaellt."
+            echo 'liste=[]' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "Ausgangsversionen:$gewaehlt"
+          json="["
+          for t in $gewaehlt; do json="$json\"$t\","; done
+          json="${json%,}]"
+          echo "liste=$json" >> "$GITHUB_OUTPUT"
+
+  upgrade:
+    name: Upgrade from ${{ matrix.von }}
+    needs: versionen
+    if: needs.versionen.outputs.liste != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        von: ${{ fromJSON(needs.versionen.outputs.liste) }}
 
     steps:
       - name: Checkout owncloud.online
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          # Vollstaendige Historie: der vorherige Release-Tag wird gebraucht.
+          # Vollstaendige Historie: der Ausgangs-Tag wird gebraucht.
           fetch-depth: 0
 
       - name: Setup PHP 8.4
@@ -45,33 +94,10 @@ jobs:
           restore-keys: |
             upgrade-composer-${{ runner.os }}-
 
-      - name: Determine previous release tag
-        id: vorher
+      - name: Install ${{ matrix.von }}
         run: |
           set -euo pipefail
-          # Nur unsere eigenen Release-Tags: streng vMAJOR.MINOR.PATCH. Ohne
-          # diesen Filter greift die Historie die geerbten Upstream-Tags mit ab
-          # (vv9.1.4RC1 und aehnliche), und `--sort=-v:refname` sortiert die
-          # wegen des doppelten v sogar nach vorne - der Test wuerde dann von
-          # ownCloud 9 aus aktualisieren.
-          eigene() { grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$'; }
-          aktuell="$(git tag --points-at HEAD | eigene | head -1 || true)"
-          vorher=""
-          for t in $(git tag --list 'v*' | eigene | sort -V -r); do
-            if [ "$t" != "$aktuell" ]; then vorher="$t"; break; fi
-          done
-          if [ -z "$vorher" ]; then
-            echo "Kein vorheriger Release-Tag gefunden - Teil A wird uebersprungen."
-          else
-            echo "Vorversion: $vorher"
-          fi
-          echo "tag=${vorher}" >> "$GITHUB_OUTPUT"
-
-      - name: Install the previous release
-        if: steps.vorher.outputs.tag != ''
-        run: |
-          set -euo pipefail
-          git worktree add --detach "$RUNNER_TEMP/alt" "${{ steps.vorher.outputs.tag }}"
+          git worktree add --detach "$RUNNER_TEMP/alt" "${{ matrix.von }}"
           cd "$RUNNER_TEMP/alt"
           composer install --no-interaction --no-dev --no-progress
           php occ maintenance:install \
@@ -93,7 +119,6 @@ jobs:
       # Vorfall geht es nicht. Sonst eine Attrappe.
       - name: Pick the theme app whose version will change
         id: theme
-        if: steps.vorher.outputs.tag != ''
         run: |
           set -euo pipefail
           cat > "$RUNNER_TEMP/probe-info.xml" <<'XML'
@@ -141,7 +166,6 @@ jobs:
 
       - name: Swap in the current code
         id: tausch
-        if: steps.vorher.outputs.tag != ''
         run: |
           set -euo pipefail
           # Wie ein echtes Deployment: Code tauschen, config und data behalten.
@@ -186,7 +210,6 @@ jobs:
           echo "neu=$neu" >> "$GITHUB_OUTPUT"
 
       - name: occ upgrade must succeed
-        if: steps.vorher.outputs.tag != ''
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/alt"
@@ -195,7 +218,6 @@ jobs:
           php occ upgrade --no-interaction
 
       - name: Verify the instance afterwards
-        if: steps.vorher.outputs.tag != ''
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/alt"
@@ -220,7 +242,6 @@ jobs:
           php occ app:list > /dev/null
 
       - name: The web interface must answer
-        if: steps.vorher.outputs.tag != ''
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/alt"
@@ -242,7 +263,7 @@ jobs:
           [ "$fatale" = "0" ] || { grep -iE 'Uncaught|PHP Fatal' "$RUNNER_TEMP/web.log" | head -5; exit 1; }
 
       - name: Server log
-        if: always() && steps.vorher.outputs.tag != ''
+        if: always()
         run: |
           if [ -f "$RUNNER_TEMP/data/owncloud.log" ]; then
             echo "--- letzte 40 Zeilen ---"
