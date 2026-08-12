@@ -268,6 +268,16 @@
 				_.delay(function () {
 					$input.tooltip('hide');
 				}, 3000);
+				// clipboard.js markiert zum Kopieren den Text im Zielfeld und
+				// verschiebt damit den Fokus dorthin. Das Feld traegt seit
+				// OC-WCAG-275 tabindex="-1" und aria-hidden="true" und ist optisch
+				// auf 1px zusammengefaltet: der Fokusring verschwaende, ein
+				// Screenreader haette nichts anzusagen, und die naechste
+				// Tabulatortaste startete eine Position zu frueh. clearSelection
+				// gibt den Fokus an den Knopf zurueck, den der Nutzer betaetigt hat.
+				// Nur im Erfolgszweig - im Fehlerzweig ("Strg-C zum Kopieren")
+				// wird die Auswahl im Feld gebraucht.
+				e.clearSelection();
 			});
 			clipboard.on('error', function (e) {
 				var $input = $(e.trigger);

@@ -191,12 +191,18 @@ table.nostyle td {
 #newgroupname {
 	margin: 6px 10px;
 	width: calc(100% - 20px);
-	padding-right: 34px;
+	/* 32px Knopfbreite plus 8px Luft - mit den vorherigen 34px stiess der
+	   eingegebene Text unmittelbar an den Knopf. */
+	padding-right: 40px;
 	box-sizing: border-box
 }
 #newgroup-form .button {
 	position: absolute;
+	/* margin:0 zusaetzlich zu right:10px: der Knopf erbt aus inputs.css einen
+	   Aussenabstand von 3px, wodurch seine rechte Kante sonst 3px innerhalb der
+	   Feldkante laege statt buendig damit. */
 	right: 10px;
+	margin: 0;
 	top: 3px;
 	height: 32px;
 	width: 32px;

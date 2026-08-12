@@ -240,6 +240,14 @@
 	font              : inherit;
 	color             : inherit;
 	line-height       : 0;
+	/* Nachtrag: das Audit oben hatte nur diese Datei betrachtet. core/css/inputs.css
+	   trifft jedes <button> global und setzt dort auch min-width:25px, margin:3px
+	   und border-radius:3px - Werte, die der Reset zunaechst stehen liess. Gemessen
+	   wuchs jeder der vier Knoepfe dadurch von 16px auf 25px und nahm mit dem
+	   Aussenabstand zusammen 48px, die dem Titel fehlten (193px -> 145px). */
+	min-width         : 0;
+	margin            : 0 0 0 10px;
+	border-radius     : 0;
 }
 
 /* Sichtbarer Fokus fuer die Tastaturbedienung (SC 2.4.7). Der globale
@@ -251,6 +259,14 @@
 
 .link-entry--icon-button:hover {
 	opacity: 1;
+}
+
+/* 'button:hover'/'button:focus' aus inputs.css ist spezifischer als das
+   'background: none' der Klasse oben - ohne diese Regel erscheint bei Hover und
+   Fokus ein weisser Kasten hinter dem Symbol. */
+.link-entry--icon-button:hover,
+.link-entry--icon-button:focus {
+	background: none;
 }
 
 .link-entry--icon-button span {

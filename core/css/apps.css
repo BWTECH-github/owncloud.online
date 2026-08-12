@@ -137,6 +137,12 @@
 #app-navigation > ul li > span.utils a:focus-visible {
 	outline-offset: -2px;
 }
+/* Derselbe Grund am Einstellungen-Knopf unten in der Navigation: auch er ist
+   width:100%, sein Ring begaenne also bei -4px - links ausserhalb des sichtbaren
+   Bereichs, rechts im Inhaltsbereich. */
+#app-navigation .settings-button:focus-visible {
+	outline-offset: -2px;
+}
 #app-navigation .collapsible:hover > a,
 #app-navigation .collapsible:focus > a {
 	background-image: none;
