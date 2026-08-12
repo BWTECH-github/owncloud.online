@@ -176,7 +176,13 @@ class LicenseTest extends \Test\TestCase {
 		$this->licenseManager->method('getLicenseMessageFor')->willReturn($messageOutput);
 
 		$templateHtml = $this->panel->getPanel()->fetchPage();
-		$this->assertStringContainsString('<input id="license_input_button" type="button"', $templateHtml);
+		// Der Speichern-Knopf sendet die Form ab, statt nur einen Klick-Handler zu
+		// bedienen: so wirkt die Eingabetaste im Feld, und bei leerer Eingabe meldet
+		// der Browser den Fehler selbst, statt dass er stillschweigend verschluckt
+		// wird (SC 3.3.1).
+		$this->assertStringContainsString('<input id="license_input_button" type="submit"', $templateHtml);
+		$this->assertStringContainsString('<form id="license_form">', $templateHtml);
+		$this->assertStringContainsString('id="license_input_text" type="text" required', $templateHtml);
 		$this->assertStringContainsString("<div id=\"license_message_div\" $expectedDivClass>", $templateHtml);
 		$this->assertStringContainsString("<p>$expectedMessage</p>", $templateHtml);
 	}
