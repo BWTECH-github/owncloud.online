@@ -441,9 +441,10 @@ class ThrottlerTest extends TestCase {
 		$qb = $this->db->getQueryBuilder();
 		$qb->selectAlias($qb->createFunction('COUNT(*)'), 'anzahl')
 			->from(Throttler::DB_TABLE);
-		$ergebnis = $qb->execute();
-		$zeile = $ergebnis->fetch();
-		$ergebnis->closeCursor();
-		return (int)$zeile['anzahl'];
+		// fetchAssociative ohne closeCursor - so liest auch der Throttler selbst
+		// (Throttler.php:437). Doctrine\DBAL\Result kennt closeCursor() in dieser
+		// Fassung nicht mehr.
+		$zeile = $qb->execute()->fetchAssociative();
+		return $zeile === false ? 0 : (int)$zeile['anzahl'];
 	}
 }
