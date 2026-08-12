@@ -21,24 +21,30 @@
 			'<span class="link-entry--icon icon-public-white"></span>' +
 			'<span class="link-entry--title">{{linkTitle}}</span>' +
 			'<div class="minify"><input id="linkText-{{../cid}}-{{id}}" class="linkText" type="text" readonly="readonly" tabindex="-1" aria-hidden="true" value="{{link}}" /></div>' +
-			'<div class="link-entry--icon-button clipboardButton" data-clipboard-target="#linkText-{{../cid}}-{{id}}" title="{{../copyToClipboardText}}">' +
+			// OC-WCAG-276: die vier Aktionen sind <button type="button">, nicht <div> -
+			// sonst sind sie per Tastatur gar nicht erreichbar (SC 2.1.1). Der Name
+			// steht als aria-label: das title-Attribut wird vom Tooltip-Plugin zur
+			// Laufzeit nach data-original-title verschoben und ist dann leer, der
+			// span.hidden ist display:none - beide liefern keinen barrierefreien
+			// Namen (SC 4.1.2). title bleibt fuer den sichtbaren Maus-Tooltip.
+			'<button type="button" class="link-entry--icon-button clipboardButton" data-clipboard-target="#linkText-{{../cid}}-{{id}}" aria-label="{{../copyToClipboardText}}" title="{{../copyToClipboardText}}">' +
 			'	<span class="icon icon-clippy-dark"></span>' +
 			'	<span class="hidden">{{../copyToClipboardText}}</span>' +
-			'</div>' +
-			'<div class="link-entry--icon-button editLink" title="{{../editLinkText}}">' +
+			'</button>' +
+			'<button type="button" class="link-entry--icon-button editLink" aria-label="{{../editLinkText}}" title="{{../editLinkText}}">' +
 			'	<span class="icon icon-settings-dark"></span>' +
 			'	<span class="hidden">{{../editLinkText}}</span>' +
-			'</div>' +
+			'</button>' +
 			'{{#if ../socialShareEnabled}}' +
-			'<div class="link-entry--icon-button shareLink" title="{{../shareText}}">' +
+			'<button type="button" class="link-entry--icon-button shareLink" aria-label="{{../shareText}}" title="{{../shareText}}">' +
 			'	<span class="icon icon-shared"></span>' +
 			'	<span class="hidden">{{../shareText}}</span>' +
-			'</div>' +
+			'</button>' +
 			'{{/if}}' +
-			'<div class="link-entry--icon-button removeLink"  title="{{../removeLinkText}}">' +
+			'<button type="button" class="link-entry--icon-button removeLink" aria-label="{{../removeLinkText}}" title="{{../removeLinkText}}">' +
 			'	<span class="icon icon-delete"></span>' +
 			'	<span class="hidden">{{../removeLinkText}}</span>' +
-			'</div>' +
+			'</button>' +
 			'{{#if ../socialShareEnabled}}' +
 			'<div class="socialShareContainer hidden"></div>' +
 			'{{/if}}' +

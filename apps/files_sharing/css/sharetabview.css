@@ -226,6 +226,27 @@
 	-ms-transition    : opacity 0.25s;
 	-o-transition     : opacity 0.25s;
 	transition        : opacity 0.25s;
+	/* OC-WCAG-276: seit die vier Aktionen <button> statt <div> sind, muessen die
+	   Standard-Knopfstile neutralisiert werden, damit der Knopf exakt so aussieht
+	   wie zuvor - sichtbar ist allein der 16x16-Icon-Span. line-height:0 legt die
+	   Knopfhoehe auf den Icon-Span statt auf eine Textzeile; font/color:inherit
+	   ersetzt die UA-Werte. Selektor-Audit: keine elementqualifizierte Regel auf
+	   diese Klasse, daher kippt die Icon-Groesse nicht wie in OP-168. */
+	-webkit-appearance: none;
+	appearance        : none;
+	background        : none;
+	border            : 0;
+	padding           : 0;
+	font              : inherit;
+	color             : inherit;
+	line-height       : 0;
+}
+
+/* Sichtbarer Fokus fuer die Tastaturbedienung (SC 2.4.7). Der globale
+   :focus-visible-Indikator greift auch hier; diese Regel hebt nur die
+   Grund-Deckkraft an, damit das fokussierte Symbol nicht bei 0.333 verblasst. */
+.link-entry--icon-button:focus-visible {
+	opacity: 1;
 }
 
 .link-entry--icon-button:hover {
