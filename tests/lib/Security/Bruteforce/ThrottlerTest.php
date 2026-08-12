@@ -417,17 +417,22 @@ class ThrottlerTest extends TestCase {
 	}
 
 	/**
-	 * Fuer Aktionen ohne Gegenstueck in der App bleibt die Bremse zustaendig -
-	 * der MCP-Endpunkt stuende sonst ungeschuetzt da.
+	 * Fuer Aktionen ohne Gegenstueck in der App bleibt die Bremse zustaendig.
+	 *
+	 * 'oco_mcp' ist der Fall, an dem das haengt: McpController lehnt ein
+	 * Geheimnis, das kein App-Token ist, sofort ab und erreicht userSession
+	 * ->login() nie (McpController.php:105-107). Damit feuert auch keines der
+	 * Ereignisse, auf die brute_force_protection horcht - wer dort Kontopasswoerter
+	 * durchprobiert, traefe ohne diese Bremse auf gar keine.
 	 */
 	public function testCoreKeepsActionsTheAppDoesNotCover() {
 		$this->throttler->setAppHandlesPolicyForTesting(true);
 
 		for ($i = 0; $i < 30; $i++) {
-			$this->throttler->registerAttempt('mcp', '1.2.3.4', 'alice');
+			$this->throttler->registerAttempt('oco_mcp', '1.2.3.4', 'alice');
 		}
 
-		$this->assertGreaterThan(0, $this->throttler->getDelay('mcp', '1.2.3.4', 'alice'));
+		$this->assertGreaterThan(0, $this->throttler->getDelay('oco_mcp', '1.2.3.4', 'alice'));
 		$this->assertGreaterThan(0, $this->zaehleZeilen());
 	}
 
