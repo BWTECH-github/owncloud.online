@@ -127,6 +127,16 @@
 	outline: 2px solid #262B45 !important;
 	outline-offset: -2px;
 }
+/* OC-A11Y-02 (WCAG 2.4.7): dieselbe Ursache eine Ebene hoeher. Die Eintraege
+ * der Navigation sind width:100%, der globale Fokusring sitzt mit +2px Versatz
+ * also 4px ausserhalb der Liste - und '#app-navigation > ul' hat overflow:auto,
+ * schneidet ihn links und rechts damit vollstaendig ab. Gemessen: Ring -4..254
+ * bei einer Liste von 0..250. Negativer Versatz zieht ihn nach innen, wo er
+ * ungekuerzt sichtbar bleibt; die Breite der Eintraege aendert sich nicht. */
+#app-navigation > ul li > a:focus-visible,
+#app-navigation > ul li > span.utils a:focus-visible {
+	outline-offset: -2px;
+}
 #app-navigation .collapsible:hover > a,
 #app-navigation .collapsible:focus > a {
 	background-image: none;

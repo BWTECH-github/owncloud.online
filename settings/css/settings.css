@@ -184,15 +184,19 @@ table.nostyle td {
 #newgroup-form {
 	height: 44px;
 }
+/* OC-A11Y-02 (WCAG 2.4.7): Das Feld sass mit 6px Rand an der Kante, der
+ * Fokusring (2px Staerke, 2px Versatz) reichte damit bis auf 2px an den Rand
+ * der Liste heran und wirkte abgeschnitten. 10px Rand geben ihm 6px Luft.
+ * Der Plus-Knopf wandert mit, sonst stuende er 3px ueber dem Feld. */
 #newgroupname {
-	margin: 6px;
-	width: 95%;
-	padding-right: 32px;
+	margin: 6px 10px;
+	width: calc(100% - 20px);
+	padding-right: 34px;
 	box-sizing: border-box
 }
 #newgroup-form .button {
 	position: absolute;
-	right: 0;
+	right: 10px;
 	top: 3px;
 	height: 32px;
 	width: 32px;
