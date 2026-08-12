@@ -681,6 +681,15 @@ a.two-factor-cancel {
 .login-throttle-hint {
 	color: #4a5568;
 }
+/* Der Hinweis nennt den Weg zum Zuruecksetzen - dann muss er auch als solcher
+ * erkennbar sein. Die Farbe kommt aus '.warning a' und ist damit schon die der
+ * Marke; ergaenzt wird nur die Unterstreichung, damit sich der Link nicht
+ * allein ueber die Farbe vom Fliesstext abhebt (SC 1.4.1). Sie bleibt in jedem
+ * Zustand stehen - sie bei :hover/:focus zu entfernen hiesse, das Merkmal
+ * ausgerechnet dem Tastaturnutzer zu nehmen, der den Link gerade erreicht. */
+.login-throttle-hint a {
+	text-decoration: underline;
+}
 
 .login-throttle-progress {
 	display: block;

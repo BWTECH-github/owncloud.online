@@ -12,7 +12,11 @@ OC.Lostpassword = {
 	resetErrorMsg : t('core', 'Password can not be changed. Please contact your administrator.'),
 
 	init : function() {
-		$('#lost-password').click(OC.Lostpassword.resetLink);
+		// '#login-throttle-reset' ist der Zuruecksetzen-Link im Sperrhinweis. Er
+		// haengt am selben Handler, weil der beide Faelle schon abdeckt: ist
+		// lost_password_link gesetzt, wird dorthin navigiert, sonst geht die
+		// Anforderung per POST an /lostpassword/email.
+		$('#lost-password, #login-throttle-reset').click(OC.Lostpassword.resetLink);
 		$('#reset-password #submit').click(OC.Lostpassword.resetPassword);
 	},
 
