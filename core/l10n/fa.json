@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "ورود برای لحظه‌ای متوقف شده است",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "چند تلاش ناموفق از اتصال شما انجام شده است، بنابراین برای محافظت از حساب شما، ورود را برای مدت کوتاهی کند می‌کنیم.",
+    "You can try again in %s." : "می‌توانید پس از %s دوباره تلاش کنید.",
+    "You can try again now." : "اکنون می‌توانید دوباره تلاش کنید.",
+    "Forgotten your password? Use the reset link instead of trying again." : "رمز عبور را فراموش کرده‌اید؟ به جای تلاش دوباره از پیوند بازنشانی استفاده کنید.",
+    "_%n second_::_%n seconds_" : ["%n ثانیه", "%n ثانیه"],
+    "_%n minute_::_%n minutes_" : ["%n دقیقه", "%n دقیقه"],
     "Please select a file." : "لطفا یک پرونده را انتخاب کنید.",
     "File is too big" : "فایل خیلی بزرگ است",
     "Invalid file provided" : "فایل داده‌شده نا معتبر است",

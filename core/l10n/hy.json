@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "Մուտքը կարճ ժամանակով դադարեցված է",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Ձեր կապից եղել են մի քանի ձախողված փորձեր, ուստի ձեր հաշիվը պաշտպանելու համար կարճ ժամանակով դանդաղեցնում ենք մուտքը:",
+    "You can try again in %s." : "Կարող եք կրկին փորձել %s հետո:",
+    "You can try again now." : "Այժմ կարող եք կրկին փորձել:",
+    "Forgotten your password? Use the reset link instead of trying again." : "Մոռացե՞լ եք գաղտնաբառը: Օգտագործեք վերականգնման հղումը՝ կրկին փորձելու փոխարեն:",
+    "_%n second_::_%n seconds_" : ["%n վայրկյան", "%n վայրկյան"],
+    "_%n minute_::_%n minutes_" : ["%n րոպե", "%n րոպե"],
     "File is too big" : "Ֆայլը չափազանց մեծ է",
     "Unknown filetype" : "Անհայտ ֆայլի տիպ",
     "Invalid image" : "Անվավեր նկար",

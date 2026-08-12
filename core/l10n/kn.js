@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "ಲಾಗಿನ್ ಸ್ವಲ್ಪ ಹೊತ್ತು ತಡೆಹಿಡಿಯಲಾಗಿದೆ",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "ನಿಮ್ಮ ಸಂಪರ್ಕದಿಂದ ಹಲವು ವಿಫಲ ಪ್ರಯತ್ನಗಳಾಗಿವೆ, ಆದ್ದರಿಂದ ನಿಮ್ಮ ಖಾತೆಯ ರಕ್ಷಣೆಗಾಗಿ ಲಾಗಿನ್ ಅನ್ನು ಸ್ವಲ್ಪ ಹೊತ್ತು ನಿಧಾನಗೊಳಿಸುತ್ತಿದ್ದೇವೆ.",
+    "You can try again in %s." : "ನೀವು %s ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಬಹುದು.",
+    "You can try again now." : "ನೀವು ಈಗ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಬಹುದು.",
+    "Forgotten your password? Use the reset link instead of trying again." : "ಪಾಸ್‌ವರ್ಡ್ ಮರೆತಿದ್ದೀರಾ? ಮತ್ತೆ ಪ್ರಯತ್ನಿಸುವ ಬದಲು ಮರುಹೊಂದಿಸುವ ಲಿಂಕ್ ಬಳಸಿ.",
+    "_%n second_::_%n seconds_" : ["%n ಸೆಕೆಂಡ್", "%n ಸೆಕೆಂಡುಗಳು"],
+    "_%n minute_::_%n minutes_" : ["%n ನಿಮಿಷ", "%n ನಿಮಿಷಗಳು"],
     "No image or file provided" : "ಚಿತ್ರ ಅಥವಾ ಕಡತದ ಕೊರತೆ ಇದೆ",
     "Unknown filetype" : "﻿ಅಪರಿಚಿತ ಕಡತ ಮಾದರಿ",
     "Invalid image" : "ಅಸಾಮರ್ಥ್ಯ ಚಿತ್ರ",

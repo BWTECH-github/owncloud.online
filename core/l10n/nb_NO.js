@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "Innloggingen er satt på pause et øyeblikk",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Det kom flere mislykkede forsøk fra tilkoblingen din, så vi bremser innloggingen en kort stund for å beskytte kontoen din.",
+    "You can try again in %s." : "Du kan prøve igjen om %s.",
+    "You can try again now." : "Du kan prøve igjen nå.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Glemt passordet? Bruk tilbakestillingslenken i stedet for å prøve igjen.",
+    "_%n second_::_%n seconds_" : ["%n sekund", "%n sekunder"],
+    "_%n minute_::_%n minutes_" : ["%n minutt", "%n minutter"],
     "Please select a file." : "Vennligst velg en fil.",
     "File is too big" : "Filen er for stor",
     "Invalid file provided" : "Ugyldig fil oppgitt",

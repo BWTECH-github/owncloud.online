@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "Уваход ненадоўга прыпынены",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "З вашага злучэння было некалькі няўдалых спроб, таму ўваход ненадоўга запаволены, каб абараніць ваш уліковы запіс.",
+    "You can try again in %s." : "Да наступнай спробы засталося: %s.",
+    "You can try again now." : "Вы можаце паспрабаваць зноў зараз.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Забылі пароль? Скарыстайцеся спасылкай для скіду замест паўторных спроб.",
+    "_%n second_::_%n seconds_" : ["%n секунда", "%n секунды", "%n секунд", "%n секунды"],
+    "_%n minute_::_%n minutes_" : ["%n хвіліна", "%n хвіліны", "%n хвілін", "%n хвіліны"],
     "Sunday" : "Нядзеля",
     "Monday" : "Панядзелак",
     "Tuesday" : "Аўторак",

@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "Saio-hasiera une batez etenda dago",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Zure konexiotik hainbat saiakera huts egon dira; beraz, saio-hasiera pixka batean moteltzen ari gara zure kontua babesteko.",
+    "You can try again in %s." : "%s barru saia zaitezke berriro.",
+    "You can try again now." : "Orain saia zaitezke berriro.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Pasahitza ahaztu duzu? Erabili berrezartzeko esteka berriro saiatu beharrean.",
+    "_%n second_::_%n seconds_" : ["%n segundo", "%n segundo"],
+    "_%n minute_::_%n minutes_" : ["%n minutu", "%n minutu"],
     "Please select a file." : "Mesedez, hautatu fitxategia.",
     "File is too big" : "Fitxategia handiegia da",
     "Invalid file provided" : "Baliogabeko fitxategia",

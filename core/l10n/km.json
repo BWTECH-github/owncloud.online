@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "ការចូលត្រូវបានផ្អាកមួយភ្លែត",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "មានការព្យាយាមចូលបរាជ័យច្រើនដងពីការតភ្ជាប់របស់អ្នក ដូច្នេះយើងបន្ថយល្បឿនការចូលមួយរយៈ ដើម្បីការពារគណនីរបស់អ្នក។",
+    "You can try again in %s." : "អ្នកអាចព្យាយាមម្ដងទៀតក្នុងរយៈពេល %s។",
+    "You can try again now." : "អ្នកអាចព្យាយាមម្ដងទៀតឥឡូវនេះ។",
+    "Forgotten your password? Use the reset link instead of trying again." : "ភ្លេចពាក្យសម្ងាត់? សូមប្រើតំណកំណត់ឡើងវិញ ជំនួសឱ្យការព្យាយាមម្ដងទៀត។",
+    "_%n second_::_%n seconds_" : ["%n វិនាទី"],
+    "_%n minute_::_%n minutes_" : ["%n នាទី"],
     "Unknown filetype" : "មិន​ស្គាល់​ប្រភេទ​ឯកសារ",
     "Invalid image" : "រូបភាព​មិន​ត្រឹម​ត្រូវ",
     "Sunday" : "ថ្ងៃអាទិត្យ",

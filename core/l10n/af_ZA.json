@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "Aanmelding is vir 'n oomblik onderbreek",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Daar was verskeie mislukte pogings vanaf u verbinding, daarom vertraag ons die aanmelding kortliks om u rekening te beskerm.",
+    "You can try again in %s." : "U kan oor %s weer probeer.",
+    "You can try again now." : "U kan nou weer probeer.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Wagwoord vergeet? Gebruik die herstelskakel eerder as om weer te probeer.",
+    "_%n second_::_%n seconds_" : ["%n sekonde", "%n sekondes"],
+    "_%n minute_::_%n minutes_" : ["%n minuut", "%n minute"],
     "Please select a file." : "Kies asb. ’n lêer.",
     "File is too big" : "Die lêer is te groot",
     "Invalid file provided" : "Ongeldige lêer voorsien",

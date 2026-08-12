@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "Oturum açma kısa bir süre duraklatıldı",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Bağlantınızdan birkaç başarısız deneme geldi, bu nedenle hesabınızı korumak için oturum açmayı kısa süreliğine yavaşlatıyoruz.",
+    "You can try again in %s." : "%s sonra yeniden deneyebilirsiniz.",
+    "You can try again now." : "Şimdi yeniden deneyebilirsiniz.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Parolanızı mı unuttunuz? Yeniden denemek yerine sıfırlama bağlantısını kullanın.",
+    "_%n second_::_%n seconds_" : ["%n saniye", "%n saniye"],
+    "_%n minute_::_%n minutes_" : ["%n dakika", "%n dakika"],
     "Please select a file." : "Lütfen bir dosya seçin.",
     "File is too big" : "Dosya çok büyük",
     "Invalid file provided" : "Geçersiz dosya sağlandı",

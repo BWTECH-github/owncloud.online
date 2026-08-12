@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "Aniciu de sesión posáu un momentu",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Hebo varios intentos fallíos dende la to conexón, poro, tamos ralentizando un momentu l'aniciu de sesión pa protexer la to cuenta.",
+    "You can try again in %s." : "Pues volver tentalo en %s.",
+    "You can try again now." : "Pues volver tentalo agora.",
+    "Forgotten your password? Use the reset link instead of trying again." : "¿Escaeciesti la contraseña? Usa l'enllaz de reaniciu en cuenta de volver tentalo.",
+    "_%n second_::_%n seconds_" : ["%n segundu", "%n segundos"],
+    "_%n minute_::_%n minutes_" : ["%n minutu", "%n minutos"],
     "Please select a file." : "Por favor esbilla un ficheru.",
     "File is too big" : "Ficheru ye demasiáu grande",
     "Invalid file provided" : "el ficheru apurríu nun ye válidu",

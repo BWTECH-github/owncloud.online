@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "لاگ ان کچھ دیر کے لیے روک دیا گیا ہے",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "آپ کے کنکشن سے متعدد ناکام کوششیں ہوئیں، اس لیے آپ کے اکاؤنٹ کے تحفظ کے لیے ہم لاگ ان کو تھوڑی دیر کے لیے سست کر رہے ہیں۔",
+    "You can try again in %s." : "آپ %s بعد دوبارہ کوشش کر سکتے ہیں۔",
+    "You can try again now." : "آپ ابھی دوبارہ کوشش کر سکتے ہیں۔",
+    "Forgotten your password? Use the reset link instead of trying again." : "پاس ورڈ بھول گئے؟ دوبارہ کوشش کرنے کے بجائے ری سیٹ لنک استعمال کریں۔",
+    "_%n second_::_%n seconds_" : ["%n سیکنڈ", "%n سیکنڈ"],
+    "_%n minute_::_%n minutes_" : ["%n منٹ", "%n منٹ"],
     "No image or file provided" : "کوئی تصویر یا فائل فراہم نہیں",
     "Unknown filetype" : "غیر معرروف قسم کی فائل",
     "Invalid image" : "غلط تصویر",

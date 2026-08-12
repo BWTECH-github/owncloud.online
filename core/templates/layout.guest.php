@@ -46,6 +46,10 @@
 			#body-login *:focus:not(:focus-visible){outline:none !important;box-shadow:none !important;}
 			#body-login .v-align .login-button,#body-login .v-align input[type="submit"],#body-login .v-align button[type="submit"]{display:block;height:46px;width:100%;margin:6px 0 0;background:#00e4bd !important;color:#26384d !important;border:none !important;border-radius:8px !important;font-weight:600;font-size:15px;cursor:pointer;box-shadow:none !important;}
 			#body-login .v-align .login-button:hover,#body-login .v-align button[type="submit"]:hover{background:#00c9a7 !important;}
+			/* Waehrend der Bruteforce-Wartezeit (js/login.js) ist der Knopf deaktiviert. Die
+			   !important-Fuellung oben wuerde das styles.css-Disabled-Muster ueberstimmen, deshalb
+			   hier mit gleicher Wichtigkeit NACH Grund- und Hover-Regel. #4a5568 auf #e6eaef = 6.1:1. */
+			#body-login .v-align .login-button:disabled,#body-login .v-align button[type="submit"]:disabled,#body-login .v-align input[type="submit"]:disabled,#body-login .v-align .login-button:disabled:hover,#body-login .v-align button[type="submit"]:disabled:hover,#body-login .v-align input[type="submit"]:disabled:hover{background:#e6eaef !important;color:#4a5568 !important;cursor:not-allowed;}
 			#body-login footer{flex:0 0 auto;text-align:center;padding:10px 0 14px;margin:0;}
 			/* Update-/Wartungs-Screens nutzen dieselbe Gastkarte: breiter, EINE Karte, zentrierter Text */
 			#body-login .v-align:has(.update),#body-login .v-align:has(.update-progress),#body-login .v-align:has(.error-wide){max-width:460px;text-align:center;}

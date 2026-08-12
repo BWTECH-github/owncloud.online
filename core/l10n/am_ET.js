@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "መግቢያ ለአፍታ ቆሟል",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "ከግንኙነትዎ በርካታ ያልተሳኩ ሙከራዎች ስለነበሩ፣ መለያዎን ለመጠበቅ መግባትን ለአጭር ጊዜ እናዘገያለን።",
+    "You can try again in %s." : "%s በኋላ እንደገና መሞከር ይችላሉ።",
+    "You can try again now." : "አሁን እንደገና መሞከር ይችላሉ።",
+    "Forgotten your password? Use the reset link instead of trying again." : "የይለፍ ቃል ረሱ? እንደገና ከመሞከር ይልቅ የዳግም ማስጀመሪያ አገናኙን ይጠቀሙ።",
+    "_%n second_::_%n seconds_" : ["%n ሰከንድ", "%n ሰከንዶች"],
+    "_%n minute_::_%n minutes_" : ["%n ደቂቃ", "%n ደቂቃዎች"],
     "_{count} file conflict_::_{count} file conflicts_" : ["",""],
     "_download %n file_::_download %n files_" : ["",""],
     "_{count} search result in other places_::_{count} search results in other places_" : ["",""]

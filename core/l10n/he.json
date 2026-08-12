@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "הכניסה הושהתה לרגע",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "היו מספר ניסיונות כושלים מהחיבור שלך, ולכן אנו מאטים לזמן קצר את הכניסה כדי להגן על החשבון שלך.",
+    "You can try again in %s." : "ניתן לנסות שוב בעוד %s.",
+    "You can try again now." : "ניתן לנסות שוב כעת.",
+    "Forgotten your password? Use the reset link instead of trying again." : "שכחת סיסמה? יש להשתמש בקישור האיפוס במקום לנסות שוב.",
+    "_%n second_::_%n seconds_" : ["%n שנייה", "%n שניות", "%n שניות"],
+    "_%n minute_::_%n minutes_" : ["%n דקה", "%n דקות", "%n דקות"],
     "Please select a file." : "יש לבחור קובץ.",
     "File is too big" : "הקובץ גדול מדי",
     "Invalid file provided" : "סופק קובץ לא חוקי",

@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "ਲਾਗਇਨ ਕੁਝ ਪਲਾਂ ਲਈ ਰੋਕਿਆ ਗਿਆ ਹੈ",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "ਤੁਹਾਡੇ ਕਨੈਕਸ਼ਨ ਤੋਂ ਕਈ ਅਸਫਲ ਕੋਸ਼ਿਸ਼ਾਂ ਹੋਈਆਂ ਹਨ, ਇਸ ਲਈ ਤੁਹਾਡੇ ਖਾਤੇ ਦੀ ਸੁਰੱਖਿਆ ਲਈ ਅਸੀਂ ਲਾਗਇਨ ਨੂੰ ਥੋੜ੍ਹੇ ਸਮੇਂ ਲਈ ਹੌਲੀ ਕਰ ਰਹੇ ਹਾਂ।",
+    "You can try again in %s." : "ਤੁਸੀਂ %s ਬਾਅਦ ਮੁੜ ਕੋਸ਼ਿਸ਼ ਕਰ ਸਕਦੇ ਹੋ।",
+    "You can try again now." : "ਤੁਸੀਂ ਹੁਣ ਮੁੜ ਕੋਸ਼ਿਸ਼ ਕਰ ਸਕਦੇ ਹੋ।",
+    "Forgotten your password? Use the reset link instead of trying again." : "ਪਾਸਵਰਡ ਭੁੱਲ ਗਏ? ਮੁੜ ਕੋਸ਼ਿਸ਼ ਕਰਨ ਦੀ ਬਜਾਏ ਰੀਸੈੱਟ ਲਿੰਕ ਵਰਤੋ।",
+    "_%n second_::_%n seconds_" : ["%n ਸਕਿੰਟ", "%n ਸਕਿੰਟ"],
+    "_%n minute_::_%n minutes_" : ["%n ਮਿੰਟ", "%n ਮਿੰਟ"],
     "Sunday" : "ਐਤਵਾਰ",
     "Monday" : "ਸੋਮਵਾਰ",
     "Tuesday" : "ਮੰਗਲਵਾਰ",

@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "ການເຂົ້າສູ່ລະບົບຖືກຢຸດຊົ່ວຄາວ",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "ມີຄວາມພະຍາຍາມເຂົ້າສູ່ລະບົບທີ່ລົ້ມເຫຼວຫຼາຍຄັ້ງຈາກການເຊື່ອມຕໍ່ຂອງທ່ານ ດັ່ງນັ້ນພວກເຮົາຈຶ່ງຊະລໍການເຂົ້າສູ່ລະບົບຊົ່ວຄາວເພື່ອປົກປ້ອງບັນຊີຂອງທ່ານ",
+    "You can try again in %s." : "ທ່ານສາມາດລອງໃໝ່ໃນອີກ %s",
+    "You can try again now." : "ທ່ານສາມາດລອງໃໝ່ໄດ້ຕອນນີ້",
+    "Forgotten your password? Use the reset link instead of trying again." : "ລືມລະຫັດຜ່ານ? ໃຊ້ລິ້ງຣີເຊັດແທນການລອງໃໝ່",
+    "_%n second_::_%n seconds_" : ["%n ວິນາທີ"],
+    "_%n minute_::_%n minutes_" : ["%n ນາທີ"],
     "Please select a file." : "ກະລຸນາເລືອກໄຟລ໌.",
     "File is too big" : "ໄຟລ໌ມີຂະໜາດໃຫຍ່ເກີນໄປ",
     "Invalid file provided" : "ໄຟລ໌ທີ່ໃຫ້ມາບໍ່ຖືກຕ້ອງ",

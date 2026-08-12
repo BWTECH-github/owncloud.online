@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "Η σύνδεση διεκόπη για λίγο",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Υπήρξαν αρκετές αποτυχημένες προσπάθειες από τη σύνδεσή σας, γι' αυτό επιβραδύνουμε για λίγο τη σύνδεση για να προστατεύσουμε τον λογαριασμό σας.",
+    "You can try again in %s." : "Μπορείτε να δοκιμάσετε ξανά σε %s.",
+    "You can try again now." : "Μπορείτε να δοκιμάσετε ξανά τώρα.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Ξεχάσατε τον κωδικό πρόσβασης; Χρησιμοποιήστε τον σύνδεσμο επαναφοράς αντί να προσπαθήσετε ξανά.",
+    "_%n second_::_%n seconds_" : ["%n δευτερόλεπτο", "%n δευτερόλεπτα"],
+    "_%n minute_::_%n minutes_" : ["%n λεπτό", "%n λεπτά"],
     "Please select a file." : "Παρακαλώ επιλέξτε αρχείο.",
     "File is too big" : "Το αρχείο είναι πολύ μεγάλο",
     "Invalid file provided" : "Έχει δοθεί μη έγκυρο αρχείο",

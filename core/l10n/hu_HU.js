@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "A bejelentkezés rövid időre szünetel",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Több sikertelen próbálkozás érkezett a kapcsolatáról, ezért fiókja védelme érdekében rövid időre lelassítjuk a bejelentkezést.",
+    "You can try again in %s." : "%s múlva próbálkozhat újra.",
+    "You can try again now." : "Most újra próbálkozhat.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Elfelejtette a jelszavát? Használja a visszaállítási hivatkozást ahelyett, hogy újra próbálkozna.",
+    "_%n second_::_%n seconds_" : ["%n másodperc", "%n másodperc"],
+    "_%n minute_::_%n minutes_" : ["%n perc", "%n perc"],
     "Please select a file." : "Kérjük, válasszon ki egy fájlt.",
     "File is too big" : "A fájl túl nagy",
     "Invalid file provided" : "Érvénytelen fájl van megadva",

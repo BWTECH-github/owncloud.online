@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "L'inici de sessió s'ha aturat un moment",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Hi ha hagut diversos intents fallits des de la vostra connexió, per això alentim breument l'inici de sessió per protegir el vostre compte.",
+    "You can try again in %s." : "Podeu tornar-ho a provar d'aquí a %s.",
+    "You can try again now." : "Podeu tornar-ho a provar ara.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Heu oblidat la contrasenya? Feu servir l'enllaç de restabliment en lloc de tornar-ho a provar.",
+    "_%n second_::_%n seconds_" : ["%n segon", "%n segons"],
+    "_%n minute_::_%n minutes_" : ["%n minut", "%n minuts"],
     "Please select a file." : "Si us plau, selecciona un fitxer",
     "File is too big" : "El fitxer és massa gran",
     "Invalid file provided" : "L'arxiu proporcionat no és vàlid",

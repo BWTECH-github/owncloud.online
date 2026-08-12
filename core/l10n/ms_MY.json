@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "Log masuk dijeda seketika",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Terdapat beberapa percubaan gagal daripada sambungan anda, jadi kami melambatkan log masuk buat seketika untuk melindungi akaun anda.",
+    "You can try again in %s." : "Anda boleh cuba lagi dalam %s.",
+    "You can try again now." : "Anda boleh cuba lagi sekarang.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Lupa kata laluan? Gunakan pautan set semula daripada mencuba lagi.",
+    "_%n second_::_%n seconds_" : ["%n saat"],
+    "_%n minute_::_%n minutes_" : ["%n minit"],
     "Sunday" : "Ahad",
     "Monday" : "Isnin",
     "Tuesday" : "Selasa",

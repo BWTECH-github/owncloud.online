@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "Hyrja u ndal për një çast",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Pati disa përpjekje të dështuara nga lidhja juaj, prandaj po e ngadalësojmë përkohësisht hyrjen për të mbrojtur llogarinë tuaj.",
+    "You can try again in %s." : "Mund të provoni sërish pas %s.",
+    "You can try again now." : "Tani mund të provoni sërish.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Harruat fjalëkalimin? Përdorni lidhjen e rivendosjes në vend që të provoni sërish.",
+    "_%n second_::_%n seconds_" : ["%n sekondë", "%n sekonda"],
+    "_%n minute_::_%n minutes_" : ["%n minutë", "%n minuta"],
     "Please select a file." : "Ju lutemi, përzgjidhni një kartelë.",
     "File is too big" : "Kartela është shumë e madhe",
     "Invalid file provided" : "U dha kartelë e pavlefshme",

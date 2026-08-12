@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "Prisijungimas trumpam pristabdytas",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Iš jūsų ryšio buvo keli nepavykę bandymai, todėl trumpam sulėtiname prisijungimą, kad apsaugotume jūsų paskyrą.",
+    "You can try again in %s." : "Iki kito bandymo liko: %s.",
+    "You can try again now." : "Dabar galite bandyti dar kartą.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Pamiršote slaptažodį? Naudokite atstatymo nuorodą, užuot bandę dar kartą.",
+    "_%n second_::_%n seconds_" : ["%n sekundė", "%n sekundės", "%n sekundžių", "%n sekundžių"],
+    "_%n minute_::_%n minutes_" : ["%n minutė", "%n minutės", "%n minučių", "%n minučių"],
     "Please select a file." : "Pasirinkite failą.",
     "File is too big" : "Per didelis failas",
     "Invalid file provided" : "Netinkamas failas",

@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "Đăng nhập tạm dừng trong giây lát",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Đã có nhiều lần đăng nhập thất bại từ kết nối của bạn, vì vậy chúng tôi tạm thời làm chậm việc đăng nhập để bảo vệ tài khoản của bạn.",
+    "You can try again in %s." : "Bạn có thể thử lại sau %s.",
+    "You can try again now." : "Bây giờ bạn có thể thử lại.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Quên mật khẩu? Hãy dùng liên kết đặt lại thay vì thử lại.",
+    "_%n second_::_%n seconds_" : ["%n giây"],
+    "_%n minute_::_%n minutes_" : ["%n phút"],
     "Please select a file." : "Vui lòng chọn một tập tin",
     "File is too big" : "Tập tin quá lớn",
     "Invalid file provided" : "Tập tin không hợp lệ",

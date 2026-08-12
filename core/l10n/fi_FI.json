@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "Kirjautuminen on hetken tauolla",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Yhteydestäsi tuli useita epäonnistuneita yrityksiä, joten hidastamme kirjautumista hetkeksi tilisi suojaamiseksi.",
+    "You can try again in %s." : "Aikaa seuraavaan yritykseen: %s.",
+    "You can try again now." : "Voit yrittää uudelleen nyt.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Unohditko salasanasi? Käytä palautuslinkkiä sen sijaan, että yrittäisit uudelleen.",
+    "_%n second_::_%n seconds_" : ["%n sekunti", "%n sekuntia"],
+    "_%n minute_::_%n minutes_" : ["%n minuutti", "%n minuuttia"],
     "Please select a file." : "Valitse tiedosto.",
     "File is too big" : "Tiedosto on liian suuri",
     "Invalid file provided" : "Määritetty virheellinen tiedosto",

@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "Вхід ненадовго призупинено",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "З вашого з'єднання було кілька невдалих спроб, тому вхід тимчасово сповільнено, щоб захистити ваш обліковий запис.",
+    "You can try again in %s." : "До наступної спроби залишилося: %s.",
+    "You can try again now." : "Ви можете спробувати знову зараз.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Забули пароль? Скористайтеся посиланням для скидання замість повторних спроб.",
+    "_%n second_::_%n seconds_" : ["%n секунда", "%n секунди", "%n секунд", "%n секунди"],
+    "_%n minute_::_%n minutes_" : ["%n хвилина", "%n хвилини", "%n хвилин", "%n хвилини"],
     "Please select a file." : "Будь ласка, оберіть файл.",
     "File is too big" : "Файл занадто великий",
     "Invalid file provided" : "Надано невірний файл",

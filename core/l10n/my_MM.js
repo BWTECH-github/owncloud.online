@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "လော့ဂ်အင်ကို ခဏရပ်ထားသည်",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "သင့်ချိတ်ဆက်မှုမှ မအောင်မြင်သော ကြိုးပမ်းမှုများစွာရှိခဲ့သောကြောင့် သင့်အကောင့်ကို ကာကွယ်ရန် လော့ဂ်အင်ကို ခဏနှေးစေထားပါသည်။",
+    "You can try again in %s." : "%s အကြာတွင် ထပ်စမ်းနိုင်ပါသည်။",
+    "You can try again now." : "ယခု ထပ်စမ်းနိုင်ပါပြီ။",
+    "Forgotten your password? Use the reset link instead of trying again." : "စကားဝှက်မေ့နေပါသလား။ ထပ်စမ်းမည့်အစား ပြန်လည်သတ်မှတ်ရန်လင့်ခ်ကို အသုံးပြုပါ။",
+    "_%n second_::_%n seconds_" : ["%n စက္ကန့်"],
+    "_%n minute_::_%n minutes_" : ["%n မိနစ်"],
     "January" : "ဇန်နဝါရီ",
     "February" : "ဖေဖော်ဝါရီ",
     "March" : "မတ်",

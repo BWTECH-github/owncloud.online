@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "Logowanie na chwilę wstrzymane",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Z Twojego połączenia było kilka nieudanych prób, dlatego na krótko spowalniamy logowanie, aby chronić Twoje konto.",
+    "You can try again in %s." : "Do następnej próby pozostało: %s.",
+    "You can try again now." : "Możesz spróbować ponownie teraz.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Nie pamiętasz hasła? Użyj linku do resetowania zamiast próbować ponownie.",
+    "_%n second_::_%n seconds_" : ["%n sekunda", "%n sekundy", "%n sekund", "%n sekundy"],
+    "_%n minute_::_%n minutes_" : ["%n minuta", "%n minuty", "%n minut", "%n minuty"],
     "Please select a file." : "Proszę wybrać plik",
     "File is too big" : "Plik jest za duży",
     "Invalid file provided" : "Podano błędny plik",

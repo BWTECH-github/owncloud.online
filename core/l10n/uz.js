@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "Kirish bir lahzaga to'xtatildi",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Ulanishingizdan bir nechta muvaffaqiyatsiz urinish bo'ldi, shuning uchun hisobingizni himoya qilish uchun kirishni qisqa muddatga sekinlashtiramiz.",
+    "You can try again in %s." : "%s dan keyin qayta urinib ko'rishingiz mumkin.",
+    "You can try again now." : "Hozir qayta urinib ko'rishingiz mumkin.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Parolni unutdingizmi? Qayta urinish o'rniga tiklash havolasidan foydalaning.",
+    "_%n second_::_%n seconds_" : ["%n soniya"],
+    "_%n minute_::_%n minutes_" : ["%n daqiqa"],
     "Sun." : "Yak.",
     "Mon." : "Dush.",
     "Tue." : "Sesh.",

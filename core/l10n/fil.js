@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "Pansamantalang itinigil ang pag-login",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Nagkaroon ng ilang bigong pagtatangka mula sa iyong koneksyon, kaya pansamantala naming pinapabagal ang pag-login para protektahan ang iyong account.",
+    "You can try again in %s." : "Maaari kang sumubok muli pagkatapos ng %s.",
+    "You can try again now." : "Maaari ka nang sumubok muli ngayon.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Nakalimutan ang password? Gamitin ang reset link sa halip na sumubok muli.",
+    "_%n second_::_%n seconds_" : ["%n segundo", "%n segundo"],
+    "_%n minute_::_%n minutes_" : ["%n minuto", "%n minuto"],
     "Sunday" : "Linggo",
     "Monday" : "Lunes",
     "Tuesday" : "Martes",

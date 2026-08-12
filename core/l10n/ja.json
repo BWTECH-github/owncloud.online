@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "ログインを一時停止しています",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "お使いの接続から複数回のログイン失敗があったため、アカウント保護のためログインを一時的に制限しています。",
+    "You can try again in %s." : "%s後に再試行できます。",
+    "You can try again now." : "今すぐ再試行できます。",
+    "Forgotten your password? Use the reset link instead of trying again." : "パスワードをお忘れですか？再試行する代わりに、リセットリンクをご利用ください。",
+    "_%n second_::_%n seconds_" : ["%n 秒"],
+    "_%n minute_::_%n minutes_" : ["%n 分"],
     "Please select a file." : "ファイルを選択してください。",
     "File is too big" : "ファイルが大きすぎます",
     "Invalid file provided" : "無効なファイルが提供されました",

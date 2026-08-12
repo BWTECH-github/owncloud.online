@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "หยุดการเข้าสู่ระบบชั่วครู่",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "มีความพยายามเข้าสู่ระบบที่ล้มเหลวหลายครั้งจากการเชื่อมต่อของคุณ เราจึงชะลอการเข้าสู่ระบบชั่วคราวเพื่อปกป้องบัญชีของคุณ",
+    "You can try again in %s." : "คุณสามารถลองอีกครั้งในอีก %s",
+    "You can try again now." : "คุณสามารถลองอีกครั้งได้ตอนนี้",
+    "Forgotten your password? Use the reset link instead of trying again." : "ลืมรหัสผ่าน? ใช้ลิงก์รีเซ็ตแทนการลองใหม่",
+    "_%n second_::_%n seconds_" : ["%n วินาที"],
+    "_%n minute_::_%n minutes_" : ["%n นาที"],
     "Please select a file." : "กรุณาเลือกแฟ้ม",
     "File is too big" : "ไฟล์มีขนาดใหญ่เกินไป",
     "Invalid file provided" : "ระบุไฟล์ไม่ถูกต้อง",

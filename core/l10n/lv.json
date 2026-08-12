@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "Pieteikšanās uz brīdi apturēta",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "No jūsu savienojuma bija vairāki neveiksmīgi mēģinājumi, tāpēc mēs uz īsu brīdi palēninām pieteikšanos, lai aizsargātu jūsu kontu.",
+    "You can try again in %s." : "Līdz nākamajam mēģinājumam atlicis: %s.",
+    "You can try again now." : "Tagad varat mēģināt vēlreiz.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Aizmirsāt paroli? Izmantojiet atiestatīšanas saiti, nevis mēģiniet vēlreiz.",
+    "_%n second_::_%n seconds_" : ["%n sekunde", "%n sekundes", "%n sekundes"],
+    "_%n minute_::_%n minutes_" : ["%n minūte", "%n minūtes", "%n minūtes"],
     "Please select a file." : "Izvēlieties failu.",
     "File is too big" : "Fails ir pārāk liels",
     "Invalid file provided" : "Sniegts nederīgs fails",

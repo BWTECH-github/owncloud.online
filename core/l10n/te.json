@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "లాగిన్ కాసేపు నిలిపివేయబడింది",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "మీ కనెక్షన్ నుండి అనేక విఫల ప్రయత్నాలు జరిగాయి, కాబట్టి మీ ఖాతాను రక్షించడానికి లాగిన్‌ను కాసేపు నెమ్మది చేస్తున్నాము.",
+    "You can try again in %s." : "మీరు %s తర్వాత మళ్లీ ప్రయత్నించవచ్చు.",
+    "You can try again now." : "మీరు ఇప్పుడు మళ్లీ ప్రయత్నించవచ్చు.",
+    "Forgotten your password? Use the reset link instead of trying again." : "పాస్‌వర్డ్ మర్చిపోయారా? మళ్లీ ప్రయత్నించే బదులు రీసెట్ లింక్‌ను ఉపయోగించండి.",
+    "_%n second_::_%n seconds_" : ["%n సెకను", "%n సెకన్లు"],
+    "_%n minute_::_%n minutes_" : ["%n నిమిషం", "%n నిమిషాలు"],
     "Sunday" : "ఆదివారం",
     "Monday" : "సోమవారం",
     "Tuesday" : "మంగళవారం",

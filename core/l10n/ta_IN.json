@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "உள்நுழைவு சிறிது நேரம் இடைநிறுத்தப்பட்டுள்ளது",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "உங்கள் இணைப்பிலிருந்து பல தோல்வியுற்ற முயற்சிகள் இருந்தன, எனவே உங்கள் கணக்கைப் பாதுகாக்க உள்நுழைவை சிறிது நேரம் மெதுவாக்குகிறோம்.",
+    "You can try again in %s." : "நீங்கள் %s கழித்து மீண்டும் முயற்சிக்கலாம்.",
+    "You can try again now." : "இப்போது மீண்டும் முயற்சிக்கலாம்.",
+    "Forgotten your password? Use the reset link instead of trying again." : "கடவுச்சொல் மறந்துவிட்டதா? மீண்டும் முயற்சிப்பதற்குப் பதிலாக மீட்டமைப்பு இணைப்பைப் பயன்படுத்தவும்.",
+    "_%n second_::_%n seconds_" : ["%n வினாடி", "%n வினாடிகள்"],
+    "_%n minute_::_%n minutes_" : ["%n நிமிடம்", "%n நிமிடங்கள்"],
     "Settings" : "அமைப்புகள்"
 },"pluralForm" :"nplurals=2; plural=(n != 1);"
 }

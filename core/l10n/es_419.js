@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "Inicio de sesión pausado por un momento",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Hubo varios intentos fallidos desde su conexión, por lo que estamos ralentizando brevemente el inicio de sesión para proteger su cuenta.",
+    "You can try again in %s." : "Puede volver a intentarlo en %s.",
+    "You can try again now." : "Puede volver a intentarlo ahora.",
+    "Forgotten your password? Use the reset link instead of trying again." : "¿Olvidó su contraseña? Use el enlace de restablecimiento en lugar de volver a intentarlo.",
+    "_%n second_::_%n seconds_" : ["%n segundo", "%n segundos", "%n segundos"],
+    "_%n minute_::_%n minutes_" : ["%n minuto", "%n minutos", "%n minutos"],
     "Name" : "Nombre"
 },
 "nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;");

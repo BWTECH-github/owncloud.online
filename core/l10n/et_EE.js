@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "Sisselogimine on hetkeks peatatud",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Sinu ühendusest tuli mitu ebaõnnestunud katset, seetõttu aeglustame sisselogimist korraks, et sinu kontot kaitsta.",
+    "You can try again in %s." : "Järgmise katseni on jäänud: %s.",
+    "You can try again now." : "Võid kohe uuesti proovida.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Unustasid parooli? Kasuta lähtestamise linki, selle asemel et uuesti proovida.",
+    "_%n second_::_%n seconds_" : ["%n sekund", "%n sekundit"],
+    "_%n minute_::_%n minutes_" : ["%n minut", "%n minutit"],
     "Please select a file." : "Palun vali fail.",
     "File is too big" : "Fail on liiga suur",
     "Invalid file provided" : "Vigane fail",

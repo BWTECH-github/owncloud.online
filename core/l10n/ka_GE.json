@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "შესვლა დროებით შეჩერებულია",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "თქვენი კავშირიდან რამდენიმე წარუმატებელი მცდელობა იყო, ამიტომ თქვენი ანგარიშის დასაცავად შესვლას მცირე ხნით ვანელებთ.",
+    "You can try again in %s." : "შეგიძლიათ კვლავ სცადოთ %s-ში.",
+    "You can try again now." : "ახლა შეგიძლიათ კვლავ სცადოთ.",
+    "Forgotten your password? Use the reset link instead of trying again." : "დაგავიწყდათ პაროლი? ხელახლა ცდის ნაცვლად გამოიყენეთ აღდგენის ბმული.",
+    "_%n second_::_%n seconds_" : ["%n წამი", "%n წამი"],
+    "_%n minute_::_%n minutes_" : ["%n წუთი", "%n წუთი"],
     "Unknown filetype" : "უცნობი ფაილის ტიპი",
     "Invalid image" : "არასწორი სურათი",
     "Turned on maintenance mode" : "შენახვის რეჟიმი ჩართულია",

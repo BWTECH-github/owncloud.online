@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "लॉगिन कुछ देर के लिए रोका गया है",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "आपके कनेक्शन से कई असफल प्रयास हुए हैं, इसलिए आपके खाते की सुरक्षा के लिए हम लॉगिन को थोड़ी देर के लिए धीमा कर रहे हैं।",
+    "You can try again in %s." : "आप %s में फिर से प्रयास कर सकते हैं।",
+    "You can try again now." : "आप अभी फिर से प्रयास कर सकते हैं।",
+    "Forgotten your password? Use the reset link instead of trying again." : "पासवर्ड भूल गए? फिर से प्रयास करने के बजाय रीसेट लिंक का उपयोग करें।",
+    "_%n second_::_%n seconds_" : ["%n सेकंड", "%n सेकंड"],
+    "_%n minute_::_%n minutes_" : ["%n मिनट", "%n मिनट"],
     "Sunday" : "रविवार",
     "Monday" : "सोमवार",
     "Tuesday" : "मंगलवार",

@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "Innskráning er í smástund í bið",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Nokkrar misheppnaðar tilraunir bárust frá tengingunni þinni, svo við hægjum stuttlega á innskráningu til að vernda aðganginn þinn.",
+    "You can try again in %s." : "Biðtími sem eftir er: %s.",
+    "You can try again now." : "Þú getur reynt aftur núna.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Gleymt lykilorð? Notaðu endurstillingartengilinn í stað þess að reyna aftur.",
+    "_%n second_::_%n seconds_" : ["%n sekúnda", "%n sekúndur"],
+    "_%n minute_::_%n minutes_" : ["%n mínúta", "%n mínútur"],
     "Please select a file." : "Veldu einhverja skrá.",
     "File is too big" : "Skrá er of stór",
     "Invalid file provided" : "Ógild skrá gefin",

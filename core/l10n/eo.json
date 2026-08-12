@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "Ensaluto paŭzita por momento",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Estis pluraj malsukcesaj provoj el via konekto, do ni mallonge malrapidigas la ensaluton por protekti vian konton.",
+    "You can try again in %s." : "Vi povos reprovi post %s.",
+    "You can try again now." : "Vi povas reprovi nun.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Ĉu vi forgesis vian pasvorton? Uzu la restarigan ligilon anstataŭ reprovi.",
+    "_%n second_::_%n seconds_" : ["%n sekundo", "%n sekundoj"],
+    "_%n minute_::_%n minutes_" : ["%n minuto", "%n minutoj"],
     "Please select a file." : "Bonvolu elekti dosieron.",
     "File is too big" : "Dosiero tro grandas.",
     "Unknown filetype" : "Ne konatas dosiertipo",

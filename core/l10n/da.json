@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "Login er kort sat på pause",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Der var flere mislykkede forsøg fra din forbindelse, så vi sætter kortvarigt tempoet ned for at beskytte din konto.",
+    "You can try again in %s." : "Du kan prøve igen om %s.",
+    "You can try again now." : "Du kan prøve igen nu.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Glemt din adgangskode? Brug nulstillingslinket i stedet for at prøve igen.",
+    "_%n second_::_%n seconds_" : ["%n sekund", "%n sekunder"],
+    "_%n minute_::_%n minutes_" : ["%n minut", "%n minutter"],
     "Please select a file." : "Vælg fil",
     "File is too big" : "Filen er for stor",
     "Invalid file provided" : "Der er angivet en ugyldig fil",

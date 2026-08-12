@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "Giriş bir anlıq dayandırılıb",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Bağlantınızdan bir neçə uğursuz cəhd oldu, buna görə hesabınızı qorumaq üçün girişi qısa müddətə yavaşladırıq.",
+    "You can try again in %s." : "%s sonra yenidən cəhd edə bilərsiniz.",
+    "You can try again now." : "İndi yenidən cəhd edə bilərsiniz.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Şifrənizi unutmusunuz? Yenidən cəhd etmək əvəzinə sıfırlama keçidindən istifadə edin.",
+    "_%n second_::_%n seconds_" : ["%n saniyə", "%n saniyə"],
+    "_%n minute_::_%n minutes_" : ["%n dəqiqə", "%n dəqiqə"],
     "Unknown filetype" : "Fayl tipi bəlli deyil.",
     "Invalid image" : "Yalnış şəkil",
     "No temporary profile picture available, try again" : "Profaylın müvəqqəti şəklinə çatmaq mümkün olmadı, yenidən təkrarlayın.",

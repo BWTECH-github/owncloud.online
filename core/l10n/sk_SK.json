@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "Prihlásenie je na chvíľu pozastavené",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Z vášho pripojenia prebehlo niekoľko neúspešných pokusov, preto prihlasovanie nakrátko spomaľujeme, aby sme ochránili váš účet.",
+    "You can try again in %s." : "Do ďalšieho pokusu zostáva: %s.",
+    "You can try again now." : "Teraz to môžete skúsiť znova.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Zabudli ste heslo? Použite odkaz na obnovenie namiesto ďalších pokusov.",
+    "_%n second_::_%n seconds_" : ["%n sekunda", "%n sekundy", "%n sekúnd", "%n sekúnd"],
+    "_%n minute_::_%n minutes_" : ["%n minúta", "%n minúty", "%n minút", "%n minút"],
     "Please select a file." : "Prosím, vyberte súbor.",
     "File is too big" : "Súbor je príliš veľký",
     "Invalid file provided" : "Zadaný neplatný súbor",

@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "Prijava je za trenutek zaustavljena",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Z vaše povezave je bilo več neuspešnih poskusov, zato prijavo za kratek čas upočasnjujemo, da zaščitimo vaš račun.",
+    "You can try again in %s." : "Do naslednjega poskusa je preostalo: %s.",
+    "You can try again now." : "Zdaj lahko poskusite znova.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Ste pozabili geslo? Uporabite povezavo za ponastavitev, namesto da poskušate znova.",
+    "_%n second_::_%n seconds_" : ["%n sekunda", "%n sekundi", "%n sekunde", "%n sekund"],
+    "_%n minute_::_%n minutes_" : ["%n minuta", "%n minuti", "%n minute", "%n minut"],
     "Please select a file." : "Izberite datoteko",
     "File is too big" : "Datoteka je prevelika",
     "Invalid file provided" : "Predložena je neveljavna datoteka",

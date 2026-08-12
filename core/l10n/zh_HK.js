@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "登入已暫停片刻",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "您的連線有多次失敗的登入嘗試，為保護您的帳戶，我們暫時放慢了登入速度。",
+    "You can try again in %s." : "您可以在 %s 後重試。",
+    "You can try again now." : "您現在可以重試了。",
+    "Forgotten your password? Use the reset link instead of trying again." : "忘記密碼？請使用重設連結，而不要繼續嘗試。",
+    "_%n second_::_%n seconds_" : ["%n 秒"],
+    "_%n minute_::_%n minutes_" : ["%n 分鐘"],
     "Please select a file." : "請選擇檔案",
     "File is too big" : "檔案太大",
     "Invalid file provided" : "提供的文件无效",

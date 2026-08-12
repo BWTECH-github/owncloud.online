@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "Session pausate pro un momento",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Il habeva plure tentativas fallite ab tu connexion, dunque nos relenta brevemente le initio de session pro proteger tu conto.",
+    "You can try again in %s." : "Tu pote reprobar post %s.",
+    "You can try again now." : "Tu pote reprobar ora.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Contrasigno oblidate? Usa le ligamine de reinitialisation in loco de reprobar.",
+    "_%n second_::_%n seconds_" : ["%n secunda", "%n secundas"],
+    "_%n minute_::_%n minutes_" : ["%n minuta", "%n minutas"],
     "Please select a file." : "Per favor, selige un file.",
     "File is too big" : "Le file es troppo grande",
     "Invalid file provided" : "Le file fornite es invalide",

@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "로그인이 잠시 일시 중지되었습니다",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "회원님의 연결에서 여러 번의 로그인 실패가 있어 계정 보호를 위해 로그인을 잠시 늦추고 있습니다.",
+    "You can try again in %s." : "%s 후에 다시 시도할 수 있습니다.",
+    "You can try again now." : "지금 다시 시도할 수 있습니다.",
+    "Forgotten your password? Use the reset link instead of trying again." : "비밀번호를 잊으셨나요? 다시 시도하는 대신 재설정 링크를 사용하세요.",
+    "_%n second_::_%n seconds_" : ["%n초"],
+    "_%n minute_::_%n minutes_" : ["%n분"],
     "Please select a file." : "파일을 선택하십시오.",
     "File is too big" : "파일이 너무 큼",
     "Invalid file provided" : "잘못된 파일 지정됨",

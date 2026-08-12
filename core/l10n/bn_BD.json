@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "লগইন কিছুক্ষণের জন্য থামানো হয়েছে",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "আপনার সংযোগ থেকে একাধিক ব্যর্থ চেষ্টা হয়েছে, তাই আপনার অ্যাকাউন্ট সুরক্ষায় আমরা লগইন সাময়িকভাবে ধীর করছি।",
+    "You can try again in %s." : "আপনি %s পরে আবার চেষ্টা করতে পারবেন।",
+    "You can try again now." : "আপনি এখন আবার চেষ্টা করতে পারেন।",
+    "Forgotten your password? Use the reset link instead of trying again." : "পাসওয়ার্ড ভুলে গেছেন? আবার চেষ্টা না করে রিসেট লিঙ্ক ব্যবহার করুন।",
+    "_%n second_::_%n seconds_" : ["%n সেকেন্ড", "%n সেকেন্ড"],
+    "_%n minute_::_%n minutes_" : ["%n মিনিট", "%n মিনিট"],
     "No image or file provided" : "কোন ইমেজ বা ফাইল প্রদান করা হয়নি",
     "Unknown filetype" : "অজানা প্রকৃতির ফাইল",
     "Invalid image" : "অবৈধ চিত্র",

@@ -1,4 +1,11 @@
 { "translations": {
+    "Login paused for a moment" : "Входът е поставен на пауза за момент",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "От вашата връзка имаше няколко неуспешни опита, затова за кратко забавяме входа, за да защитим профила ви.",
+    "You can try again in %s." : "Можете да опитате отново след %s.",
+    "You can try again now." : "Можете да опитате отново сега.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Забравена парола? Използвайте връзката за нулиране, вместо да опитвате отново.",
+    "_%n second_::_%n seconds_" : ["%n секунда", "%n секунди"],
+    "_%n minute_::_%n minutes_" : ["%n минута", "%n минути"],
     "Please select a file." : "Моля изберете файл.",
     "File is too big" : "Файлът е прекалено голям",
     "Invalid file provided" : "Предоставен е невалиден файл",

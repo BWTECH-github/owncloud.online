@@ -1,6 +1,13 @@
 OC.L10N.register(
     "core",
     {
+    "Login paused for a moment" : "Autentificarea este întreruptă pentru un moment",
+    "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Au existat mai multe încercări eșuate de la conexiunea dvs., așa că încetinim pentru scurt timp autentificarea pentru a vă proteja contul.",
+    "You can try again in %s." : "Puteți încerca din nou în %s.",
+    "You can try again now." : "Puteți încerca din nou acum.",
+    "Forgotten your password? Use the reset link instead of trying again." : "Ați uitat parola? Folosiți linkul de resetare în loc să încercați din nou.",
+    "_%n second_::_%n seconds_" : ["%n secundă", "%n secunde", "%n de secunde"],
+    "_%n minute_::_%n minutes_" : ["%n minut", "%n minute", "%n de minute"],
     "Please select a file." : "Te rugăm să alegi un fișier.",
     "File is too big" : "Fișierul este prea mare",
     "Invalid file provided" : "Numele fișierului pe care l-ai oferit este invalid",
