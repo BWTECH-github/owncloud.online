@@ -2,8 +2,15 @@
 	<!-- Add new group -->
 	<?php if ($_['isAdmin']) {
 		?>
+	<?php /* OC-WCAG-189..193: Diese Anker navigieren nicht, sie schalten die
+		Gruppenauswahl bzw. loesen Aktionen aus - vorgelesen wurde aber "Link".
+		role="button" korrigiert die Rolle (SC 4.1.2), ohne das Element zu
+		tauschen: <button> wuerde die 16 Regeln in core/css/apps.css verlieren,
+		die #app-navigation-Anker gestalten, und die geteilt sich jede App-
+		Navigation. href bleibt, damit Fokus und Eingabetaste nativ erhalten
+		bleiben; die Leertaste ergaenzt groups.js. */ ?>
 	<li id="newgroup-init">
-		<a href="#">
+		<a href="#" role="button">
 			<span><?php p($l->t('Add Group'))?></span>
 		</a>
 	</li>
@@ -18,7 +25,7 @@
 	</li>
 	<!-- Everyone -->
 	<li id="everyonegroup" data-gid="_everyone" data-usercount="" class="isgroup">
-		<a href="#">
+		<a href="#" role="button">
 			<span class="groupname" title="<?php p($l->t('Everyone')); ?>">
 				<?php p($l->t('Everyone')); ?>
 			</span>
@@ -32,7 +39,7 @@
 	<!-- The Admin Group -->
 	<?php foreach ($_["adminGroup"] as $adminGroup): ?>
 		<li data-gid="admin" data-usercount="<?php p($adminGroup['usercount']); ?>" class="isgroup">
-			<a href="#">
+			<a href="#" role="button">
 				<span class="groupname" title="<?php p($l->t('Admins')); ?>">
 					<?php p($l->t('Admins')); ?>
 				</span>
@@ -48,7 +55,7 @@
 	<!--List of Groups-->
 	<?php foreach ($_["groups"] as $group): ?>
 		<li data-gid="<?php p($group['id']) ?>" data-usercount="<?php p($group['usercount']) ?>" class="isgroup">
-			<a href="#" class="dorename">
+			<a href="#" role="button" class="dorename">
 				<span class="groupname" title="<?php p($group['name']); ?>">
 					<?php p($group['name']); ?>
 				</span>
@@ -58,7 +65,7 @@
 			</a>
 			<span class="utils">
 					<?php if ($_['isAdmin']): ?>
-				<a href="#" class="action delete" aria-label="<?php p($l->t('Delete'))?>">
+				<a href="#" role="button" class="action delete" aria-label="<?php p($l->t('Delete'))?>">
 					<img src="<?php print_unescaped(image_path('core', 'actions/delete.svg')) ?>" alt="" />
 				</a>
 				<?php endif; ?>

@@ -34,12 +34,12 @@ var GroupDeleteHandler;
 			// escapen bereits, hier fehlte es.
 			var $li = $(
 				'<li class="isgroup" data-gid="' + escapeHTML(gid) + '" data-usercount="0">' +
-				'	<a href="#" class="dorename">' +
+				'	<a href="#" role="button" class="dorename">' +
 				'		<span class="groupname">' + escapeHTML(name) + '</span>' +
 				'		<span class="usercount tag"></span>' +
 				'	</a>' +
 				'	<span class="utils">' +
-				'		<a href="#" class="action delete" aria-label="' + t('settings', 'Delete') + '">' +
+				'		<a href="#" role="button" class="action delete" aria-label="' + t('settings', 'Delete') + '">' +
 				'			<img src="' + OC.imagePath('core', 'actions/delete') + '" alt=""/>' +
 				'		</a>' +
 				'	</span>' +
@@ -383,6 +383,18 @@ $(document).ready( function () {
 	// click on group name
 	$userGroupList.on('click', '.isgroup', function () {
 		GroupList.showGroup(GroupList.getElementGID(this));
+	});
+
+	// OC-WCAG-189..193: Wer role="button" vergibt, schuldet auch das Verhalten
+	// eines Buttons. Ein Anker loest von sich aus nur auf die Eingabetaste aus,
+	// nicht auf die Leertaste. preventDefault verhindert, dass die Seite
+	// stattdessen scrollt. Der ausgeloeste Klick laeuft in dieselben
+	// delegierten Handler wie ein Mausklick.
+	$userGroupList.on('keydown', 'a[role="button"]', function (event) {
+		if (event.key === ' ' || event.key === 'Spacebar') {
+			event.preventDefault();
+			$(this).trigger('click');
+		}
 	});
 
 	$('#newgroupname').on('input', function(){
