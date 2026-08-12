@@ -54,6 +54,12 @@ class ThrottlerTest extends TestCase {
 		});
 
 		$this->throttler = new Throttler($this->db, $timeFactory, $this->createMock(ILogger::class));
+		// Diese Tests pruefen das Verhalten der Bremse selbst. Ob im jeweiligen
+		// Baum zufaellig 'brute_force_protection' mitliegt - im Bundle ja, im Kern
+		// nein - darf das Ergebnis nicht aendern, sonst faellt derselbe Test je
+		// nach Repository verschieden aus. Das Zuruecktreten hat einen eigenen
+		// Test weiter unten.
+		$this->throttler->setAppHandlesPolicyForTesting(false);
 		$this->wipe();
 	}
 
@@ -388,5 +394,56 @@ class ThrottlerTest extends TestCase {
 		$this->assertSame(0, $throttler->getDelay('login', '1.2.3.4', 'alice'), 'no delay can be derived, so none is imposed');
 		$this->assertSame(0, $throttler->cleanupOldAttempts());
 		$throttler->sleepDelay('login', '1.2.3.4', 'alice');
+	}
+
+	/**
+	 * Stellt die App 'brute_force_protection' die Richtlinie, tritt diese Bremse
+	 * fuer Anmeldung und Link-Passwoerter zurueck: sie zaehlt dann nicht mehr mit
+	 * und verhaengt keine Wartezeit, damit nicht zwei Richtlinien nebeneinander
+	 * laufen und dem Nutzer zwei verschiedene Wartezeiten nennen.
+	 */
+	public function testCoreStandsDownWhereTheAppOwnsThePolicy() {
+		$this->throttler->setAppHandlesPolicyForTesting(true);
+
+		foreach (['login', 'share_password'] as $action) {
+			for ($i = 0; $i < 30; $i++) {
+				$this->throttler->registerAttempt($action, '1.2.3.4', 'alice');
+			}
+			$this->assertSame(0, $this->throttler->getDelay($action, '1.2.3.4', 'alice'), "{$action}: keine Wartezeit");
+			$this->assertSame(0, $this->throttler->getRetryAfter($action, '1.2.3.4', 'alice'), "{$action}: keine Restzeit");
+		}
+
+		$this->assertSame(0, $this->zaehleZeilen(), 'die Versuche werden gar nicht erst festgehalten');
+	}
+
+	/**
+	 * Fuer Aktionen ohne Gegenstueck in der App bleibt die Bremse zustaendig -
+	 * der MCP-Endpunkt stuende sonst ungeschuetzt da.
+	 */
+	public function testCoreKeepsActionsTheAppDoesNotCover() {
+		$this->throttler->setAppHandlesPolicyForTesting(true);
+
+		for ($i = 0; $i < 30; $i++) {
+			$this->throttler->registerAttempt('mcp', '1.2.3.4', 'alice');
+		}
+
+		$this->assertGreaterThan(0, $this->throttler->getDelay('mcp', '1.2.3.4', 'alice'));
+		$this->assertGreaterThan(0, $this->zaehleZeilen());
+	}
+
+	/**
+	 * @return int
+	 */
+	private function zaehleZeilen() {
+		// selectAlias statt select(COUNT(*)): die CI faehrt MySQL, MariaDB,
+		// PostgreSQL und SQLite, und nur mit Alias liefern alle vier denselben
+		// Spaltennamen zurueck.
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectAlias($qb->createFunction('COUNT(*)'), 'anzahl')
+			->from(Throttler::DB_TABLE);
+		$ergebnis = $qb->execute();
+		$zeile = $ergebnis->fetch();
+		$ergebnis->closeCursor();
+		return (int)$zeile['anzahl'];
 	}
 }

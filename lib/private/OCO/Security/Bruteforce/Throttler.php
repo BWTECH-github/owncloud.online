@@ -143,8 +143,14 @@ class Throttler {
 	private $logger;
 
 	/**
-	 * Ob die App 'brute_force_protection' aktiv ist - einmal je Anfrage
-	 * ermittelt, weil die Frage auf jedem Anmeldeweg gestellt wird.
+	 * App, die die Richtlinie fuer Anmeldung und Link-Passwoerter stellt, sobald
+	 * sie installiert ist.
+	 */
+	private const POLICY_APP = 'brute_force_protection';
+
+	/**
+	 * Ob diese App aktiv ist - einmal je Anfrage ermittelt, weil die Frage auf
+	 * jedem Anmeldeweg gestellt wird.
 	 *
 	 * @var bool|null
 	 */
@@ -182,12 +188,26 @@ class Throttler {
 		}
 		if ($this->appHandlesLogin === null) {
 			try {
-				$this->appHandlesLogin = \OC_App::isEnabled('brute_force_protection');
+				$this->appHandlesLogin = \OC_App::isEnabled(self::POLICY_APP);
 			} catch (\Throwable $e) {
 				$this->appHandlesLogin = false;
 			}
 		}
 		return $this->appHandlesLogin;
+	}
+
+	/**
+	 * Legt fest, ob die App die Richtlinie stellt, statt es zu ermitteln.
+	 *
+	 * Nur fuer Tests: die Testsuite prueft das Verhalten dieser Bremse selbst und
+	 * muss dafuer unabhaengig davon sein, ob im jeweiligen Baum zufaellig eine App
+	 * mitliegt - im Bundle tut sie das, im Kern nicht, und derselbe Test soll in
+	 * beiden gleich ausfallen.
+	 *
+	 * @param bool $handles
+	 */
+	public function setAppHandlesPolicyForTesting($handles) {
+		$this->appHandlesLogin = (bool)$handles;
 	}
 
 	/**
