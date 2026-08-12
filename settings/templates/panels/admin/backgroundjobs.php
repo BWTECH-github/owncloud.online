@@ -31,6 +31,7 @@ script('settings', 'panels/backgroundjobs');
 	<?php endif; ?>
 	<a target="_blank" rel="noreferrer" class="icon-info"
 		title="<?php p($l->t('Open documentation'));?>"
+		aria-label="<?php p($l->t('Open documentation'));?>"
 		href="<?php p(link_to_docs(\OCP\Constants::DOCS_ADMIN_BACKGROUND_JOBS)); ?>"></a>
 	<p>
 		<input type="radio" name="mode" class="radio" value="ajax"

@@ -26,9 +26,15 @@ script('settings', 'panels/license');
 			war ein blosser Textknoten und damit nicht programmatisch zugeordnet.
 			<label for> nutzt den bereits vorhandenen l10n-String weiter. */ ?>
 		<label for="license_input_text"><?php p($l->t('Enter a new support key:')); ?></label>
-		<input id="license_input_text" type="text" style="width: 350px; max-width: 100%" />
-		<input id="license_input_button" type="button" value="<?php p($l->t('Save')); ?>"/>
-		<br>
+		<?php /* Eine echte Form mit required: bei leerem Feld meldet der Browser
+			den Fehler selbst, in der Sprache des Nutzers und ohne dass wir dafuer
+			einen eigenen Text pflegen muessen. Vorher tat ein Klick auf Speichern
+			bei leerem Feld gar nichts - der Fehler wurde erkannt und verschwiegen
+			(SC 3.3.1). Nebenbei wirkt jetzt auch die Eingabetaste im Feld. */ ?>
+		<form id="license_form">
+			<input id="license_input_text" type="text" required style="width: 350px; max-width: 100%" />
+			<input id="license_input_button" type="submit" value="<?php p($l->t('Save')); ?>"/>
+		</form>
 		<input id="license_remove_button" type="button" value="<?php p($l->t('Remove current support key')); ?>"/>
 	</div>
 </div>
