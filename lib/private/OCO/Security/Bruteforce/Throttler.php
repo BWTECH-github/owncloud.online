@@ -143,6 +143,14 @@ class Throttler {
 	private $logger;
 
 	/**
+	 * Ob die App 'brute_force_protection' aktiv ist - einmal je Anfrage
+	 * ermittelt, weil die Frage auf jedem Anmeldeweg gestellt wird.
+	 *
+	 * @var bool|null
+	 */
+	private $appHandlesLogin = null;
+
+	/**
 	 * @param IDBConnection $db
 	 * @param ITimeFactory $timeFactory
 	 * @param ILogger $logger
@@ -154,6 +162,35 @@ class Throttler {
 	}
 
 	/**
+	 * Stellt die App 'brute_force_protection' die Richtlinie fuer diese Aktion?
+	 *
+	 * Die App bringt eine eigene, vom Administrator einstellbare Sperre fuer die
+	 * Anmeldung und fuer Link-Passwoerter mit. Laufen beide nebeneinander, zaehlt
+	 * jede fuer sich, und der Nutzer bekommt zwei verschiedene Wartezeiten
+	 * genannt. Ist die App aktiv, tritt diese Bremse auf genau diesen beiden
+	 * Wegen zurueck und laesst ihr den Vortritt.
+	 *
+	 * Nicht zurueck tritt sie bei allen uebrigen Aktionen - der MCP-Endpunkt
+	 * etwa hat in der App kein Gegenstueck und stuende sonst ungeschuetzt da.
+	 *
+	 * @param string $action
+	 * @return bool
+	 */
+	private function appHandlesAction($action) {
+		if ($action !== 'login' && $action !== 'share_password') {
+			return false;
+		}
+		if ($this->appHandlesLogin === null) {
+			try {
+				$this->appHandlesLogin = \OC_App::isEnabled('brute_force_protection');
+			} catch (\Throwable $e) {
+				$this->appHandlesLogin = false;
+			}
+		}
+		return $this->appHandlesLogin;
+	}
+
+	/**
 	 * Record a failed authentication attempt.
 	 *
 	 * @param string $action e.g. 'login', 'share_password'
@@ -161,6 +198,9 @@ class Throttler {
 	 * @param string $identifier the targeted login name or share token
 	 */
 	public function registerAttempt($action, $ip, $identifier) {
+		if ($this->appHandlesAction($action)) {
+			return;
+		}
 		try {
 			$qb = $this->db->getQueryBuilder();
 			$qb->insert(self::DB_TABLE)
@@ -213,6 +253,9 @@ class Throttler {
 	 * @param string $identifier
 	 */
 	public function resetDelay($action, $ip, $identifier) {
+		if ($this->appHandlesAction($action)) {
+			return;
+		}
 		try {
 			$qb = $this->db->getQueryBuilder();
 			$qb->delete(self::DB_TABLE)
@@ -236,6 +279,9 @@ class Throttler {
 	 * @return int seconds, 0 if no cooldown is warranted
 	 */
 	public function getDelay($action, $ip, $identifier) {
+		if ($this->appHandlesAction($action)) {
+			return 0;
+		}
 		try {
 			return $this->computeCooldown($action, $ip, $identifier)['delay'];
 		} catch (\Exception $e) {
@@ -260,6 +306,9 @@ class Throttler {
 	 * @return int seconds, 0 if the caller may attempt immediately
 	 */
 	public function getRetryAfter($action, $ip, $identifier) {
+		if ($this->appHandlesAction($action)) {
+			return 0;
+		}
 		try {
 			return $this->computeCooldown($action, $ip, $identifier)['retryAfter'];
 		} catch (\Exception $e) {

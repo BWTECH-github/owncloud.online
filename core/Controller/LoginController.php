@@ -46,6 +46,7 @@ use OCP\ISession;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
+use Symfony\Component\EventDispatcher\GenericEvent;
 
 class LoginController extends Controller {
 	/** @var IUserManager */
@@ -129,6 +130,32 @@ class LoginController extends Controller {
 	 * @return int
 	 */
 	private function getLoginRetryAfter($loginName) {
+		$name = \is_scalar($loginName) ? (string)$loginName : '';
+
+		/*
+		 * Erst fragen, ob eine App die Richtlinie stellt. Die App
+		 * 'brute_force_protection' bringt eine eigene, vom Administrator
+		 * einstellbare Sperre mit; liefe die Bremse hier daneben weiter, gaeben
+		 * beide dieselbe Anmeldung unterschiedlich lange frei und der Nutzer
+		 * bekaeme zwei sich widersprechende Angaben. Antwortet ein Zuhoerer, gilt
+		 * allein seine Zahl - unsere eigene Bremse bleibt dann aussen vor.
+		 */
+		try {
+			$frage = new GenericEvent(null, [
+				'login' => $name,
+				'ip' => $this->request->getRemoteAddress(),
+				'retryAfter' => 0,
+				'handled' => false,
+			]);
+			\OC::$server->getEventDispatcher()->dispatch($frage, 'user.login.throttlequery');
+			if ($frage->getArgument('handled') === true) {
+				return \max(0, (int)$frage->getArgument('retryAfter'));
+			}
+		} catch (\Throwable $e) {
+			// Ein Fehler im Zuhoerer darf die Anmeldung nicht verhindern; es
+			// greift dann die eigene Bremse unten.
+		}
+
 		try {
 			if ($this->throttler === null) {
 				$this->throttler = \OC::$server->query(Throttler::class);
@@ -136,7 +163,7 @@ class LoginController extends Controller {
 			return $this->throttler->getRetryAfter(
 				'login',
 				$this->request->getRemoteAddress(),
-				\is_scalar($loginName) ? (string)$loginName : ''
+				$name
 			);
 		} catch (\Throwable $e) {
 			return 0;
