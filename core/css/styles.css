@@ -635,6 +635,89 @@ a.two-factor-cancel {
 	border-color: #ce3702 !important;
 }
 
+/*
+ * Brute-force cooldown notice on the login form.
+ *
+ * Shares the card of the other login notices above but reads as "waiting", not
+ * "error": left-aligned running text, an accent rail in the brand navy, and the
+ * clock plus progress bar in brand teal. Deliberately not the red error
+ * treatment - nothing went wrong, the account is being protected.
+ *
+ * Colours: text #172033 on the white card (~15:1), teal #007a67 on white
+ * (~4.6:1) - both past 4.5:1 for AA. White on the brand turquoise is avoided
+ * here on purpose; it only reaches 1.64:1.
+ */
+/*
+ * Both classes in the selector on purpose: "#body-login .warning" further down
+ * re-centres every notice with the same specificity, and it wins on order.
+ */
+#body-login .warning.login-throttle {
+	display: flex;
+	gap: 12px;
+	align-items: flex-start;
+	text-align: left;
+	border-left: 4px solid #262B45;
+}
+
+#body-login .login-throttle-icon {
+	flex: 0 0 auto;
+	line-height: 0;
+	margin-top: 2px;
+	color: #007a67;
+}
+
+.login-throttle-body {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+	text-align: left;
+}
+
+.login-throttle-title {
+	font-weight: 600;
+}
+
+.login-throttle-hint {
+	color: #4a5568;
+}
+
+.login-throttle-progress {
+	display: block;
+	height: 4px;
+	margin-top: 8px;
+	border-radius: 2px;
+	background: rgba(38,43,69,.14);
+	overflow: hidden;
+}
+
+.login-throttle-progress-bar {
+	display: block;
+	height: 100%;
+	width: 100%;
+	border-radius: 2px;
+	background: #007a67;
+	/* Ticks once a second, so the transition only has to bridge one tick. */
+	transition: width 1s linear;
+}
+
+.login-throttle--ready .login-throttle-progress {
+	display: none;
+}
+
+/* The disabled state of the login button lives further down, after :hover -
+ * see the comment there for why the order matters. */
+
+/*
+ * The depleting bar is decoration; for someone who asked for less motion the
+ * jump per tick is enough. The countdown text keeps updating either way.
+ */
+@media (prefers-reduced-motion: reduce) {
+	.login-throttle-progress-bar {
+		transition: none;
+	}
+}
+
 /* Fixes for log in page, TODO should be removed some time */
 /* 2021/04: lol */
 #body-login .warning {
@@ -705,6 +788,34 @@ html #body-login button[type="submit"]:hover {
 	border-width: 1px;
 	background-image: initial;
 	background-color: rgb(66, 116, 176);
+}
+
+/*
+ * The login button while the brute-force countdown blocks it (js/login.js). There
+ * was no disabled state at all before, so the browser default left the brand
+ * turquoise looking merely broken. Muted surface with dark text instead, and it
+ * reads better than the enabled state does: #4a5568 on #e6eaef is about 6.1:1,
+ * where white on the brand turquoise manages 1.64:1 - a known open item of the
+ * accessibility report, not touched here.
+ *
+ * Must come AFTER the :hover rule above: same specificity, so the later rule
+ * wins, and :hover still matches a disabled button - the blue hover background
+ * would otherwise paint over the disabled look.
+ */
+html #body-login button[type="submit"]:disabled,
+html #body-login button[type="submit"]:disabled:hover,
+html #body-login input[type="submit"]:disabled,
+html #body-login input[type="submit"]:disabled:hover {
+	background-color: #e6eaef;
+	background-image: none;
+	border-color: rgba(0,0,0,0);
+	color: #4a5568;
+	cursor: not-allowed;
+	box-shadow: none;
+}
+
+html #body-login button[type="submit"]:disabled span {
+	cursor: not-allowed;
 }
 
 /* Log in and install button */

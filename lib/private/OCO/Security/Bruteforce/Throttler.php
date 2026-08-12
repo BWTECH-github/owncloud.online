@@ -31,19 +31,30 @@ use OCP\IDBConnection;
 use OCP\ILogger;
 
 /**
- * Slows down repeated failed authentication attempts (login, WebDAV/OCS basic
- * auth, public-share-link passwords, oco_mcp) by sleeping for an increasing
- * duration before returning, keyed on the combination of remote IP and the
- * targeted identifier (login name / share token).
+ * Rate-limits repeated failed authentication attempts (login, WebDAV/OCS basic
+ * auth, public-share-link passwords, oco_mcp), keyed on the combination of
+ * remote IP and the targeted identifier (login name / share token).
+ *
+ * The model is a MINIMUM SPACING between attempts, not "sleep this long on
+ * every try": getDelay() returns how far apart attempts have to be, and
+ * getRetryAfter() turns that into the seconds still left of the current
+ * cooldown. Time the caller has already waited therefore counts towards the
+ * cooldown instead of being charged again on the next attempt.
+ *
+ * That distinction is what makes the wait explainable. An interactive caller
+ * (the web login) asks getRetryAfter() up front, refuses the attempt and shows
+ * the remaining time, so the user is told what is happening instead of staring
+ * at a page that hangs. The attacker's maximum rate is unchanged - one attempt
+ * per cooldown either way - but no PHP worker is held while they wait.
  *
  * Deliberately DB-backed rather than OCP\ICache: on installations without a
  * configured distributed cache backend (Redis/Memcached/APCu), ICacheFactory
  * can fall back to a per-request cache with no persistence across requests,
  * which would make the throttle silently ineffective.
  *
- * This never rejects requests outright (no hard lockout) - it only adds
- * delay. See project memory "security-audit-2026-07" for the design
- * discussion that led to this trade-off.
+ * There is no permanent lockout: every cooldown expires on its own, so an
+ * attacker cannot lock a legitimate user out of their account for good. See
+ * project memory "security-audit-2026-07" for the design discussion.
  *
  * @package OCO\Security\Bruteforce
  */
@@ -54,13 +65,55 @@ class Throttler {
 	private const LOOKBACK_SECONDS = 12 * 3600;
 
 	/**
-	 * Upper bound for a single sleep, regardless of attempt count. Capped low
-	 * so a flood of failed attempts from one IP+identifier cannot tie up an
-	 * FPM worker for minutes per request (self-DoS): a few dozen parallel
-	 * requests would otherwise exhaust the pool. The exponential back-off still
-	 * climbs to this cap, and the "no hard lockout" design is preserved.
+	 * Failed attempts per (IP, identifier) that stay free of any cooldown.
+	 * Mistyping a password - or reaching for an old one - is what people
+	 * actually do, and punishing the first try trains them to distrust the
+	 * form. Brute forcing a password needs orders of magnitude more than three
+	 * guesses, so the security value of charging for them is negligible.
 	 */
-	private const MAX_DELAY_SECONDS = 30;
+	private const IDENTIFIER_FREE_ATTEMPTS = 3;
+
+	/**
+	 * Failed attempts from one IP across ALL identifiers before that dimension
+	 * starts a cooldown. This is the password-spraying brake, and it counts raw
+	 * attempts rather than distinct accounts on purpose: resetDelay() removes
+	 * the rows of the one identifier that just succeeded, so a distinct-account
+	 * counter would hand an attacker a free slot back for every account they
+	 * crack, and they could sit on the threshold indefinitely. Against a raw
+	 * total, one success barely dents the count.
+	 *
+	 * Twenty is well clear of the per-identifier grace so that a single user
+	 * having a bad morning does not slow down everyone behind a shared address
+	 * (office NAT, computer lab, family router). Getting there alone takes real
+	 * persistence, because their own escalating cooldown paces them long before
+	 * the twentieth try - and even then their colleagues only pay 5 seconds.
+	 */
+	private const IP_FREE_ATTEMPTS = 20;
+
+	/**
+	 * First cooldown once the grace is used up. The ladder then doubles
+	 * (5, 10, 20, 40, 80 ...) up to MAX_DELAY_SECONDS. Starting at five
+	 * seconds rather than one keeps the very first cooldown long enough to
+	 * matter while still reading as "a moment" to a human.
+	 */
+	private const FIRST_DELAY_SECONDS = 5;
+
+	/**
+	 * Upper bound for a cooldown. Two minutes caps an attacker at roughly 30
+	 * guesses an hour on a single account, and it is a wait a locked-out user
+	 * can be told about honestly - which is precisely why it may be this long:
+	 * the interactive caller shows the remaining time instead of blocking.
+	 */
+	private const MAX_DELAY_SECONDS = 120;
+
+	/**
+	 * Hard ceiling for how long sleepDelay() may occupy the process,
+	 * independent of the cooldown. Non-interactive callers (WebDAV/OCS basic
+	 * auth, share passwords, MCP) have no way to render a countdown and are
+	 * still slowed by sleeping, but a flood of parallel attempts must not tie
+	 * up FPM workers for minutes and take the instance down (self-DoS).
+	 */
+	private const MAX_SLEEP_SECONDS = 30;
 
 	/**
 	 * Attempts within a subnet bucket (see computeIpBucket()) before that
@@ -173,27 +226,18 @@ class Throttler {
 	}
 
 	/**
-	 * How many seconds the caller should be made to wait right now, based on
-	 * failed attempts for this exact IP + identifier combination within the
-	 * lookback window.
+	 * Required minimum spacing between attempts right now, in seconds, derived
+	 * from the failed attempts recorded within the lookback window. This is NOT
+	 * how long the caller still has to wait - use getRetryAfter() for that.
 	 *
 	 * @param string $action
 	 * @param string $ip
 	 * @param string $identifier
-	 * @return int seconds, 0 if no delay is warranted
+	 * @return int seconds, 0 if no cooldown is warranted
 	 */
 	public function getDelay($action, $ip, $identifier) {
 		try {
-			$exactCount = \max(
-				$this->countAttempts($action, $ip, $identifier),
-				$this->countAttemptsByIp($action, $ip)
-			);
-			$bucketCount = $this->countAttemptsByIpBucket($action, $ip);
-
-			return \max(
-				$this->exponentialDelay($exactCount, self::MAX_DELAY_SECONDS),
-				$this->exponentialDelay($bucketCount - self::BUCKET_FREE_ATTEMPTS, self::BUCKET_MAX_DELAY_SECONDS)
-			);
+			return $this->computeCooldown($action, $ip, $identifier)['delay'];
 		} catch (\Exception $e) {
 			$this->logStorageFailure($e, 'read recorded attempts');
 			return 0;
@@ -201,8 +245,76 @@ class Throttler {
 	}
 
 	/**
-	 * 1, 2, 4, 8, ... seconds for each attempt past the first, capped at
-	 * $cap so a single request can't tie up a worker for longer than that.
+	 * Seconds still left of the current cooldown, i.e. how long until this
+	 * caller may try again. Zero means "go ahead now".
+	 *
+	 * Unlike getDelay() this accounts for time already elapsed since the last
+	 * failure, so waiting counts: a user who sits out the cooldown is let
+	 * through instead of being charged the full delay a second time. It is
+	 * what an interactive caller shows in its countdown, and what sleepDelay()
+	 * sleeps.
+	 *
+	 * @param string $action
+	 * @param string $ip
+	 * @param string $identifier
+	 * @return int seconds, 0 if the caller may attempt immediately
+	 */
+	public function getRetryAfter($action, $ip, $identifier) {
+		try {
+			return $this->computeCooldown($action, $ip, $identifier)['retryAfter'];
+		} catch (\Exception $e) {
+			$this->logStorageFailure($e, 'read recorded attempts');
+			return 0;
+		}
+	}
+
+	/**
+	 * Evaluate all three dimensions - this exact (ip, identifier) pair, the IP
+	 * across every identifier, and the surrounding subnet bucket - and return
+	 * the strictest outcome of the three.
+	 *
+	 * Each dimension carries its own grace and its own cap, and each is
+	 * measured against ITS OWN most recent attempt: the remaining cooldown of
+	 * a dimension is only meaningful relative to when that dimension last saw
+	 * a failure.
+	 *
+	 * @param string $action
+	 * @param string $ip
+	 * @param string $identifier
+	 * @return array{delay: int, retryAfter: int}
+	 * @throws \Exception on storage failure; callers translate that into "no
+	 *                    throttling" rather than breaking authentication
+	 */
+	private function computeCooldown($action, $ip, $identifier) {
+		$now = $this->timeFactory->getTime();
+		$dimensions = [
+			[$this->countAttempts($action, $ip, $identifier), self::IDENTIFIER_FREE_ATTEMPTS, self::MAX_DELAY_SECONDS],
+			[$this->countAttemptsByIp($action, $ip), self::IP_FREE_ATTEMPTS, self::MAX_DELAY_SECONDS],
+			[$this->countAttemptsByIpBucket($action, $ip), self::BUCKET_FREE_ATTEMPTS, self::BUCKET_MAX_DELAY_SECONDS],
+		];
+
+		$delay = 0;
+		$retryAfter = 0;
+		foreach ($dimensions as [$stats, $free, $cap]) {
+			$dimensionDelay = $this->exponentialDelay($stats['count'] - $free, $cap);
+			if ($dimensionDelay <= 0) {
+				continue;
+			}
+			$delay = \max($delay, $dimensionDelay);
+			$retryAfter = \max($retryAfter, $stats['last'] + $dimensionDelay - $now);
+		}
+
+		// Clamped to the cooldown itself: a stored timestamp ahead of the current
+		// clock (skew after a time sync, or a moved system clock) would otherwise
+		// produce a remaining time larger than any cooldown ever is - and that
+		// number gets rendered on the login form.
+		return ['delay' => $delay, 'retryAfter' => \min(\max(0, $retryAfter), $delay)];
+	}
+
+	/**
+	 * FIRST_DELAY_SECONDS, then doubling for every further attempt, capped at
+	 * $cap. $count is the attempt count with the dimension's grace already
+	 * subtracted, so zero or less means "still within grace, no cooldown".
 	 *
 	 * @param int $count
 	 * @param int $cap
@@ -212,21 +324,23 @@ class Throttler {
 		if ($count <= 0) {
 			return 0;
 		}
-		return \min($cap, (int)(2 ** \min($count, 20)));
+		return \min($cap, self::FIRST_DELAY_SECONDS * (int)(2 ** \min($count - 1, 20)));
 	}
 
 	/**
-	 * Sleep for whatever delay getDelay() currently computes. Call this
-	 * BEFORE checking credentials, using the attempt count accumulated by
-	 * previous failures (the current attempt is registered separately via
-	 * registerAttempt() once its own outcome is known).
+	 * Sleep out the remaining cooldown, for callers that cannot render one.
+	 * Call this BEFORE checking credentials; the current attempt is registered
+	 * separately via registerAttempt() once its own outcome is known.
+	 *
+	 * Interactive callers should prefer getRetryAfter() and tell the user
+	 * instead - sleeping leaves them with nothing but a page that hangs.
 	 *
 	 * @param string $action
 	 * @param string $ip
 	 * @param string $identifier
 	 */
 	public function sleepDelay($action, $ip, $identifier) {
-		$delay = $this->getDelay($action, $ip, $identifier);
+		$delay = \min($this->getRetryAfter($action, $ip, $identifier), self::MAX_SLEEP_SECONDS);
 		if ($delay > 0) {
 			$this->logger->debug("Throttling $action attempt from $ip for {$delay}s", ['app' => 'core']);
 			\sleep($delay);
@@ -237,11 +351,11 @@ class Throttler {
 	 * @param string $action
 	 * @param string $ip
 	 * @param string $identifier
-	 * @return int
+	 * @return array{count: int, last: int}
 	 */
 	private function countAttempts($action, $ip, $identifier) {
 		$qb = $this->db->getQueryBuilder();
-		$qb->select([$qb->createFunction('count(*) as `num_attempts`')])
+		$qb->select([$qb->createFunction('count(*) as `num_attempts`, max(`occurred`) as `last_attempt`')])
 			->from(self::DB_TABLE)
 			->where($qb->expr()->eq('action', $qb->createNamedParameter($action)))
 			->andWhere($qb->expr()->eq('ip', $qb->createNamedParameter($ip)))
@@ -254,22 +368,43 @@ class Throttler {
 		$row = $result->fetchAssociative();
 		$result->free();
 
-		return $row ? (int)$row['num_attempts'] : 0;
+		return $this->toStats($row);
 	}
 
 	/**
-	 * Failed attempts for this action from this exact IP, regardless of
-	 * which identifier was targeted. Closes the horizontal password-spraying
-	 * gap: countAttempts() alone only ever sees 0/1 per (ip, identifier)
-	 * pair when one IP tries many different accounts with the same guess.
+	 * Normalize a "count(*) + max(occurred)" row. max() is NULL when no rows
+	 * matched, so the timestamp only ever matters together with a non-zero
+	 * count.
+	 *
+	 * @param array|false $row
+	 * @return array{count: int, last: int}
+	 */
+	private function toStats($row) {
+		if (!$row) {
+			return ['count' => 0, 'last' => 0];
+		}
+		return [
+			'count' => (int)$row['num_attempts'],
+			'last' => (int)$row['last_attempt'],
+		];
+	}
+
+	/**
+	 * Failed attempts for this action from this exact IP, regardless of which
+	 * identifier was targeted. Closes the horizontal password-spraying gap:
+	 * countAttempts() alone only ever sees 0/1 per (ip, identifier) pair when
+	 * one IP tries many different accounts with the same guess.
+	 *
+	 * Raw attempts rather than distinct accounts - see IP_FREE_ATTEMPTS for why
+	 * that matters when resetDelay() clears a cracked account's rows.
 	 *
 	 * @param string $action
 	 * @param string $ip
-	 * @return int
+	 * @return array{count: int, last: int}
 	 */
 	private function countAttemptsByIp($action, $ip) {
 		$qb = $this->db->getQueryBuilder();
-		$qb->select([$qb->createFunction('count(*) as `num_attempts`')])
+		$qb->select([$qb->createFunction('count(*) as `num_attempts`, max(`occurred`) as `last_attempt`')])
 			->from(self::DB_TABLE)
 			->where($qb->expr()->eq('action', $qb->createNamedParameter($action)))
 			->andWhere($qb->expr()->eq('ip', $qb->createNamedParameter($ip)))
@@ -281,7 +416,7 @@ class Throttler {
 		$row = $result->fetchAssociative();
 		$result->free();
 
-		return $row ? (int)$row['num_attempts'] : 0;
+		return $this->toStats($row);
 	}
 
 	/**
@@ -294,16 +429,16 @@ class Throttler {
 	 *
 	 * @param string $action
 	 * @param string $ip
-	 * @return int
+	 * @return array{count: int, last: int}
 	 */
 	private function countAttemptsByIpBucket($action, $ip) {
 		$bucket = $this->computeIpBucket($ip);
 		if ($bucket === null) {
-			return 0;
+			return ['count' => 0, 'last' => 0];
 		}
 
 		$qb = $this->db->getQueryBuilder();
-		$qb->select([$qb->createFunction('count(*) as `num_attempts`')])
+		$qb->select([$qb->createFunction('count(*) as `num_attempts`, max(`occurred`) as `last_attempt`')])
 			->from(self::DB_TABLE)
 			->where($qb->expr()->eq('action', $qb->createNamedParameter($action)))
 			->andWhere($qb->expr()->eq('ip_bucket', $qb->createNamedParameter($bucket)))
@@ -315,7 +450,7 @@ class Throttler {
 		$row = $result->fetchAssociative();
 		$result->free();
 
-		return $row ? (int)$row['num_attempts'] : 0;
+		return $this->toStats($row);
 	}
 
 	/**

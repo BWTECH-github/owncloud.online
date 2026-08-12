@@ -30,6 +30,7 @@ namespace Tests\Core\Controller;
 use OC\Authentication\TwoFactorAuth\Manager;
 use OC\Core\Controller\LoginController;
 use OC\User\Session;
+use OCO\Security\Bruteforce\Throttler;
 use OCP\AppFramework\Http\RedirectResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\License\ILicenseManager;
@@ -60,6 +61,8 @@ class LoginControllerTest extends TestCase {
 	private $twoFactorManager;
 	/** @var ILicenseManager */
 	private $licenseManager;
+	/** @var Throttler | \PHPUnit\Framework\MockObject\MockObject */
+	private $throttler;
 
 	public function setUp(): void {
 		parent::setUp();
@@ -75,6 +78,13 @@ class LoginControllerTest extends TestCase {
 			->disableOriginalConstructor()
 			->getMock();
 		$this->licenseManager = $this->createMock(ILicenseManager::class);
+		// Injected rather than resolved from the server container so the brute-force
+		// state cannot leak between tests. No cooldown by default; the throttled
+		// path has its own test.
+		$this->throttler = $this->getMockBuilder(Throttler::class)
+			->disableOriginalConstructor()
+			->getMock();
+		$this->throttler->method('getRetryAfter')->willReturn(0);
 
 		$this->loginController = new LoginController(
 			'core',
@@ -85,7 +95,8 @@ class LoginControllerTest extends TestCase {
 			$this->userSession,
 			$this->urlGenerator,
 			$this->twoFactorManager,
-			$this->licenseManager
+			$this->licenseManager,
+			$this->throttler
 		);
 	}
 
@@ -170,7 +181,8 @@ class LoginControllerTest extends TestCase {
 			'alt_login' => [],
 			'rememberLoginAllowed' => $this->getExpectedRememberLoginAllowedState(),
 			'rememberLoginState' => 0,
-			'strictLoginEnforced' => false
+			'strictLoginEnforced' => false,
+			'throttleRetryAfter' => 0
 		];
 
 		$this->config->method('getSystemValue')
@@ -270,7 +282,8 @@ class LoginControllerTest extends TestCase {
 			'alt_login' => [],
 			'rememberLoginAllowed' => $this->getExpectedRememberLoginAllowedState(),
 			'rememberLoginState' => 0,
-			'strictLoginEnforced' => false
+			'strictLoginEnforced' => false,
+			'throttleRetryAfter' => 0
 		];
 
 		if ($shouldShowMessage) {
@@ -331,7 +344,8 @@ class LoginControllerTest extends TestCase {
 				'rememberLoginAllowed' => \OC_Util::rememberLoginAllowed(),
 				'rememberLoginState' => 0,
 				'resetPasswordLink' => null,
-				'strictLoginEnforced' => false
+				'strictLoginEnforced' => false,
+				'throttleRetryAfter' => 0
 			],
 			'guest'
 		);
@@ -372,7 +386,8 @@ class LoginControllerTest extends TestCase {
 				'rememberLoginAllowed' => \OC_Util::rememberLoginAllowed(),
 				'rememberLoginState' => 0,
 				'resetPasswordLink' => false,
-				'strictLoginEnforced' => false
+				'strictLoginEnforced' => false,
+				'throttleRetryAfter' => 0
 			],
 			'guest'
 		);
@@ -413,7 +428,8 @@ class LoginControllerTest extends TestCase {
 				'rememberLoginAllowed' => \OC_Util::rememberLoginAllowed(),
 				'rememberLoginState' => 0,
 				'resetPasswordLink' => false,
-				'strictLoginEnforced' => false
+				'strictLoginEnforced' => false,
+				'throttleRetryAfter' => 0
 			],
 			'guest'
 		);
@@ -466,7 +482,8 @@ class LoginControllerTest extends TestCase {
 				$this->userSession,
 				$this->urlGenerator,
 				$this->twoFactorManager,
-				$this->licenseManager
+				$this->licenseManager,
+				$this->throttler
 			])
 			->getMock();
 		$this->loginController->expects($this->once())
@@ -526,6 +543,88 @@ class LoginControllerTest extends TestCase {
 		$this->assertEquals($expected, $this->loginController->tryLogin($user, $password, '/foo'));
 	}
 
+	/**
+	 * While a brute-force cooldown is running the attempt is refused before any
+	 * credential check happens, and the form is told to explain the wait rather
+	 * than claim a wrong password. Not spending the check is also what keeps an
+	 * attacker from extending their own cooldown - or a targeted user's - by
+	 * hammering the form.
+	 */
+	public function testLoginIsRefusedWhileThrottled() {
+		$loginPageUrl = 'some url';
+
+		$throttler = $this->getMockBuilder(Throttler::class)
+			->disableOriginalConstructor()
+			->getMock();
+		$throttler->expects($this->once())
+			->method('getRetryAfter')
+			->with('login', '192.0.2.5', 'alice')
+			->willReturn(42);
+		$this->request->method('getRemoteAddress')->willReturn('192.0.2.5');
+
+		$loginController = new LoginController(
+			'core',
+			$this->request,
+			$this->userManager,
+			$this->config,
+			$this->session,
+			$this->userSession,
+			$this->urlGenerator,
+			$this->twoFactorManager,
+			$this->licenseManager,
+			$throttler
+		);
+
+		$this->userSession->expects($this->never())->method('login');
+		$this->userManager->expects($this->never())->method('getByEmail');
+		$this->session->expects($this->once())
+			->method('set')
+			->with('loginMessages', [['throttled'], []]);
+		$this->urlGenerator->expects($this->once())
+			->method('linkToRoute')
+			->with('core.login.showLoginForm', ['user' => 'alice', 'redirect_url' => '/foo'])
+			->willReturn($loginPageUrl);
+
+		$this->assertEquals(
+			new RedirectResponse($loginPageUrl),
+			$loginController->tryLogin('alice', 'secret', '/foo')
+		);
+	}
+
+	/**
+	 * The remaining wait reaches the template, so the login form can render the
+	 * countdown instead of leaving the user guessing.
+	 */
+	public function testLoginFormExposesTheRemainingCooldown() {
+		$throttler = $this->getMockBuilder(Throttler::class)
+			->disableOriginalConstructor()
+			->getMock();
+		$throttler->method('getRetryAfter')->willReturn(17);
+		$this->request->method('getRemoteAddress')->willReturn('192.0.2.5');
+		$this->userSession->method('isLoggedIn')->willReturn(false);
+		$this->userSession->method('tryRememberMeLogin')->willReturn(false);
+		$this->config->method('getSystemValue')->willReturn('');
+		$this->licenseManager->method('getLicenseMessageFor')
+			->willReturn(['license_state' => \OCP\License\ILicenseManager::LICENSE_STATE_MISSING]);
+
+		$loginController = new LoginController(
+			'core',
+			$this->request,
+			$this->userManager,
+			$this->config,
+			$this->session,
+			$this->userSession,
+			$this->urlGenerator,
+			$this->twoFactorManager,
+			$this->licenseManager,
+			$throttler
+		);
+
+		$response = $loginController->showLoginForm(null, null, null);
+		$this->assertInstanceOf(TemplateResponse::class, $response);
+		$this->assertSame(17, $response->getParams()['throttleRetryAfter']);
+	}
+
 	public function testLoginWithValidCredentials() {
 		/** @var IUser | \PHPUnit\Framework\MockObject\MockObject $user */
 		$user = $this->createMock(IUser::class);
@@ -562,7 +661,8 @@ class LoginControllerTest extends TestCase {
 				$this->userSession,
 				$this->urlGenerator,
 				$this->twoFactorManager,
-				$this->licenseManager
+				$this->licenseManager,
+				$this->throttler
 			])
 			->getMock();
 		$this->loginController->expects($this->once())
@@ -608,7 +708,8 @@ class LoginControllerTest extends TestCase {
 				$this->userSession,
 				$this->urlGenerator,
 				$this->twoFactorManager,
-				$this->licenseManager
+				$this->licenseManager,
+				$this->throttler
 			])
 			->getMock();
 		$this->loginController->expects($this->once())

@@ -1,0 +1,25 @@
+Change: Tell users about the brute-force wait instead of just being slow
+
+Repeated failed logins are still rate-limited, but the login form now explains
+the wait. Three things changed:
+
+The first three failed attempts on an account no longer cost anything. People
+mistype passwords, and charging for the very first try only teaches them to
+distrust the form. Past that the cooldown climbs 5, 10, 20, 40, 80 seconds up to
+two minutes, and a successful login clears the counter for that account.
+
+Waiting now counts. The cooldown is the minimum spacing between attempts, so a
+user who sits out the wait is let through instead of being charged the full delay
+a second time. The attacker's maximum rate is unchanged - one attempt per
+cooldown either way.
+
+The web login refuses an attempt during the cooldown before checking the
+credentials and shows how long is left, counting down live, with the sign-in
+button disabled for exactly that long. Previously the request slept server-side
+and the page simply appeared to hang, with nothing to tell the user why or for
+how long. Not sleeping also means no web server process is held while an
+attacker waits.
+
+Password spraying and subnet-wide guessing are still detected, unchanged, and
+there is still no permanent lockout: every cooldown expires by itself, so nobody
+can lock a colleague out of their account.

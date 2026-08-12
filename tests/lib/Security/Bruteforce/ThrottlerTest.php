@@ -72,21 +72,42 @@ class ThrottlerTest extends TestCase {
 	}
 
 	/**
-	 * The exponential back-off must climb but never exceed the 30s cap, so a
-	 * single request can never hang an FPM worker for minutes.
+	 * Mistyping a password is normal behaviour, not an attack. The first three
+	 * failures for one account must cost nothing at all - the fourth is where
+	 * the cooldown starts.
 	 */
-	public function testDelayGrowsButIsCappedAt30() {
+	public function testFirstAttemptsAreFreeOfCharge() {
+		for ($i = 1; $i <= 3; $i++) {
+			$this->throttler->registerAttempt('login', '1.2.3.4', 'alice');
+			$this->assertSame(
+				0,
+				$this->throttler->getDelay('login', '1.2.3.4', 'alice'),
+				"attempt {$i} is within the grace and must not be throttled"
+			);
+		}
+
+		$this->throttler->registerAttempt('login', '1.2.3.4', 'alice');
+		$this->assertSame(
+			5,
+			$this->throttler->getDelay('login', '1.2.3.4', 'alice'),
+			'the first cooldown past the grace is 5s'
+		);
+	}
+
+	/**
+	 * The back-off must climb but never exceed the 120s cap, so a locked-out
+	 * user is always given a wait that can be stated honestly.
+	 */
+	public function testDelayGrowsButIsCappedAt120() {
 		$prev = 0;
-		for ($i = 1; $i <= 20; $i++) {
+		for ($i = 1; $i <= 25; $i++) {
 			$this->throttler->registerAttempt('login', '1.2.3.4', 'alice');
 			$delay = $this->throttler->getDelay('login', '1.2.3.4', 'alice');
-			$this->assertGreaterThan(0, $delay);
-			$this->assertLessThanOrEqual(30, $delay, "attempt {$i} must stay <= 30s cap");
+			$this->assertLessThanOrEqual(120, $delay, "attempt {$i} must stay <= 120s cap");
 			$this->assertGreaterThanOrEqual($prev, $delay, 'delay must be monotonically non-decreasing');
 			$prev = $delay;
 		}
-		// Well past 2^5=32 the value must sit exactly on the cap.
-		$this->assertSame(30, $this->throttler->getDelay('login', '1.2.3.4', 'alice'));
+		$this->assertSame(120, $this->throttler->getDelay('login', '1.2.3.4', 'alice'));
 	}
 
 	/**
@@ -95,8 +116,9 @@ class ThrottlerTest extends TestCase {
 	 * NOT unrelated - see testHorizontalSprayFromOneIpIsThrottled().)
 	 */
 	public function testDelayIsKeyedPerActionAndIp() {
-		$this->throttler->registerAttempt('login', '1.2.3.4', 'alice');
-		$this->throttler->registerAttempt('login', '1.2.3.4', 'alice');
+		for ($i = 0; $i < 4; $i++) {
+			$this->throttler->registerAttempt('login', '1.2.3.4', 'alice');
+		}
 
 		$this->assertGreaterThan(0, $this->throttler->getDelay('login', '1.2.3.4', 'alice'));
 		$this->assertSame(0, $this->throttler->getDelay('login', '9.9.9.9', 'alice'), 'different IP');
@@ -109,8 +131,8 @@ class ThrottlerTest extends TestCase {
 	 * identifier) pair only ever sees a single failed attempt.
 	 */
 	public function testHorizontalSprayFromOneIpIsThrottled() {
-		foreach (['alice', 'bob', 'carol', 'dave', 'eve'] as $victim) {
-			$this->throttler->registerAttempt('login', '1.2.3.4', $victim);
+		for ($i = 1; $i <= 21; $i++) {
+			$this->throttler->registerAttempt('login', '1.2.3.4', "victim{$i}");
 		}
 
 		$this->assertGreaterThan(
@@ -123,17 +145,92 @@ class ThrottlerTest extends TestCase {
 	}
 
 	/**
+	 * One user mistyping their own password must not immediately slow down
+	 * everyone else behind a shared address. The origin-wide dimension only
+	 * starts once their failures pass IP_FREE_ATTEMPTS, which their own
+	 * escalating cooldown paces them towards - a handful of typos stays their
+	 * own business.
+	 */
+	public function testAFewFailuresOnOneAccountDoNotThrottleTheWholeAddress() {
+		for ($i = 0; $i < 8; $i++) {
+			$this->throttler->registerAttempt('login', '1.2.3.4', 'alice');
+		}
+
+		$this->assertGreaterThan(
+			0,
+			$this->throttler->getDelay('login', '1.2.3.4', 'alice'),
+			'the account being mistyped is throttled'
+		);
+		$this->assertSame(
+			0,
+			$this->throttler->getDelay('login', '1.2.3.4', 'bob'),
+			'a colleague on the same address must not pay for it'
+		);
+	}
+
+	/**
 	 * A legitimate user who mistyped their password a few times must not
 	 * stay throttled after they finally log in correctly.
 	 */
 	public function testResetDelayClearsDelayWhenNoOtherAttemptsFromThatIp() {
-		$this->throttler->registerAttempt('login', '1.2.3.4', 'alice');
-		$this->throttler->registerAttempt('login', '1.2.3.4', 'alice');
+		for ($i = 0; $i < 4; $i++) {
+			$this->throttler->registerAttempt('login', '1.2.3.4', 'alice');
+		}
 		$this->assertGreaterThan(0, $this->throttler->getDelay('login', '1.2.3.4', 'alice'));
 
 		$this->throttler->resetDelay('login', '1.2.3.4', 'alice');
 
 		$this->assertSame(0, $this->throttler->getDelay('login', '1.2.3.4', 'alice'));
+	}
+
+	/**
+	 * The cooldown is a minimum SPACING between attempts, so time the caller
+	 * already waited has to count towards it. Without this a user who patiently
+	 * sat out the wait would be charged the full delay all over again on their
+	 * next try - which is exactly the "why is this taking so long" experience
+	 * the countdown is meant to remove.
+	 */
+	public function testWaitingOutTheCooldownCountsTowardsIt() {
+		for ($i = 0; $i < 4; $i++) {
+			$this->throttler->registerAttempt('login', '1.2.3.4', 'alice');
+		}
+		$delay = $this->throttler->getDelay('login', '1.2.3.4', 'alice');
+		$this->assertSame(5, $delay);
+		$this->assertSame(5, $this->throttler->getRetryAfter('login', '1.2.3.4', 'alice'));
+
+		$this->now += 2;
+		$this->assertSame(3, $this->throttler->getRetryAfter('login', '1.2.3.4', 'alice'), 'two of the five seconds are served');
+
+		$this->now += 3;
+		$this->assertSame(0, $this->throttler->getRetryAfter('login', '1.2.3.4', 'alice'), 'the wait is over');
+		$this->assertSame(
+			$delay,
+			$this->throttler->getDelay('login', '1.2.3.4', 'alice'),
+			'the required spacing itself is unchanged - only the remaining wait ran out'
+		);
+	}
+
+	/**
+	 * Within the grace there is nothing to wait for.
+	 */
+	public function testRetryAfterIsZeroWithinGrace() {
+		$this->throttler->registerAttempt('login', '1.2.3.4', 'alice');
+		$this->assertSame(0, $this->throttler->getRetryAfter('login', '1.2.3.4', 'alice'));
+	}
+
+	/**
+	 * The remaining wait can never exceed the cooldown itself, whatever the
+	 * attempt count - the interactive login renders this number, so an
+	 * out-of-range value would be shown to a user.
+	 */
+	public function testRetryAfterNeverExceedsTheCap() {
+		for ($i = 0; $i < 40; $i++) {
+			$this->throttler->registerAttempt('login', '1.2.3.4', 'alice');
+		}
+
+		$retryAfter = $this->throttler->getRetryAfter('login', '1.2.3.4', 'alice');
+		$this->assertGreaterThan(0, $retryAfter);
+		$this->assertLessThanOrEqual(120, $retryAfter);
 	}
 
 	/**
@@ -144,16 +241,22 @@ class ThrottlerTest extends TestCase {
 	 * guess would let them continue the spray unthrottled.
 	 */
 	public function testResetDelayDoesNotEraseOtherIdentifiersOriginHistory() {
-		$this->throttler->registerAttempt('login', '1.2.3.4', 'alice');
-		$this->throttler->registerAttempt('login', '1.2.3.4', 'bob');
+		// Comfortably past the origin-wide threshold, not sitting exactly on it:
+		// what is under test is that a success only clears its OWN identifier's
+		// rows, not that a spray parked one attempt above the grace survives
+		// losing that attempt.
+		for ($i = 1; $i <= 30; $i++) {
+			$this->throttler->registerAttempt('login', '1.2.3.4', "victim{$i}");
+		}
+		$this->assertGreaterThan(0, $this->throttler->getDelay('login', '1.2.3.4', 'frank'));
 
-		// Attacker gets lucky on the second guess and logs in as bob.
-		$this->throttler->resetDelay('login', '1.2.3.4', 'bob');
+		// Attacker gets lucky on one of them and logs in.
+		$this->throttler->resetDelay('login', '1.2.3.4', 'victim7');
 
 		$this->assertGreaterThan(
 			0,
-			$this->throttler->getDelay('login', '1.2.3.4', 'carol'),
-			'alice\'s failed attempt from the same IP must still throttle other, untried accounts'
+			$this->throttler->getDelay('login', '1.2.3.4', 'frank'),
+			'the other failed attempts from the same IP must still throttle untried accounts'
 		);
 	}
 
@@ -221,7 +324,9 @@ class ThrottlerTest extends TestCase {
 	 * dimension keeps working as before.
 	 */
 	public function testMalformedIpDoesNotCrashRegisterAttempt() {
-		$this->throttler->registerAttempt('login', 'not-an-ip', 'alice');
+		for ($i = 0; $i < 4; $i++) {
+			$this->throttler->registerAttempt('login', 'not-an-ip', 'alice');
+		}
 		$this->assertGreaterThan(0, $this->throttler->getDelay('login', 'not-an-ip', 'alice'));
 	}
 
@@ -247,12 +352,16 @@ class ThrottlerTest extends TestCase {
 		$this->throttler->registerAttempt('login', '1.2.3.4', 'alice'); // expires later
 
 		$this->now = 1000000 + 13 * 3600; // +13h: the first row is now older than the 12h window
-		$this->throttler->registerAttempt('login', '1.2.3.4', 'alice'); // still live
+		// Enough live rows to be past the grace, so the surviving ones are
+		// observable through getDelay() below.
+		for ($i = 0; $i < 4; $i++) {
+			$this->throttler->registerAttempt('login', '1.2.3.4', 'alice');
+		}
 
 		$deleted = $this->throttler->cleanupOldAttempts();
 		$this->assertSame(1, $deleted, 'exactly the expired row is removed');
 
-		// the surviving live-window row must still count towards the delay
+		// the surviving live-window rows must still count towards the delay
 		$this->assertGreaterThan(0, $this->throttler->getDelay('login', '1.2.3.4', 'alice'));
 	}
 

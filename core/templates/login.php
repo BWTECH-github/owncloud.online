@@ -6,6 +6,23 @@ script('core', [
 	'lostpassword',
 	'login',
 ]);
+
+// Seconds left of the brute-force cooldown, 0 when the user may try right away.
+$throttleRetryAfter = (int)($_['throttleRetryAfter'] ?? 0);
+
+/**
+ * Same wording the countdown in js/login.js produces, so the first paint (and
+ * the no-JavaScript case) already reads correctly instead of showing a
+ * placeholder that only JavaScript fills in.
+ */
+$formatThrottleTime = function ($seconds) use ($l) {
+	if ($seconds >= 60) {
+		$minutes = (int)\floor($seconds / 60);
+		return $l->n('%n minute', '%n minutes', $minutes)
+			. ($seconds % 60 !== 0 ? ' ' . $l->n('%n second', '%n seconds', $seconds % 60) : '');
+	}
+	return $l->n('%n second', '%n seconds', $seconds);
+};
 ?>
 
 <!--[if IE 8]><style>input[type="checkbox"]{padding:0;}</style><![endif]-->
@@ -48,6 +65,51 @@ script('core', [
 			<div class="warning">
 				<?php print_unescaped($_['licenseMessage']); ?>
 			</div>
+		<?php endif; ?>
+		<?php if ($throttleRetryAfter > 0): ?>
+			<?php /* Deliberately not an aria-live region: the notice is present on
+					page load, so it is read as part of the document anyway, and a
+					live region would re-announce the countdown every single second.
+					js/login.js announces the one moment that matters - the end of
+					the wait - through #login-throttle-status instead.
+
+					The remaining time is rendered server-side too, so the notice is
+					complete and correct without JavaScript; the countdown then just
+					stops being live. */ ?>
+			<div id="login-throttle" class="warning login-throttle"
+				 data-retry-after="<?php p($throttleRetryAfter); ?>">
+				<span class="login-throttle-icon" aria-hidden="true">
+					<svg width="22" height="22" viewBox="0 0 24 24" fill="none" focusable="false"
+						 stroke="currentColor" stroke-width="2"
+						 stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="12" cy="12" r="9"></circle>
+						<path d="M12 7v5l3 2"></path>
+					</svg>
+				</span>
+				<span class="login-throttle-body">
+					<strong class="login-throttle-title">
+						<?php p($l->t('Login paused for a moment')); ?>
+					</strong>
+					<span class="login-throttle-text">
+						<?php p($l->t('There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account.')); ?>
+					</span>
+					<span class="login-throttle-text" id="login-throttle-countdown">
+						<?php print_unescaped($l->t(
+							'You can try again in %s.',
+							['<strong id="login-throttle-remaining">'
+								. \OCP\Util::sanitizeHTML($formatThrottleTime($throttleRetryAfter))
+								. '</strong>']
+						)); ?>
+					</span>
+					<span class="login-throttle-text login-throttle-hint">
+						<?php p($l->t('Forgotten your password? Use the reset link instead of trying again.')); ?>
+					</span>
+					<span class="login-throttle-progress" aria-hidden="true">
+						<span class="login-throttle-progress-bar" id="login-throttle-bar"></span>
+					</span>
+				</span>
+			</div>
+			<span id="login-throttle-status" class="hidden-visually" role="status" aria-live="polite"></span>
 		<?php endif; ?>
 		<div class="grouptop<?php if (!empty($_['invalidpassword'])) {
 			echo ' shake';
@@ -105,7 +167,15 @@ script('core', [
 					<?php
 			} ?>
 				
-			<button type="submit" id="submit" class="login-button">
+			<button type="submit" id="submit" class="login-button"
+				<?php if ($throttleRetryAfter > 0) {
+					// Points at the notice so assistive technology can reach the
+					// reason from the button. Not disabled server-side: without
+					// JavaScript nothing would ever re-enable it, and the server
+					// refuses the attempt anyway - js/login.js disables it for
+					// exactly as long as the countdown runs.
+					print_unescaped('aria-describedby="login-throttle"');
+				} ?>>
 				<span><?php p($l->t('Login')); ?></span>
 				<div class="loading-spinner"><div></div><div></div><div></div><div></div></div>
 			</button>

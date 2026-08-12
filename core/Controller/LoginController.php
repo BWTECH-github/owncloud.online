@@ -32,6 +32,7 @@ namespace OC\Core\Controller;
 
 use OC\Authentication\TwoFactorAuth\Manager;
 use OC\User\Session;
+use OCO\Security\Bruteforce\Throttler;
 use OC_App;
 use OC_Util;
 use OC_User;
@@ -68,6 +69,9 @@ class LoginController extends Controller {
 	/** @var ILicenseManager */
 	private $licenseManager;
 
+	/** @var Throttler|null */
+	private $throttler;
+
 	/**
 	 * @param string $appName
 	 * @param IRequest $request
@@ -77,6 +81,11 @@ class LoginController extends Controller {
 	 * @param Session $userSession
 	 * @param IURLGenerator $urlGenerator
 	 * @param Manager $twoFactorManager
+	 * @param ILicenseManager $licenseManager
+	 * @param Throttler|null $throttler optional so existing callers and tests
+	 *                                  that construct with the previous nine
+	 *                                  arguments keep working; resolved from
+	 *                                  the server container when omitted
 	 */
 	public function __construct(
 		$appName,
@@ -87,7 +96,8 @@ class LoginController extends Controller {
 		Session $userSession,
 		IURLGenerator $urlGenerator,
 		Manager $twoFactorManager,
-		ILicenseManager $licenseManager
+		ILicenseManager $licenseManager,
+		?Throttler $throttler = null
 	) {
 		parent::__construct($appName, $request);
 		$this->userManager = $userManager;
@@ -97,6 +107,40 @@ class LoginController extends Controller {
 		$this->urlGenerator = $urlGenerator;
 		$this->twoFactorManager = $twoFactorManager;
 		$this->licenseManager = $licenseManager;
+		$this->throttler = $throttler;
+	}
+
+	/**
+	 * Seconds left of the brute-force cooldown for this caller, or 0 if they may
+	 * try now.
+	 *
+	 * The throttle must never be able to take the login page down with it, so a
+	 * container or storage failure here means "no cooldown known" rather than an
+	 * error page - the same fail-open stance the Throttler itself takes.
+	 *
+	 * @param mixed $loginName the name as submitted, never resolved against the
+	 *                         user backend: the cooldown is keyed on the remote
+	 *                         address and the raw input, so it reveals nothing
+	 *                         about whether an account exists. Not declared as
+	 *                         string because tryLogin() is also reached with a
+	 *                         user object; anything that is not a plain scalar
+	 *                         falls back to the origin-wide dimensions rather
+	 *                         than being cast (which would throw).
+	 * @return int
+	 */
+	private function getLoginRetryAfter($loginName) {
+		try {
+			if ($this->throttler === null) {
+				$this->throttler = \OC::$server->query(Throttler::class);
+			}
+			return $this->throttler->getRetryAfter(
+				'login',
+				$this->request->getRemoteAddress(),
+				\is_scalar($loginName) ? (string)$loginName : ''
+			);
+		} catch (\Throwable $e) {
+			return 0;
+		}
 	}
 
 	/**
@@ -201,6 +245,13 @@ class LoginController extends Controller {
 			$parameters['user_autofocus'] = true;
 		}
 
+		// Tell the user about an active cooldown instead of letting them run into
+		// a form that silently refuses them. Also evaluated without a login name:
+		// the origin-wide dimensions can be in cooldown before anything is typed,
+		// and someone sharing an address with a throttled neighbour deserves an
+		// explanation just as much.
+		$parameters['throttleRetryAfter'] = $this->getLoginRetryAfter($parameters['loginName']);
+
 		/**
 		 * If redirect_url is not empty and remember_login is null and
 		 * user not logged in and check if the string
@@ -257,6 +308,29 @@ class LoginController extends Controller {
 	 */
 	public function tryLogin($user, $password, $redirect_url, $timezone = null, $remember_login = null) {
 		$originalUser = $user;
+
+		// Refuse while the brute-force cooldown is still running, BEFORE spending
+		// a credential check on it. The user gets the remaining time; previously
+		// the request just slept inside checkPassword() and looked like a hung
+		// page. The attempt is deliberately not recorded: charging for a request
+		// that was never evaluated would let an attacker extend their own
+		// cooldown indefinitely and, worse, let them keep a targeted account in
+		// permanent cooldown.
+		$retryAfter = $this->getLoginRetryAfter($user);
+		if ($retryAfter > 0) {
+			$this->session->set('loginMessages', [
+				['throttled'], []
+			]);
+			$args = [];
+			if ($user !== null) {
+				$args['user'] = $originalUser;
+			}
+			if (!empty($redirect_url)) {
+				$args['redirect_url'] = $redirect_url;
+			}
+			return new RedirectResponse($this->urlGenerator->linkToRoute('core.login.showLoginForm', $args));
+		}
+
 		// TODO: Add all the insane error handling
 		$loginResult = $this->userSession->login($user, $password);
 		if ($loginResult !== true && $this->config->getSystemValue('strict_login_enforced', false) !== true) {
