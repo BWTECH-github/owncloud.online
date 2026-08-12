@@ -227,6 +227,55 @@ class L10N implements IL10N {
 	 * @return int
 	 */
 	public function computePlural($number) {
+		$n = (int)$number;
+
+		/*
+		 * Symfonys Regeltabelle deckt die folgenden Sprachen nicht ab oder ordnet
+		 * die Formen anders als die Formel, die in der jeweiligen Sprachdatei
+		 * steht ('pluralForm'). Die JS-Seite wertet ebendiese Formel aus - ohne
+		 * die Ausnahmen hier liefern Server und Browser fuer dieselbe Zahl
+		 * verschiedene Formen:
+		 *
+		 *   sr@latin  getPluralizationRule() kuerzt den Namen am letzten '_';
+		 *             es gibt keines, uebrig bleibt der Leerstring und damit
+		 *             immer Form 0 - jede Zahl erschiene im Singular.
+		 *   ast/ia/kn stehen in keinem Zweig der Tabelle, gleiche Folge.
+		 *   lv        Symfony ordnet zero/one/other, die Datei one/other/zero -
+		 *             das Ergebnis war um einen Platz verschoben.
+		 *   is        Islaendisch nimmt bei n%10==1 den Singular (ausser 11),
+		 *             Symfony behandelt es als einfaches n==1.
+		 *
+		 * Die Ausdruecke sind woertlich aus 'pluralForm' der Sprachdateien
+		 * uebernommen.
+		 */
+		switch ($this->lang) {
+			case 'sr@latin':
+				// nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2)
+				if ($n % 10 === 1 && $n % 100 !== 11) {
+					return 0;
+				}
+				if ($n % 10 >= 2 && $n % 10 <= 4 && ($n % 100 < 10 || $n % 100 >= 20)) {
+					return 1;
+				}
+				return 2;
+			case 'lv':
+				// nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2)
+				if ($n % 10 === 1 && $n % 100 !== 11) {
+					return 0;
+				}
+				return $n !== 0 ? 1 : 2;
+			case 'is':
+				// nplurals=2; plural=(n % 10 != 1 || n % 100 == 11)
+				return ($n % 10 !== 1 || $n % 100 === 11) ? 1 : 0;
+			case 'ast':
+			case 'ia':
+				// nplurals=2; plural=(n != 1)
+				return $n !== 1 ? 1 : 0;
+			case 'kn':
+				// nplurals=2; plural=(n > 1)
+				return $n > 1 ? 1 : 0;
+		}
+
 		return $this->getPluralizationRule($number, $this->lang);
 	}
 }

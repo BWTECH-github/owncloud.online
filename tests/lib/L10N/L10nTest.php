@@ -94,6 +94,49 @@ class L10nTest extends TestCase {
 		$this->assertEquals('5 oken', (string)$l->n('%n window', '%n windows', 5));
 	}
 
+	/**
+	 * Sprachen, fuer die Symfonys Regeltabelle nicht oder anders entscheidet als
+	 * die Formel in der jeweiligen Sprachdatei. Die erwarteten Werte stammen
+	 * woertlich aus deren 'pluralForm'. Ohne diesen Test faellt eine Regression
+	 * still aus - sie zeigt sich nur an einer falschen Wortform in einer wenig
+	 * genutzten Sprache.
+	 *
+	 * @return array
+	 */
+	public function pluralFormOverrideData() {
+		return [
+			// sr@latin: n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
+			['sr@latin', 1, 0], ['sr@latin', 21, 0], ['sr@latin', 2, 1],
+			['sr@latin', 5, 2], ['sr@latin', 11, 2],
+			// lv: n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2
+			['lv', 1, 0], ['lv', 21, 0], ['lv', 2, 1], ['lv', 11, 1], ['lv', 0, 2],
+			// is: n % 10 != 1 || n % 100 == 11
+			['is', 1, 0], ['is', 21, 0], ['is', 2, 1], ['is', 11, 1],
+			// ast, ia: n != 1
+			['ast', 1, 0], ['ast', 2, 1], ['ast', 0, 1],
+			['ia', 1, 0], ['ia', 30, 1],
+			// kn: n > 1
+			['kn', 0, 0], ['kn', 1, 0], ['kn', 2, 1],
+		];
+	}
+
+	/**
+	 * @dataProvider pluralFormOverrideData
+	 *
+	 * @param string $lang
+	 * @param int $number
+	 * @param int $expected
+	 */
+	public function testPluralFormOverrides($lang, $number, $expected) {
+		$l = new L10N($this->getFactory(), 'test', $lang, []);
+
+		$this->assertSame(
+			$expected,
+			$l->computePlural($number),
+			"{$lang}: Form fuer n={$number}"
+		);
+	}
+
 	public function localizationData() {
 		$narrowNoBreakSpace = "\xE2\x80\xAF";
 		return [
