@@ -34,17 +34,23 @@ funktioniert mit solchen Sitzungen deshalb nicht, nur der Hauptschlüssel, siehe
 sudo -u www-data php8.4 occ app:enable oauth2
 ```
 
-Die Datenbanktabellen legt die App über ihre Migrationen an.
+Die Datenbanktabellen legt die App über ihre Migrationen an. Dieselben
+Migrationen tragen außerdem drei Clients mit fest eingebauten Kennungen ein —
+*Desktop Client*, *Android* und *iOS*. Sie sind unmittelbar nach dem Aktivieren
+vorhanden und müssen nicht von Hand angelegt werden; `occ oauth2:list-clients`
+zeigt sie an.
 
 ### Client anlegen
 
 ```bash
 sudo -u www-data php8.4 occ oauth2:add-client \
-  "Desktop Client" \
+  "Fremdanwendung" \
   "<client-id>" \
   "<client-secret>" \
-  "http://localhost:*"
+  "https://app.example.com/oauth/callback"
 ```
+
+Der Name muss neu sein — die drei mitgelieferten Namen sind bereits vergeben.
 
 | Argument | Pflicht | Bedeutung |
 | --- | --- | --- |
@@ -76,20 +82,27 @@ Im Verwaltungsbereich unter *Nutzer-Authentifizierung* gibt es denselben
 Client-Bestand unter *OAuth 2.0* → *Angelegte Clients*. Das Formular
 *Client hinzufügen* kennt nur *Name*, *URI weiterleiten*, *Subdomains erlauben*
 und *Vertrauenswürdiger Client*; Kennung und Geheimnis werden dabei zufällig
-erzeugt. Clients mit fest eingebauter Kennung — also die ausgelieferten
-owncloud.online-Clients — müssen deshalb über `occ oauth2:add-client` angelegt
-werden.
+erzeugt. Ein Client mit einer vorgegebenen Kennung lässt sich deshalb nur über
+`occ oauth2:add-client` anlegen oder nachträglich mit
+`occ oauth2:modify-client` auf die gewünschten Werte setzen.
 
 ### Rückleit-URLs der Clients
 
-Die Werte sind im jeweiligen Client fest eingebaut und müssen serverseitig
-genauso registriert werden.
+Die Werte sind im jeweiligen Client fest eingebaut. Die Migration registriert
+sie serverseitig bereits mit; die Tabelle dient dem Abgleich.
 
-| Client | Rückleit-URL | Client-Kennung |
+| Client | Registrierte Rückleit-URL | Client-Kennung |
 | --- | --- | --- |
-| Desktop | `http://localhost` mit frei gewähltem Port, deshalb als `http://localhost:*` registrieren | `xdXOt13JKxym1B1QcEncf2XDkLAexMBFwiT9j6EfhhHFJhs2KM9jbjTmf8JBXE69` |
+| Desktop Client | `http://localhost:*` — der Client wählt den Port frei | `xdXOt13JKxym1B1QcEncf2XDkLAexMBFwiT9j6EfhhHFJhs2KM9jbjTmf8JBXE69` |
 | Android | `oc://android.owncloud.com` | `e4rAsNUSIUs0lF4nbv9FmCeUkTlV9GdgTLDH1b5uie7syb90SzEVrbN7HIpmWJeD` |
-| iOS | `oc://ios.owncloud.online` | im Branding als Platzhalter hinterlegt, beim Bau des Clients setzen |
+| iOS | `oc://ios.owncloud.com` | `mxd5OQDk6es5LzOzRvidJNfXLUZS2oN3oUFeXPP8LpPrhx3UroJFduGEYIBOxkY1` |
+
+Bei iOS weichen Server und Client auseinander: Serverseitig steht
+`oc://ios.owncloud.com`, das Branding des iOS-Clients
+(`ownCloud/Resources/Theming/Branding.plist`) trägt dagegen
+`oc://ios.owncloud.online` und bei Kennung und Geheimnis noch den Platzhalter
+`TODO_REGISTER_ON_OWNCLOUD_ONLINE`. Vor dem Ausrollen eines eigenen
+iOS-Clients müssen beide Seiten angeglichen werden.
 
 Die zugehörigen Geheimnisse stehen im Quellcode der Clients
 (`src/libsync/theme.cpp` beim Desktop-Client,
@@ -176,11 +189,12 @@ Neue Konten kann die App selbst anlegen:
 ],
 ```
 
-`provisioning-claim` und `provisioning-attribute` wirken zusammen als Filter:
-Das Konto entsteht nur, wenn der genannte Claim eine Liste ist und das
-geforderte Attribut enthält. Mit `mode => 'email'` bekommen neu angelegte
-Konten eine erzeugte Kennung der Form `oidc-user-<zufall>`, weil die
-Mailadresse dann der Suchschlüssel ist und nicht die Kennung.
+Im selben `auto-provision`-Block wirken `provisioning-claim` und
+`provisioning-attribute` zusammen als Filter: Das Konto entsteht nur, wenn der
+genannte Claim eine Liste ist und das geforderte Attribut enthält. Mit
+`mode => 'email'` bekommen neu angelegte Konten eine erzeugte Kennung der Form
+`oidc-user-<zufall>`, weil die Mailadresse dann der Suchschlüssel ist und nicht
+die Kennung.
 
 ### Konfiguration im Verwaltungsbereich
 
@@ -218,8 +232,11 @@ sudo -u www-data php8.4 occ config:list system
 
 Die Rückleit-URL lässt sich mit `redirect-url` überschreiben, etwa wenn ein
 Proxy davor eine andere Adresse ausliefert. Die Abmeldeadresse erwartet die
-Parameter `iss` und `sid`; `iss` muss zur konfigurierten `provider-url` passen,
-sonst passiert nichts.
+Parameter `iss` und `sid`. `iss` muss dieselbe Domäne wie die konfigurierte
+`provider-url` tragen — Protokoll, Host und Port werden verglichen, der Pfad
+nicht. Passt es nicht oder fehlt einer der beiden Parameter, wird die
+Sitzungskennung nicht aus dem Cache entfernt; eine im selben Aufruf noch aktive
+Browser-Sitzung wird davon unabhängig abgemeldet.
 
 Auf der Anmeldeseite erscheint unter *Alternative Logins* ein Knopf mit dem
 Text aus `loginButtonName`. Mit `autoRedirectOnLoginPage => true` wird
@@ -232,9 +249,9 @@ Der Desktop-Client fragt beim Einrichten eines Kontos zuerst
 `/.well-known/openid-configuration` ab und nimmt Autorisierungs- und
 Token-Endpunkt aus der Antwort. Genau diese Adresse liefert eine
 Standardinstallation aber nicht aus: Die mitgelieferte `.htaccess` bildet nur
-`host-meta`, `carddav` und `caldav` ab und beantwortet alles Übrige, das mit
-einem Punkt beginnt, mit 404 — ausgenommen `acme-challenge` und
-`pki-validation`.
+`host-meta` (auch `host-meta.json`), `carddav` und `caldav` ab und beantwortet
+alles Übrige, das mit einem Punkt beginnt, mit 404 — ausgenommen
+`acme-challenge` und `pki-validation`.
 
 Die Folge ist kein sichtbarer Fehler, sondern ein stiller Rückfall: Unser
 Desktop-Client wechselt bei fehlgeschlagener Abfrage auf die alten
@@ -271,9 +288,9 @@ Zwei Punkte dazu:
   nicht gelesen.
 - Sie muss vor der Regel stehen, die Pfade mit führendem Punkt abweist.
 
-Die Ziel-Route reicht das Discovery-Dokument des Anbieters durch. Sie liefert
-ein leeres JSON-Objekt, solange keine OpenID-Connect-Konfiguration hinterlegt
-ist — dann greift wieder der Rückfall auf die OAuth2-Routen.
+Die Ziel-Route reicht das Discovery-Dokument des Anbieters durch. Sie antwortet
+mit einer leeren JSON-Liste (`[]`), solange keine OpenID-Connect-Konfiguration
+hinterlegt ist — dann greift wieder der Rückfall auf die OAuth2-Routen.
 
 ## Sitzungen zurückziehen
 

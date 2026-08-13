@@ -46,7 +46,7 @@ Allgemein* (`settings/Panels/Admin/Mail.php`, Abschnitt `general`).
 | Sendemodus | `mail_smtpmode` | Auswahl `php` und `smtp`; `sendmail` erscheint nur, wenn das Binary gefunden wird; `qmail` nur, wenn es bereits gesetzt ist |
 | Verschlüsselung | `mail_smtpsecure` | Nichts / SSL/TLS / STARTTLS, nur im Modus `smtp` sichtbar |
 | Absenderadresse | `mail_from_address` und `mail_domain` | zwei Felder, getrennt durch das `@` |
-| Authentication method | `mail_smtpauthtype` | in der deutschen Oberfläche unübersetzt; Auswahl None / Login / Plain / NT LAN Manager |
+| Authentication method | `mail_smtpauthtype` | Beschriftung in der deutschen Oberfläche unübersetzt; Auswahl Nichts / Login / Plain / NT LAN Manager |
 | Authentifizierung benötigt | `mail_smtpauth` | blendet die Zugangsdaten ein |
 | Serveradresse | `mail_smtphost` und `mail_smtpport` | zwei Felder, getrennt durch den Doppelpunkt |
 | Zugangsdaten | `mail_smtpname`, `mail_smtppassword` | Speichern nur über den Knopf *Anmeldeinformationen speichern* |
@@ -59,9 +59,12 @@ Weg und werden erst mit dem Knopf übernommen. Wird die Authentifizierung
 abgeschaltet, löscht `MailSettingsController::setMailSettings()` Benutzername
 und Passwort aus der Konfiguration.
 
-Ist `config_is_read_only` auf `true` gesetzt, zeigt der Abschnitt nur den
-Hinweis „Die Konfigurationsdatei ist schreibgeschützt" und kein Formular — dann
-führt nur der Weg über `config/config.php`.
+Ist `config_is_read_only` auf `true` gesetzt, entfallen beide Formulare. An
+ihrer Stelle steht der Hinweis „Die Konfigurationsdatei ist schreibgeschützt.
+Bitte passe deine Einstellungen durch manuelle Bearbeitung der
+Konfigurationsdatei selbst an." samt Zusatz zur Synchronisierung im Cluster —
+dann führt nur der Weg über `config/config.php`. Das Feld für den Testversand
+und der Knopf *E-Mail senden* bleiben auch dann sichtbar.
 
 ## Einrichtung über config.php
 
@@ -152,7 +155,7 @@ Stelle im Code gibt einen Standard-Lokalteil vor, den `mail_from_address`
 
 | Mailart | Standard-Lokalteil | Registriert in |
 | --- | --- | --- |
-| Passwort zurücksetzen, Passwortänderung | `lostpassword-noreply` | `core/Application.php` |
+| Passwort zurücksetzen, Passwortänderung | `lostpassword-noreply` | `core/Application.php` (für `LostController`), `settings/ChangePassword/Controller.php` holt ihn selbst |
 | Freigabe-Einladungen | `sharing-noreply` | `lib/private/Share/MailNotifications.php` |
 | Kontoanlage, Adressbestätigung, Test-Mail | `no-reply` | `settings/Application.php` |
 | Aktivitäts-Zusammenfassungen | `no-reply` | Plugin `activity`, `lib/MailQueueHandler.php` |
@@ -166,8 +169,9 @@ für die Ihr SMTP-Server versenden darf.
 
 Die **Antwortadresse** wird nur bei Freigabemails gesetzt
 (`MailNotifications::getReplyTo()`): Es ist die Adresse des Benutzers, der
-freigegeben hat. Hat dieser keine Adresse hinterlegt, wird auf
-`sharing-noreply@<mail_domain>` zurückgefallen. Kalendereinladungen sind ein
+freigegeben hat. Hat dieser keine Adresse hinterlegt, wird auf die
+Standard-Absenderadresse mit dem Lokalteil `sharing-noreply` zurückgefallen —
+also ebenfalls überschrieben von `mail_from_address`, falls gesetzt. Kalendereinladungen sind ein
 Sonderfall: Dort setzt `IMipPlugin` den Absender der iTIP-Nachricht — je nach
 Methode der Organisator oder ein antwortender Teilnehmer — sowohl als Absender-
 als auch als Antwortadresse; `mail_from_address` greift dort nicht. Alle
@@ -183,12 +187,14 @@ Adresse*, vorbelegt mit der Adresse des angemeldeten Kontos, und der Knopf
 * Fehler: „Beim Senden der E-Mail ist ein Problem aufgetreten. Bitte überprüfe
   deine Einstellungen. (Fehler: …)" — in der Klammer steht die Meldung des
   Transports, siehe [Fehlersuche](#fehlersuche).
-* Ist weder ein Empfänger eingetragen noch beim eigenen Konto eine Adresse
-  hinterlegt, erscheint der Hinweis, dass zuerst die eigene Adresse gesetzt
-  werden muss.
+* Ist das Feld leer — das ist der Fall, wenn beim eigenen Konto keine Adresse
+  hinterlegt ist —, bricht bereits `settings/js/panels/mail.js` ab und zeigt die
+  fest einprogrammierte, unübersetzte Meldung „Please provide an test receiver
+  email". Es wird dann gar nicht erst gesendet.
 
-Die Testmail geht als `no-reply@<mail_domain>` mit dem Betreff
-„E-Mail-Einstellungen testen" heraus. Sie prüft damit nur den Weg vom Server
+Die Testmail geht mit dem Standard-Lokalteil `no-reply` heraus (also
+`no-reply@<mail_domain>`, sofern `mail_from_address` nicht gesetzt ist), Betreff
+„E-Mail-Einstellungen testen". Sie prüft damit nur den Weg vom Server
 zum Mailserver, nicht die spätere Zustellbarkeit der Freigabe- und
 Passwortmails.
 
@@ -224,7 +230,7 @@ Lesen des Protokolls siehe
 
 | Symptom | Ursache | Abhilfe |
 | --- | --- | --- |
-| „Unknown authenticator type" beim Senden | `mail_smtpauth` ist an, aber `mail_smtpauthtype` steht auf einem Wert, den der Code nicht kennt — das trifft die Auswahl **NT LAN Manager** und den leeren Wert **None** aus der Oberfläche | `mail_smtpauthtype` auf `LOGIN`, `PLAIN` oder `CRAM-MD5` setzen; wird keine Anmeldung gebraucht, `mail_smtpauth` auf `false` |
+| „Unknown authenticator type" beim Senden | `mail_smtpauth` ist an, aber `mail_smtpauthtype` steht auf einem Wert, den der Code nicht kennt — über die Oberfläche trifft das die Auswahl **NT LAN Manager**, außerdem ein von Hand auf einen leeren Wert gesetzter Eintrag in `config/config.php`. Die Auswahl **Nichts** ist unkritisch: leere Werte löscht `MailSettingsController::setMailSettings()` aus der Konfiguration, danach greift die Code-Vorgabe `LOGIN` | `mail_smtpauthtype` auf `LOGIN`, `PLAIN` oder `CRAM-MD5` setzen; wird keine Anmeldung gebraucht, `mail_smtpauth` auf `false` |
 | „TLS required but neither TLS or STARTTLS are in use." | `mail_smtpsecure` ist gesetzt, der Server bietet aber kein STARTTLS an (oder OpenSSL fehlt in PHP) | Port prüfen (Klartext-Port statt Submission-Port), sonst `openssl`-Erweiterung nachinstallieren |
 | „Unable to connect with STARTTLS." | STARTTLS wird angeboten, der TLS-Aufbau scheitert — meist wegen eines nicht vertrauenswürdigen oder auf einen anderen Namen ausgestellten Zertifikats | Zertifikatskette des Mailservers prüfen, `mail_smtphost` exakt auf den im Zertifikat geführten Namen setzen |
 | Verbindung auf Port 465 kommt nicht zustande | Implizites TLS wird ausschließlich über den Port `465` aktiviert; die Auswahl *SSL/TLS* in der Oberfläche erzwingt nur Verschlüsselung, sie schaltet kein implizites TLS ein | Für SMTPS `mail_smtpport` auf `465` setzen, für Submission mit STARTTLS auf `587` |

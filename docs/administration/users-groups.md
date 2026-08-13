@@ -187,16 +187,17 @@ sudo -u www-data php8.4 occ user:lastseen jdoe
 
 ## Konten löschen
 
-Das Löschen ist endgültig und wird nicht zurückgefragt, sobald es angestoßen
-ist. `lib/private/User/User.php` (`delete`) und die daran hängenden Hooks
-entfernen der Reihe nach:
+Das Löschen ist endgültig. In der Oberfläche fragt vorher ein Dialog nach
+(`settings/js/users/users.js`: „All user data, files and shares will be
+deleted"), `occ user:delete` löscht ohne Rückfrage. `lib/private/User/User.php`
+(`delete`) und die daran hängenden Hooks entfernen:
 
 | Was | Wirkung |
 | --- | --- |
 | Gruppenmitgliedschaften | Konto wird aus allen Gruppen entfernt |
 | Gruppen-Administratorrechte | Einträge in `group_admin` fallen weg (`lib/private/SubAdmin.php`) |
 | Kontoeinstellungen | alle Werte des Kontos in `preferences` |
-| Externer Speicher | persönliche Einbindungen werden gelöscht, aus globalen Einbindungen wird das Konto ausgetragen |
+| Externer Speicher | persönliche Einbindungen werden gelöscht; aus globalen Einbindungen wird das Konto ausgetragen — war es der einzige Berechtigte, fällt die Einbindung ganz weg (`lib/private/Files/External/Service/GlobalStoragesService.php`) |
 | Home-Verzeichnis | wird vollständig entfernt — samt Papierkorb und Dateiversionen |
 | Kommentare | Beiträge und Lesemarken des Kontos |
 | Konto- und Account-Datensatz | zuletzt, damit ein abgebrochener Lauf wiederholbar bleibt |
@@ -208,7 +209,9 @@ Bei den Freigaben greift `OC\Share20\Hooks::post_deleteUser`
 - Gruppen-Freigaben, die dem Konto gehören, sowie dessen persönliche Ableitungen
   von Gruppen-Freigaben,
 - öffentliche Links, die das Konto besitzt oder angelegt hat,
-- Freigaben zu und von entfernten Instanzen (`apps/files_sharing/lib/Hooks.php`).
+- Freigaben an entfernte Instanzen
+  (`apps/federatedfilesharing/lib/FederatedShareProvider.php`) und die von dort
+  empfangenen Einbindungen (`apps/files_sharing/lib/Hooks.php`, `deleteUser`).
 
 Ein Empfänger verliert damit sofort den Zugriff auf alles, was das gelöschte
 Konto geteilt hatte. Sollen Daten erhalten bleiben, übertragen Sie sie **vor**
@@ -271,7 +274,7 @@ Der Rahmen ergibt sich aus `lib/private/SubAdmin.php` und
 | --- | --- |
 | Konten in den eigenen Gruppen anlegen, ändern, deaktivieren und löschen | Konten außerhalb der eigenen Gruppen anfassen |
 | Speicherkontingente dieser Konten setzen | Administratoren bearbeiten |
-| Anzeigenamen dieser Konten ändern, auch wenn `allow_user_to_change_display_name` auf `false` steht | sich selbst oder andere zum Gruppen-Administrator der Gruppe `admin` machen |
+| Anzeigenamen dieser Konten ändern, auch wenn `allow_user_to_change_display_name` auf `false` steht | überhaupt Gruppen-Administratoren ernennen — der Endpunkt `settings/ajax/togglesubadmins.php` verlangt Administratorrechte |
 
 Legt ein Gruppen-Administrator ein Konto ohne Gruppenangabe an, landet es
 automatisch in seinen eigenen Gruppen.
@@ -336,7 +339,8 @@ Mitglieder aufnehmen und entfernen, umbenennen, löschen und Rollen vergeben;
 *Mitglied* darf mit der Gruppe teilen, die Mitgliederliste sehen und die Gruppe
 verlassen. Administratoren sehen und ändern alle benutzerdefinierten Gruppen.
 
-Zwei Schalter unter *Einstellungen → Administration → Teilen*:
+Zwei Schalter unter *Einstellungen → Administration → Teilen* (im SaaS-Bundle
+ist dieses Admin-Panel ausgeblendet, dort führt nur der `occ`-Weg zum Ziel):
 
 | Ankreuzfeld | Schlüssel (App `customgroups`) | Standard |
 | --- | --- | --- |
@@ -374,7 +378,7 @@ Das Repository der App: <https://github.com/BWTECH-github/customgroups>.
 | `user:lastseen` | `uid` |
 | `user:inactive` | `days`; `--output` |
 | `user:report` | keine |
-| `user:sync` | `[backend-class]`; `-l/--list`, `-u/--uid`, `-s/--seenOnly`, `-c/--showCount`, `-m/--missing-account-action` (`disable`, `remove`) |
+| `user:sync` | `[backend-class]`; `-l/--list`, `-u/--uid`, `-s/--seenOnly`, `-c/--showCount`, `-m/--missing-account-action` (`disable`, `remove`), `-r/--re-enable` |
 | `user:home:list-dirs` | `--output` |
 | `user:home:list-users` | `[path]`; `--all`, `--output` |
 | `user:move-home` | `user_id new_location` |
@@ -407,13 +411,13 @@ Backend fehlen — im Zweifel `disable` wählen und die Liste erst prüfen.
 | Symptom | Ursache | Abhilfe |
 | --- | --- | --- |
 | `occ user:add` bricht mit „Interactive input or --password-from-env is needed" ab | Aufruf ohne Terminal, etwa aus einem Skript | `OC_PASS` setzen und `--password-from-env` angeben |
-| Anmeldename mit Umlaut oder Punkt am Anfang wird abgewiesen | Zeichenprüfung in `lib/private/User/Manager.php` | nur `a-z`, `A-Z`, `0-9`, `+_.@-'`, 3 bis 64 Zeichen verwenden |
+| Anmeldename mit Umlaut oder anderem Sonderzeichen wird abgewiesen | Zeichenprüfung in `lib/private/User/Manager.php` | nur `a-z`, `A-Z`, `0-9`, `+_.@-'`, 3 bis 64 Zeichen verwenden |
 | Neues Konto bekommt keine Einladungsmail | bei gesetztem *Passwort für neue Nutzer anlegen* wird das E-Mail-Feld ausgeblendet — oder der Mailversand ist nicht eingerichtet | Ankreuzfeld abwählen; SMTP prüfen, siehe [Linux-Server](../installation/linux-server.md) |
 | Konto gelöscht, Dateien und Freigaben sind weg | `user:delete` entfernt Home-Verzeichnis, Papierkorb, Versionen und alle Freigaben | vorher `files:transfer-ownership`; Wiederherstellung nur aus dem Backup |
 | Benutzerdefinierte Gruppe fehlt in `occ group:list` und `occ user:list-groups` | das Backend ist nur für den Bereich „sharing" sichtbar | über *Einstellungen → Benutzerdefinierte Gruppe* prüfen |
 | Gruppe soll umbenannt werden | Gruppenname ist die Kennung, es gibt keine Umbenennung | neue Gruppe anlegen, Mitglieder und Freigaben umziehen, alte löschen |
 | `occ group:delete admin` schlägt fehl | die Gruppe `admin` ist fest geschützt | Mitglieder einzeln entfernen |
-| Spalte *Gruppenadministrator für* fehlt | Spalte wird nur für Administratoren gerendert, oder `allow_subadmins` steht auf `false` | als Administrator anmelden, Wert in `config.php` prüfen |
+| Spalte *Gruppenadministrator für* fehlt | die Spalte wird nur für echte Administratoren gerendert (`settings/users.php`, `part.userlist.php`) | als Administrator anmelden |
 | Konto kann seinen Anzeigenamen nicht ändern | `allow_user_to_change_display_name` steht auf `false` | Wert entfernen oder Änderung durch einen Administrator vornehmen |
 | `occ user:setting <uid> files quota --value "5 GB"` bleibt wirkungslos | maßgeblich ist der Wert am Konto in der `accounts`-Tabelle; die Einstellung wird erst bei einem Abgleich des Kontos ausgewertet | Kontingent in der Spalte *Quota* setzen und mit `occ user:list -a uid -a quota` prüfen |
 | Passwort zurückgesetzt, Dateien nicht mehr lesbar | die App `encryption` war aktiv | Wiederherstellungsschlüssel verwenden, siehe [Verschlüsselung](encryption.md) |

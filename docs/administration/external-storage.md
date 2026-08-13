@@ -46,8 +46,8 @@ und unterscheidend nach Groß- und Kleinschreibung nachgeschlagen
 | SMB / CIFS mit OC-Login | `\OC\Files\Storage\SMB_OC` | `files_external` | `password` |
 | Lokal | `local` | `files_external` | `null` |
 | Amazon S3 compatible (SDK v3) | `files_external_s3` | `files_external_s3` | `amazons3_accesskey` |
-| Windows-Netzlaufwerk | `wnd_custom` | `wnd` | `password`, `wnd_kerberos` |
-| Windows-Netzlaufwerk (Kollaborativ) | `wnd_custom_collaborative` | `wnd` | `password`, `wnd_kerberos` |
+| Windows-Netzlaufwerk | `wnd_custom` | `wnd` | `password`, `wnd_userprovided_db`, `wnd_logincredentials_db`, `wnd_kerberos` |
+| Windows-Netzlaufwerk (Kollaborativ) | `wnd_custom_collaborative` | `wnd` | `password`, `password::sessioncredentials`, `wnd_userprovided_db`, `wnd_logincredentials_db`, `wnd_kerberos` |
 
 Anmerkungen, die im Code hinterlegt sind:
 
@@ -61,18 +61,26 @@ Anmerkungen, die im Code hinterlegt sind:
   Backend unabhängig von jeder Einstellung gesperrt.
 * *SMB Kollaborative* und *Windows-Netzlaufwerk (Kollaborativ)* sind ebenfalls
   auf die Administration beschränkt.
-* *SMB Kollaborative* verlangt das Schema `password::sessioncredentials`. Kein
-  registrierter Mechanismus trägt dieses Schema — die Mechanismen zu
-  Benutzername und Passwort tragen `password` —, also wird an diesem Backend
-  keine Authentifizierung angeboten. Für kollaborative SMB-Einbindungen ist
-  daher *Windows-Netzlaufwerk (Kollaborativ)* aus der App `wnd` der gangbare
-  Weg; dieses Backend führt `password` mit.
+* Nicht jeder Eintrag in der letzten Spalte ist ein Schema. `smb-coll` führt
+  ausschließlich `password::sessioncredentials`, `wnd_custom_collaborative`
+  führt es zusätzlich — das ist der *Bezeichner* des Mechanismus *Anmeldedaten
+  in Sitzung speichern*, dessen Schema `password` lautet. Die Oberfläche gleicht
+  Backend und Mechanismus über Schema **oder** Bezeichner ab
+  (`apps/files_external/js/settings.js`), deshalb wird an *SMB Kollaborative*
+  genau dieser eine Mechanismus angeboten.
+* `wnd_userprovided_db` und `wnd_logincredentials_db` laufen dagegen ins Leere:
+  Die gleichnamigen Mechanismen der App `wnd` tragen als Schema `password`, kein
+  Mechanismus trägt diese beiden Werte als Schema oder als Bezeichner. Sie
+  ändern an der angebotenen Auswahl nichts.
 
 ## Authentifizierungsverfahren
 
-Jeder Mechanismus gehört zu genau einem Schema. Angeboten werden an einem
-Backend nur die Mechanismen, deren Schema in der Spalte oben steht
-(`StoragesBackendService::getAuthMechanismsByScheme()`).
+Jeder Mechanismus gehört zu genau einem Schema. Die Oberfläche bietet an einem
+Backend die Mechanismen an, deren Schema **oder** deren Bezeichner in der
+Spalte oben steht. `occ files_external:create` vergleicht dagegen nur die
+Schemata (`StoragesBackendService::getAuthMechanismsByScheme()`), weshalb sich
+`smb-coll` über die Kommandozeile nicht anlegen lässt: Der Befehl bricht mit
+„Authentication backend … not valid for storage backend …" ab.
 
 | Anzeigename | Bezeichner | Schema | Geliefert von |
 | --- | --- | --- | --- |
@@ -97,7 +105,10 @@ Daraus folgt für die Praxis:
 * Die vier Passwort-Mechanismen der App `wnd` tragen das Schema `password` und
   stehen deshalb an jedem Backend mit Passwort-Schema zur Verfügung, nicht nur
   an den beiden Windows-Netzlaufwerken. Nur *Kerberos* hat ein eigenes Schema
-  und erscheint ausschließlich dort.
+  und erscheint ausschließlich dort. *Fest in der Konfigurationsdatei
+  hinterlegte Anmeldedaten* ist zusätzlich per `setVisibility` auf die
+  Administrationsansicht beschränkt und fehlt in den persönlichen
+  Einstellungen.
 * Für `oauth1` und `openstack` bringt diese Auslieferung kein Backend mit. Die
   drei zugehörigen Mechanismen sind registriert, aber an keinem Backend
   auswählbar.
@@ -300,7 +311,8 @@ Für SMB und für die Windows-Netzlaufwerke der App `wnd` gilt zusätzlich:
   Fehlt beides, meldet die Speicherseite, dass `smbclient` nicht installiert
   ist, und das Backend verschwindet aus der Auswahl.
 * Ist das Feld *Domain* gefüllt, wird der Benutzername vor dem Verbindungsaufbau
-  zu `DOMAIN\benutzer` zusammengesetzt (`SMB::manipulateStorageConfig()`).
+  zu `DOMAIN\benutzer` zusammengesetzt
+  (`Lib\Backend\SMB::manipulateStorageConfig()`).
 * Debug-Ausgaben für SMB-Zugriffe schaltet
   `'smb.logging.enable' => true` in `config/config.php` ein.
 
@@ -313,18 +325,18 @@ Mechanismus als exakte Zeichenketten nach. `smb` funktioniert, `SMB` nicht — d
 Befehl bricht mit „Storage backend with identifier … not found" ab. Dasselbe
 gilt für die Liste in `user_mounting_backends`.
 
-Zweitens die Dateinamen. Wird über das Programm `smbclient` statt über die
-PHP-Erweiterung gearbeitet und liefert der Server auf eine Abfrage keinen
+Zweitens die Dateinamen. Liefert der Server auf eine Einzelabfrage keinen
 Treffer, liest owncloud.online ersatzweise das übergeordnete Verzeichnis und
 vergleicht die Namen mit `===`, also unterscheidend nach Groß- und
-Kleinschreibung (`SMB::getFileInfo()`). Weicht die Schreibweise auf der
-Freigabe von der zwischengespeicherten ab — etwa nachdem eine Datei unter
-Windows umbenannt wurde, ohne dass sich der Name für den Server geändert hat —
-findet dieser Ersatzweg die Datei nicht. Abhilfe: die PHP-Erweiterung
-`smbclient` installieren, damit dieser Zweig gar nicht erst betreten wird.
+Kleinschreibung (`Lib\Storage\SMB::getFileInfo()`). Weicht die abgefragte
+Schreibweise von der auf der Freigabe ab, findet dieser Ersatzweg die Datei
+nicht. Der Zweig hängt nicht daran, ob die PHP-Erweiterung oder das Programm
+`smbclient` benutzt wird: Die Bedingung im Code prüft auf `IShare`, und beide
+Zugriffsarten erfüllen sie.
 
-Die App `wnd` bringt einen eigenen Befehl mit, der eine Freigabe unabhängig von
-jeder Einbindung prüft:
+Die App `wnd` bringt neben ihren Betriebsbefehlen (`wnd:listen`,
+`wnd:notifications`, `wnd:process-queue`) einen Befehl mit, der eine Freigabe
+unabhängig von jeder Einbindung prüft:
 
 ```bash
 sudo -u www-data php8.4 occ wnd:test fileserver.example.com projekte svc_owncloud --domain EXAMPLE --list

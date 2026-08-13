@@ -41,13 +41,15 @@ Der Weg führt über **Einstellungen → Persönlich → Sicherheit**, Abschnitt
    von Hand.
 3. Den angezeigten sechsstelligen Code in das Feld **Authentifizierungscode**
    eintragen und **Überprüfen** drücken. Die Antwort lautet *Geprüft* oder
-   *Nicht geprüft*.
+   *Nicht geprüft*. In der Sprachfassung *Deutsch (Persönlich)* heißen dieselben
+   Beschriftungen *Bestätigen*, *Bestätigt* und *Nicht bestätigt*.
 
 Schritt 3 ist der entscheidende: Nur ein **bestätigter** Schlüssel zählt. Wird
 das Kästchen gesetzt, aber nie ein Code bestätigt, bleibt die Anmeldung
-unverändert — das Konto sieht eingerichtet aus, ist es aber nicht. Wird das
-Kästchen wieder entfernt, löscht der Server den Schlüssel; eine erneute
-Aktivierung erzeugt einen neuen und verlangt einen neuen Scan.
+unverändert; beim nächsten Aufruf der Seite steht das Kästchen wieder leer, denn
+sein Zustand hängt am bestätigten Schlüssel. Wird das Kästchen wieder entfernt,
+löscht der Server den Schlüssel; eine erneute Aktivierung erzeugt einen neuen und
+verlangt einen neuen Scan.
 
 Zum Zeitverhalten: Der Code wechselt alle 30 Sekunden, und die Prüfung
 akzeptiert drei Zeitschritte in beide Richtungen, also rund anderthalb Minuten
@@ -63,7 +65,7 @@ Der Zwang steht unter **Einstellungen → Administration → Sicherheit**, Absch
 - das Feld **Die folgenden Gruppen sind von der erzwungenen
   Zwei-Faktor-Authentifizierung ausgenommen**
 
-In der Sprachfassung *Deutsch (Sie)* heißt der Navigationspunkt
+In der Sprachfassung *Deutsch (Förmlich: Sie)* heißt der Navigationspunkt
 *Administrator* statt *Administration*; der Abschnitt selbst ist derselbe.
 
 Beide Bedienelemente schreiben in die App-Konfiguration:
@@ -136,7 +138,7 @@ auszuschließen, muss die Token deshalb durchgehen und entziehen.
 Token verwalten und neu erstellen lässt sich unter **Einstellungen → Persönlich
 → Sicherheit**, Abschnitt **App-Passwörter / Token**: Namen eintragen,
 **Neuen App-Passcode erstellen** drücken, dann werden *Benutzername* und
-*Passwort / Token* einmalig angezeigt. Derselbe Abschnitt listet unter
+*Passwort / Token* einmalig angezeigt. Auf derselben Seite listet der Abschnitt
 *Sitzungen* die aktuell angemeldeten Web-, Desktop- und Mobil-Clients.
 
 Unabhängig vom zweiten Faktor lässt sich die Anmeldung mit dem Kontopasswort
@@ -185,13 +187,15 @@ sudo -u www-data php8.4 occ user:setting alice core two_factor_auth_disabled --v
 # Abschaltung wieder zuruecknehmen
 sudo -u www-data php8.4 occ user:setting alice core two_factor_auth_disabled --delete
 
-# Schluessel als "nicht geprueft" markieren; der Faktor ist damit aus
+# Schluessel als "nicht geprueft" markieren; der Faktor ist damit aus, sofern kein Zwang gilt
 sudo -u www-data php8.4 occ twofactor_totp:set-secret-verification-status false --uid alice
 ```
 
-Die Abschaltung über `two_factor_auth_disabled` greift nur, solange der Zwang
-für dieses Konto nicht gilt — der Zwang wird zuerst geprüft. Dieselbe
-Abschaltung erlaubt auch die Provisioning-API mit einem PUT auf
+Beide Wege greifen nur, solange der Zwang für dieses Konto nicht gilt — der
+Zwang wird zuerst geprüft. Bei erzwungenem Faktor führt ein als „nicht geprüft"
+markierter Schlüssel lediglich wieder auf die Faktor-Seite, auf der derselbe
+Schlüssel erneut als QR-Code erscheint. Die Abschaltung über
+`two_factor_auth_disabled` erlaubt auch die Provisioning-API mit einem PUT auf
 `ocs/v1.php/cloud/users/<uid>` und dem Schlüssel `two_factor_auth_enabled`
 (Wert `true` oder `false`); dasselbe Feld erscheint lesend in den Kontodaten.
 

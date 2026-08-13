@@ -1,9 +1,13 @@
 # Freigaben steuern
 
 owncloud.online bündelt alle Freigabe-Regeln in einem Verwaltungsbereich. Die
-Schalter dort schreiben ausschließlich App-Konfigurationswerte, deshalb lässt
-sich jede Einstellung genauso gut per `occ config:app:set` setzen — das ist der
+Schalter dort schreiben App-Konfigurationswerte, deshalb lässt sich praktisch
+jede Einstellung genauso gut per `occ config:app:set` setzen — das ist der
 Weg für Erstinstallationen, Skripte und reproduzierbare Kundenkonfigurationen.
+Die einzige Ausnahme auf dieser Seite ist die Liste der vertrauenswürdigen
+Verbund-Server: Sie liegt in einer eigenen Datenbanktabelle, nicht in der
+App-Konfiguration.
+
 Diese Seite listet zu jedem Schalter den zugehörigen Schlüssel und beschreibt,
 was der Server damit tatsächlich durchsetzt.
 
@@ -17,7 +21,7 @@ hängt davon ab, welche Apps aktiv sind:
 | Abschnitt | Herkunft | erscheint |
 | --- | --- | --- |
 | **Teilen** | Kern (`settings/templates/panels/admin/filesharing.php`) | immer |
-| **Vom Teilen ausgeschlossene Gruppen** | App `files_sharing` | immer |
+| **Vom Teilen ausgeschlossene Gruppen** | App `files_sharing` | immer (die App ist standardmäßig aktiv) |
 | **Federated-Cloud-Sharing** | App `federatedfilesharing` | nur wenn die App aktiv ist |
 | **Federation** | App `federation` | nur wenn die App aktiv ist |
 | **Guests** | App `guests` | nur wenn die App aktiv ist |
@@ -27,8 +31,10 @@ Fast alle Schlüssel des Hauptabschnitts liegen in der App `core`, nicht in
 `files_sharing`. Beim Setzen per `occ` ist der App-Name deshalb genau zu
 beachten.
 
-Alle Ja/Nein-Schalter speichern die Zeichenketten `yes` und `no` — nicht `1`
-und `0` (`settings/js/admin.js`).
+Die Ja/Nein-Schalter des Hauptabschnitts **Teilen** speichern die Zeichenketten
+`yes` und `no` — nicht `1` und `0` (`settings/js/admin.js`). Für die Panels der
+Apps `guests` und `federation` gilt das nicht, siehe die jeweiligen Abschnitte
+weiter unten.
 
 ![Freigabe-Dialog in der Dateien-App](../assets/screenshots/owncloud-online-sharing.png)
 
@@ -110,7 +116,7 @@ Es gibt vier unabhängige Sätze von Ablauf-Einstellungen: für Links, für
 Benutzer-, für Gruppen- und für Verbund-Freigaben. Jeder Satz besteht aus drei
 Schlüsseln — einschalten, Anzahl Tage, erzwingen.
 
-| Freigabetyp | Standardablauf setzen | Tage | Als spätestes Ablaufdatum erzwingen |
+| Freigabetyp | Standardmäßiges Ablaufdatum setzen | Ablauf nach … Tagen | Als spätestes Ablaufdatum erzwingen |
 | --- | --- | --- | --- |
 | Öffentliche Links | `shareapi_default_expire_date` | `shareapi_expire_after_n_days` | `shareapi_enforce_expire_date` |
 | Benutzer-Freigaben | `shareapi_default_expire_date_user_share` | `shareapi_expire_after_n_days_user_share` | `shareapi_enforce_expire_date_user_share` |
@@ -163,7 +169,7 @@ ausdrücklich zurück.
 | Benutzer auf das Teilen mit Gruppen, in denen sie Mitglied sind beschränken | `shareapi_only_share_with_membership_groups` | `core` | `no` |
 | Gruppen von Freigaben ausschließen | `shareapi_exclude_groups` | `core` | `no` |
 | Von Freigaben ausgeschlossene Gruppen | `shareapi_exclude_groups_list` | `core` | leer |
-| Gruppen von Teilen ausschliessen (Empfang) | `blacklisted_receiver_groups` | `files_sharing` | `[]` |
+| Gruppen von Teilen ausschliessen | `blacklisted_receiver_groups` | `files_sharing` | `[]` |
 | Gruppen denen es erlaubt ist, öffentliche Links zu erstellen | `public_share_sharers_groups_allowlist_enabled` | `files_sharing` | `no` |
 | Gruppen, die öffentliche Links erstellen dürfen | `public_share_sharers_groups_allowlist` | `files_sharing` | `[]` |
 
@@ -320,18 +326,21 @@ statt — der Kern selbst bringt keine mit.
 Die Mindestanforderungen gelten laut Abschnitt *Passwort-Mindestanforderungen
 für Benutzerkonten und öffentliche Links* gemeinsam für Konten und Link-
 Passwörter. Die Schlüssel liegen alle in der App `password_policy` und folgen
-dem Muster `<name>_checked` und `<name>_value`. Eine Regel gilt genau dann als
-aktiv, wenn der `_checked`-Schlüssel den Wert `on` trägt; jeder andere Inhalt
-schaltet sie ab.
+dem Muster `<name>_checked` und `<name>_value`. Der Wert, den die Oberfläche für
+einen gesetzten Haken schreibt, ist `on`; ein abgewählter Haken wird als leerer
+Wert gespeichert. Beim Setzen per `occ` deshalb ausschließlich `on` verwenden:
+Die Ablaufregeln vergleichen strikt gegen `on` (`lib/HooksHandler.php`),
+während die Passwortprüfung jeden nicht leeren Wert als eingeschaltet ansieht
+(`lib/Engine.php`, `yes`). Zum Abschalten den Schlüssel löschen.
 
 | Beschriftung | Schlüssel-Paar | Standardwert |
 | --- | --- | --- |
 | Mindestlänge | `spv_min_chars_checked` / `spv_min_chars_value` | 8 |
 | Kleinbuchstaben | `spv_lowercase_checked` / `spv_lowercase_value` | 1 |
 | Großbuchstaben | `spv_uppercase_checked` / `spv_uppercase_value` | 1 |
-| Ziffern | `spv_numbers_checked` / `spv_numbers_value` | 1 |
+| Zahlen | `spv_numbers_checked` / `spv_numbers_value` | 1 |
 | Sonderzeichen | `spv_special_chars_checked` / `spv_special_chars_value` | 1 |
-| erlaubte Sonderzeichen | `spv_def_special_chars_checked` / `spv_def_special_chars_value` | `#!` |
+| Auf diese Sonderzeichen beschränken: | `spv_def_special_chars_checked` / `spv_def_special_chars_value` | `#!` |
 
 Zusätzlich bringt die App eigene Ablaufregeln für öffentliche Links mit, die
 vom Passwort abhängen:
@@ -356,15 +365,17 @@ sudo -u www-data php8.4 occ config:app:set password_policy spv_min_chars_value -
 ## Zusammenspiel mit Gästen
 
 Ist die App `guests` aktiv, erscheint im Abschnitt *Teilen* zusätzlich das
-Panel **Guests**. Gäste sind vollwertige Konten in einer eigenen Gruppe, die
-über den Teilen-Dialog per E-Mail-Adresse eingeladen werden.
+Panel **Guests**. Gäste sind eigene Benutzerkonten, die über die
+Benutzereinstellung `isGuest` markiert und in einer virtuellen Gruppe
+zusammengefasst werden; eingeladen werden sie über den Teilen-Dialog per
+E-Mail-Adresse.
 
 | Beschriftung | Schlüssel (App `guests`) | Standard |
 | --- | --- | --- |
 | Gruppenname | `group` | `guest_app` |
 | Diese Domain ist für Gäste Einladungen blockiert | `blockdomains` | leer |
 | Gastzugriff auf eine App-Whitelist beschränken | `usewhitelist` | `true` |
-| App-Whitelist | `whitelist` | Liste in `lib/AppWhitelist.php` |
+| Eingabefeld unter dem Whitelist-Schalter (ohne deutsche Beschriftung) | `whitelist` | Liste in `lib/AppWhitelist.php` |
 
 Der Schalter für die Whitelist speichert abweichend die Zeichenketten `true`
 und `false`, nicht `yes` und `no`.

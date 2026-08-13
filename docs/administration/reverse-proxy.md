@@ -327,7 +327,7 @@ Proxy-Adresse statt der Client-Adresse, stimmt `trusted_proxies` nicht.
 | Alle Protokollzeilen zeigen dieselbe Adresse in `remoteAddr` | `trusted_proxies` fehlt oder enthält nicht die Adresse, mit der der Proxy den Server anspricht | Adresse aus `REMOTE_ADDR` ermitteln und exakt eintragen |
 | `trusted_proxies` ist gesetzt, wirkt aber nicht | Eintrag in CIDR-Notation; der Vergleich ist ein exakter Zeichenkettenvergleich | Jede Proxy-Adresse einzeln eintragen |
 | Legitime Benutzer werden gegenseitig ausgebremst | Die Bremse zählt auf die Proxy-Adresse statt auf den Client | `trusted_proxies` korrigieren |
-| Anmeldung springt immer wieder auf die Anmeldeseite zurück, Links beginnen mit `http://` | `overwriteprotocol` fehlt, der Proxy setzt kein `X-Forwarded-Proto` | `overwriteprotocol` auf `https` setzen |
+| Erzeugte Links und Weiterleitungen beginnen mit `http://`, der Browser blockiert Inhalte | `overwriteprotocol` fehlt, der Proxy setzt kein `X-Forwarded-Proto` | `overwriteprotocol` auf `https` setzen |
 | „Sie greifen auf den Server über eine nicht vertrauenswürdige Domain zu." | Der Proxy reicht `Host` bzw. `X-Forwarded-Host` nicht durch, oder der Name fehlt in `trusted_domains` | Kopfzeile setzen und den Namen in `trusted_domains` aufnehmen |
 | Links zeigen auf einen anderen Hostnamen als den aufgerufenen | Host nicht in `trusted_domains`; der Server fällt auf den ersten Eintrag zurück | Hostnamen ergänzen oder `overwritehost` setzen |
 | Bei Installation in einem Unterpfad fehlen Teile der Oberfläche | `overwritewebroot` nicht gesetzt | `overwritewebroot` auf den externen Pfad setzen |

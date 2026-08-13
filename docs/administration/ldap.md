@@ -40,7 +40,9 @@ Die Seite hat vier Assistenten-Reiter — *Server*, *Benutzer*, *Loginattribute*
 Jede Verbindung liegt unter einem eigenen Präfix in `oc_appconfig` für die App
 `user_ldap`. Neue Präfixe werden fortlaufend als `s01`, `s02`, … vergeben
 (`Helper::nextPossibleConfigurationPrefix()`). Diese ID ist das Argument
-`configID` aller `ldap:`-Befehle.
+`configID` der Konfigurationsbefehle `ldap:show-config`, `ldap:set-config`,
+`ldap:test-config`, `ldap:create-empty-config` und `ldap:delete-config`;
+`ldap:search`, `ldap:check-user` und `ldap:invalidate-cache` kennen es nicht.
 
 ```bash
 # neue, leere Konfiguration anlegen (ID wird vergeben oder vorgegeben)
@@ -77,7 +79,7 @@ Reiter *Server*. Die Schlüsselnamen in der Tabelle sind die Namen, die
 | `ldap_cache_ttl` | Speichere Time-To-Live zwischen | `600` | Sekunden; eine Änderung leert den Cache |
 | `ldap_configuration_active` | Konfiguration aktiv | `0` | ist der Wert `0`, wird die Verbindung übersprungen |
 
-Zwei Punkte, die `Connection` selbst korrigiert oder bemängelt
+Drei Punkte, die `Connection` selbst korrigiert oder bemängelt
 (`doSoftValidation()` und `doCriticalValidation()`):
 
 - Beginnt `ldap_host` mit `ldaps://` und ist zugleich `ldap_tls` gesetzt, wird
@@ -130,9 +132,10 @@ Auswahl von Objektklassen, eine Auswahl von Gruppen und darunter das Feld
 Der Assistent baut aus den Auswahlfeldern einen Filter zusammen
 (`Wizard::composeLdapFilter()`): Die Objektklassen werden mit `|`
 oder-verknüpft, die Gruppenzugehörigkeiten ebenfalls, und beide Blöcke werden
-mit `&` und-verknüpft. Bleibt alles leer, entsteht `(objectclass=*)`. Für die
-Gruppenauswahl auf der Benutzerseite muss der Server das Attribut `memberOf`
-unterstützen.
+mit `&` und-verknüpft. Bleibt beim Benutzerfilter alles leer, entsteht
+`(objectclass=*)`; beim Gruppenfilter gibt es diesen Ersatz nicht, dort bleibt
+der Filter dann leer. Für die Gruppenauswahl auf der Benutzerseite muss der
+Server das Attribut `memberOf` unterstützen.
 
 Bei großen Verzeichnissen ist der Assistent der falsche Weg: Er fragt beim
 Öffnen jedes Reiters den Server nach Objektklassen und Gruppen ab. Dafür gibt
@@ -179,9 +182,11 @@ gesamte Konfiguration ungültig** — `Connection::doCriticalValidation()` lehnt
 sie ab und schreibt „login filter does not contain %uid place holder" ins
 Protokoll.
 
-Erlaubt der Filter die Anmeldung per E-Mail-Adresse, empfiehlt der Hinweistext
-in der Oberfläche zusätzlich die strenge Anmeldeprüfung. Diese steht in
-`config/config.php`:
+Der Hinweistext am Kästchen *LDAP-/AD-E-Mail-Adresse* warnt vor einem
+Trugschluss: Die Anmeldung per E-Mail-Adresse hier **abzuschalten** wirkt erst
+zusammen mit der strengen Anmeldeprüfung, weil der Server andernfalls
+zusätzlich über die E-Mail-Adresse in der Kontentabelle sucht. Diese Einstellung
+steht in `config/config.php`:
 
 ```php
 'strict_login_enforced' => true,
@@ -214,8 +219,9 @@ Eigenschaften*.
 | `ldap_attributes_for_group_search` | Gruppensucheigenschaften | leer | dasselbe für Gruppen |
 | `ldap_exposed_attributes_for_user` | Benutzerattribute wurden bloßgelegt | leer | Attribute, die andere Apps abfragen dürfen |
 
-Zum Anzeigenamen: Ist das Attribut leer oder nicht gesetzt, fällt
-`UserEntry::getDisplayName()` auf die interne Kennung zurück.
+Zum Anzeigenamen: Liefert das Attribut keinen Wert, fällt
+`UserEntry::getDisplayName()` auf `UserEntry::getUserId()` zurück — also auf
+den Wert von `ldap_expert_username_attr`, ersatzweise auf die UUID.
 
 Zum Kontingent prüft `UserEntry::getQuota()` den gelesenen Wert. Gültig sind
 `none`, `default`, eine Byte-Zahl wie `1234` und Angaben mit Einheit wie
@@ -236,8 +242,10 @@ bricht die Anmeldung mit einer Ausnahme ab — es sei denn, das wird abgeschalte
 sudo -u www-data php8.4 occ config:app:set user_ldap enforce_home_folder_naming_rule --value=false
 ```
 
-Jeder Attributwert wird auf 191 Zeichen gekürzt; darauf weist die Oberfläche im
-Abschnitt *Ordnereinstellungen* selbst hin.
+Unter dem Feld *Benutzersucheigenschaften* steht der Hinweis „Jeder
+Attributwert wird auf 191 Zeichen gekürzt". Er bezieht sich auf die Suchbegriffe,
+die aus diesen Attributen in die Kontentabelle geschrieben werden —
+`User::setSearchTerms()` schneidet jeden davon nach 191 Zeichen ab.
 
 ### UUID
 
@@ -282,8 +290,7 @@ neuen DN in die Zuordnung — das Konto bleibt dasselbe.
 Erklärungstext im Bereich *Experte* nennt die Gründe selbst — der interne Name
 ist der Vorgabename des Heimatverzeichnisses, er ist Bestandteil aller
 entfernten Adressen einschließlich der DAV-Dienste, und über ihn werden alle
-Metadaten gespeichert und zugeordnet. Eine Änderung erzeugt ein neues Konto
-neben dem alten; das alte behält Daten und Freigaben, das neue startet leer.
+Metadaten gespeichert und zugeordnet.
 Deshalb gilt: Ist die Zuordnung einmal angelegt, bleibt sie.
 Änderungen an `ldap_expert_username_attr` oder an den UUID-Attributen wirken
 ausschließlich auf **neu** zugeordnete Konten — bestehende Zuordnungen rührt
@@ -297,9 +304,9 @@ Produktivinstanz haben sie nichts zu suchen.
 
 Wird für einen neuen Eintrag ein interner Name errechnet, den bereits ein Konto
 aus einem anderen Backend trägt, verweigert `Access::shouldMapToUsername()` die
-Zuordnung und schreibt „Mapping collision for DN … Couldn't map to identifer"
-ins Protokoll. Handelt es sich um ein bestehendes LDAP-Konto, das
-wiederverwendet werden soll, lässt sich das freigeben:
+Zuordnung, und `Access::dn2ocname()` schreibt „Mapping collision for DN …
+Couldn't map to identifer" ins Protokoll. Handelt es sich um ein bestehendes
+LDAP-Konto, das wiederverwendet werden soll, lässt sich das freigeben:
 
 ```bash
 sudo -u www-data php8.4 occ config:app:set user_ldap reuse_accounts --value=yes

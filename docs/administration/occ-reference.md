@@ -84,8 +84,9 @@ owncloud.online is in maintenance mode - no app have been loaded
 | --- | --- |
 | Core-Befehle (`user:*`, `group:*`, `config:*`, `db:*`, `migrations:*`, `maintenance:*`, `upgrade`, `log:*`) | verfügbar |
 | App-Befehle (`files:*`, `trashbin:*`, `versions:*`, `dav:*`, `files_external:*`, `market:*`) | **nicht** verfügbar — die Apps werden nicht geladen |
-| `occ system:cron` und `cron.php` | brechen mit „We are in maintenance mode, skipping cron" ab |
-| Weboberfläche und Sync-Clients | erhalten HTTP 503 mit `Retry-After: 120` |
+| `occ system:cron` — und damit auch `cron.php` auf der Kommandozeile, das nur `occ system:cron` aufruft | bricht mit „We are in maintenance mode, skipping cron" ab |
+| Weboberfläche (`index.php`) | HTTP 503 mit `Retry-After: 120` und Wartungsseite |
+| Sync-Clients (`remote.php`, WebDAV) | HTTP 503 „System in maintenance mode." — ohne `Retry-After` |
 
 Zwei weitere Zustände schränken den Befehlsvorrat ebenso ein:
 
@@ -93,12 +94,16 @@ Zwei weitere Zustände schränken den Befehlsvorrat ebenso ein:
   die wenigen Befehle, die keine Installation brauchen (`status`, `check`,
   `integrity:*`, `app:check-code`, `l10n:createjs`).
 * **Update ausstehend:** Meldet die Instanz „owncloud.online or one of the apps
-  require upgrade", sind ebenfalls nur wenige Befehle nutzbar. Der Weg heraus
+  require upgrade", werden die Apps nicht geladen — der Befehlsvorrat entspricht
+  dem im Wartungsmodus, die Core-Befehle bleiben also vorhanden. Der Weg heraus
   ist `occ upgrade`.
 
 Der Einzelbenutzermodus (`maintenance:singleuser`, Systemwert `singleuser`) ist
-davon zu unterscheiden: Er lässt die Apps geladen, stoppt aber die
-Hintergrundaufträge, die ihn als „admin only mode" melden.
+davon zu unterscheiden: Er lässt die Apps geladen. `occ system:cron` bricht darin
+mit „We are in admin only mode, skipping cron" ab, die Weboberfläche antwortet
+Konten außerhalb der Gruppe `admin` mit HTTP 503, und der WebDAV-Endpunkt
+verweigert jede Anfrage mit „System in single user mode." — auch die von
+Administratoren.
 
 ## Wartung und Update
 
@@ -261,9 +266,14 @@ sudo -u www-data php8.4 occ config:list system
 sudo -u www-data php8.4 occ config:system:set loglevel --value 2 --type integer
 ```
 
-`config:list` blendet vertrauliche Werte wie Passwörter und Salts standardmäßig
-aus. Erst `--private` gibt sie mit aus — die Ausgabe gehört dann nicht in ein
-Ticket und nicht in ein Repository. Die einzelnen Schlüssel beschreibt
+`config:list` ersetzt einen fest hinterlegten Satz vertraulicher **Systemwerte**
+durch `***REMOVED SENSITIVE VALUE***` — darunter `dbpassword`, `passwordsalt`,
+`secret`, `mail_smtppassword`, `ldap_agent_password`, `license-key` und die
+Zugangsdaten unter `redis` und `objectstore`. Erst `--private` gibt sie im
+Klartext aus. **Die App-Werte aus der Datenbank filtert der Befehl nicht** — sie
+stehen bei `config:list all` und `config:list <app>` auch ohne `--private`
+unverändert in der Ausgabe. Die Ausgabe gehört deshalb in keinem Fall ungeprüft
+in ein Ticket oder ein Repository. Die einzelnen Schlüssel beschreibt
 [Konfiguration (config.php)](config-reference.md).
 
 ## Hintergrundaufträge

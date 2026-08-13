@@ -45,20 +45,27 @@ nav:
       - Lokale Entwicklung mit WSL: installation/local-wsl.md
   - Administration:
       - administration/index.md
-      - Performance: administration/performance.md
-      - Sicherheit und Setup-Warnungen: administration/security-hardening.md
-      - Zwei-Faktor-Anmeldung: administration/two-factor.md
-      - Reverse-Proxy und TLS: administration/reverse-proxy.md
-      - Upstream-CVE-Status: administration/upstream-cve-status.md
-      - Apps und Marketplace: administration/apps-market.md
-      - Backups und Updates: administration/backups-updates.md
-      - Konfiguration (config.php): administration/config-reference.md
-      - Hintergrund-Jobs (Cron): administration/background-jobs.md
+      - Benutzer und Gruppen: administration/users-groups.md
       - Freigaben steuern: administration/sharing-policies.md
       - E-Mail-Versand: administration/email.md
+      - Hintergrund-Jobs (Cron): administration/background-jobs.md
+      - Konfiguration (config.php): administration/config-reference.md
+      - occ - die Kommandozeile: administration/occ-reference.md
       - Datenbank: administration/database.md
       - Externe Speicher: administration/external-storage.md
+      - Verzeichnisdienst (LDAP): administration/ldap.md
+      - Anmeldung über OAuth2 und OpenID Connect: administration/single-sign-on.md
+      - Zwei-Faktor-Anmeldung: administration/two-factor.md
       - Verschlüsselung: administration/encryption.md
+      - Virenprüfung: administration/antivirus.md
+      - Regeln und Aufbewahrung: administration/workflow-retention.md
+      - Apps und Marketplace: administration/apps-market.md
+      - Reverse-Proxy und TLS: administration/reverse-proxy.md
+      - Sicherheit und Setup-Warnungen: administration/security-hardening.md
+      - Upstream-CVE-Status: administration/upstream-cve-status.md
+      - Performance: administration/performance.md
+      - Backups und Updates: administration/backups-updates.md
+      - Umzug auf einen anderen Server: administration/migration.md
       - Serverprotokoll und Fehlermeldungen: administration/logging.md
       - Troubleshooting: administration/troubleshooting.md
   - Benutzer:

@@ -80,13 +80,17 @@ Der Vergleich erfolgt ohne Rücksicht auf Groß- und Kleinschreibung.
 
 Für `regex` wird zusätzlich ein Zielfeld gewählt: `user_group`,
 `user_agent`, `ip_range_ipv4`, `ip_range_ipv6`, `request_url` oder
-`file_mimetype`. Ein Muster ohne eigene Begrenzer wird automatisch in `#…#i`
-eingefasst.
+`file_mimetype`. Beginnt das Muster mit `/`, `#`, `~` oder `@`, gilt es als
+bereits begrenzt und wird unverändert übernommen. Andernfalls fasst die App es
+selbst ein — bevorzugt als `#…#i`, bei einem `#` im Muster als `~…~i`, sonst
+als `@…@i`.
 
 Gerätetypen sind `android`, `ios`, `desktop` und `other`. Sind unter dem
 Systemschlüssel `firewall.branded_clients` eigene Client-Kennungen
-hinterlegt, kommen `android_branded`, `ios_branded`, `desktop_branded`
-sowie die Sammelwerte `all_branded` und `all_non_branded` hinzu.
+hinterlegt, kommen die Sammelwerte `all_branded` und `all_non_branded` hinzu
+sowie je Plattform `android_branded`, `ios_branded` bzw. `desktop_branded` —
+aber nur für die Plattformen, für die dort tatsächlich eine Kennung
+eingetragen ist.
 
 ### Anfragetypen
 
@@ -190,9 +194,9 @@ protokollieren)*. Trifft eine Gruppe im Testmodus zu, passiert dreierlei:
 * Der Treffer wird als Testtreffer gezählt.
 * Der Treffer wird protokolliert — und zwar **unabhängig von der
   eingestellten Protokollstufe**, denn genau das ist der Zweck des
-  Testbetriebs. Die Meldung beginnt mit `TEST MODE would have blocked
-  request` und nennt Benutzer, IP, Methode, URL, Regelname und die
-  ausgewerteten Bedingungen.
+  Testbetriebs. Die Meldung lautet `BW-Tech File Firewall TEST MODE would
+  have blocked request: …` und nennt Benutzer, IP, Methode, URL, Regelname
+  und die ausgewerteten Bedingungen.
 
 Anschließend läuft die Auswertung weiter, sodass in einem Durchgang mehrere
 Testgruppen anschlagen können. Der Testbetrieb ist damit der richtige Weg,
@@ -251,8 +255,8 @@ Mitternacht hinweg: `22:00`–`06:00` trifft abends **und** morgens zu.
 ## Workflow: Tags automatisch vergeben
 
 Ein Workflow besteht aus einem Namen, beliebig vielen Bedingungen und einer
-Aktion. Alle Bedingungen müssen zutreffen. Als Aktion steht *Add tags* zur
-Verfügung: Die genannten Tags werden der Datei zugewiesen, sobald sie
+Aktion. Alle Bedingungen müssen zutreffen. Als Aktion steht *Tags hinzufügen*
+zur Verfügung: Die genannten Tags werden der Datei zugewiesen, sobald sie
 angelegt oder geschrieben wird. Die Tags müssen bereits existieren, sonst
 lehnt die App den Workflow beim Speichern ab.
 
