@@ -139,7 +139,7 @@ EOS;
 
 	public function writeAuthorsFile() {
 		\ksort($this->authors);
-		$template = "ownCloud is written by:
+		$template = "owncloud.online is written by:
 @AUTHORS@
 
 With help from many libraries and frameworks including:

@@ -876,9 +876,9 @@ $CONFIG = [
  * If you maintain different instances and aggregate the logs, you may want
  * to distinguish between them. `syslog_tag` can be set per instance
  * with a unique id. Only available if `log_type` is set to `syslog`.
- * The default value is `ownCloud`.
+ * The default value is `owncloud.online`.
  */
-'syslog_tag' => 'ownCloud',
+'syslog_tag' => 'owncloud.online',
 
 /**
  * Define the syslog format

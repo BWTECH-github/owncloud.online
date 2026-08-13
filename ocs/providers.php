@@ -38,7 +38,7 @@ $writer->startElement('providers');
 $writer->startElement('provider');
 $writer->writeElement('id', 'ownCloud');
 $writer->writeElement('location', $url);
-$writer->writeElement('name', 'ownCloud');
+$writer->writeElement('name', 'owncloud.online');
 $writer->writeElement('icon', '');
 $writer->writeElement('termsofuse', '');
 $writer->writeElement('register', '');

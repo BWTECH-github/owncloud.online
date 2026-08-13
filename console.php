@@ -79,11 +79,11 @@ try {
 
 	$oldWorkingDir = \getcwd();
 	if ($oldWorkingDir === false) {
-		echo "This script can be run from the ownCloud root directory only." . PHP_EOL;
+		echo "This script can be run from the owncloud.online root directory only." . PHP_EOL;
 		echo "Can't determine current working dir - the script will continue to work but be aware of the above fact." . PHP_EOL;
 	} elseif ($oldWorkingDir !== __DIR__ && !\chdir(__DIR__)) {
-		echo "This script can be run from the ownCloud root directory only." . PHP_EOL;
-		echo "Can't change to ownCloud root directory." . PHP_EOL;
+		echo "This script can be run from the owncloud.online root directory only." . PHP_EOL;
+		echo "Can't change to the owncloud.online root directory." . PHP_EOL;
 		exit(1);
 	}
 

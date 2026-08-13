@@ -316,7 +316,7 @@ $CONFIG = [
  * name can be freely set based on your requirements.
  */
 'msteamsbridge' => [
-   "loginButtonName" => "Login to ownCloud with Azure AD",
+   "loginButtonName" => "Login to owncloud.online with Azure AD",
 ],
 
 /**
