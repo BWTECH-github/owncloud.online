@@ -173,7 +173,7 @@ class McpController extends Controller {
 		}
 
 		$response = new DataDisplayResponse(
-			(string)$psrResponse->getBody(),
+			$this->negotiateProtocolVersion((string)$psrResponse->getBody(), $rawBody),
 			$psrResponse->getStatusCode(),
 			[]
 		);
@@ -306,6 +306,61 @@ class McpController extends Controller {
 	private function registerFailedLogin(\OCO\Security\Bruteforce\Throttler $throttler, string $ip, string $login): void {
 		$throttler->registerAttempt('oco_mcp', $ip, $login);
 		$this->logger->warning('MCP login failed: \'' . $login . '\' (Remote IP: \'' . $ip . '\')', ['app' => 'oco_mcp']);
+	}
+
+	/**
+	 * Antwortet auf 'initialize' mit der Protokollversion, die der Client
+	 * angefragt hat, sofern wir sie sprechen.
+	 *
+	 * Das SDK handelt nicht aus: Mcp\Server\Handler\Request\InitializeHandler
+	 * gibt unveraendert die eigene konfigurierte Version zurueck und ignoriert
+	 * $request->protocolVersion. Seit dem SDK-Sprung auf '2025-11-25' bekam damit
+	 * jeder Client diese Zahl - auch einer, der '2024-11-05' angefragt hatte.
+	 * Uebliche Clients verwerfen eine Antwort mit einer Version, die sie nicht
+	 * kennen; mcp-remote und darueber Claude Desktop liefen deshalb in ihr
+	 * 60-Sekunden-Zeitlimit statt sich zu verbinden.
+	 *
+	 * Korrigiert wird hier statt im Handler, weil dessen ServerCapabilities erst
+	 * in Builder::build() entstehen und von aussen nicht erreichbar sind - ein
+	 * eigener Handler muesste sie nachbauen und liefe bei jedem SDK-Update
+	 * auseinander. Unterstuetzt wird, was der Aufzaehlungstyp des SDK kennt; eine
+	 * unbekannte Wunschversion bleibt unangetastet, dann entscheidet der Client.
+	 *
+	 * @param string $body Antwort des SDK
+	 * @param string $rawBody Angefragter Rumpf, um Methode und Wunschversion zu lesen
+	 * @return string
+	 */
+	private function negotiateProtocolVersion(string $body, string $rawBody): string {
+		try {
+			$anfrage = \json_decode($rawBody, true);
+			// Stapelanfragen (JSON-Array) lassen wir unberuehrt - dort steckt
+			// initialize ohnehin nicht drin.
+			if (!\is_array($anfrage) || ($anfrage['method'] ?? null) !== 'initialize') {
+				return $body;
+			}
+			$wunsch = $anfrage['params']['protocolVersion'] ?? null;
+			if (!\is_string($wunsch) || $wunsch === '') {
+				return $body;
+			}
+			if (\Mcp\Schema\Enum\ProtocolVersion::tryFrom($wunsch) === null) {
+				return $body;
+			}
+
+			$antwort = \json_decode($body, true);
+			if (!\is_array($antwort)
+				|| !isset($antwort['result']['protocolVersion'])
+				|| $antwort['result']['protocolVersion'] === $wunsch) {
+				return $body;
+			}
+			$antwort['result']['protocolVersion'] = $wunsch;
+
+			$neu = \json_encode($antwort);
+			return $neu === false ? $body : $neu;
+		} catch (\Throwable $e) {
+			// Eine Anmeldung darf nicht daran scheitern, dass sich hier etwas
+			// nicht lesen laesst - dann bleibt die Antwort des SDK stehen.
+			return $body;
+		}
 	}
 
 	private function error(int $httpStatus, int $rpcCode, string $message): DataDisplayResponse {
