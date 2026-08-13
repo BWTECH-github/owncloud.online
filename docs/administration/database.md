@@ -1,6 +1,6 @@
 # Datenbank
 
-ownCloud.online läuft mit MariaDB/MySQL, PostgreSQL oder SQLite. Für den
+owncloud.online läuft mit MariaDB/MySQL, PostgreSQL oder SQLite. Für den
 produktiven Betrieb ist **MariaDB** die getestete Standardvariante; SQLite ist
 nur für lokale Tests geeignet und bricht bei mehreren gleichzeitigen Zugriffen
 ein.

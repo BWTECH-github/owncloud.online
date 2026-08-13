@@ -1,6 +1,6 @@
 # Apps und Marketplace
 
-ownCloud.online kann Apps klassisch per `occ`, per Paketinstaller oder über die eigene Market-App installieren.
+owncloud.online kann Apps klassisch per `occ`, per Paketinstaller oder über die eigene Market-App installieren.
 
 ## App-Liste prüfen
 
@@ -59,7 +59,7 @@ Für lokale Tests:
 1. App-Paket bauen.
 2. Paket im Market Backend hochladen.
 3. Changelog eintragen.
-4. ownCloud.online Market-App öffnen.
+4. owncloud.online Market-App öffnen.
 5. Update prüfen und installieren.
 6. `occ app:check-code <app_id>` ausführen.
 7. Logs prüfen.

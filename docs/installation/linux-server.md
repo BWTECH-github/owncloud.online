@@ -1,6 +1,6 @@
 # Leerer Linux-Server
 
-Diese Installation ist für einen neuen Ubuntu- oder Debian-Server gedacht. Das Bootstrap-Script installiert Systempakete, PHP 8.4, MariaDB, Apache, Composer, ownCloud.online und Plugin-Pakete.
+Diese Installation ist für einen neuen Ubuntu- oder Debian-Server gedacht. Das Bootstrap-Script installiert Systempakete, PHP 8.4, MariaDB, Apache, Composer, owncloud.online und Plugin-Pakete.
 
 ## 1. Bundle auf Windows bauen
 

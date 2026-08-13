@@ -23,7 +23,7 @@ Danach im Market Backend hochladen:
 3. `.tar.gz` hochladen.
 4. Changelog eintragen.
 5. App im Katalog prüfen.
-6. Installation über ownCloud.online Market-App testen.
+6. Installation über owncloud.online Market-App testen.
 
 ## Release-Artefakte
 

@@ -32,7 +32,7 @@ Proxy-Beispiel:
 
 ## JavaScript-Fehler: jQuery ist nicht definiert
 
-Ursache ist meist ein unvollständiger Build. Bei ownCloud.online müssen Composer und `make` im Release-Prozess laufen.
+Ursache ist meist ein unvollständiger Build. Bei owncloud.online müssen Composer und `make` im Release-Prozess laufen.
 
 ```bash
 cd /var/www/owncloud.online

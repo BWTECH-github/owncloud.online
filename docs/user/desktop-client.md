@@ -1,6 +1,6 @@
 # Desktop Client
 
-Der Desktop Client wurde auf owncloud.online umgebrandet und lokal gegen ownCloud.online 11.0.0 getestet.
+Der Desktop Client wurde auf owncloud.online umgebrandet und lokal gegen owncloud.online 11.0.0 getestet.
 
 ## Lokaler Teststand
 
@@ -9,7 +9,7 @@ Der Desktop Client wurde auf owncloud.online umgebrandet und lokal gegen ownClou
 | Build | Windows, MSVC, Qt 6.8.3 |
 | Branding | `owncloud.online`, `BW-Tech GmbH` |
 | Login | OAuth2 über Browser erfolgreich |
-| Server | `ownCloud.online 11.0.0` erkannt |
+| Server | `owncloud.online 11.0.0` erkannt |
 | Sync | Upload, Delete und WebDAV geprüft |
 
 ## Getesteter Flow
@@ -35,4 +35,4 @@ Für OAuth2 muss die Redirect-URL zum Client passen:
 http://localhost:*
 ```
 
-Offener Punkt aus dem lokalen Test: ownCloud.online muss selbst eine gültige OIDC-Discovery unter `/.well-known/openid-configuration` liefern oder der Client braucht einen sauberen Fallback. Der lokale Test nutzte dafür einen HTTPS-Testproxy.
+Offener Punkt aus dem lokalen Test: owncloud.online muss selbst eine gültige OIDC-Discovery unter `/.well-known/openid-configuration` liefern oder der Client braucht einen sauberen Fallback. Der lokale Test nutzte dafür einen HTTPS-Testproxy.

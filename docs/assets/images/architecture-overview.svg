@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
-  <title id="title">ownCloud.online Architektur</title>
-  <desc id="desc">Übersicht der Komponenten: Benutzer, Webserver, ownCloud.online Core, Apps, Datenbank, Speicher, Market Backend und Desktop Client.</desc>
+  <title id="title">owncloud.online Architektur</title>
+  <desc id="desc">Übersicht der Komponenten: Benutzer, Webserver, owncloud.online Core, Apps, Datenbank, Speicher, Market Backend und Desktop Client.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#f8fafc"/>
@@ -18,7 +18,7 @@
     </marker>
   </defs>
   <rect width="1280" height="720" fill="url(#bg)"/>
-  <text x="70" y="78" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800" fill="#0f172a">ownCloud.online Systemübersicht</text>
+  <text x="70" y="78" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800" fill="#0f172a">owncloud.online Systemübersicht</text>
   <text x="70" y="112" font-family="Inter, Arial, sans-serif" font-size="18" fill="#475569">PHP 8.4 Core, eigene Apps, Market Backend und Desktop Client</text>
 
   <g filter="url(#shadow)">
@@ -38,7 +38,7 @@
 
   <g filter="url(#shadow)">
     <rect x="815" y="120" width="360" height="230" rx="18" fill="#0f172a" stroke="#164e63"/>
-    <text x="845" y="170" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800" fill="#ffffff">ownCloud.online Core</text>
+    <text x="845" y="170" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800" fill="#ffffff">owncloud.online Core</text>
     <text x="845" y="208" font-family="Inter, Arial, sans-serif" font-size="15" fill="#cbd5e1">Version 11.0.0</text>
     <text x="845" y="232" font-family="Inter, Arial, sans-serif" font-size="15" fill="#cbd5e1">ownCloud Fork für PHP 8.4</text>
     <text x="845" y="256" font-family="Inter, Arial, sans-serif" font-size="15" fill="#cbd5e1">OCS, WebDAV, Sharing, Files</text>

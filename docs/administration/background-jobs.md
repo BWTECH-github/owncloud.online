@@ -1,6 +1,6 @@
 # Hintergrund-Jobs (Cron)
 
-ownCloud.online erledigt Aufräum- und Wartungsarbeiten in Hintergrund-Jobs:
+owncloud.online erledigt Aufräum- und Wartungsarbeiten in Hintergrund-Jobs:
 Papierkorb und alte Dateiversionen ausräumen, Freigaben ablaufen lassen,
 Vorschaubilder erzeugen, Benachrichtigungen und Aktivitäts-Mails versenden,
 Verzeichnisse mit externem Speicher aktualisieren. Ist die Ausführung nicht

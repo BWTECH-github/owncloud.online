@@ -1,6 +1,6 @@
 # Verschlüsselung
 
-ownCloud.online kann Dateien serverseitig verschlüsselt ablegen. Das schützt die
+owncloud.online kann Dateien serverseitig verschlüsselt ablegen. Das schützt die
 Inhalte auf dem Speicher — vor allem bei externem Speicher, der nicht unter
 eigener Kontrolle steht. Es ist **keine** Ende-zu-Ende-Verschlüsselung: Der
 Server verarbeitet die Schlüssel, ein Angreifer mit Zugriff auf den laufenden

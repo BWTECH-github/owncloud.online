@@ -1,6 +1,6 @@
 # PHP 8.4 Kompatibilität
 
-ownCloud.online wird auf PHP 8.4 betrieben. Core und Plugins müssen darauf geprüft werden.
+owncloud.online wird auf PHP 8.4 betrieben. Core und Plugins müssen darauf geprüft werden.
 
 ## Regeln
 

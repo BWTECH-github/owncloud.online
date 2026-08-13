@@ -1,6 +1,6 @@
 # Plugins
 
-ownCloud.online nutzt Core-Apps aus dem Server-Repository und externe Apps aus lokalen Plugin-Repositories. Externe Apps werden als `.tar.gz` gebaut und können über das eigene Market Backend verteilt werden.
+owncloud.online nutzt Core-Apps aus dem Server-Repository und externe Apps aus lokalen Plugin-Repositories. Externe Apps werden als `.tar.gz` gebaut und können über das eigene Market Backend verteilt werden.
 
 ## Regeln für eigene Plugins
 

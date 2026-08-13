@@ -69,7 +69,7 @@ redis-cli ping
 php8.4 -m | grep -E 'apcu|redis|Zend OPcache'
 ```
 
-ownCloud.online-Konfiguration prüfen:
+owncloud.online-Konfiguration prüfen:
 
 ```bash
 sudo -u www-data php8.4 occ config:system:get dbtype
@@ -81,7 +81,7 @@ sudo -u www-data php8.4 occ background:queue:status
 ## OPcache-Dimensionierung
 
 Der Standardwert `opcache.max_accelerated_files=10000` reicht für
-ownCloud.online nicht: die Installation umfasst inklusive aller Apps und
+owncloud.online nicht: die Installation umfasst inklusive aller Apps und
 Vendor-Bibliotheken über 14.000 PHP-Dateien. Wird das Limit überschritten,
 verdrängt OPcache Einträge und kompiliert unter wechselnder Last laufend Dateien
 neu. Dateizahl prüfen und das Limit darüber setzen:

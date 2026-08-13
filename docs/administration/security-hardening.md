@@ -28,7 +28,7 @@ Eintrag:
 */15 * * * * php8.4 -f /var/www/owncloud.online/cron.php
 ```
 
-In ownCloud.online:
+In owncloud.online:
 
 ```bash
 sudo -u www-data php8.4 occ background:cron

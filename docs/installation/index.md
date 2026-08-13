@@ -1,6 +1,6 @@
 # Installation
 
-ownCloud.online kann auf drei Wegen installiert werden:
+owncloud.online kann auf drei Wegen installiert werden:
 
 | Variante | Zielgruppe | Paket |
 | --- | --- | --- |
@@ -32,7 +32,7 @@ sudo -u www-data php8.4 /var/www/owncloud.online/occ app:list
 sudo -u www-data php8.4 /var/www/owncloud.online/occ maintenance:repair
 ```
 
-Im Browser muss `/status.php` ownCloud.online ausgeben:
+Im Browser muss `/status.php` owncloud.online ausgeben:
 
 ```json
 {
@@ -40,7 +40,7 @@ Im Browser muss `/status.php` ownCloud.online ausgeben:
   "maintenance": false,
   "version": "11.0.0.0",
   "versionstring": "11.0.0",
-  "productname": "ownCloud.online",
-  "product": "ownCloud.online"
+  "productname": "owncloud.online",
+  "product": "owncloud.online"
 }
 ```

@@ -47,12 +47,17 @@ nav:
       - administration/index.md
       - Performance: administration/performance.md
       - Sicherheit und Setup-Warnungen: administration/security-hardening.md
+      - Zwei-Faktor-Anmeldung: administration/two-factor.md
+      - Reverse-Proxy und TLS: administration/reverse-proxy.md
       - Upstream-CVE-Status: administration/upstream-cve-status.md
       - Apps und Marketplace: administration/apps-market.md
       - Backups und Updates: administration/backups-updates.md
       - Konfiguration (config.php): administration/config-reference.md
       - Hintergrund-Jobs (Cron): administration/background-jobs.md
+      - Freigaben steuern: administration/sharing-policies.md
+      - E-Mail-Versand: administration/email.md
       - Datenbank: administration/database.md
+      - Externe Speicher: administration/external-storage.md
       - Verschlüsselung: administration/encryption.md
       - Serverprotokoll und Fehlermeldungen: administration/logging.md
       - Troubleshooting: administration/troubleshooting.md
