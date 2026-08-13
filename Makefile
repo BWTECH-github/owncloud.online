@@ -181,7 +181,19 @@ $(core_vendor): $(nodejs_deps)
 install-nodejs-deps: $(nodejs_deps)
 
 .PHONY: clean-nodejs-deps
+# ACHTUNG: Loescht core/vendor. Darin stecken eigene Sicherheitskorrekturen an
+# ausgelieferten Fremdbibliotheken, die yarn beim Neuaufbau NICHT mitbringt --
+# allen voran der Rueckbau der Self-Closing-Expansion in
+# core/vendor/jquery/dist/jquery{,.min}.js (Backport des jQuery-3.5.0-Fixes fuer
+# CVE-2020-11022 / CVE-2020-11023). Nach einem Neuaufbau muss die Korrektur
+# erneut angewandt werden, sonst geht sie still verloren.
+# Stand siehe docs/administration/upstream-cve-status.md, Abschnitt
+# "Frontend-Bibliotheken".
 clean-nodejs-deps:
+	@echo "WARNUNG: core/vendor wird geloescht. Gepatchte Fremdbibliotheken"
+	@echo "         (jQuery-Fix fuer CVE-2020-11022/11023) gehen dabei verloren"
+	@echo "         und muessen nach dem Neuaufbau erneut angewandt werden."
+	@echo "         Siehe docs/administration/upstream-cve-status.md."
 	rm -Rf $(core_vendor)
 	rm -Rf $(nodejs_deps)
 
