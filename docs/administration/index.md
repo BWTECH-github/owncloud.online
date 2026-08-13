@@ -20,10 +20,22 @@ sudo -u www-data php8.4 /var/www/owncloud.online/occ background:queue:status
 | `/var/log/php8.4-fpm.log` | PHP-FPM Logs |
 | `config/config.php` | Systemkonfiguration |
 
-## Admin UI
+## Die Verwaltungsoberfläche
 
-![Admin Einstellungen](../assets/screenshots/owncloud-online-admin-settings.png)
+![Verwaltungseinstellungen](../assets/screenshots/owncloud-online-admin-settings.png)
 
-## Apps UI
+Erreichbar über das Benutzermenü rechts oben unter *Einstellungen*. Die linke
+Spalte trennt persönliche Einstellungen von der Administration; alles unterhalb
+von *Administration* wirkt auf die ganze Instanz.
 
-![Apps Ansicht](../assets/screenshots/owncloud-online-apps.png)
+## Apps und Markt
+
+![Liste der installierten Apps](../assets/screenshots/owncloud-online-apps.png)
+
+Der Markt zeigt unter *Installierte Apps*, was in dieser Instanz vorhanden ist,
+mit Version, Autor, Zustand und einem Hinweis, ob die App zur Serverversion
+passt. *Updates* listet die Apps, für die eine neuere Fassung im Katalog liegt.
+
+Steht dort der Hinweis, dass Installieren und Aktualisieren nicht unterstützt
+wird, fehlt dem Webserver das Schreibrecht auf das `apps`-Verzeichnis — dann
+ist der Weg über `occ` beziehungsweise über das Paket der richtige.

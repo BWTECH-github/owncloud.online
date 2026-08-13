@@ -17,6 +17,22 @@ Benutzer arbeiten im Browser, mit dem Desktop Client oder über mobile Apps. Die
 
 Die Dateienansicht zeigt persönliche Dateien, Favoriten, Freigaben, Links, Tags und gelöschte Dateien.
 
+## Teilen
+
+![Freigabe eines Dokuments](../assets/screenshots/owncloud-online-sharing.png)
+
+Ein Klick auf das Freigabesymbol in der Dateiliste öffnet die Seitenleiste.
+Dort gibt es zwei Wege:
+
+* **Nutzer und Gruppen** — Name eintippen, Rechte je Freigabe setzen (ansehen,
+  ändern, weiterteilen, löschen).
+* **Öffentliche Links** — für Empfänger ohne Konto. Ein Link lässt sich mit
+  Passwort und Ablaufdatum versehen und auf reines Lesen oder auf Hochladen
+  beschränken.
+
+Bestehende Freigaben stehen in derselben Ansicht und lassen sich dort ändern
+oder zurücknehmen.
+
 ## Sicherheit
 
 Benutzer sollten:
