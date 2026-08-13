@@ -1,31 +1,30 @@
-# Security Policy
+# Sicherheit
 
-## Supported Versions
+## Unterstützte Versionen
 
-This repository is the BW-Tech GmbH fork **owncloud.online** (based on ownCloud 10.x).
-Only the fork's own release line is supported here:
+Dieses Repository ist owncloud.online, gepflegt von der BW-Tech GmbH.
+Unterstützt wird ausschließlich die eigene Release-Linie:
 
-| Version            | Supported          |
-| ------------------ | ------------------ |
+| Version              | Unterstützt        |
+| -------------------- | ------------------ |
 | owncloud.online 11.x | :white_check_mark: |
-| anything older     | :x:                |
+| älter                | :x:                |
 
-For vulnerabilities in upstream ownCloud itself, please follow the upstream
-process at [https://owncloud.com/security/](https://owncloud.com/security/).
+## Eine Lücke melden
 
-## Reporting a Vulnerability
+Sicherheitsrelevante Funde bitte **vertraulich** melden, nicht als öffentliches
+Issue. Zwei Wege:
 
-When you've encountered a security vulnerability in owncloud.online,
-please disclose it responsibly and privately:
+1. **Bevorzugt:** die private Meldefunktion von GitHub in diesem Repository —
+   Reiter *Security* → *Report a vulnerability*.
+2. E-Mail an **security@bw.tech** mit Beschreibung, betroffener Version und,
+   wenn möglich, den Schritten zum Nachstellen.
 
-1. **Preferred:** use GitHub's private vulnerability reporting on this
-   repository ("Report a vulnerability" under the Security tab), or
-2. e-mail **security@bw.tech** with a description, affected version and,
-   if possible, steps to reproduce.
+Wir bestätigen den Eingang innerhalb von drei Werktagen und nennen innerhalb von
+30 Tagen eine Korrektur oder einen Plan zur Entschärfung.
 
-Please do not open public issues for security problems.
+## Geerbte Schwachstellen
 
-We aim to acknowledge reports within 3 business days and to provide a fix
-or mitigation plan within 30 days for confirmed issues. Upstream-inherited
-CVEs are tracked and back-ported as documented in
-`docs/administration/upstream-cve-status.md`.
+owncloud.online ist ein Fork und erbt damit einen Teil seiner Codebasis. Bekannte
+CVEs aus dieser Herkunft werden nachverfolgt und zurückportiert; der Stand steht
+in [`docs/administration/upstream-cve-status.md`](../docs/administration/upstream-cve-status.md).

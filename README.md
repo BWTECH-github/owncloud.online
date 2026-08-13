@@ -1,54 +1,70 @@
-# ownCloud.online
+# owncloud.online
 
-**This is a fork of [ownCloud Core](https://github.com/owncloud/core) with PHP 8.4 compatibility and a custom owncloud.online design. [ownCloud](http://ownCloud.com) offers file sharing and collaboration trusted by 200+ million users worldwide regardless of device or location.**
+**Dateiablage, Freigaben und Zusammenarbeit auf dem eigenen Server.**
+owncloud.online ist ein Fork von [ownCloud Core](https://github.com/owncloud/core)
+mit PHP-8.4-Kompatibilität, eigenem Design und einer gepflegten Sicherheitslage.
 
 ![](.github/design-preview.png)
 
-## Why Is This so Awesome?
-* :file_folder: **Access your Data** You can store your files, contacts, calendars and more on a server of your choosing.
-* :package: **Sync your Data** You keep your files, contacts, calendars and more synchronized amongst your devices.
-* :arrows_counterclockwise: **Share your Data** You share your data with others, and give them access to your latest photo galleries, your calendar or anything else you want them to see.
-* :rocket: **Expandable with dozens of Apps** ...like Calendar, Contacts, Mail or News.
-* :cloud: **All Benefits of the Cloud** ...on your own Server.
-* :lock: **Encryption** You can encrypt data in transit with secure https connections. You can enable the encryption app to encrypt data on storage for improved security and privacy.
-* ...
+## Dokumentation
 
-## Installation Instructions
-For installing ownCloud, see the official
-[ownCloud 10](https://doc.owncloud.com/server/latest/admin_manual/installation/) installation manual.
+Die vollständige Dokumentation steht auf **<https://docs.owncloud.online>** —
+Installation, Betrieb, Administration, Plugins und Entwicklung. Die Inhalte
+stammen aus dem Ordner [`docs/`](docs/) dieses Repositorys; eine Änderung dort
+erscheint nach dem nächsten Build automatisch auf der Doku-Seite.
 
-## Development Build Prerequisites
-Note that when doing a local development build, you need to have **Composer v2** installed. If your OS provides a lower version than v2, you can install Composer v2 manually. As an example, which may be valid for other releases/distros too, see [How to install Composer on Ubuntu 22.04 | 20.04 LTS](https://www.how2shout.com/linux/how-to-install-composer-on-ubuntu-22-04-20-04-lts/).
+## Was es kann
 
-You also must have installed `yarn` and `node` (v14 or higher).
+* **Daten ablegen** — Dateien, Kontakte und Kalender auf einem Server Ihrer Wahl.
+* **Daten abgleichen** — zwischen Arbeitsplatz, Telefon und Web, auch für große
+  Dateien: Uploads laufen gestückelt und lassen sich fortsetzen.
+* **Daten teilen** — intern per Gruppe oder nach außen per Link, mit Passwort,
+  Ablaufdatum und Berechtigungen bis auf Dateiebene.
+* **Erweiterbar** — rund 30 gepflegte Plugins aus dem eigenen Market:
+  Volltextsuche, Virenprüfung, Verschlüsselung, ONLYOFFICE, S3-Speicher,
+  LDAP-Anbindung, Zwei-Faktor-Anmeldung und mehr.
+* **Verschlüsselung** — HTTPS im Transport, optional serverseitige
+  Verschlüsselung des Speichers.
+* **Barrierefreiheit** — laufend gegen WCAG 2.1 AA geprüft und nachgebessert.
 
-## Contribution Guidelines
-https://owncloud.com/contribute/
+## Installation
 
-## Commit Messages
-To ease bringing commits into context, a CI job check that the commit message satisfies a specification for adding human and machine readable meaning to commit messages. For details see: [Conventional Commits](www.conventionalcommits.org/). Note that if conventional commits are not satisfied, CI will not be green. In this case, you need to rewrite the git commit history to meet the requirement.
+Siehe [Installation](https://docs.owncloud.online/installation/) in der
+Dokumentation. Anleitungen gibt es für Linux-Server, Webhosting und lokale
+Testinstanzen.
 
-You must at least provide a `type` + `description` as described in the [Examples](https://www.conventionalcommits.org/en/v1.0.0/#examples) section.
+## Entwicklung
 
-For a quickstart, the following types can be used:
+Für einen lokalen Build brauchen Sie **Composer v2** sowie `node` (v14 oder
+neuer) und `yarn`. Bringt Ihre Distribution nur Composer v1 mit, installieren
+Sie v2 von Hand.
 
-`fix:`, `feat:`, `build:`, `chore:`, `ci:`, `docs:`, `style:`, `refactor:`, `perf:`, `test:`
+### Commit-Nachrichten
 
+Ein CI-Job prüft, ob die Commit-Nachricht dem Format
+[Conventional Commits](https://www.conventionalcommits.org/) entspricht. Ist sie
+es nicht, wird die CI rot und die Historie muss angepasst werden.
 
-## Support
-Learn about the different ways you can get support for ownCloud: https://owncloud.com/support/
+Mindestens nötig sind `type` und `description`. Gültige Typen:
 
-## Get in Touch
-* :clipboard: [Forum](https://central.owncloud.org)
-* :hash: [IRC channel](https://web.libera.chat/?channels=#owncloud)
-* :busts_in_silhouette: [Facebook](https://facebook.com/ownclouders)
-* :hatching_chick: [Twitter](https://twitter.com/ownCloud)
+`feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`, `build:`, `perf:`,
+`ci:`, `chore:`, `revert:`
 
-## Important Notice on Translations
-Please submit translations via Transifex:
-https://explore.transifex.com/owncloud-org/
+Andere Typen lehnt die Prüfung ab — `l10n:` etwa ist keiner; nutzen Sie dafür
+`chore(l10n):`.
 
-See the detailed information about [translations](https://doc.owncloud.com/server/latest/developer_manual/core/translation.html) here.
+## Unterstützung
+
+Fragen und Fehlermeldungen: [Issues](https://github.com/BWTECH-github/owncloud.online/issues)
+oder direkt an [BW.Tech](https://bw.tech).
+
+## Herkunft und Lizenz
+
+owncloud.online baut auf [ownCloud Core](https://github.com/owncloud/core) auf.
+Der Dank für die ursprüngliche Arbeit gehört der ownCloud GmbH und der
+ownCloud-Gemeinschaft; dieser Fork wird davon unabhängig von der BW-Tech GmbH
+gepflegt. Es gelten weiterhin die Lizenzbedingungen des Ursprungsprojekts
+(AGPLv3), siehe [COPYING](COPYING).
 
 ---
-Maintained by [BW.Tech](https://bw.tech)
+Gepflegt von [BW.Tech](https://bw.tech)

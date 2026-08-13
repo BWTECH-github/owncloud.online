@@ -1,60 +1,53 @@
 <!--
-Thanks for submitting a change to ownCloud!
+Danke für den Beitrag zu owncloud.online.
 
-This is the bug tracker for the Server component. Find other components at https://github.com/owncloud/core/blob/master/.github/CONTRIBUTING.md#guidelines
+Sicherheitsrelevante Korrekturen bitte NICHT hier öffentlich einreichen —
+vertraulich melden, siehe .github/SECURITY.md.
 
-For fixing potential security issues please see https://owncloud.com/security/
+Änderungen gehen gegen den Zweig `main`.
 
-To make it possible for us to get your change reviewed and merged please carefully fill out the requested information below.
-
-Please note that any kind of change needs first be submitted to the master branch which holds the next version of ownCloud.
-
-Please set the following labels:
-
-- Set label "3 - To review" for review or "2 - Development" if the PR still has open tasks
-- Assignment: assign to self
-- Milestone: set the same as the ticket this PR fixes, or "development" by default
-- Reviewers: pick at least one
+Commit-Nachrichten im Format Conventional Commits, sonst wird die CI rot.
+Gültige Typen: feat, fix, docs, style, refactor, test, build, perf, ci, chore,
+revert.
 -->
 
-## Description
-<!--- Describe your changes in detail -->
+## Was ändert sich
 
-## Related Issue
-<!--- This project only accepts pull requests related to open issues -->
-<!--- If suggesting a new feature or change, please discuss it in an issue first -->
-<!--- If fixing a bug, there should be an issue describing it with steps to reproduce -->
-<!--- Please link to the issue here: -->
-- Fixes <issue_link>
+<!-- Kurz und konkret. Das Detail steht im Diff. -->
 
-## Motivation and Context
-<!--- Why is this change required? What problem does it solve? -->
+## Warum
 
-## How Has This Been Tested?
-<!--- Please describe in detail how you tested your changes. -->
-<!--- Include details of your testing environment, and the tests you ran to -->
-<!--- see how your change affects other areas of the code, etc. -->
-- test environment:
-- test case 1:
-- test case 2:
-- ...
+<!-- Welches Problem löst das? Wenn es ein Issue dazu gibt, hier verlinken. -->
 
-## Screenshots (if appropriate):
+- Behebt #
 
-## Types of changes
-<!--- What types of changes does your code introduce? Put an `x` in all the boxes that apply: -->
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Database schema changes (next release will require increase of minor version instead of patch)
-- [ ] Breaking change (fix or feature that would cause existing functionality to change)
-- [ ] Technical debt
-- [ ] Tests only (no source changes)
+## Wie wurde es geprüft
 
-## Checklist:
-<!-- Tick the checkboxes when done. -->
-<!-- Raise documentation ticket in https://github.com/owncloud/documentation -->
-- [ ] Code changes
-- [ ] Unit tests added
-- [ ] Acceptance tests added
-- [ ] Documentation ticket raised: <link> 
-- [ ] Changelog item, see [TEMPLATE](https://github.com/owncloud/core/blob/master/changelog/TEMPLATE)
+<!-- Testumgebung und die Fälle, die Sie tatsächlich durchgespielt haben.
+     "Sollte funktionieren" ist keine Prüfung. -->
+
+- Umgebung (PHP-Version, Datenbank, Browser):
+- Fall 1:
+- Fall 2:
+
+## Bildschirmfotos
+
+<!-- Bei sichtbaren Änderungen: vorher und nachher. -->
+
+## Art der Änderung
+
+- [ ] Fehlerkorrektur
+- [ ] Neue Funktion
+- [ ] Änderung am Datenbankschema (erzwingt Minor- statt Patch-Release)
+- [ ] Bricht bestehendes Verhalten
+- [ ] Aufräumen / technische Schuld
+- [ ] Nur Tests
+
+## Checkliste
+
+- [ ] Tests ergänzt oder angepasst
+- [ ] Bei Änderungen an `*.js` / `*.css`: `make minify-assets` gelaufen und das
+      Ergebnis mitcommittet — sonst liefert der Server weiter den alten Stand aus
+- [ ] Barrierefreiheit geprüft (Tastaturbedienung, sichtbarer Fokus, Kontrast)
+- [ ] Dokumentation unter `docs/` angepasst, falls nötig
+- [ ] Changelog-Eintrag ergänzt, siehe [TEMPLATE](../changelog/TEMPLATE)
