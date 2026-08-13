@@ -21,7 +21,7 @@ use OCP\IContainer;
 /**
  * The app deliberately registers NO bootstrap hooks and does NOT load its
  * composer autoloader here. The bundled MCP SDK vendor is pulled in lazily
- * inside {@see McpController::handle()} only, so a normal ownCloud request never
+ * inside {@see McpController::handle()} only, so a normal owncloud.online request never
  * loads the app's vendor/ and therefore can never shadow a core-provided library
  * (the class of bug that once took down the global HTTP client via an old Guzzle).
  */

@@ -11,7 +11,7 @@ OC.L10N.register(
     "WebDAV" : "WebDAV",
     "URL" : "URL",
     "Location" : "ადგილმდებარეობა",
-    "ownCloud" : "ownCloud–ი",
+    "owncloud.online" : "owncloud.online",
     "Host" : "ჰოსტი",
     "Share" : "გაზიარება",
     "Name" : "სახელი",

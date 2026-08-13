@@ -8,7 +8,7 @@ OC.L10N.register(
     "Save" : "සුරකින්න",
     "URL" : "URL",
     "Location" : "ස්ථානය",
-    "ownCloud" : "ownCloud",
+    "owncloud.online" : "owncloud.online",
     "Host" : "සත්කාරකය",
     "Share" : "බෙදා හදා ගන්න",
     "Name" : "නම",

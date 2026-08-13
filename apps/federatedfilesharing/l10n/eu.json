@@ -13,8 +13,8 @@
     "\"%1$s\" invited you to view \"%3$s\"" : "\"%1$s\"-(e)k \"%3$s\" ikustera gonbidatu zaitu",
     "Accept" : "Onartu",
     "Decline" : "Uko egin",
-    "Share with me through my #ownCloud Federated Cloud ID, see %s" : "Partekatu nirekin nire #ownCloud Hodei Federatu ID bidez, ikusi %s",
-    "Share with me through my #ownCloud Federated Cloud ID" : "Partekatu nirekin nire #ownCloud Hodei Federatu ID bidez",
+    "Share with me through my Federated Cloud ID, see %s" : "Partekatu nirekin nire #owncloud.online Hodei Federatu ID bidez, ikusi %s",
+    "Share with me through my Federated Cloud ID" : "Partekatu nirekin nire #owncloud.online Hodei Federatu ID bidez",
     "Federated Cloud Sharing" : "Federatutako Hodei Partekatzea",
     "Open documentation" : "Ireki dokumentazioa",
     "Allow users on this server to send shares to other servers" : "Baimendu zerbitzari honetako erabiltzaileak beste zerbitzariekin partekatzera",
@@ -23,7 +23,7 @@
     "Your Federated Cloud ID:" : "Zure Hode Federatu IDa:",
     "Share it:" : "Partekatu:",
     "Add to your website" : "Gehitu zure webgunean",
-    "Share with me via ownCloud" : "Partekatu nirekin ownCloud bidez",
+    "Share with me via owncloud.online" : "Partekatu nirekin owncloud.online bidez",
     "HTML Code:" : "HTML Kodea:",
     "Nothing to configure." : "Konfiguratzeko ezer"
 },"pluralForm" :"nplurals=2; plural=(n != 1);"

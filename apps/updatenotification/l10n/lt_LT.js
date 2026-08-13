@@ -4,7 +4,7 @@ OC.L10N.register(
     "Update notifications" : "Atnaujinti pranešimus",
     "{version} is available. Get more information on how to update." : "{version} jau išleista. Sužinokite daugiau kaip atnaujinti.",
     "Updated channel" : "Atnaujintas kanalas",
-    "ownCloud core" : "ownCloud branduolys",
+    "owncloud.online core" : "owncloud.online branduolys",
     "Update for %1$s to version %2$s is available." : "Išleisti %1$s versijos atnaujinimai į %2$s versiją.",
     "Updater" : "Atnaujinimo programa",
     "A new version is available: %s" : "Yra prieinama nauja versija: %s",
@@ -13,6 +13,6 @@ OC.L10N.register(
     "Update channel:" : "Atnaujinimo kanalas:",
     "You can always update to a newer version / experimental channel. But you can never downgrade to a more stable channel." : "Visada galite atnaujinti į naujesnę versiją / bandomąjį kanalą. Bet niekada žeminti versijos ar pakeisti į stabilų kanalą.",
     "Notify members of the following groups about available updates:" : "Siųsti pranešimą šių grupių nariams apie išleistus atnaujinimus:",
-    "Only notification for app updates are available, because the selected update channel for ownCloud itself does not allow notifications." : "Galimi tik programėlių atnaujinimo pranešimai, kadangi naudojamas ownCloud atnaujinimų kanalas atnaujinimų pranešimų nepalaiko."
+    "Only notification for app updates are available, because the selected update channel for the server itself does not allow notifications." : "Galimi tik programėlių atnaujinimo pranešimai, kadangi naudojamas owncloud.online atnaujinimų kanalas atnaujinimų pranešimų nepalaiko."
 },
 "nplurals=4; plural=(n % 10 == 1 && (n % 100 > 19 || n % 100 < 11) ? 0 : (n % 10 >= 2 && n % 10 <=9) && (n % 100 > 19 || n % 100 < 11) ? 1 : n % 1 != 0 ? 2: 3);");

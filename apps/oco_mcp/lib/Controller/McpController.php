@@ -26,7 +26,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 
 /**
- * Bridges an ownCloud request to the MCP SDK's Streamable HTTP transport.
+ * Bridges an owncloud.online request to the MCP SDK's Streamable HTTP transport.
  *
  * The bundled MCP SDK (and its PSR-7 glue) is loaded lazily here — never in
  * Application.php — so only requests that actually hit /apps/oco_mcp/mcp pull in
@@ -70,7 +70,7 @@ class McpController extends Controller {
 	 *
 	 * CSRF exemption is safe because we refuse plain browser-cookie sessions:
 	 * an MCP call must carry valid HTTP Basic credentials whose password is an
-	 * ownCloud app/device token, which a cross-site page cannot forge.
+	 * owncloud.online app/device token, which a cross-site page cannot forge.
 	 */
 	public function handle(): DataDisplayResponse {
 		// Do not trust a pre-existing browser session. Validate the credentials from
@@ -82,7 +82,7 @@ class McpController extends Controller {
 			return $this->error(
 				Http::STATUS_UNAUTHORIZED,
 				-32001,
-				'MCP requires HTTP Basic authentication with an ownCloud app token.'
+				'MCP requires HTTP Basic authentication with an owncloud.online app token.'
 			);
 		}
 
@@ -184,7 +184,7 @@ class McpController extends Controller {
 	}
 
 	/**
-	 * Build a PSR-7 ServerRequest (via core's Guzzle psr7) from the ownCloud request.
+	 * Build a PSR-7 ServerRequest (via core's Guzzle psr7) from the owncloud.online request.
 	 */
 	private function buildPsrRequest(string $rawBody): \Psr\Http\Message\ServerRequestInterface {
 		$headers = [];
@@ -210,7 +210,7 @@ class McpController extends Controller {
 	}
 
 	/**
-	 * ownCloud validates trusted_domains before this controller runs. Reuse the
+	 * owncloud.online validates trusted_domains before this controller runs. Reuse the
 	 * same hosts for the SDK's DNS-rebinding middleware.
 	 *
 	 * @return string[]

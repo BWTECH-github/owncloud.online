@@ -16,7 +16,7 @@ use OCP\IUser;
 use OCP\IUserManager;
 
 /**
- * User-management tools. Every tool requires the acting user to be an ownCloud
+ * User-management tools. Every tool requires the acting user to be an owncloud.online
  * administrator; write tools additionally require write access to be enabled.
  */
 class UsersTool {
@@ -32,7 +32,7 @@ class UsersTool {
 	}
 
 	/**
-	 * List ownCloud users (admin only).
+	 * List owncloud.online users (admin only).
 	 *
 	 * @param int $limit Maximum number of users (default 100).
 	 * @param string $search Optional search term for the user id / display name.

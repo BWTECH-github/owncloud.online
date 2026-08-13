@@ -122,7 +122,7 @@ class SyncBackend extends Command {
 				're-enable',
 				'r',
 				InputOption::VALUE_NONE,
-				'When syncing multiple accounts re-enable accounts that are disabled in ownCloud but available in the synced backend.'
+				'When syncing multiple accounts re-enable accounts that are disabled in owncloud.online but available in the synced backend.'
 			);
 	}
 

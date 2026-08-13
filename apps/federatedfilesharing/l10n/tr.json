@@ -15,8 +15,8 @@
     "\"%1$s\" invited you to view \"%3$s\"" : "\"%1$s\" seni \"%3$s\" görüntülemeye davet etti",
     "Accept" : "Kabul et",
     "Decline" : "Reddet",
-    "Share with me through my #ownCloud Federated Cloud ID, see %s" : "#ownCloud Birleşmiş Bulut kimliğim ile paylaş, bkz %s",
-    "Share with me through my #ownCloud Federated Cloud ID" : "#ownCloud Birleşmiş Bulut kimliğim ile paylaş",
+    "Share with me through my Federated Cloud ID, see %s" : "#owncloud.online Birleşmiş Bulut kimliğim ile paylaş, bkz %s",
+    "Share with me through my Federated Cloud ID" : "#owncloud.online Birleşmiş Bulut kimliğim ile paylaş",
     "Federated Cloud Sharing" : "Birleşmiş Bulut Paylaşımı",
     "Open documentation" : "Belgelendirmeyi aç",
     "Periodically synchronize outdated federated shares for active users" : "Aktif kullanıcılar için güncel olmayan birleşik paylaşımları periyodik olarak senkronize edin",
@@ -27,7 +27,7 @@
     "Your Federated Cloud ID:" : "Birleşmiş Bulut Kimliğiniz:",
     "Share it:" : "Paylaşın:",
     "Add to your website" : "Web sitenize ekleyin",
-    "Share with me via ownCloud" : "Benimle ownCloud aracılığıyla paylaşın",
+    "Share with me via owncloud.online" : "Benimle owncloud.online aracılığıyla paylaşın",
     "HTML Code:" : "HTML Kodu:",
     "Nothing to configure." : "Yapılandırılacak birşey yok."
 },"pluralForm" :"nplurals=2; plural=(n > 1);"

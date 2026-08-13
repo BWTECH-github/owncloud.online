@@ -593,7 +593,7 @@ class UtilTest extends \Test\TestCase {
 	public function testGetStatusInfo() {
 		$statusInfo = \OCP\Util::getStatusInfo();
 		$this->assertArrayHasKey('productname', $statusInfo);
-		$this->assertEquals($statusInfo['productname'], 'ownCloud.online');
+		$this->assertEquals($statusInfo['productname'], 'owncloud.online');
 		$this->assertArrayHasKey('version', $statusInfo);
 		$expectedVersion = \OCP\Util::getVersion();
 		while (\count($expectedVersion) < 3) {

@@ -24,7 +24,7 @@ OC.L10N.register(
     "Secure https://" : "Saugus https://",
     "Google Drive" : "Google Drive",
     "Location" : "Vieta",
-    "ownCloud" : "ownCloud",
+    "owncloud.online" : "owncloud.online",
     "SFTP" : "SFTP",
     "Host" : "Mazgas",
     "Root" : "Root",

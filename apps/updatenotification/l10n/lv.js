@@ -3,7 +3,7 @@ OC.L10N.register(
     {
     "Update notifications" : "Paziņojumi par atjauninājumiem",
     "{version} is available. Get more information on how to update." : "{version} ir pieejams. Uzziniet vairāk kā atjaunināt.",
-    "ownCloud core" : "ownCloud kodols",
+    "owncloud.online core" : "owncloud.online kodols",
     "Update for %1$s to version %2$s is available." : "Ir pieejams atjauninājums no %1$s uz %2$s ",
     "A new version is available: %s" : "Pieejama jauna versija: %s",
     "Your version is up to date." : "Jūsu versija ir atjaunināta",

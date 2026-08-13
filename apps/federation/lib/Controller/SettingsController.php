@@ -67,7 +67,7 @@ class SettingsController extends Controller {
 			[
 				'url' => $url,
 				'id' => $id,
-				'message' => (string) $this->l->t('Server added to the list of trusted ownClouds')
+				'message' => (string) $this->l->t('Server added to the list of trusted servers')
 			]
 		);
 	}
@@ -108,8 +108,8 @@ class SettingsController extends Controller {
 		}
 
 		if ($this->trustedServers->isOwnCloudServer($url) === false) {
-			$message = 'No ownCloud server found';
-			$hint = $this->l->t('No ownCloud server found');
+			$message = 'No server found';
+			$hint = $this->l->t('No server found');
 			throw new HintException($message, $hint);
 		}
 

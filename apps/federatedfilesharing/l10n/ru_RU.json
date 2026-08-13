@@ -15,8 +15,8 @@
     "\"%1$s\" invited you to view \"%3$s\"" : "Пользователь «%1$s» предлагает вам посмотреть «%3$s»",
     "Accept" : "Принять",
     "Decline" : "Отклонить",
-    "Share with me through my #ownCloud Federated Cloud ID, see %s" : "Поделитесь со мной через мой #ownCloud ID в объединении облачных хранилищ, смотрите %s",
-    "Share with me through my #ownCloud Federated Cloud ID" : "Поделитесь со мной через мой #ownCloud ID в объединении облачных хранилищ",
+    "Share with me through my Federated Cloud ID, see %s" : "Поделитесь со мной через мой #owncloud.online ID в объединении облачных хранилищ, смотрите %s",
+    "Share with me through my Federated Cloud ID" : "Поделитесь со мной через мой #owncloud.online ID в объединении облачных хранилищ",
     "Federated Cloud Sharing" : "Объединение облачных хранилищ",
     "Open documentation" : "Открыть документацию",
     "Periodically synchronize outdated federated shares for active users" : "Периодически синхронизировать устаревшие федеративные ресурсы для активных пользователей",
@@ -27,7 +27,7 @@
     "Your Federated Cloud ID:" : "Ваш ID в объединении облачных хранилищ:",
     "Share it:" : "Поделись этим:",
     "Add to your website" : "Добавить к себе на сайт",
-    "Share with me via ownCloud" : "Поделитесь со мной через ownCloud",
+    "Share with me via owncloud.online" : "Поделитесь со мной через owncloud.online",
     "HTML Code:" : "HTML код:",
     "Nothing to configure." : "Здесь настраивать нечего."
 },"pluralForm" :"nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);"

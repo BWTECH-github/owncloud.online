@@ -7,6 +7,6 @@ OC.L10N.register(
     "Open documentation" : "Mở tài liệu",
     "Share it:" : "Chia sẻ nó :",
     "Add to your website" : "Thêm vào website của bạn",
-    "Share with me via ownCloud" : "Chia sẻ với tôi thông qua ownCloud"
+    "Share with me via owncloud.online" : "Chia sẻ với tôi thông qua owncloud.online"
 },
 "nplurals=1; plural=0;");

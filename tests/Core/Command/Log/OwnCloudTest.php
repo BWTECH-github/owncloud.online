@@ -114,7 +114,7 @@ class OwnCloudTest extends TestCase {
 			->expects($this->exactly(3))
 			->method('writeln')
 			->withConsecutive(
-				['Log backend ownCloud: disabled'],
+				['Log backend owncloud.online: disabled'],
 				['Log file: /var/log/owncloud.log'],
 				['Rotate at: 5 MB'],
 			);

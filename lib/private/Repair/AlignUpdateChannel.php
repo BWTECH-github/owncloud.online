@@ -87,7 +87,7 @@ class AlignUpdateChannel implements IRepairStep {
 		// of truth and a later package with a different channel is picked up.
 		$this->config->deleteAppValue('core', 'OC_Channel');
 		$output->info(
-			'Update channel was "' . $stored . '", which belongs to ownCloud, not to this package. '
+			'Update channel was "' . $stored . '", which belongs to the upstream project, not to this package. '
 			. 'Removed the override; the channel from version.php ("' . $this->shippedChannel . '") applies again.'
 		);
 	}

@@ -1,16 +1,16 @@
 OC.L10N.register(
     "federation",
     {
-    "Server added to the list of trusted ownClouds" : "مۇلازىمېتىر ئىشەنچلىك ownCloud تىزىملىكىگە قېتىلدى",
+    "Server added to the list of trusted servers" : "مۇلازىمېتىر ئىشەنچلىك owncloud.online تىزىملىكىگە قېتىلدى",
     "Server is already in the list of trusted servers." : "مۇلازىمېتىر ئىشەنچلىك مۇلازىمېتىرلار تىزىملىكىدە ئاللىبۇرۇن مەۋجۇت.",
-    "No ownCloud server found" : "ھېچقانداق ownCloud مۇلازىمېتىرى تېپىلمىدى",
+    "No server found" : "ھېچقانداق owncloud.online مۇلازىمېتىرى تېپىلمىدى",
     "Could not add server" : "مۇلازىمېتىرنى قوشالمىدى",
     "Federation" : "فېدىراتسىيە",
-    "ownCloud Federation allows you to connect with other trusted ownClouds to exchange the user directory. For example this will be used to auto-complete external users for federated sharing." : "ownCloud فېدىراتسىيەلەش سىزنىڭ ئىشلەتكۈچى قىسقۇچىڭىزنى ئالماشتۇرۇش ئۈچۈن باشقا ئىشەنچلىك ownCloud غا ئۇلىنىشىڭىزغا يول قويىدۇ. مەسىلەن بۇ فېدىراتسىيەلىك ھەمبەھىرلەش ئۈچۈن تاشقىي ئىشلەتكۈچىلەرنى ئۆزلىكىدىن تولدۇرۇلۇش ئۈچۈن ئىشلىتىلىدۇ.",
+    "Federation allows you to connect with other trusted servers to exchange the user directory. For example this will be used to auto-complete external users for federated sharing." : "owncloud.online فېدىراتسىيەلەش سىزنىڭ ئىشلەتكۈچى قىسقۇچىڭىزنى ئالماشتۇرۇش ئۈچۈن باشقا ئىشەنچلىك owncloud.online غا ئۇلىنىشىڭىزغا يول قويىدۇ. مەسىلەن بۇ فېدىراتسىيەلىك ھەمبەھىرلەش ئۈچۈن تاشقىي ئىشلەتكۈچىلەرنى ئۆزلىكىدىن تولدۇرۇلۇش ئۈچۈن ئىشلىتىلىدۇ.",
     "Add server automatically once a federated share was created successfully" : "فېدىراتسىيەلىك ھەمبەھىرلەش مۇۋاپىقىيەتلىك قۇرۇلغان ھامان مۇلازىمېتىرنى ئاپتۇماتىك قوش",
-    "Trusted ownCloud Servers" : "ئىشەنچلىك ownCloud مۇلازىمېتىرلىرى",
-    "+ Add ownCloud server" : "+ ownCloud مۇلازىمېتىر قوش",
-    "ownCloud Server" : "ownCloud مۇلازىمېتىر",
+    "Trusted Servers" : "ئىشەنچلىك owncloud.online مۇلازىمېتىرلىرى",
+    "+ Add server" : "+ owncloud.online مۇلازىمېتىر قوش",
+    "Server" : "owncloud.online مۇلازىمېتىر",
     "Add" : "قوش"
 },
 "nplurals=2; plural=(n != 1);");

@@ -79,7 +79,7 @@ class OcsController extends \OCP\AppFramework\OCSController {
 	public function getConfig() {
 		return new Result([
 			'version' => '1.7',
-			'website' => 'ownCloud',
+			'website' => 'owncloud.online',
 			'host' => $this->request->getServerHost(),
 			'contact' => '',
 			'ssl' => 'false',

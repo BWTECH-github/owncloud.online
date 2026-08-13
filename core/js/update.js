@@ -100,7 +100,7 @@
 				} else {
 					// FIXME: use product name
 					$('<span>')
-						.append(t('core', 'The update was successful. Redirecting you to ownCloud now.'))
+						.append(t('core', 'The update was successful. Redirecting you to owncloud.online now.'))
 						.appendTo($el);
 					setTimeout(function () {
 						OC.redirect(OC.webroot + '/');

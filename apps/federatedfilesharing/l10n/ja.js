@@ -10,8 +10,8 @@ OC.L10N.register(
     "Sharing %s failed, could not find %s, maybe the server is currently unreachable." : "%s を共有できませんでした。%s が見つかりませんでした。現在サーバーに接続できないようです。",
     "Accept" : "受領",
     "Decline" : "拒否",
-    "Share with me through my #ownCloud Federated Cloud ID, see %s" : "#ownCloud の「クラウド連携ID」で私と共有できます。こちらを見てください。%s",
-    "Share with me through my #ownCloud Federated Cloud ID" : "#ownCloud の「クラウド連携ID」で私と共有できます。",
+    "Share with me through my Federated Cloud ID, see %s" : "#owncloud.online の「クラウド連携ID」で私と共有できます。こちらを見てください。%s",
+    "Share with me through my Federated Cloud ID" : "#owncloud.online の「クラウド連携ID」で私と共有できます。",
     "Federated Cloud Sharing" : "クラウド連携共有",
     "Open documentation" : "ドキュメントを開く",
     "Allow users on this server to send shares to other servers" : "ユーザーがこのサーバーから他のサーバーに共有することを許可する",
@@ -20,7 +20,7 @@ OC.L10N.register(
     "Your Federated Cloud ID:" : "あなたのクラウド連携ID：",
     "Share it:" : "以下で共有:",
     "Add to your website" : "ウェブサイトに追加",
-    "Share with me via ownCloud" : "OwnCloud経由で共有",
+    "Share with me via owncloud.online" : "OwnCloud経由で共有",
     "HTML Code:" : "HTMLコード:"
 },
 "nplurals=1; plural=0;");

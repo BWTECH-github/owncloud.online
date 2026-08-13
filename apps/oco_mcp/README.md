@@ -6,11 +6,11 @@ Turns owncloud.online into a **Model Context Protocol (MCP)** server so AI
 assistants (Claude Desktop, editors, agents, custom clients) can work with a
 user's files, shares, tags, comments and — for admins — users and groups.
 
-Everything runs **as the authenticated ownCloud user** and is subject to the
+Everything runs **as the authenticated owncloud.online user** and is subject to the
 same permissions as the web UI. The connection is **read-only by default**.
 
 - **Endpoint:** `POST /apps/oco_mcp/mcp` (Streamable HTTP, JSON-RPC 2.0)
-- **Auth:** HTTP **Basic auth** with the ownCloud login name and an
+- **Auth:** HTTP **Basic auth** with the owncloud.online login name and an
   **app/device token** as password. Every request revalidates these credentials;
   a browser cookie or a merely present `Authorization` header is insufficient.
 - **Modified by BW-Tech GmbH for owncloud.online (PHP 8.4).**
@@ -102,7 +102,7 @@ on ai_documents — the tool is absent on servers without it.
 }
 ```
 
-Create the app password in ownCloud under **Settings → Security → App passwords**
+Create the app password in owncloud.online under **Settings → Security → App passwords**
 and send it via HTTP **Basic** auth (`base64("username:app-password")`). Bearer
 authentication is not accepted by this endpoint. `--transport http-only` matches
 this server: it speaks Streamable HTTP JSON responses and deliberately has no
@@ -118,14 +118,14 @@ initialize → notifications/initialized → tools/list → tools/call all pass.
 
 1. `McpController::handle()` (route `/mcp`) authenticates the user, refuses
    cookie-only requests, and **lazily** loads the app's `vendor/` (so a normal
-   ownCloud request never loads it and can never shadow a core library).
+   owncloud.online request never loads it and can never shadow a core library).
 2. `ServerFactory::build()` constructs every tool with the acting user baked in,
    hands them to the MCP SDK through a tiny PSR-11 `InstanceContainer`, and
    registers each as an MCP tool. Input schemas are generated from each method's
    PHP signature and DocBlock.
 3. The request is bridged to the SDK's `StreamableHttpTransport` via a PSR-7
    request built on core's `guzzlehttp/psr7`, and the PSR-7 response is returned
-   as an ownCloud `DataDisplayResponse`.
+   as an owncloud.online `DataDisplayResponse`.
 
 ### Dependency isolation
 

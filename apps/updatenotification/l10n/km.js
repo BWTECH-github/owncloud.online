@@ -3,7 +3,7 @@ OC.L10N.register(
     {
     "Update notifications" : "ដំណឹង​អំពី​ការ​ធ្វើ​បច្ចុប្បន្នកម្ម",
     "{version} is available. Get more information on how to update." : "មាន​កំណែ {version} ហើយ។ ទទួល​ព័ត៌មាន​បន្ថែម​អំពី​របៀប​ធ្វើ​បច្ចុប្បន្នកម្ម។",
-    "ownCloud core" : "ផ្នែក​ស្នូល​នៃ ownCloud",
+    "owncloud.online core" : "ផ្នែក​ស្នូល​នៃ owncloud.online",
     "Update for %1$s to version %2$s is available." : "មាន​បច្ចុប្បន្នភាព​សម្រាប់ %1$s ទៅ​កំណែ %2$s ហើយ។",
     "A new version is available: %s" : "មាន​កំណែ​ថ្មី៖ %s",
     "Checked on %s" : "បាន​ពិនិត្យ​នៅ %s",

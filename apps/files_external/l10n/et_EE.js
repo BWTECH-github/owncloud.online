@@ -48,7 +48,7 @@ OC.L10N.register(
     "Google Drive" : "Google Drive",
     "Local" : "Kohalik",
     "Location" : "Asukoht",
-    "ownCloud" : "ownCloud",
+    "owncloud.online" : "owncloud.online",
     "SFTP" : "SFTP",
     "Host" : "Host",
     "Root" : "Juur",

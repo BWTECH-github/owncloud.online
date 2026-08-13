@@ -1,10 +1,10 @@
 OC.L10N.register(
     "federation",
     {
-    "No ownCloud server found" : "ownCloudi serverit ei leitud",
+    "No server found" : "owncloud.onlinei serverit ei leitud",
     "Could not add server" : "Serveri lisamine ebaõnnestus",
-    "+ Add ownCloud server" : "+ Lisa ownCloudi server",
-    "ownCloud Server" : "ownCloudi Server",
+    "+ Add server" : "+ Lisa owncloud.onlinei server",
+    "Server" : "owncloud.onlinei Server",
     "Add" : "Lisa"
 },
 "nplurals=2; plural=(n != 1);");

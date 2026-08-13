@@ -29,10 +29,11 @@ ownCloud.online ist ein Fork von ownCloud Server mit Zielplattform PHP 8.4. Dies
 
 ## Quellen und Abgrenzung
 
-Die Struktur orientiert sich an der offiziellen ownCloud-Server-Dokumentation, ist aber auf ownCloud.online, PHP 8.4, die BW-Tech Release-Tools und die lokalen Plugin-Repositories zugeschnitten.
+Diese Dokumentation beschreibt owncloud.online: PHP 8.4, die BW-Tech
+Release-Tools und die eigenen Plugin-Repositories. Sie ist eigenständig — was
+hier steht, gilt für diesen Server und wurde daran geprüft.
 
-- Offizielle ownCloud Server Dokumentation: <https://doc.owncloud.com/server/latest/index.html>
-- ownCloud.online Repository: <https://github.com/BWTECH-github/owncloud.online>
+- owncloud.online Repository: <https://github.com/BWTECH-github/owncloud.online>
 - Release Tools lokal: `C:\git\owncloud-online-release-tools`
 - Market Backend lokal: `C:\git\market-backend`
 

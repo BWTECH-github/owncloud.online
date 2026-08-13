@@ -668,11 +668,11 @@ class AuthTest extends TestCase {
 	}
 
 	public function providesHeaders() {
-		// realm entspricht dem Theme-Namen (ownCloud.online seit dem Rebranding)
+		// realm entspricht dem Theme-Namen (owncloud.online seit dem Rebranding)
 		return [
-			['DummyBasic realm="ownCloud.online", charset="UTF-8"', 'XMLHttpRequest'],
-			['DummyBasic realm="ownCloud.online", charset="UTF-8"', 'XMLHttpRequest, XMLHttpRequest'],
-			['Basic realm="ownCloud.online", charset="UTF-8"', ''],
+			['DummyBasic realm="owncloud.online", charset="UTF-8"', 'XMLHttpRequest'],
+			['DummyBasic realm="owncloud.online", charset="UTF-8"', 'XMLHttpRequest, XMLHttpRequest'],
+			['Basic realm="owncloud.online", charset="UTF-8"', ''],
 		];
 	}
 }

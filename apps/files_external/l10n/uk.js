@@ -34,7 +34,7 @@ OC.L10N.register(
     "Google Drive" : "Google Drive",
     "Local" : "Локально",
     "Location" : "Місце",
-    "ownCloud" : "ownCloud",
+    "owncloud.online" : "owncloud.online",
     "Host" : "Хост",
     "Root" : "Батьківський каталог",
     "Share" : "Поділитися",

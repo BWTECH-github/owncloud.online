@@ -28,7 +28,7 @@ OC.L10N.register(
     "Google Drive" : "Google Drive",
     "Local" : "محلی",
     "Location" : "محل",
-    "ownCloud" : "ownCloud",
+    "owncloud.online" : "owncloud.online",
     "SFTP" : "SFTP",
     "Host" : "میزبانی",
     "Share" : "اشتراک‌گذاری",

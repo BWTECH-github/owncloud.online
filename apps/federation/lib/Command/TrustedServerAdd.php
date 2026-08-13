@@ -63,7 +63,7 @@ class TrustedServerAdd extends Command {
 		}
 
 		if (!$this->trustedServers->isOwnCloudServer($url)) {
-			$output->writeln('<error>No ownCloud server found</error>');
+			$output->writeln('<error>No server found</error>');
 			return self::ERROR_NO_OWNCLOUD_FOUND;
 		}
 

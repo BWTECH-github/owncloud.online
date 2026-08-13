@@ -15,7 +15,7 @@ OC.L10N.register(
     "Your Federated Cloud ID:" : "Вашиот федериран Cloud ID:",
     "Share it:" : "Сподели го:",
     "Add to your website" : "Додади на твојот веб сајт",
-    "Share with me via ownCloud" : "Сподели со мене преку ownCloud",
+    "Share with me via owncloud.online" : "Сподели со мене преку owncloud.online",
     "HTML Code:" : "HTML код:",
     "Nothing to configure." : "Нема подесувања."
 },

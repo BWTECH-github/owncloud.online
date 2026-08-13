@@ -228,15 +228,15 @@ class OC {
 		}
 
 		if (empty(OC::$APPSROOTS)) {
-			throw new \RuntimeException('apps directory not found! Please put the ownCloud apps folder in the ownCloud folder'
+			throw new \RuntimeException('apps directory not found! Please put the apps folder next to the server folder'
 				. ' or the folder above. You can also configure the location in the config.php file.');
 		}
 		$paths = [];
 		foreach (OC::$APPSROOTS as $path) {
 			$paths[] = $path['path'];
 			if (!\is_dir($path['path'])) {
-				throw new \RuntimeException(\sprintf('App directory "%s" not found! Please put the ownCloud apps folder in the'
-					. ' ownCloud folder or the folder above. You can also configure the location in the'
+				throw new \RuntimeException(\sprintf('App directory "%s" not found! Please put the apps folder in the'
+					. ' server folder or the folder above. You can also configure the location in the'
 					. ' config.php file.', $path['path']));
 			}
 		}
@@ -393,7 +393,7 @@ class OC {
 
 			// render error page
 			$template = new OC_Template('', 'update.use-cli', 'guest');
-			$template->assign('productName', 'ownCloud.online');
+			$template->assign('productName', 'owncloud.online');
 			$template->assign('version', OC_Util::getVersionString());
 			$template->assign('tooBig', $tooBig);
 
@@ -425,7 +425,7 @@ class OC {
 		// get third party apps
 		$ocVersion = \OCP\Util::getVersion();
 		$tmpl->assign('appsToUpgrade', $appManager->getAppsNeedingUpgrade($ocVersion));
-		$tmpl->assign('productName', 'ownCloud.online');
+		$tmpl->assign('productName', 'owncloud.online');
 		$tmpl->assign('oldTheme', $oldTheme);
 		$tmpl->printPage();
 	}

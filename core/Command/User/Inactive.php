@@ -44,7 +44,7 @@ class Inactive extends Base {
 	protected function configure() {
 		$this
 			->setName('user:inactive')
-			->setDescription('Reports users who are known to ownCloud, but have not logged in for a certain number of days.')
+			->setDescription('Reports users who are known to owncloud.online, but have not logged in for a certain number of days.')
 			->addArgument(
 				'days',
 				InputArgument::REQUIRED,

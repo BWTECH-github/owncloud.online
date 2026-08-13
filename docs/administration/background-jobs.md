@@ -21,13 +21,14 @@ normal, wächst aber unbegrenzt und verschickt keine Mails.
 sudo crontab -u www-data -e
 ```
 
-Eintrag (alle 15 Minuten, wie von ownCloud vorgesehen):
+Eintrag (alle 15 Minuten — kürzere Abstände bringen nichts, längere lassen
+Aufgaben liegen):
 
 ```
 */15  *  *  *  * /usr/bin/php8.4 -f /var/www/owncloud.online/cron.php
 ```
 
-Danach den Modus in ownCloud auf Cron umstellen:
+Danach den Modus in owncloud.online auf Cron umstellen:
 
 ```bash
 sudo -u www-data php8.4 /var/www/owncloud.online/occ background:cron

@@ -14,7 +14,7 @@ OC.L10N.register(
     "Cancel" : "Avbryt",
     "You can upload into this folder" : "Du kan lste opp til denne mappa",
     "Add" : "Legg til",
-    "Invalid ownCloud url" : "Ugyldig ownClud url",
+    "Invalid server url" : "Ugyldig ownClud url",
     "Share" : "Del",
     "Create public link" : "Opprett offentleg lenke",
     "No expiration date set" : "Ingen dato for utløp er sett",

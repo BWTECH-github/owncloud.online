@@ -33,7 +33,7 @@ OC.L10N.register(
     "Google Drive" : "Google Drive",
     "Local" : "Local",
     "Location" : "Ubicació",
-    "ownCloud" : "ownCloud",
+    "owncloud.online" : "owncloud.online",
     "Host" : "Equip remot",
     "Root" : "Arrel",
     "SFTP with secret key login" : "Inici de sessió SFTP amb clau secreta",

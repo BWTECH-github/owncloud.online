@@ -40,7 +40,7 @@ use OCP\SystemTag\ISystemTagObjectMapper;
  *
  * Tool objects are instantiated here with the acting user already baked in and
  * registered as bound instance callables, so no PSR-11 container is needed and
- * every tool runs strictly as that user with that user's ownCloud permissions.
+ * every tool runs strictly as that user with that user's owncloud.online permissions.
  */
 class ServerFactory {
 	private IRootFolder $rootFolder;
@@ -202,7 +202,7 @@ class ServerFactory {
 				[FileResourceProvider::class, 'root'],
 				'owncloud:///',
 				'owncloud-root',
-				'ownCloud root folder',
+				'owncloud.online root folder',
 				'JSON listing of the user\'s root folder. Each entry carries a "uri" you can read.',
 				'application/json'
 			)
@@ -210,7 +210,7 @@ class ServerFactory {
 				[FileResourceProvider::class, 'read'],
 				'owncloud:///{path}',
 				'owncloud-file',
-				'ownCloud file or folder',
+				'owncloud.online file or folder',
 				'Read a file (text or binary) or a folder listing by path. Percent-encode "/" as %2F for nested paths.'
 			);
 

@@ -117,7 +117,8 @@ Monitoring, das die Version aus `status.php` parst, sieht sie dann nicht mehr.
 ## Update-Prüfung
 
 Der Update-Checker fragt standardmäßig `updates.owncloud.com` mit dem Kanal
-`bwtech` ab. Der Upstream kennt weder diesen Kanal noch die Fork-Versionen –
+`bwtech` ab — ein Erbe aus der Herkunft des Codes. Der Dienst dort kennt weder
+diesen Kanal noch unsere Versionen –
 Betreiber erhalten so **nie** Update-Hinweise, senden aber Instanz-Metadaten an
 einen Fremdserver. Daher entweder einen eigenen Endpoint hinterlegen
 (`'updater.server.url' => '…'`) oder die Prüfung abschalten:
@@ -148,10 +149,10 @@ Vor dem Setzen sicherstellen, dass **alle** Subdomains dauerhaft HTTPS können
 
 ## Reverse-Proxy: trusted_proxies
 
-Hinter einem Reverse-Proxy sieht ownCloud als Absender jeder Anfrage den Proxy.
-Die echte Client-Adresse steht dann in `X-Forwarded-For` — und ownCloud wertet
-diesen Header **nur** für Adressen aus, die als `trusted_proxies` eingetragen
-sind:
+Hinter einem Reverse-Proxy sieht der Server als Absender jeder Anfrage den
+Proxy. Die echte Client-Adresse steht dann in `X-Forwarded-For` — und dieser
+Header wird **nur** für Adressen ausgewertet, die als `trusted_proxies`
+eingetragen sind:
 
 ```php
 'trusted_proxies' => ['10.0.0.5'],

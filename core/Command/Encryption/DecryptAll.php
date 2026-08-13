@@ -151,7 +151,7 @@ class DecryptAll extends Command {
 
 			$uid = $input->getArgument('user');
 			if ($uid === '') {
-				$message = 'your ownCloud';
+				$message = 'your owncloud.online installation';
 			} else {
 				$message = "$uid's account";
 			}

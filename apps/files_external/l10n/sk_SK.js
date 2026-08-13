@@ -46,7 +46,7 @@ OC.L10N.register(
     "Google Drive" : "Google Drive",
     "Local" : "Lokálny",
     "Location" : "Umiestnenie",
-    "ownCloud" : "ownCloud",
+    "owncloud.online" : "owncloud.online",
     "SFTP" : "SFTP",
     "Host" : "Hostiteľ",
     "Root" : "Root",

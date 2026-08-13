@@ -9,7 +9,7 @@ OC.L10N.register(
     "WebDAV" : "WebDAV",
     "Local" : "Lokalno",
     "Location" : "Lokacija",
-    "ownCloud" : "OwnCloud",
+    "owncloud.online" : "owncloud.online",
     "Share" : "Podijeli",
     "Name" : "Ime",
     "Folder name" : "Ime fascikle",

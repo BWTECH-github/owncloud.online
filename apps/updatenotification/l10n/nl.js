@@ -4,7 +4,7 @@ OC.L10N.register(
     "Update notifications" : "Bijwerken meldingen",
     "{version} is available. Get more information on how to update." : "{version} is beschikbaar. Meer informatie over het bijwerken.",
     "Updated channel" : "Bijgewerkt kanaal",
-    "ownCloud core" : "ownCloud core",
+    "owncloud.online core" : "owncloud.online core",
     "Update for %1$s to version %2$s is available." : "Update voor %1$s naar versie %2$s is beschikbaar.",
     "Updater" : "Updater",
     "A new version is available: %s" : "Er is een nieuwe versie beschikbaar: %s",
@@ -13,7 +13,7 @@ OC.L10N.register(
     "Update channel:" : "Bijwerkkanaal:",
     "You can always update to a newer version / experimental channel. But you can never downgrade to a more stable channel." : "U kunt altijd updaten naar een nieuwere versie of experimenteel kanaal. Maar terug naar een oudere versie of een stabieler kanaal is niet mogelijk.",
     "Notify members of the following groups about available updates:" : "Geef een melding over beschikbare updates aan leden van de volgende groepen:",
-    "Only notification for app updates are available, because the selected update channel for ownCloud itself does not allow notifications." : "Er zin alleen meldingen voor app updates beschikbaar, omdat het geselecteerde ownCloud update kanaal zelf geen meldingen toestaat.",
-    "Online updater has been automatically disabled as you are currently running an ownCloud Enterprise edition. Please update your ownCloud instance manually." : "Online updater is automatisch uitgeschakeld omdat u momenteel een ownCloud Enterprise-editie gebruikt. Werk uw ownCloud-instantie handmatig bij."
+    "Only notification for app updates are available, because the selected update channel for the server itself does not allow notifications." : "Er zin alleen meldingen voor app updates beschikbaar, omdat het geselecteerde owncloud.online update kanaal zelf geen meldingen toestaat.",
+    "Online updater has been automatically disabled as you are currently running an Enterprise edition. Please update your instance manually." : "Online updater is automatisch uitgeschakeld omdat u momenteel een owncloud.online Enterprise-editie gebruikt. Werk uw owncloud.online-instantie handmatig bij."
 },
 "nplurals=2; plural=(n != 1);");

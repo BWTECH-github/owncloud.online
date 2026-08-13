@@ -11,8 +11,8 @@
     "\"%1$s\" invited you to view \"%3$s\"" : "\"%1$s\" inviterte deg til å sjå \"%3$s\"",
     "Accept" : "Godtake",
     "Decline" : "Avslå",
-    "Share with me through my #ownCloud Federated Cloud ID, see %s" : "Del med meg igjennom #ownCloud Federated Cloud ID, sjå %s",
-    "Share with me through my #ownCloud Federated Cloud ID" : "Del med meg igjennom #ownCloud Federated Cloud ID",
+    "Share with me through my Federated Cloud ID, see %s" : "Del med meg igjennom #owncloud.online Federated Cloud ID, sjå %s",
+    "Share with me through my Federated Cloud ID" : "Del med meg igjennom #owncloud.online Federated Cloud ID",
     "Federated Cloud Sharing" : "Klarert sky deling",
     "Open documentation" : "Opne dokumentasjon.",
     "Allow users on this server to send shares to other servers" : "Tillet brukarar på denne tenaren å sende deling til andre tenarar",
@@ -21,7 +21,7 @@
     "Your Federated Cloud ID:" : "Din id for klarert deling (Federated Cloud ID):",
     "Share it:" : "Del det:",
     "Add to your website" : "Legg til din nettside",
-    "Share with me via ownCloud" : "Del med meg via ownCloud",
+    "Share with me via owncloud.online" : "Del med meg via owncloud.online",
     "HTML Code:" : "HTML kode:"
 },"pluralForm" :"nplurals=2; plural=(n != 1);"
 }

@@ -4,7 +4,7 @@ OC.L10N.register(
     "Update notifications" : "Oppdateringsvarsel",
     "{version} is available. Get more information on how to update." : "{version} er tilgjengeleg. Få meir informasjon om korleis du oppdaterar.",
     "Updated channel" : "Oppdater kanal",
-    "ownCloud core" : "ownCloud kjerne",
+    "owncloud.online core" : "owncloud.online kjerne",
     "Update for %1$s to version %2$s is available." : "Oppgradering for %1$s til versjon %2$s er tilgjengeleg.",
     "Updater" : "Oppdatering",
     "A new version is available: %s" : "Ny versjon tilgjengeleg: %s",
@@ -13,6 +13,6 @@ OC.L10N.register(
     "Update channel:" : "Kanal for oppdatering:",
     "You can always update to a newer version / experimental channel. But you can never downgrade to a more stable channel." : "Du kan oppdatere til ny versjon enn kanal for utprøving. Du kan aldri nedgradere til ein meir stabil versjon etter oppgradering.",
     "Notify members of the following groups about available updates:" : "Varsle alle i fyljande grupper om oppgradering:",
-    "Only notification for app updates are available, because the selected update channel for ownCloud itself does not allow notifications." : "Kun varsle for program oppdatering er tilgjengeleg fordi valgt kanal for oppdatering for ownCloud ikkje tillet varsel."
+    "Only notification for app updates are available, because the selected update channel for the server itself does not allow notifications." : "Kun varsle for program oppdatering er tilgjengeleg fordi valgt kanal for oppdatering for owncloud.online ikkje tillet varsel."
 },
 "nplurals=2; plural=(n != 1);");

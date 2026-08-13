@@ -15,8 +15,8 @@
     "\"%1$s\" invited you to view \"%3$s\"" : "\"%1$s\" بولسا سىزنى \"%3$s\" نى كۆرۈشكە تەكلىپ قىلدى",
     "Accept" : "قۇبۇللا",
     "Decline" : "رەت قىل",
-    "Share with me through my #ownCloud Federated Cloud ID, see %s" : "مەن بىلەن #ownCloud فېدىراتسىيە بۇلۇت كىملىكى بىلەن ھەمبەھىرلەڭ، %sنى كۆرۈڭ",
-    "Share with me through my #ownCloud Federated Cloud ID" : "مەن بىلەن #ownCloud فېدىراتسىيە بۇلۇت كىملىكى بىلەن ھەمبەھىرلەڭ",
+    "Share with me through my Federated Cloud ID, see %s" : "مەن بىلەن #owncloud.online فېدىراتسىيە بۇلۇت كىملىكى بىلەن ھەمبەھىرلەڭ، %sنى كۆرۈڭ",
+    "Share with me through my Federated Cloud ID" : "مەن بىلەن #owncloud.online فېدىراتسىيە بۇلۇت كىملىكى بىلەن ھەمبەھىرلەڭ",
     "Federated Cloud Sharing" : "فېدىراتسىيە بۇلۇت ھەمبەھىرلەش",
     "Open documentation" : "پۈتۈكلەرنى ئاچ",
     "Periodically synchronize outdated federated shares for active users" : "ئاكتىپ ئىشلەتكۈچىلەرنىڭ ۋاقتى ئۆتكەن فېدراتسىيەلىك ھەمبەھىرلىرىنى قەرەللىك ماس-قەدەملەش",
@@ -27,7 +27,7 @@
     "Your Federated Cloud ID:" : "سىزنىڭ فېدىراتسىيەلىك بۇلۇت كىملىكىڭىز:",
     "Share it:" : "ئۇنى ھەمبەھىرلەڭ:",
     "Add to your website" : "تور بېتىڭىزگە قوشۇڭ",
-    "Share with me via ownCloud" : "مەن بىلەن ownCloud ئارقىلىق ھەمبەھىرلەڭ",
+    "Share with me via owncloud.online" : "مەن بىلەن owncloud.online ئارقىلىق ھەمبەھىرلەڭ",
     "HTML Code:" : "HTML كودى:",
     "Nothing to configure." : "تەڭشەيدىغان ھېچنىمە يوق"
 },"pluralForm" :"nplurals=2; plural=(n != 1);"

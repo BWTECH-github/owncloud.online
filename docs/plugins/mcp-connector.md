@@ -56,7 +56,7 @@ occ app:enable oco_mcp
 # 2. Optional: Schreib- und Verwaltungs-Tools freischalten (Standard: nur lesen)
 occ config:app:set oco_mcp enable_write --value=yes
 
-# 3. In ownCloud ein App-Passwort erzeugen:
+# 3. In owncloud.online ein App-Passwort erzeugen:
 #    Einstellungen -> Sicherheit -> App-Passwörter
 ```
 
@@ -115,7 +115,7 @@ Tool-Aufruf:
 **Schritt 3 — Sitzung beenden (optional):** `DELETE` auf den Endpoint
 mit der Session-ID beendet die Sitzung. Sitzungen verfallen sonst
 automatisch nach **einer Stunde** Inaktivität (dateibasierter
-Session-Store im ownCloud-Datenverzeichnis).
+Session-Store im Datenverzeichnis des Servers).
 
 Fertige MCP-Clients (Claude, `mcp-remote`, MCP-SDKs) erledigen all das
 automatisch — die curl-Beispiele zeigen nur, was unter der Haube
@@ -307,7 +307,7 @@ echo -n "benutzer:app-passwort" | base64
 | `write_groups` | Gruppen-IDs, kommagetrennt | *(leer)* | Begrenzt den Schreibmodus auf Mitglieder der genannten Gruppen. Leer = alle Nutzer (sobald `enable_write=yes`). Nicht-Mitglieder bleiben read-only. |
 
 Mehr ist nicht zu konfigurieren — Authentifizierung und Rechte kommen
-vollständig aus ownCloud selbst.
+vollständig aus owncloud.online selbst.
 
 ## 11. Sicherheit
 
@@ -336,7 +336,7 @@ vollständig aus ownCloud selbst.
 | `MCP requires HTTP Basic authentication …` | Basic-Header fehlt oder ist ungültig. Loginname und App-Passwort senden. |
 | `-32601` / „Tool not found" für `files_write`, `shares_create_*`, `tags_assign` … | Read-only-Modus: Schreib-Tools sind nicht sichtbar. Admin: `occ config:app:set oco_mcp enable_write --value=yes`, danach den Client neu verbinden (initialize), damit die Tool-Liste neu geladen wird. |
 | `-32601` / „Tool not found" für `users_*` / `groups_*` | Diese Tools werden nur Administratoren angeboten. Als Admin verbinden. |
-| `Write access is disabled on this MCP connection.` / `This tool requires ownCloud administrator privileges.` | Interne Schutzmeldung, falls ein Tool doch direkt erreicht wird (z. B. veraltete Session nach dem Umschalten von `enable_write`). Client neu verbinden. |
+| `Write access is disabled on this MCP connection.` / `This tool requires owncloud.online administrator privileges.` | Interne Schutzmeldung, falls ein Tool doch direkt erreicht wird (z. B. veraltete Session nach dem Umschalten von `enable_write`). Client neu verbinden. |
 | Tool `ai_ask` fehlt | App `ai_documents` ist nicht installiert/aktiv — gewollt, kein Fehler. |
 | `AI query failed. Ask an administrator to check the server log.` | Absichtlich allgemein gehalten. Die echte Ursache (Gateway nicht erreichbar, Modell/Key falsch, Index leer) steht mit vollem Stacktrace unter `app: oco_mcp` im [Serverprotokoll](../administration/logging.md). |
 | `Relative path segments (".", "..") are forbidden.` | Der Client hat einen nicht-kanonischen Pfad geschickt. Pfade immer relativ zum Nutzer-Root und ohne `.`/`..` angeben. |

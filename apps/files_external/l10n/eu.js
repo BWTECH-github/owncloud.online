@@ -28,7 +28,7 @@ OC.L10N.register(
     "Google Drive" : "Google Drive",
     "Local" : "Bertakoa",
     "Location" : "Kokapena",
-    "ownCloud" : "ownCloud",
+    "owncloud.online" : "owncloud.online",
     "Host" : "Ostalaria",
     "Root" : "Erroa",
     "Share" : "Partekatu",

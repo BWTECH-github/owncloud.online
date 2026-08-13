@@ -34,7 +34,7 @@ als Zeichenkette und wird falsch ausgewertet.
 | `passwordsalt`, `secret` | Kryptografische Werte — **nie ändern**, immer mitsichern |
 | `datadirectory` | Ablageort der Benutzerdaten |
 | `dbtype`, `dbhost`, `dbname`, `dbuser`, `dbpassword` | Datenbankzugang, siehe [Datenbank](database.md) |
-| `trusted_domains` | Erlaubte Hostnamen. Fehlt der Name, verweigert ownCloud den Zugriff |
+| `trusted_domains` | Erlaubte Hostnamen. Fehlt der Name, wird der Zugriff verweigert |
 | `overwrite.cli.url` | Basis-URL für Cron und CLI-Aufrufe |
 | `maintenance` | Wartungsmodus (besser über `occ maintenance:mode`) |
 
@@ -45,8 +45,8 @@ als Zeichenkette und wird falsch ausgewertet.
 'overwriteprotocol' => 'https',
 ```
 
-`trusted_proxies` ist **sicherheitsrelevant**: Nur für diese Adressen wertet
-ownCloud `X-Forwarded-For` aus. Ist der Wert falsch — oder der PHP-FPM-Server
+`trusted_proxies` ist **sicherheitsrelevant**: Nur für diese Adressen wertet der
+Server `X-Forwarded-For` aus. Ist der Wert falsch — oder der PHP-FPM-Server
 direkt aus dem Netz erreichbar — kann ein Angreifer seine Client-IP frei
 wählen und damit IP-basierte Schutzmechanismen aushebeln, etwa die
 Anmelde-Bremse gegen Passwort-Raten. Siehe

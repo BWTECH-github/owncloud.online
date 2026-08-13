@@ -113,7 +113,7 @@ class Client implements IClient {
 			}
 		}
 
-		$options[RequestOptions::HEADERS]['User-Agent'] = 'ownCloud Server Crawler';
+		$options[RequestOptions::HEADERS]['User-Agent'] = 'owncloud.online Server Crawler';
 		$proxyUri = $this->getProxyUri();
 		if ($proxyUri !== '') {
 			$noProxyList = $this->config->getSystemValue('proxy_ignore', []);

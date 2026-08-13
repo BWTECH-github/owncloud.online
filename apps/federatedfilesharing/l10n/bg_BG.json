@@ -15,8 +15,8 @@
     "\"%1$s\" invited you to view \"%3$s\"" : "\"%1$s\" ви покани да прегледате \"%3$s\"",
     "Accept" : "Приемане",
     "Decline" : "Отказване",
-    "Share with me through my #ownCloud Federated Cloud ID, see %s" : "Споделете с мен чрез моето ID в #ownCloud Федеративен облак, вижте %s",
-    "Share with me through my #ownCloud Federated Cloud ID" : "Споделяне с мен чрез моето ID в #ownCloud Федеративен облак",
+    "Share with me through my Federated Cloud ID, see %s" : "Споделете с мен чрез моето ID в #owncloud.online Федеративен облак, вижте %s",
+    "Share with me through my Federated Cloud ID" : "Споделяне с мен чрез моето ID в #owncloud.online Федеративен облак",
     "Federated Cloud Sharing" : "Федеративно споделяне в облака",
     "Open documentation" : "Отваряне на документацията",
     "Periodically synchronize outdated federated shares for active users" : "Периодично синхронизиране за активните потребители на остарелите федеративни споделяния",
@@ -27,7 +27,7 @@
     "Your Federated Cloud ID:" : "Вашето ID на Федеративния облак:",
     "Share it:" : "Споделете го:",
     "Add to your website" : "Добавяне към вашия уебсайт",
-    "Share with me via ownCloud" : "Споделяне с мен чрез ownCloud",
+    "Share with me via owncloud.online" : "Споделяне с мен чрез owncloud.online",
     "HTML Code:" : "HTML код:",
     "Nothing to configure." : "Няма нищо за конфигуриране."
 },"pluralForm" :"nplurals=2; plural=(n != 1);"

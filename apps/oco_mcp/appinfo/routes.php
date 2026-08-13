@@ -21,7 +21,7 @@ $application->registerRoutes(
 			// SSE stream — under PHP-FPM a long-lived server->client stream would
 			// pin a worker, and a tool-only server has no server-initiated
 			// messages to push. Both verbs are CSRF-exempt because MCP clients
-			// cannot present an ownCloud CSRF token; the controller enforces
+			// cannot present an owncloud.online CSRF token; the controller enforces
 			// token/basic auth instead (see McpController).
 			[
 				'name' => 'Mcp#handle',

@@ -194,7 +194,7 @@ class SecurityMiddleware extends Middleware {
 		if ($controller instanceof OCSController) {
 			if ($this->request->getHeader('OC-RequestAppPassword') === 'true'
 					&& ($exception instanceof NotLoggedInException || $exception instanceof LoginException)) {
-				$headers['WWW-Authenticate'] = 'Basic realm="ownCloud App Authentication Requested"';
+				$headers['WWW-Authenticate'] = 'Basic realm="owncloud.online App Authentication Requested"';
 			}
 			if ($exception instanceof NotLoggedInException) {
 				return $controller->buildResponse(new Result(null, API::RESPOND_UNAUTHORISED, 'Unauthorised', $headers));

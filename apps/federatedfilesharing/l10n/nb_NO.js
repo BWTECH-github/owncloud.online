@@ -14,8 +14,8 @@ OC.L10N.register(
     "\"%1$s\" invited you to view \"%3$s\"" : "\"%1$s\" har invitert deg til å se \"%3$s\"",
     "Accept" : "Aksepter",
     "Decline" : "Avslå",
-    "Share with me through my #ownCloud Federated Cloud ID, see %s" : "Del med meg gjennom min #ownCloud ID for Forent Sky, se %s",
-    "Share with me through my #ownCloud Federated Cloud ID" : "Del med meg gjennom min #ownCloud ID for Forent Sky",
+    "Share with me through my Federated Cloud ID, see %s" : "Del med meg gjennom min #owncloud.online ID for Forent Sky, se %s",
+    "Share with me through my Federated Cloud ID" : "Del med meg gjennom min #owncloud.online ID for Forent Sky",
     "Federated Cloud Sharing" : "Forent sky-deling",
     "Open documentation" : "Åpne dokumentasjonen",
     "Allow users on this server to send shares to other servers" : "Tillat at brukere på denne serveren sender delinger til andre servere",
@@ -24,7 +24,7 @@ OC.L10N.register(
     "Your Federated Cloud ID:" : "Din ID for forent sky:",
     "Share it:" : "Del den:",
     "Add to your website" : "Legg på websiden din",
-    "Share with me via ownCloud" : "Del med meg via ownCloud",
+    "Share with me via owncloud.online" : "Del med meg via owncloud.online",
     "HTML Code:" : "HTML-kode:"
 },
 "nplurals=2; plural=(n != 1);");

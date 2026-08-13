@@ -4,7 +4,7 @@ OC.L10N.register(
     "Update notifications" : "Update notifications",
     "{version} is available. Get more information on how to update." : "{version} is available. Get more information on how to update.",
     "Updated channel" : "Updated channel",
-    "ownCloud core" : "ownCloud core",
+    "owncloud.online core" : "owncloud.online core",
     "Update for %1$s to version %2$s is available." : "Update for %1$s to version %2$s is available.",
     "Updater" : "Updater",
     "A new version is available: %s" : "A new version is available: %s",
@@ -13,7 +13,7 @@ OC.L10N.register(
     "Update channel:" : "Update channel:",
     "You can always update to a newer version / experimental channel. But you can never downgrade to a more stable channel." : "You can always update to a newer version / experimental channel. But you can never downgrade to a more stable channel.",
     "Notify members of the following groups about available updates:" : "Notify members of the following groups about available updates:",
-    "Only notification for app updates are available, because the selected update channel for ownCloud itself does not allow notifications." : "Only notification for app updates are available, because the selected update channel for ownCloud itself does not allow notifications.",
-    "Online updater has been automatically disabled as you are currently running an ownCloud Enterprise edition. Please update your ownCloud instance manually." : "Online updater has been automatically disabled as you are currently running an ownCloud Enterprise edition. Please update your ownCloud instance manually."
+    "Only notification for app updates are available, because the selected update channel for the server itself does not allow notifications." : "Only notification for app updates are available, because the selected update channel for owncloud.online itself does not allow notifications.",
+    "Online updater has been automatically disabled as you are currently running an Enterprise edition. Please update your instance manually." : "Online updater has been automatically disabled as you are currently running an owncloud.online Enterprise edition. Please update your owncloud.online instance manually."
 },
 "nplurals=2; plural=(n != 1);");

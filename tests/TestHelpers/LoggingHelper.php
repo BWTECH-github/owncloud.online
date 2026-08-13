@@ -65,7 +65,7 @@ class LoggingHelper {
 			);
 		}
 		\preg_match(
-			"/Log backend ownCloud: (\w+)\sLog file: (.*)/",
+			"/Log backend owncloud.online: (\w+)\sLog file: (.*)/",
 			$result ['stdOut'],
 			$matches
 		);

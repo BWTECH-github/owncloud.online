@@ -69,13 +69,13 @@ OC.License = {
 				moment.relativeTimeThreshold('m', thresholdM);
 
 				var paragraphs = [
-					t('core', 'You have enabled one or more ownCloud Enterprise apps but your installation does not have a valid license yet.'),
+					t('core', 'You have enabled one or more Enterprise apps but your installation does not have a valid license yet.'),
 					t('core', 'A grace period of 24 hours has started to allow you to get going right away. Once the grace period ends, all Enterprise apps will become disabled unless you supply a valid license key.'),
-					t('core', 'To try ownCloud Enterprise, just start a 30-day demo and enter the provided license key below.')
+					t('core', 'To try the Enterprise apps, just start a 30-day demo and enter the provided license key below.')
 				];
 
 				var dialog = $(tmpl({
-					title: t('core', 'Upgrade to ownCloud Enterprise'),
+					title: t('core', 'Upgrade to Enterprise'),
 					msgs: paragraphs,
 					time_remaining_msg: t('core', 'Remaining time: {rtime}', {
 						rtime: relativeTime

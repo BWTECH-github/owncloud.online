@@ -104,7 +104,7 @@ class Application {
 				} elseif ($this->config->getSystemValue('maintenance', false)) {
 					'@phan-var \Symfony\Component\Console\Output\ConsoleOutputInterface $output';
 					$errOutput = $output->getErrorOutput();
-					$errOutput->writeln('<comment>ownCloud is in maintenance mode - no app have been loaded</comment>' . PHP_EOL);
+					$errOutput->writeln('<comment>owncloud.online is in maintenance mode - no app have been loaded</comment>' . PHP_EOL);
 				} else {
 					OC_App::loadApps();
 					foreach (\OC::$server->getAppManager()->getInstalledApps() as $app) {
@@ -127,11 +127,11 @@ class Application {
 				}
 			} else {
 				if ($input->getFirstArgument() !== 'maintenance:install') {
-					$output->writeln("ownCloud is not installed - only a limited number of commands are available");
+					$output->writeln("owncloud.online is not installed - only a limited number of commands are available");
 				}
 			}
 		} catch (NeedsUpdateException $ex) {
-			$output->writeln("ownCloud or one of the apps require upgrade - only a limited number of commands are available");
+			$output->writeln("owncloud.online or one of the apps require upgrade - only a limited number of commands are available");
 			$output->writeln("You may use your browser or the occ upgrade command to do the upgrade");
 		};
 		if ($input->getFirstArgument() !== 'check') {

@@ -7,7 +7,7 @@ OC.L10N.register(
     "Shared by link" : "POdijeljeno putem veze",
     "Cancel" : "Odustanite",
     "Add" : "Dodaj",
-    "Invalid ownCloud url" : "Neispravan ownCloud URL",
+    "Invalid server url" : "Neispravan owncloud.online URL",
     "Share" : "Dijeljenje",
     "Pending" : "Na čekanju",
     "Shared by" : "Podijeljeno od strane",

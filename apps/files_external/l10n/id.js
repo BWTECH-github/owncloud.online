@@ -49,7 +49,7 @@ OC.L10N.register(
     "Google Drive" : "Google Drive",
     "Local" : "Lokal",
     "Location" : "lokasi",
-    "ownCloud" : "ownCloud",
+    "owncloud.online" : "owncloud.online",
     "SFTP" : "SFTP",
     "Host" : "Host",
     "Root" : "Root",

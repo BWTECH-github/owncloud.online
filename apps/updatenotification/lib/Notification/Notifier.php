@@ -62,7 +62,7 @@ class Notifier implements INotifier {
 
 		$l = $this->l10NFactory->get('updatenotification', $languageCode);
 		if ($notification->getObjectType() === 'core') {
-			$appName = $l->t('ownCloud core');
+			$appName = $l->t('owncloud.online core');
 
 			$this->updateAlreadyInstalledCheck($notification, $this->getCoreVersions());
 		} else {

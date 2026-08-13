@@ -30,7 +30,7 @@ OC.L10N.register(
     "Secure https://" : "Sigurni https://",
     "Local" : "Lokalno",
     "Location" : "Lokacija",
-    "ownCloud" : "оунКлауд",
+    "owncloud.online" : "owncloud.online",
     "SFTP" : "СФТП",
     "Host" : "Računar",
     "Root" : "Koren",

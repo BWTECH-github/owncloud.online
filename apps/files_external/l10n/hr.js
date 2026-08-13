@@ -24,7 +24,7 @@ OC.L10N.register(
     "Secure https://" : "Siguran https://",
     "Local" : "Lokalno",
     "Location" : "Lokacija",
-    "ownCloud" : "OwnCloud",
+    "owncloud.online" : "owncloud.online",
     "Host" : "Glavno računalo",
     "Root" : "Korijen",
     "Share" : "Dijeljenje zhajedničkih resursa",

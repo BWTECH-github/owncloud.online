@@ -47,7 +47,7 @@ class Install extends Command {
 	protected function configure() {
 		$this
 			->setName('maintenance:install')
-			->setDescription('Install ownCloud.')
+			->setDescription('Install owncloud.online.')
 			->addOption('database', null, InputOption::VALUE_REQUIRED, 'Supported database type.', 'sqlite')
 			->addOption('database-connection-string', null, InputOption::VALUE_REQUIRED, 'Oracle specific connection string. As soon as this parameter is provided other parameters like database-host and database-name are not used and do not need to be provided')
 			->addOption('database-name', null, InputOption::VALUE_REQUIRED, 'Name of the database.')
@@ -94,7 +94,7 @@ class Install extends Command {
 			$this->printErrors($output, $errors);
 			return 1;
 		}
-		$output->writeln("ownCloud was successfully installed");
+		$output->writeln("owncloud.online was successfully installed");
 		return 0;
 	}
 

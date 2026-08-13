@@ -17,7 +17,7 @@ OC.L10N.register(
     "URL" : "URL",
     "Local" : "স্থানীয়",
     "Location" : "অবস্থান",
-    "ownCloud" : "ওউনক্লাউড",
+    "owncloud.online" : "owncloud.online",
     "Host" : "হোস্ট",
     "Root" : "শেকড়",
     "Share" : "ভাগাভাগি কর",

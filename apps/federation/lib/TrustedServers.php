@@ -241,7 +241,7 @@ class TrustedServers {
 		$decoded = \json_decode($status, true);
 		if (!empty($decoded) && isset($decoded['version'])) {
 			if (!\version_compare($decoded['version'], '9.0.0', '>=')) {
-				throw new HintException('Remote server version is too low. ownCloud 9.0 is required.');
+				throw new HintException('Remote server version is too low. Version 9.0 or higher is required.');
 			}
 			return true;
 		}

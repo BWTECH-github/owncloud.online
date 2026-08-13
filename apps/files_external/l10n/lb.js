@@ -8,7 +8,7 @@ OC.L10N.register(
     "Save" : "Späicheren",
     "URL" : "URL",
     "Location" : "Uert",
-    "ownCloud" : "ownCloud",
+    "owncloud.online" : "owncloud.online",
     "Host" : "Host",
     "Share" : "Deelen",
     "Name" : "Numm",

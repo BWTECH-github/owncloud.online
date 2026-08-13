@@ -41,7 +41,7 @@ OC.L10N.register(
     "Google Drive" : "Google Drive",
     "Local" : "Local",
     "Location" : "Locație",
-    "ownCloud" : "ownCloud",
+    "owncloud.online" : "owncloud.online",
     "SFTP" : "SFTP",
     "Host" : "Gazdă",
     "Root" : "Root",

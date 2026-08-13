@@ -268,7 +268,7 @@ class Application extends App {
 		);
 
 		if ($this->getFederatedShareProvider()->isOutgoingServer2serverShareEnabled()) {
-			// add 'Add to your ownCloud' button to public pages
+			// add 'Add to your owncloud.online' button to public pages
 			$eventDispatcher->addListener(
 				'OCA\Files_Sharing::loadAdditionalScripts',
 				static function () {

@@ -10,7 +10,7 @@ OC.L10N.register(
     "Allow users on this server to receive shares from other servers" : "Luba selle serveri kasutajatel võtta vastu jagamisi teistest serveritest",
     "Share it:" : "Jaga seda:",
     "Add to your website" : "Lisa oma veebisaidile",
-    "Share with me via ownCloud" : "Jaga minuga läbi ownCloudiga",
+    "Share with me via owncloud.online" : "Jaga minuga läbi owncloud.onlineiga",
     "HTML Code:" : "HTML kood:",
     "Nothing to configure." : "Pole midagi seadistada."
 },

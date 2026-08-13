@@ -19,7 +19,7 @@ use OCP\Files\NotFoundException;
 use OCP\Files\NotPermittedException;
 
 /**
- * The single place where a client-supplied path becomes an ownCloud node.
+ * The single place where a client-supplied path becomes an owncloud.online node.
  *
  * Every tool MUST resolve paths through here instead of calling
  * `getUserFolder($uid)->get('/' . ltrim($path, '/'))` itself. The core's

@@ -7,7 +7,7 @@ OC.L10N.register(
     "Save" : "Cadw",
     "URL" : "URL",
     "Location" : "Lleoliad",
-    "ownCloud" : "ownCloud",
+    "owncloud.online" : "owncloud.online",
     "Share" : "Rhannu",
     "Name" : "Enw",
     "Delete" : "Dileu"

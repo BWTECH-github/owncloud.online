@@ -39,7 +39,7 @@ class Syslog {
 	 * Init class data
 	 */
 	public static function init() {
-		\openlog(\OC::$server->getSystemConfig()->getValue("syslog_tag", "ownCloud"), LOG_PID | LOG_CONS, LOG_USER);
+		\openlog(\OC::$server->getSystemConfig()->getValue("syslog_tag", "owncloud.online"), LOG_PID | LOG_CONS, LOG_USER);
 		// Close at shutdown
 		\OC::$server->getShutdownHandler()->register(function () {
 			\closelog();

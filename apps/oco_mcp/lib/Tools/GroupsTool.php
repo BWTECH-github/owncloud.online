@@ -18,7 +18,7 @@ use OCP\IUser;
 use OCP\IUserManager;
 
 /**
- * Group-management tools. Every tool requires the acting user to be an ownCloud
+ * Group-management tools. Every tool requires the acting user to be an owncloud.online
  * administrator; membership changes additionally require write access.
  */
 class GroupsTool {
@@ -41,7 +41,7 @@ class GroupsTool {
 	}
 
 	/**
-	 * List ownCloud groups (admin only).
+	 * List owncloud.online groups (admin only).
 	 *
 	 * @param string $search Optional search term.
 	 * @param int $limit Maximum number of groups to return (default 200).

@@ -25,7 +25,7 @@ OC.L10N.register(
     "Google Drive" : "Google Drive",
     "Local" : "Local",
     "Location" : "Ubicación",
-    "ownCloud" : "ownCloud",
+    "owncloud.online" : "owncloud.online",
     "Host" : "Servidor",
     "Share" : "Compartir",
     "Domain" : "Dominio",

@@ -13,8 +13,8 @@
     "\"%1$s\" invited you to view \"%3$s\"" : "\"%1$s\" מזמין אותך לצפות ב- \"%3$s\"",
     "Accept" : "אישור",
     "Decline" : "סירוב",
-    "Share with me through my #ownCloud Federated Cloud ID, see %s" : "שיתוף איתי באמצעות מספר זהות שרת ה- #ownCloud המאוגד שלי, ניתן לראות %s",
-    "Share with me through my #ownCloud Federated Cloud ID" : "שיתוף איתי באמצעות מספר זהות שרת ה- #ownCloud המאוגד שלי",
+    "Share with me through my Federated Cloud ID, see %s" : "שיתוף איתי באמצעות מספר זהות שרת ה- #owncloud.online המאוגד שלי, ניתן לראות %s",
+    "Share with me through my Federated Cloud ID" : "שיתוף איתי באמצעות מספר זהות שרת ה- #owncloud.online המאוגד שלי",
     "Federated Cloud Sharing" : "ענן שיתוף מאוגד",
     "Open documentation" : "תיעוד פתוח",
     "Periodically synchronize outdated federated shares for active users" : "תקופתית מסנכרן שיתופים מאוגדים ישנים למשתמשים פעילים",
@@ -24,7 +24,7 @@
     "Your Federated Cloud ID:" : "מספר זיהוי הענן המאוגד שלך:",
     "Share it:" : "שיתוף שלו:",
     "Add to your website" : "הוספה לאתר האינטרנט שלך",
-    "Share with me via ownCloud" : "שיתוף איתי באמצעות ownCloud",
+    "Share with me via owncloud.online" : "שיתוף איתי באמצעות owncloud.online",
     "HTML Code:" : "קוד HTML:",
     "Nothing to configure." : "אין שום דבר להגדיר."
 },"pluralForm" :"nplurals=3; plural=(n == 1 && n % 1 == 0) ? 0 : (n == 2 && n % 1 == 0) ? 1: 2;"

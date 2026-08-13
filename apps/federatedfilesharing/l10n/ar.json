@@ -13,8 +13,8 @@
     "\"%1$s\" invited you to view \"%3$s\"" : "\"%1$s\" يدعوك لعرض \"%3$s\"",
     "Accept" : "قبول",
     "Decline" : "رفض",
-    "Share with me through my #ownCloud Federated Cloud ID, see %s" : "شارك معي عبر معرف السحابة الموحدة لـ #ownCloud، انظر %s",
-    "Share with me through my #ownCloud Federated Cloud ID" : "شارك معي عبر معرف السحابة الموحدة لـ #ownCloud",
+    "Share with me through my Federated Cloud ID, see %s" : "شارك معي عبر معرف السحابة الموحدة لـ #owncloud.online، انظر %s",
+    "Share with me through my Federated Cloud ID" : "شارك معي عبر معرف السحابة الموحدة لـ #owncloud.online",
     "Federated Cloud Sharing" : "المشاركة السحابية الموحدة",
     "Open documentation" : "فتح المستندات",
     "Periodically synchronize outdated federated shares for active users" : "مزامنة المشاركات الموحدة القديمة بشكل دوري للمستخدمين النشطين",
@@ -24,7 +24,7 @@
     "Your Federated Cloud ID:" : "معرف السحابة الموحدة:",
     "Share it:" : "شاركه:",
     "Add to your website" : "إضافة إلى موقع الويب الخاص بك",
-    "Share with me via ownCloud" : "شارك معي عبر ownCloud",
+    "Share with me via owncloud.online" : "شارك معي عبر owncloud.online",
     "HTML Code:" : "رمز HTML:",
     "Nothing to configure." : "لم يتم تكوين أي شيء."
 },"pluralForm" :"nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;"

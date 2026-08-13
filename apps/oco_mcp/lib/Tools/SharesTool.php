@@ -105,7 +105,7 @@ class SharesTool {
 	}
 
 	/**
-	 * Share a file or folder with another ownCloud user. Requires write access.
+	 * Share a file or folder with another owncloud.online user. Requires write access.
 	 *
 	 * @param string $path Path relative to the user's root to share.
 	 * @param string $share_with The user id of the recipient.

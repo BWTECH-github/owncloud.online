@@ -804,7 +804,7 @@ class OC_Util {
 					['<a href="' . $urlGenerator->linkToDocs('admin-dir_permissions') . '" target="_blank" rel="noreferrer">', '</a>']
 				);
 				$errors[] = [
-					'error' => 'Your Data directory is not writable by ownCloud',
+					'error' => 'Your Data directory is not writable by owncloud.online',
 					'hint' => $permissionsHint
 				];
 			} else {
@@ -916,7 +916,7 @@ class OC_Util {
 			}
 			$errors[] = [
 				'error' => $l->t('PHP setting "%s" is not set to "%s".', [$setting[0], \var_export($setting[1], true)]),
-				'hint' =>  $l->t('Adjusting this setting in php.ini will make ownCloud run again')
+				'hint' =>  $l->t('Adjusting this setting in php.ini will make owncloud.online run again')
 			];
 			$webServerRestart = true;
 		}

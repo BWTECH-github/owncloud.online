@@ -31,7 +31,7 @@ trait WriteGuard {
 
 	private function assertAdmin(bool $isAdmin): void {
 		if (!$isAdmin) {
-			throw new ToolCallException('This tool requires ownCloud administrator privileges.');
+			throw new ToolCallException('This tool requires owncloud.online administrator privileges.');
 		}
 	}
 }

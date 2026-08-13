@@ -8,8 +8,8 @@
     "Sharing %s failed, could not find %s, maybe the server is currently unreachable." : "Kohteen %s jakaminen epäonnistui, kohdetta %s ei löytynyt. Kenties palvelin ei ole juuri nyt tavoitettavissa.",
     "Accept" : "Hyväksy",
     "Decline" : "Kieltäydy",
-    "Share with me through my #ownCloud Federated Cloud ID, see %s" : "Jaa kanssani käyttäen #ownCloud ja federoitua pilvitunnistetta, katso %s",
-    "Share with me through my #ownCloud Federated Cloud ID" : "Jaa kanssani käyttäen #ownCloud ja federoitua pilvitunnistetta",
+    "Share with me through my Federated Cloud ID, see %s" : "Jaa kanssani käyttäen #owncloud.online ja federoitua pilvitunnistetta, katso %s",
+    "Share with me through my Federated Cloud ID" : "Jaa kanssani käyttäen #owncloud.online ja federoitua pilvitunnistetta",
     "Federated Cloud Sharing" : "Federoitu pilvijakaminen",
     "Open documentation" : "Avaa dokumentaatio",
     "Allow users on this server to send shares to other servers" : "Salli tämän palvelimen käyttäjien lähettää jakoja muille palvelimille",
@@ -18,7 +18,7 @@
     "Your Federated Cloud ID:" : "Federoidun pilvesi tunniste:",
     "Share it:" : "Jaa se:",
     "Add to your website" : "Lisää verkkosivuillesi",
-    "Share with me via ownCloud" : "Jaa kanssani ownCloudin kautta",
+    "Share with me via owncloud.online" : "Jaa kanssani owncloud.onlinein kautta",
     "HTML Code:" : "HTML-koodi:"
 },"pluralForm" :"nplurals=2; plural=(n != 1);"
 }

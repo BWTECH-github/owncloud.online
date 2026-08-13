@@ -51,7 +51,7 @@ $currentChannel = $_['currentChannel'];
 			p('hidden');
 		} ?>">
 			<br />
-			<?php p($l->t('Only notification for app updates are available, because the selected update channel for ownCloud itself does not allow notifications.')); ?>
+			<?php p($l->t('Only notification for app updates are available, because the selected update channel for the server itself does not allow notifications.')); ?>
 		</em>
 	</p>
 </form>

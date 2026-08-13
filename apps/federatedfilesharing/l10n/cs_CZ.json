@@ -8,8 +8,8 @@
     "Sharing %s failed, could not find %s, maybe the server is currently unreachable." : "Sdílení %s selhalo, %s se nepodařilo nalézt, server pravděpodobně právě není dostupný.",
     "Accept" : "Přijmout",
     "Decline" : "Zamítnout",
-    "Share with me through my #ownCloud Federated Cloud ID, see %s" : "Sdílej se mnou pomocí mého #ownCloud sdruženého cloud ID, více na %s",
-    "Share with me through my #ownCloud Federated Cloud ID" : "Sdílej se mnou pomocí mého #ownCloud sdruženého cloud ID",
+    "Share with me through my Federated Cloud ID, see %s" : "Sdílej se mnou pomocí mého #owncloud.online sdruženého cloud ID, více na %s",
+    "Share with me through my Federated Cloud ID" : "Sdílej se mnou pomocí mého #owncloud.online sdruženého cloud ID",
     "Federated Cloud Sharing" : "Propojené cloudové sdílení",
     "Open documentation" : "Otevřít dokumentaci",
     "Allow users on this server to send shares to other servers" : "Povolit uživatelům z tohoto serveru zasílat sdílení na jiné servery",
@@ -18,7 +18,7 @@
     "Your Federated Cloud ID:" : "Vaše sdružené cloud ID:",
     "Share it:" : "Sdílet:",
     "Add to your website" : "Přidat na svou webovou stránku",
-    "Share with me via ownCloud" : "Sdíleno se mnou přes ownCloud",
+    "Share with me via owncloud.online" : "Sdíleno se mnou přes owncloud.online",
     "HTML Code:" : "HTML kód:"
 },"pluralForm" :"nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 }

@@ -45,7 +45,7 @@ class OwnCloud extends Command {
 	protected function configure() {
 		$this
 			->setName('log:owncloud')
-			->setDescription('manipulate ownCloud logging backend')
+			->setDescription('manipulate the owncloud.online logging backend')
 			->addOption(
 				'enable',
 				null,
@@ -95,7 +95,7 @@ class OwnCloud extends Command {
 		} else {
 			$enabledText = 'disabled';
 		}
-		$output->writeln('Log backend ownCloud: '.$enabledText);
+		$output->writeln('Log backend owncloud.online: '.$enabledText);
 
 		$dataDir = $this->config->getSystemValue('datadirectory', \OC::$SERVERROOT.'/data');
 		$defaultLogFile = \rtrim((string)$dataDir, '/').'/owncloud.log';

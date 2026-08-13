@@ -17,7 +17,7 @@ OC.L10N.register(
     "URL" : "URL",
     "Google Drive" : "Google Drive",
     "Location" : "Vieta",
-    "ownCloud" : "ownCloud",
+    "owncloud.online" : "owncloud.online",
     "SFTP" : "SFTP",
     "Host" : "Resursdators",
     "Share" : "Dalīties",

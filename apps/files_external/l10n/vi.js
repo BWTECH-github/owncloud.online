@@ -11,7 +11,7 @@ OC.L10N.register(
     "WebDAV" : "WebDAV",
     "URL" : "URL",
     "Location" : "Vị trí",
-    "ownCloud" : "ownCloud",
+    "owncloud.online" : "owncloud.online",
     "Host" : "Máy chủ",
     "Share" : "Chia sẻ",
     "Domain" : "Tên miền",

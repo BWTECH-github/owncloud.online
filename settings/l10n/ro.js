@@ -54,7 +54,7 @@ OC.L10N.register(
     "Not enabled" : "Dezactivat",
     "No apps found for your version" : "Nu au fost găsite aplicații pentru versiunea ta",
     "The app will be downloaded from the app store" : "Aplicația va fi descărcată din magazin",
-    "Official apps are developed by and within the ownCloud community. They offer functionality central to ownCloud and are ready for production use." : "Aplicațiile oficiale sunt dezvoltate de și în cadrul comunității ownCloud. Acestea oferă funcționalitate centrală pentru ownCloud și sunt gata pentru utilizare în producție.",
+    "Official apps are developed by and within the owncloud.online project. They offer functionality central to owncloud.online and are ready for production use." : "Aplicațiile oficiale sunt dezvoltate de și în cadrul comunității owncloud.online. Acestea oferă funcționalitate centrală pentru owncloud.online și sunt gata pentru utilizare în producție.",
     "Please wait...." : "Aşteptaţi vă rog....",
     "Error while disabling app" : "Eroare în timpul dezactivării aplicației",
     "Disable" : "Dezactivați",

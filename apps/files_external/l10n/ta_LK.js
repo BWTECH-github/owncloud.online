@@ -8,7 +8,7 @@ OC.L10N.register(
     "Save" : "சேமிக்க ",
     "URL" : "URL",
     "Location" : "இடம்",
-    "ownCloud" : "OwnCloud",
+    "owncloud.online" : "owncloud.online",
     "Host" : "ஓம்புனர்",
     "Share" : "பகிர்வு",
     "Name" : "பெயர்",

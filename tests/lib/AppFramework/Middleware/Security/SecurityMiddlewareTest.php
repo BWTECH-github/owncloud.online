@@ -613,7 +613,7 @@ class SecurityMiddlewareTest extends TestCase {
 				function (Result $result) {
 					$headers = $result->getHeaders();
 					$this->assertTrue(\array_key_exists('WWW-Authenticate', $headers));
-					$this->assertEquals($headers['WWW-Authenticate'], 'Basic realm="ownCloud App Authentication Requested"');
+					$this->assertEquals($headers['WWW-Authenticate'], 'Basic realm="owncloud.online App Authentication Requested"');
 					return true;
 				}
 			))

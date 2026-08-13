@@ -13,7 +13,7 @@ OC.L10N.register(
     "No shared links" : "no hi ha enllaços compartits",
     "Cancel" : "Cancel·la",
     "Add" : "Afegeix",
-    "Invalid ownCloud url" : "La url d'ownCloud no és vàlida",
+    "Invalid server url" : "La url d'owncloud.online no és vàlida",
     "Share" : "Compartir",
     "Create public link" : "Crear un enllaç públic",
     "Declined" : "Denegat",

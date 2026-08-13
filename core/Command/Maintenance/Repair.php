@@ -208,7 +208,7 @@ class Repair extends Command {
 					\array_push($steps, \OC::$server->query($step));
 				}
 			} catch (\OC\NeedsUpdateException $ex) {
-				$output->writeln("<error>ownCloud or one of the apps require upgrade.</error>");
+				$output->writeln("<error>owncloud.online or one of the apps require upgrade.</error>");
 			} catch (Exception $ex) {
 				$output->writeln("<error>Failed to load repair step for $app: {$ex->getMessage()}</error>");
 			}

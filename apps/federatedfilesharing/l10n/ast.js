@@ -10,8 +10,8 @@ OC.L10N.register(
     "Sharing %s failed, could not find %s, maybe the server is currently unreachable." : "Compartir %s falló, nun pudo atopase %s, pue qu'el servidor nun seya anguaño algamable.",
     "Accept" : "Aceptar",
     "Decline" : "Declinar",
-    "Share with me through my #ownCloud Federated Cloud ID, see %s" : "Comparte conmigo a través del mio ID Nube Federada #ownCloud, consulta %s",
-    "Share with me through my #ownCloud Federated Cloud ID" : "Comparte conmigo a través del mio ID Nube Federada #ownCloud",
+    "Share with me through my Federated Cloud ID, see %s" : "Comparte conmigo a través del mio ID Nube Federada #owncloud.online, consulta %s",
+    "Share with me through my Federated Cloud ID" : "Comparte conmigo a través del mio ID Nube Federada #owncloud.online",
     "Federated Cloud Sharing" : "Nube Compartida Federada",
     "Open documentation" : "Abrir documentación",
     "Allow users on this server to send shares to other servers" : "Permitir a los usuarios d'esti sirvidor compartir con otros sirvidores",
@@ -20,7 +20,7 @@ OC.L10N.register(
     "Your Federated Cloud ID:" : "El to ID de Ñube Federada",
     "Share it:" : "Compártilo:",
     "Add to your website" : "Amesta al to sitiu web",
-    "Share with me via ownCloud" : "Comparte conmigo vía ownCloud",
+    "Share with me via owncloud.online" : "Comparte conmigo vía owncloud.online",
     "HTML Code:" : "Códigu HTML:"
 },
 "nplurals=2; plural=(n != 1);");

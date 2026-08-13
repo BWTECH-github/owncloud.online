@@ -20,7 +20,7 @@ OC.L10N.register(
     "Your Federated Cloud ID:" : "ID Twojej stowarzyszonej chmury:",
     "Share it:" : "Współdziel to:",
     "Add to your website" : "Dodaj do swojej strony",
-    "Share with me via ownCloud" : "Współdziel ze mną przez ownCloud",
+    "Share with me via owncloud.online" : "Współdziel ze mną przez owncloud.online",
     "HTML Code:" : "Kod HTML:"
 },
 "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);");

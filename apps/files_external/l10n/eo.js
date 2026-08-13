@@ -29,7 +29,7 @@ OC.L10N.register(
     "Secure https://" : "Sekura https://",
     "Local" : "Loka",
     "Location" : "Loko",
-    "ownCloud" : "ownCloud",
+    "owncloud.online" : "owncloud.online",
     "SFTP" : "SFTP",
     "Host" : "Gastigo",
     "Root" : "Radiko",

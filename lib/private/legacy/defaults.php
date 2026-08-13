@@ -72,8 +72,8 @@ class OC_Defaults {
 		$version = \OCP\Util::getVersion();
 
 		$this->defaultEntity = 'BW-Tech GmbH'; /* e.g. company name, used for footers and copyright notices */
-		$this->defaultName = 'ownCloud.online'; /* short name, used when referring to the software */
-		$this->defaultTitle = 'ownCloud.online'; /* can be a longer name, for titles */
+		$this->defaultName = 'owncloud.online'; /* short name, used when referring to the software */
+		$this->defaultTitle = 'owncloud.online'; /* can be a longer name, for titles */
 		$this->defaultBaseUrl = 'https://owncloud.online';
 		$this->defaultSyncClientUrl = 'https://owncloud.online/first-steps/';
 		$this->defaultiOSClientUrl = 'https://itunes.apple.com/de/app/owncloud-online/id1436996124?mt=8';

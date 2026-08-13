@@ -19,7 +19,7 @@
 		<p><?php p($l->t('Please read carefully before activating server-side encryption: ')); ?></p>
 		<ul>
 			<li><?php p($l->t('Once encryption is enabled, all files uploaded to the server from that point forward will be encrypted at rest on the server. It will only be possible to disable encryption at a later date if the active encryption module supports that function, and all pre-conditions (e.g. setting a recover key) are met.')); ?></li>
-			<li><?php p($l->t('Encryption alone does not guarantee security of the system. Please see ownCloud documentation for more information about how the encryption app works, and the supported use cases.')); ?></li>
+			<li><?php p($l->t('Encryption alone does not guarantee security of the system. Please see the owncloud.online documentation for more information about how the encryption app works, and the supported use cases.')); ?></li>
 			<li><?php p($l->t('Be aware that encryption always increases the file size.')); ?></li>
 			<li><?php p($l->t('It is always good to create regular backups of your data, in case of encryption make sure to backup the encryption keys along with your data.')); ?></li>
 		</ul>
@@ -62,9 +62,9 @@
 		} ?>">
 			<?php
 		if ($_['encryptionReady'] === false && $_['externalBackendsEnabled'] === true) {
-			p($l->t('You need to migrate your encryption keys from the old encryption (ownCloud <= 8.0) to the new one. Please enable the "Default encryption module" and run \'occ encryption:migrate\''));
+			p($l->t('You need to migrate your encryption keys from the old encryption (version 8.0 and older) to the new one. Please enable the "Default encryption module" and run \'occ encryption:migrate\''));
 		} elseif ($_['encryptionReady'] === false && $_['externalBackendsEnabled'] === false) {
-			p($l->t('You need to migrate your encryption keys from the old encryption (ownCloud <= 8.0) to the new one.')); ?>
+			p($l->t('You need to migrate your encryption keys from the old encryption (version 8.0 and older) to the new one.')); ?>
 				<input type="submit" name="startmigration" id="startmigration"
 					   value="<?php p($l->t('Start migration')); ?>"/>
 			<?php

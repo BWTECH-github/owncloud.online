@@ -172,7 +172,7 @@ class OccController extends Controller {
 		$coreToken = $this->config->getSystemValue('updater.secret', '');
 		if ($coreToken === '') {
 			throw new \UnexpectedValueException(
-				'updater.secret is undefined in config/config.php. Either browse the admin settings in your ownCloud and click "Open updater" or define a strong secret using <pre>php -r \'echo password_hash("MyStrongSecretDoUseYourOwn!", PASSWORD_DEFAULT)."\n";\'</pre> and set this in the config.php.'
+				'updater.secret is undefined in config/config.php. Either browse the admin settings in your owncloud.online instance and click "Open updater" or define a strong secret using <pre>php -r \'echo password_hash("MyStrongSecretDoUseYourOwn!", PASSWORD_DEFAULT)."\n";\'</pre> and set this in the config.php.'
 			);
 		}
 

@@ -7,7 +7,7 @@ OC.L10N.register(
     "Save" : "Simpan",
     "URL" : "URL",
     "Location" : "Lokasi",
-    "ownCloud" : "ownCloud",
+    "owncloud.online" : "owncloud.online",
     "Share" : "Kongsi",
     "Name" : "Nama",
     "Delete" : "Padam"

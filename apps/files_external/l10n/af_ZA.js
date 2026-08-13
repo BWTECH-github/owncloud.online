@@ -24,7 +24,7 @@ OC.L10N.register(
     "Google Drive" : "Google Drive",
     "Local" : "Lokaal",
     "Location" : "Ligging",
-    "ownCloud" : "ownCloud",
+    "owncloud.online" : "owncloud.online",
     "SFTP" : "SFTP",
     "Host" : "Gasheer",
     "Root" : "Wortel",

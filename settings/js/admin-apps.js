@@ -123,7 +123,7 @@ OC.Settings.Apps = OC.Settings.Apps || {
 
 				$('.enable.needs-download').tooltip({title: t('settings', 'The app will be downloaded from the app store'), container: 'body'});
 
-				$('.app-level .official').tooltip({title: t('settings', 'Official apps are developed by and within the ownCloud community. They offer functionality central to ownCloud and are ready for production use.'), container: 'body'});
+				$('.app-level .official').tooltip({title: t('settings', 'Official apps are developed by and within the owncloud.online project. They offer functionality central to owncloud.online and are ready for production use.'), container: 'body'});
 				$('.app-level .approved').tooltip({title: t('settings', 'Approved apps are developed by trusted developers and have passed a cursory security check. They are actively maintained in an open code repository and their maintainers deem them to be stable for casual to normal use.'), container: 'body'});
 				$('.app-level .experimental').tooltip({title: t('settings', 'This app is not checked for security issues and is new or known to be unstable. Install at your own risk.'), container: 'body'});
 			},

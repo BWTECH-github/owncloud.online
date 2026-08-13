@@ -98,12 +98,12 @@ script('settings', 'admin-apps');
 
 		{{#if missingMinOwnCloudVersion}}
 			<div class="app-dependencies">
-				<p><?php p($l->t('This app has no minimum ownCloud version assigned. This will be an error in ownCloud 11 and later.')); ?></p>
+				<p><?php p($l->t('This app has no minimum server version assigned. This will be an error in version 11 and later.')); ?></p>
 			</div>
 		{{else}}
 			{{#if missingMaxOwnCloudVersion}}
 				<div class="app-dependencies">
-					<p><?php p($l->t('This app has no maximum ownCloud version assigned. This will be an error in ownCloud 11 and later.')); ?></p>
+					<p><?php p($l->t('This app has no maximum server version assigned. This will be an error in version 11 and later.')); ?></p>
 				</div>
 			{{/if}}
 		{{/if}}

@@ -14,7 +14,7 @@ OC.L10N.register(
     "URL" : "Nettstad",
     "Google Drive" : "Google Drive",
     "Location" : "Stad",
-    "ownCloud" : "ownCloud",
+    "owncloud.online" : "owncloud.online",
     "Host" : "Tenar",
     "Root" : "Rot",
     "Share" : "Del",
