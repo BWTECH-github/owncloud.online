@@ -27,8 +27,11 @@ http://127.0.0.1:8088
 
 ```text
 Benutzer: admin
-Passwort: <entfernt>
+Passwort: <eigenes Passwort wählen>
 ```
+
+Auch lokal gilt: ein zufälliges Passwort, nirgends wiederverwendet. Ein
+Passwort, das in einer Anleitung steht, ist keins.
 
 ## Basischecks
 

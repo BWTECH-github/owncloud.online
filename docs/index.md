@@ -38,11 +38,14 @@ Die Struktur orientiert sich an der offiziellen ownCloud-Server-Dokumentation, i
 
 ## Lokale Testdaten
 
-Für lokale Tests wurde verwendet:
+Beim Einrichten legen Sie das Administratorkonto selbst an:
 
 ```text
 Benutzer: admin
-Passwort: <entfernt>
+Passwort: <eigenes Passwort wählen>
 ```
 
-Diese Zugangsdaten gehören nicht auf Produktivsysteme.
+Wählen Sie auch für eine reine Testinstanz ein zufälliges Passwort und
+verwenden Sie es nirgends erneut. Testinstanzen sind erfahrungsgemäß schneller
+aus dem lokalen Netz erreichbar als geplant, und ein Passwort aus einer
+Anleitung steht in jeder Wörterbuchliste.
