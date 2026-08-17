@@ -129,6 +129,46 @@ class LoginController extends Controller {
 	 *                         than being cast (which would throw).
 	 * @return int
 	 */
+	/**
+	 * Prueft den in der Konfiguration hinterlegten Verweis "Passwort vergessen".
+	 *
+	 * Der Wert kommt aus 'lost_password_link' und landet im href dreier Verweise
+	 * auf der Anmeldeseite. Die Ausgabe wird zwar maskiert, das schuetzt aber
+	 * nur das Attribut, nicht das Schema: 'javascript:…' bliebe erhalten und
+	 * liefe beim Klick - auf der einzigen Seite, die jeder ohne Anmeldung
+	 * erreicht. Zugelassen sind darum nur http, https, mailto und Verweise
+	 * innerhalb der Instanz. Alles andere gilt als nicht gesetzt.
+	 *
+	 * Nur Zeichenketten koennen ein Schema tragen; alles andere (etwa der
+	 * Rueckfallwert false) geht unveraendert zurueck und wird bei der Ausgabe
+	 * ohnehin zu nichts.
+	 *
+	 * @param mixed $link
+	 * @return mixed
+	 */
+	private function sanitizeResetPasswordLink($link) {
+		if (!\is_string($link)) {
+			return $link;
+		}
+		if (\trim($link) === '') {
+			return '';
+		}
+		$wert = \trim($link);
+
+		// Eigener Pfad oder Anker - kein Schema, also nichts zu pruefen.
+		if ($wert[0] === '/' || $wert[0] === '#') {
+			return $wert;
+		}
+
+		$schema = \parse_url($wert, PHP_URL_SCHEME);
+		if ($schema === null || $schema === false) {
+			// Relativer Verweis ohne fuehrenden Schraegstrich.
+			return $wert;
+		}
+
+		return \in_array(\strtolower($schema), ['http', 'https', 'mailto'], true) ? $wert : '';
+	}
+
 	private function getLoginRetryAfter($loginName) {
 		$name = \is_scalar($loginName) ? (string)$loginName : '';
 
@@ -249,6 +289,10 @@ class LoginController extends Controller {
 		$parameters['resetPasswordLink'] = $this->config->getSystemValue('lost_password_link', '');
 		if ($parameters['resetPasswordLink'] === 'disabled') {
 			$parameters['canResetPassword'] = false;
+		} else {
+			$parameters['resetPasswordLink'] = $this->sanitizeResetPasswordLink(
+				$parameters['resetPasswordLink']
+			);
 		}
 
 		$altLogins = OC_App::getAlternativeLogIns();
