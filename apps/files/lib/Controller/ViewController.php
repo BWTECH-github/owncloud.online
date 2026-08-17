@@ -8,6 +8,10 @@
  * @author Vincent Petry <pvince81@owncloud.com>
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-08-17.
+ * Changes: fix(a11y): park inactive file list views in inert templates
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -260,6 +264,7 @@ class ViewController extends Controller {
 		$params['mailPublicNotificationEnabled'] = $this->config->getAppValue('core', 'shareapi_allow_public_notification', 'no');
 		$params['socialShareEnabled'] = $this->config->getAppValue('core', 'shareapi_allow_social_share', 'yes');
 		$params['allowShareWithLink'] = $this->config->getAppValue('core', 'shareapi_allow_links', 'yes');
+		$params['publicUploadEnabled'] = $this->config->getAppValue('core', 'shareapi_allow_public_upload', 'yes');
 		$params['defaultFileSorting'] = $this->config->getUserValue($user, 'files', 'file_sorting', 'name');
 		$params['defaultFileSortingDirection'] = $this->config->getUserValue($user, 'files', 'file_sorting_direction', 'asc');
 		$showHidden = (bool) $this->config->getUserValue($this->userSession->getUser()->getUID(), 'files', 'show_hidden', false);

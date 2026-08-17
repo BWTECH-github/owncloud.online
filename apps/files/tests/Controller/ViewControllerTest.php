@@ -7,6 +7,10 @@
  * @author Vincent Petry <pvince81@owncloud.com>
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-08-17.
+ * Changes: fix(a11y): park inactive file list views in inert templates
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -282,6 +286,7 @@ class ViewControllerTest extends TestCase {
 				'mailPublicNotificationEnabled' => 'no',
 				'socialShareEnabled' => 'yes',
 				'allowShareWithLink' => 'yes',
+				'publicUploadEnabled' => 'yes',
 				'appNavigation' => $nav,
 				'appContents' => [
 					[

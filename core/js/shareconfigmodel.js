@@ -54,6 +54,12 @@
 		 */
 		isPublicUploadEnabled: function() {
 			var publicUploadEnabled = $('#filestable').data('allow-public-upload');
+			if (publicUploadEnabled === undefined) {
+				// the files view is parked inside its <template> while
+				// another view is active - fall back to the config hint
+				// input rendered by apps/files/templates/index.php
+				publicUploadEnabled = $('input:hidden[name=publicUploadEnabled]').val();
+			}
 			return publicUploadEnabled === 'yes';
 		},
 

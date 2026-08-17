@@ -77,6 +77,41 @@
 		},
 
 		/**
+		 * Moves the content of the given view container into its inert
+		 * <template> child. Parked content lives in a DocumentFragment
+		 * outside the document: its ids are invisible to getElementById,
+		 * CSS and the accessibility tree. No-op when the container has
+		 * no template child or the browser does not support <template> -
+		 * the view then simply stays in the document as before.
+		 *
+		 * @param $container view container (#app-content-<viewid>)
+		 */
+		_parkContent: function($container) {
+			var template = $container.children('template.viewcontent')[0];
+			if (!template || !template.content) {
+				return;
+			}
+			while (template.nextSibling) {
+				template.content.appendChild(template.nextSibling);
+			}
+		},
+
+		/**
+		 * Counterpart of _parkContent: moves the parked content back into
+		 * the container. Element references and event handlers survive
+		 * the round trip through the fragment.
+		 *
+		 * @param $container view container (#app-content-<viewid>)
+		 */
+		_unparkContent: function($container) {
+			var template = $container.children('template.viewcontent')[0];
+			if (!template || !template.content) {
+				return;
+			}
+			$container[0].appendChild(template.content);
+		},
+
+		/**
 		 * Switch the currently selected item, mark it as selected and
 		 * make the content container visible, if any.
 		 *
@@ -85,6 +120,7 @@
 		 */
 		setActiveItem: function(itemId, options) {
 			var oldItemId = this._activeItem;
+			var self = this;
 			if (itemId === this._activeItem) {
 				if (!options || !options.silent) {
 					this.$el.trigger(
@@ -101,6 +137,14 @@
 			this._activeItem = itemId;
 			this.$el.find('li[data-id=' + itemId + ']').addClass('active');
 			this.$currentContent = $('#app-content-' + itemId);
+			// park every other view so that only one set of list ids exists
+			// in the document at any time (OC-WCAG-279). This also covers
+			// the very first call, where $currentContent was still null and
+			// the hide branch above did not run.
+			$('#app-content > .viewcontainer').not(this.$currentContent).each(function() {
+				self._parkContent($(this));
+			});
+			this._unparkContent(this.$currentContent);
 			this.$currentContent.removeClass('hidden');
 			if (!options || !options.silent) {
 				this.$currentContent.trigger(jQuery.Event('show'));

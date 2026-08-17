@@ -1,0 +1,19 @@
+Bugfix: Park inactive file list views so ids stay unique in the document
+
+The files view loads seven list templates into the same document - files,
+favorites, incoming, outgoing and link shares, trash and tags. Only one is
+visible at a time, but all of them were present in the DOM and each carried
+the same set of ids. Fourteen ids were therefore assigned more than once,
+affecting 68 elements.
+
+Duplicate ids break the association created by label[for] and
+aria-labelledby, because assistive technology only evaluates the first
+element carrying an id. They are also a robustness risk outside
+accessibility, because the application reads several of these ids directly
+and always receives the first occurrence.
+
+Inactive views are now kept inside inert <template> elements and are only
+placed into the document while they are active, so exactly one set of list
+ids exists at any time.
+
+WCAG 2.1 AA, SC 4.1.1

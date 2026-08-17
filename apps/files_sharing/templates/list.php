@@ -1,5 +1,4 @@
 <?php /** @var $l \OCP\IL10N */ ?>
-<div id='notification'></div>
 
 <div id="emptycontent" class="hidden"></div>
 

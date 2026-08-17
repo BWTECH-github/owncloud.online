@@ -57,7 +57,9 @@
 	}
 
 	function esc() {
-		$("#controls").trigger('click');
+		// #controls only exists in some views - #app-content is always
+		// present and the click bubbles up to document all the same
+		$("#app-content").trigger('click');
 	}
 
 	function down() {
