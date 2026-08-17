@@ -1,9 +1,0 @@
-{
-  "resources": [
-    {
-      "name": "priority_config_manual",
-      "uri": "config://priority",
-      "description": "Manually registered resource that overrides a discovered one."
-    }
-  ]
-}

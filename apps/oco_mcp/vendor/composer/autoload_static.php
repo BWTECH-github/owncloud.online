@@ -11,95 +11,95 @@ class ComposerStaticInit293aa830bf7cefc014843e50dc72660a
     );
 
     public static $prefixLengthsPsr4 = array (
-        'p' => 
+        'p' =>
         array (
             'phpDocumentor\\Reflection\\' => 25,
         ),
-        'W' => 
+        'W' =>
         array (
             'Webmozart\\Assert\\' => 17,
         ),
-        'S' => 
+        'S' =>
         array (
             'Symfony\\Polyfill\\Uuid\\' => 22,
             'Symfony\\Component\\Uid\\' => 22,
         ),
-        'P' => 
+        'P' =>
         array (
             'Psr\\Http\\Server\\' => 16,
             'Psr\\Clock\\' => 10,
             'PHPStan\\PhpDocParser\\' => 21,
         ),
-        'O' => 
+        'O' =>
         array (
             'Opis\\Uri\\' => 9,
             'Opis\\String\\' => 12,
             'Opis\\JsonSchema\\' => 16,
             'OCA\\OcoMcp\\' => 11,
         ),
-        'M' => 
+        'M' =>
         array (
             'Mcp\\' => 4,
         ),
-        'H' => 
+        'H' =>
         array (
             'Http\\Discovery\\' => 15,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'phpDocumentor\\Reflection\\' => 
+        'phpDocumentor\\Reflection\\' =>
         array (
             0 => __DIR__ . '/..' . '/phpdocumentor/reflection-docblock/src',
             1 => __DIR__ . '/..' . '/phpdocumentor/type-resolver/src',
             2 => __DIR__ . '/..' . '/phpdocumentor/reflection-common/src',
         ),
-        'Webmozart\\Assert\\' => 
+        'Webmozart\\Assert\\' =>
         array (
             0 => __DIR__ . '/..' . '/webmozart/assert/src',
         ),
-        'Symfony\\Polyfill\\Uuid\\' => 
+        'Symfony\\Polyfill\\Uuid\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-uuid',
         ),
-        'Symfony\\Component\\Uid\\' => 
+        'Symfony\\Component\\Uid\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/uid',
         ),
-        'Psr\\Http\\Server\\' => 
+        'Psr\\Http\\Server\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/http-server-middleware/src',
             1 => __DIR__ . '/..' . '/psr/http-server-handler/src',
         ),
-        'Psr\\Clock\\' => 
+        'Psr\\Clock\\' =>
         array (
             0 => __DIR__ . '/..' . '/psr/clock/src',
         ),
-        'PHPStan\\PhpDocParser\\' => 
+        'PHPStan\\PhpDocParser\\' =>
         array (
             0 => __DIR__ . '/..' . '/phpstan/phpdoc-parser/src',
         ),
-        'Opis\\Uri\\' => 
+        'Opis\\Uri\\' =>
         array (
             0 => __DIR__ . '/..' . '/opis/uri/src',
         ),
-        'Opis\\String\\' => 
+        'Opis\\String\\' =>
         array (
             0 => __DIR__ . '/..' . '/opis/string/src',
         ),
-        'Opis\\JsonSchema\\' => 
+        'Opis\\JsonSchema\\' =>
         array (
             0 => __DIR__ . '/..' . '/opis/json-schema/src',
         ),
-        'OCA\\OcoMcp\\' => 
+        'OCA\\OcoMcp\\' =>
         array (
             0 => __DIR__ . '/../..' . '/lib',
         ),
-        'Mcp\\' => 
+        'Mcp\\' =>
         array (
             0 => __DIR__ . '/..' . '/mcp/sdk/src',
         ),
-        'Http\\Discovery\\' => 
+        'Http\\Discovery\\' =>
         array (
             0 => __DIR__ . '/..' . '/php-http/discovery/src',
         ),

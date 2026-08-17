@@ -1,9 +1,0 @@
-{
-  "contents": [
-    {
-      "uri": "config://priority",
-      "mimeType": "text/plain",
-      "text": "Manual Priority Config: HIGH (overrides discovered)"
-    }
-  ]
-}
