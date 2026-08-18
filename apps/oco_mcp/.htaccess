@@ -1,0 +1,25 @@
+# Nichts aus dieser App gehoert direkt ins Web: sie liefert keine Assets aus,
+# ihre gesamte Oberflaeche laeuft ueber index.php. Ohne diese Regeln waren
+# vendor/autoload.php, composer.json und composer.lock unter ihrer Adresse
+# abrufbar - die globale .htaccess sperrt nur die obersten Verzeichnisse des
+# Servers, nicht apps/<name>/vendor.
+#
+# nginx kennt .htaccess nicht. Dort gehoert dieselbe Sperre in die
+# Serverkonfiguration, siehe docs/administration/installation.md.
+<IfModule mod_rewrite.c>
+  RewriteEngine on
+  RewriteRule ^(?:vendor|tests)/.* - [R=404,L]
+  RewriteRule ^composer\.(json|lock)$ - [R=404,L]
+</IfModule>
+
+# Falls mod_rewrite fehlt: dieselbe Aussage ueber Dateizugriff.
+<IfModule !mod_rewrite.c>
+  <FilesMatch "\.(json|lock)$">
+    <IfModule mod_authz_core.c>
+      Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+      Deny from all
+    </IfModule>
+  </FilesMatch>
+</IfModule>

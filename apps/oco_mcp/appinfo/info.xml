@@ -16,10 +16,10 @@ files, and — for admins — manage users and groups, all as the authenticated 
 and subject to the same owncloud.online permissions.
 
 The endpoint speaks Streamable HTTP JSON-RPC at /apps/oco_mcp/mcp. It is read-only
-by default; set the app config "oco_mcp enable_write yes" (occ) to allow write and
-management tools. Note that enable_write arms write tools instance-wide for every
-token (and user/group management for every admin token) unless the app config
-"write_groups" (comma-separated group IDs) limits it to members of those groups.
+by default. Write and management tools need BOTH the app config
+"oco_mcp enable_write yes" AND the app config "oco_mcp write_groups"
+(comma-separated group IDs) naming at least one group; an empty group list
+grants write access to nobody.
 Authentication uses HTTP Basic with an owncloud.online app/device token;
 credentials are revalidated per request and browser cookie sessions are rejected.
 

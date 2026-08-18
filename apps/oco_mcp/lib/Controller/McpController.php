@@ -7,7 +7,7 @@
  *
  * Modified by BW-Tech GmbH on 2026-08-06.
  * Changes:
- *   - stop the instance-wide write warning from flooding the log
+ *   - write access needs an explicit write_groups list (empty = nobody)
  *   - close the open items from the v11.0.0 security delta
  *   - throttle password spraying per-IP, reset delay on successful auth
  *   - throttle failed MCP logins + optional write_groups allowlist
@@ -36,7 +36,7 @@ use OCP\IUserSession;
 class McpController extends Controller {
 	private const MAX_REQUEST_BYTES = 2 * 1048576;
 
-	/** Mindestabstand zwischen zwei Warnungen zur instanzweiten Schreibfreigabe */
+	/** Mindestabstand zwischen zwei Hinweisen auf fehlende write_groups */
 	private const WRITE_WARNING_INTERVAL = 86400;
 
 	private IUserSession $userSession;
@@ -242,25 +242,26 @@ class McpController extends Controller {
 	}
 
 	/**
-	 * enable_write alone arms the write tools for EVERY token on the instance
-	 * (and user/group management for every admin token). The optional app value
-	 * "write_groups" (comma-separated group IDs) narrows that to members of the
-	 * listed groups; empty/unset keeps the instance-wide behaviour.
+	 * Write access requires BOTH "enable_write" and membership in one of the
+	 * groups listed in "write_groups" (comma-separated group IDs). An empty
+	 * or unset "write_groups" grants write access to nobody.
 	 */
 	private function userHasWriteAccess(string $uid): bool {
 		$raw = \trim($this->config->getAppValue('oco_mcp', 'write_groups', ''));
 		if ($raw === '') {
-			// SEC-17: Ohne write_groups gilt enable_write instanzweit - JEDES
-			// App-Token bekommt die Schreib-Tools, Admin-Tokens zusaetzlich die
-			// Benutzer- und Gruppenverwaltung. Das ist dokumentiert, aber eine
-			// grosse Angriffsflaeche, sobald ein einzelnes Token abhanden kommt.
+			// Frueher hiess "leer" hier: instanzweit erlaubt. Damit bekam jedes
+			// App- oder Geraete-Token eines beliebigen Kontos die Schreib-Tools,
+			// jedes Admin-Token zusaetzlich die Benutzer- und Gruppenverwaltung
+			// - ein einziges abhanden gekommenes Token genuegte. Eine
+			// Konfiguration, die niemanden nennt, darf niemandem etwas
+			// erlauben.
 			//
-			// Bewusst NICHT fail-closed: das wuerde bestehenden Installationen
-			// die Schreib-Tools ohne Vorwarnung abschalten. Stattdessen eine
-			// deutliche Warnung, die verschwindet, sobald write_groups gesetzt
-			// ist.
-			$this->warnAboutInstanceWideWrite();
-			return true;
+			// Das kann eine bestehende Instanz treffen, die mit enable_write
+			// und ohne write_groups laeuft: dort sind die Schreib-Tools ab
+			// sofort aus, bis eine Gruppe eingetragen ist. Genau darauf weist
+			// die Meldung hin.
+			$this->warnAboutMissingWriteGroups();
+			return false;
 		}
 		foreach (\explode(',', $raw) as $gid) {
 			$gid = \trim($gid);
@@ -272,16 +273,14 @@ class McpController extends Controller {
 	}
 
 	/**
-	 * Warnung zur instanzweiten Schreibfreigabe, hoechstens einmal am Tag.
+	 * Hinweis auf fehlende write_groups, hoechstens einmal am Tag.
 	 *
 	 * userHasWriteAccess() laeuft in jedem MCP-Request. Ungebremst schriebe die
-	 * Warnung bei einer bewusst instanzweit konfigurierten Instanz eine Zeile pro
-	 * Anfrage ins Log - genau die Konfiguration, die weiter unterstuetzt werden
-	 * soll, wuerde owncloud.log zumuellen und echte Meldungen verdecken. Der
+	 * Meldung eine Zeile pro Anfrage ins Log und verdeckte echte Meldungen. Der
 	 * Zeitstempel liegt im AppConfig, damit die Drosselung auch ueber mehrere
 	 * Web-Prozesse hinweg gilt; geschrieben wird nur, wenn wirklich geloggt wird.
 	 */
-	private function warnAboutInstanceWideWrite(): void {
+	private function warnAboutMissingWriteGroups(): void {
 		$now = \time();
 		$last = (int)$this->config->getAppValue('oco_mcp', 'write_warning_logged_at', '0');
 		// Bei zurueckgedrehter Uhr (Zeitumstellung, NTP-Korrektur) sofort wieder
@@ -292,9 +291,9 @@ class McpController extends Controller {
 
 		$this->config->setAppValue('oco_mcp', 'write_warning_logged_at', (string)$now);
 		$this->logger->warning(
-			'MCP write access is enabled instance-wide: "enable_write" is set but "write_groups" is empty, '
-			. 'so every app token on this instance can use the write tools. '
-			. 'Restrict it with: occ config:app:set oco_mcp write_groups --value=<group>',
+			'MCP write tools are unavailable: "enable_write" is set but "write_groups" is empty, '
+			. 'and an empty group list grants write access to nobody. '
+			. 'Name the groups that may write: occ config:app:set oco_mcp write_groups --value=<group>',
 			['app' => 'oco_mcp']
 		);
 	}

@@ -3207,63 +3207,39 @@ $.datepicker._attachments = function (input, inst) {
 		}
 	};
 
-	$.ui.dialog._setOption = function( key, value ) {
-		if (key === "disabled") {
-			return;
-		}
-		this._super(key, value);
-		if (key === "appendTo") {
-			this.uiDialog.appendTo(this._appendTo());
-		}
-		if (key === "buttons") {
-			this._createButtons();
-		}
-		if (key === "closeText") {
-			this.uiDialogTitlebarClose.button({
-				// Ensure that we always pass a string
-				label: $("<a>").text("" + this.options.closeText).html()
-			});
-		}
-	};
+	// CVE-2016-7103: die Option closeText landet als Beschriftung des
+	// Schliessen-Knopfes im Markup - jQuery UI setzt sie per .html(). Ein
+	// Aufrufer, der dort Fremdtext durchreicht, bekommt XSS.
+	//
+	// Der bisherige Backport griff an zwei Stellen daneben. Er wies an
+	// $.ui.dialog zu; bei der Widget-Factory ist das der Konstruktor, nicht
+	// der Prototyp - die Zuweisung hatte keinerlei Wirkung. Und der
+	// eingesetzte Rumpf stammte aus jQuery UI 1.12 (this._addClass, _title),
+	// waehrend hier 1.10 ausgeliefert wird. Waere er je aktiv geworden,
+	// haette er jeden Dialog mit "_addClass is not a function" zerlegt.
+	//
+	// Statt ganze Methoden zu ersetzen wird nur der gefaehrliche Wert
+	// entschaerft, und zwar auf beiden Wegen: beim Aufbau der Titelleiste
+	// und beim nachtraeglichen Setzen der Option.
+	if ($.ui && $.ui.dialog && $.ui.dialog.prototype) {
+		var ocoNurText = function (wert) {
+			return $("<a>").text("" + wert).html();
+		};
 
-	$.ui.dialog.dialog_createTitlebar = function() {
-	var uiDialogTitle;
-	this.uiDialogTitlebar = $( "<div>" );
-	this._addClass( this.uiDialogTitlebar,
-		"ui-dialog-titlebar", "ui-widget-header ui-helper-clearfix" );
-	this._on( this.uiDialogTitlebar, {
-		mousedown: function( event ) {
-			// Don't prevent click on close button (#8838)
-			// Focusing a dialog that is partially scrolled out of view
-			// causes the browser to scroll it into view, preventing the click event
-			if ( !$( event.target ).closest( ".ui-dialog-titlebar-close" ) ) {
-				// Dialog isn't getting focus when dragging (#8063)
-				this.uiDialog.trigger( "focus" );
+		var ocoSetOption = $.ui.dialog.prototype._setOption;
+		$.ui.dialog.prototype._setOption = function (key, value) {
+			if (key === "disabled") {
+				return;
 			}
-		}
-	} );
-	// Support: IE
-	// Use type="button" to prevent enter keypresses in textboxes from closing the
-	// dialog in IE (#9312)
-	this.uiDialogTitlebarClose = $( "<button type='button'></button>" )
-		.button( {
-			label: $( "<a>" ).text( this.options.closeText ).html(),
-			icon: "ui-icon-closethick",
-			showLabel: false
-		} )
-		.appendTo( this.uiDialogTitlebar );
-	this._addClass( this.uiDialogTitlebarClose, "ui-dialog-titlebar-close" );
-	this._on( this.uiDialogTitlebarClose, {
-		click: function( event ) {
-			event.preventDefault();
-			this.close( event );
-		}
-	} );
-	uiDialogTitle = $( "<span>" ).uniqueId().prependTo( this.uiDialogTitlebar );
-	this._addClass( uiDialogTitle, "ui-dialog-title" );
-	this._title( uiDialogTitle );
-	this.uiDialogTitlebar.prependTo( this.uiDialog );
-	this.uiDialog.attr( {
-		"aria-labelledby": uiDialogTitle.attr( "id" )
-	} );
-};
+			if (key === "closeText") {
+				value = ocoNurText(value);
+			}
+			return ocoSetOption.call(this, key, value);
+		};
+
+		var ocoCreateTitlebar = $.ui.dialog.prototype._createTitlebar;
+		$.ui.dialog.prototype._createTitlebar = function () {
+			this.options.closeText = ocoNurText(this.options.closeText);
+			return ocoCreateTitlebar.apply(this, arguments);
+		};
+	}

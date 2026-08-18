@@ -19,20 +19,23 @@ same permissions as the web UI. The connection is **read-only by default**.
 
 ```bash
 occ app:enable oco_mcp
-# read-only by default; turn on write + management tools with:
+# read-only by default; write + management tools need BOTH Schalter:
 occ config:app:set oco_mcp enable_write --value=yes
-# optional: limit write access to members of specific groups
+# Pflicht: die Gruppen benennen, die schreiben duerfen
 occ config:app:set oco_mcp write_groups --value='mcp-writers,admin'
 ```
 
 Im Standardmodus werden schreibende Tools nicht in `tools/list` veröffentlicht.
 Requests sind auf 2 MiB begrenzt; `files_write` akzeptiert maximal 1 MiB Inhalt.
 
-**Achtung:** `enable_write=yes` allein schaltet die Schreib-Tools instanzweit
-für **jedes** Nutzer-Token frei — Admin-Tokens erhalten zusätzlich Benutzer-
-und Gruppenverwaltung. Mit `write_groups` (kommagetrennte Gruppen-IDs) lässt
-sich das auf Mitglieder der genannten Gruppen eingrenzen; alle anderen Tokens
-bleiben read-only.
+**Achtung:** `enable_write=yes` allein genügt nicht. Schreibrechte bekommt
+nur, wer in einer der unter `write_groups` genannten Gruppen steht
+(kommagetrennte Gruppen-IDs); eine leere Liste erlaubt **niemandem** etwas.
+Früher galt eine leere Liste als „instanzweit erlaubt" — damit konnte jedes
+App- oder Gerätetoken schreiben und jedes Admin-Token die Benutzer- und
+Gruppenverwaltung bedienen. Wer eine Instanz mit `enable_write=yes` und ohne
+`write_groups` betreibt, muss die Gruppen jetzt nachtragen; bis dahin sind
+die Schreib-Tools aus, und das Protokoll weist einmal täglich darauf hin.
 
 ## Tool catalog
 
