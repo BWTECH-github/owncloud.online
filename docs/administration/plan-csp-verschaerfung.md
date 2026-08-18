@@ -43,6 +43,29 @@ Das ist kein akutes Loch. Es bleibt trotzdem ein Punkt, den man aufräumt: Die
 Richtlinie ist die Rückfallebene für alles, was künftig nicht über das
 AppFramework läuft, und drei Direktiven fehlen an *beiden* Richtlinien.
 
+### Der Downloadweg im Besonderen
+
+`lib/private/legacy/files.php` und `apps/files_sharing/ajax/publicpreview.php`
+laufen ebenfalls über die Legacy-Richtlinie. Das ist der Weg, bei dem eine
+schwache CSP wirklich gefährlich wäre: Wer eine HTML-Datei hochlädt und sie im
+Browser öffnet, bekäme Skriptausführung unter der eigenen Herkunft —
+`script-src 'self'` erlaubt das ausdrücklich.
+
+Gemessen an der laufenden Instanz mit einer hochgeladenen Datei
+`xss-probe.html`:
+
+| Weg | Content-Type | Content-Disposition | nosniff |
+| --- | --- | --- | --- |
+| angemeldet, `ajax/download.php` | `text/plain;charset=UTF-8` | `attachment` | ja |
+| angemeldet, WebDAV | `text/plain;charset=UTF-8` | `attachment` | ja |
+| öffentlicher Link, `/download` | `text/plain;charset=UTF-8` | `attachment` | ja |
+
+Der Browser rendert die Datei also auf keinem Weg — die Absicherung liegt hier
+beim Inhaltstyp und beim Anhang-Kopf, nicht bei der CSP. Die schwache
+Richtlinie ist an dieser Stelle folgenlos, aber sie ist auch die einzige
+Rückfallebene, falls einer dieser Köpfe je verlorengeht. Das ist das Argument
+für Schritt 1 und 2 — nicht die akute Lage.
+
 ## Die eigentliche Lücke: drei fehlende Direktiven
 
 `base-uri` und `frame-ancestors` fallen **nicht** unter `default-src` — sie
