@@ -1,0 +1,13 @@
+# Nichts hier gehoert ins Web. Ohne diese Sperre war unter anderem
+# vendor/autoload.php unter seiner Adresse abrufbar - die globale .htaccess
+# des Servers sperrt nur die obersten Verzeichnisse, nicht apps/<name>/vendor.
+#
+# Kein mod_rewrite, damit die Front-Controller-Regel der Wurzel erhalten
+# bleibt.
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
+</IfModule>

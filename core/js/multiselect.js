@@ -343,6 +343,38 @@
 
 		$(window).click(closeDropDown);
 
+		// Escape schliesst die Liste. Bisher ging das nur mit der Maus, per
+		// Klick nach aussen - und weil der Ausloeser waehrenddessen auf
+		// display:none steht, gab es fuer die Tastatur ueberhaupt keinen Weg
+		// zurueck.
+		//
+		// Das war nicht nur unbequem: erst beim Schliessen feuert
+		// 'dropdownclosed', und erst dieser Weg schreibt die getroffene
+		// Auswahl in die Daten des Feldes (settings/js/users/users.js). Ohne
+		// Schliessen kam eine per Tastatur gewaehlte Gruppe also nie an.
+		$(document).on('keydown.ocoMultiselect', function (event) {
+			if (event.key !== 'Escape' && event.keyCode !== 27) {
+				return;
+			}
+			// Nur reagieren, wenn diese Liste wirklich offen steht.
+			if (!button.parent().children('ul').length) {
+				return;
+			}
+			event.preventDefault();
+			event.stopPropagation();
+			closeDropDown();
+			// Der Fokus gehoert zurueck an den Ausloeser, sobald er wieder
+			// sichtbar ist - das Ausblenden laeuft ueber slideUp/fadeOut.
+			var ausloeser = button.closest('td, .groups').find('.groupsListContainer');
+			window.setTimeout(function () {
+				if (ausloeser.length) {
+					ausloeser.first().focus();
+				} else {
+					button.focus();
+				}
+			}, slideDuration + 80);
+		});
+
 		return span;
 	};
 })( jQuery );

@@ -3202,7 +3202,12 @@ $.datepicker._attachments = function (input, inst) {
 			altFormat = this._get( inst, "altFormat" ) || this._get( inst, "dateFormat" );
 			date = this._getDate( inst );
 			dateStr = this.formatDate( altFormat, date, this._getFormatConfig( inst ) );
-			$( altField ).val( dateStr );
+			// CVE-2021-41182: altField kommt vom Aufrufer. $( altField ) baut
+			// aus einem Wert wie "<img src=x onerror=…>" Elemente, statt zu
+			// suchen - das ist die Schwachstelle. Die Korrektur aus jQuery UI
+			// 1.13 ersetzt den Aufruf durch eine reine Suche im Dokument.
+			// Bisher stand die verwundbare Zeile zusaetzlich davor und lief
+			// bei jedem Aufruf mit; die Korrektur darunter kam zu spaet.
 			$( document ).find( altField ).val( dateStr );
 		}
 	};

@@ -434,6 +434,13 @@ server {
     location ^~ /core/skeleton/     { return 404; }
     location ^~ /data/             { return 404; }
 
+    # Apps liefern ihre Abhaengigkeiten und Tests mit; keines davon gehoert
+    # ins Web. Die Sperren oben greifen nur auf oberster Ebene, nicht in
+    # apps/<name>/. Die Apps bringen dafuer eigene .htaccess-Dateien mit -
+    # die liest nginx nicht, deshalb steht dieselbe Aussage hier.
+    location ~ ^/apps/[^/]+/(?:vendor|tests)/ { return 404; }
+    location ~ ^/apps/[^/]+/composer[.](json|lock)$ { return 404; }
+
     location / {
         rewrite ^/remote/(.*) /remote.php last;
         try_files $uri $uri/ /index.php$request_uri;
