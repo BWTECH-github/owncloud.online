@@ -1,6 +1,7 @@
 # Table of Contents
 
 * [Changelog for ownCloud.online Unreleased](#changelog-for-owncloudonline-unreleased)
+* [Changelog for ownCloud.online 11.0.14](#changelog-for-owncloudonline-11014-2026-08-20)
 * [Changelog for ownCloud.online 11.0.12](#changelog-for-owncloudonline-11012-2026-08-06)
 * [Changelog for ownCloud.online 11.0.11](#changelog-for-owncloudonline-11011-2026-07-23)
 * [Changelog for ownCloud.online 11.0.10](#changelog-for-owncloudonline-11010-2026-07-09)
@@ -38,6 +39,54 @@
 # Changelog for ownCloud.online [Unreleased]
 
 This section collects changes for the next ownCloud.online release. No entries yet.
+
+# Changelog for ownCloud.online [11.0.14] (2026-08-20)
+
+The following sections list the changes in ownCloud.online 11.0.14 relevant to
+admins and users.
+
+[11.0.14]: https://github.com/BWTECH-github/owncloud.online
+
+## Summary
+
+* Security - Zwei jQuery-UI-Backports wirksam gemacht: [#33ffb99](https://github.com/BWTECH-github/owncloud.online/commit/33ffb99)
+* Security - Verweis "Passwort vergessen" prueft jetzt das Schema: [#ba80bc4](https://github.com/BWTECH-github/owncloud.online/commit/ba80bc4)
+* Security - mcp/sdk auf 0.7.1 (CVE-2026-53965), MCP-Schreibrechte begrenzt: [#e60d9ab](https://github.com/BWTECH-github/owncloud.online/commit/e60d9ab)
+* Security - Administratorpasswort aus der oeffentlichen Dokumentation entfernt: [#35c3c26](https://github.com/BWTECH-github/owncloud.online/commit/35c3c26)
+* Bugfix - Signaturpruefung schlaegt auf migrierten Installationen nicht mehr an: [#6f76386](https://github.com/BWTECH-github/owncloud.online/commit/6f76386)
+* Bugfix - Bruteforce-Schutz ueberlaesst der App die Regeln, wenn sie installiert ist: [#16c874c](https://github.com/BWTECH-github/owncloud.online/commit/16c874c)
+* Bugfix - Pluralregeln aus den Sprachdateien werden fuer sechs Locales beachtet: [#289dc1c](https://github.com/BWTECH-github/owncloud.online/commit/289dc1c)
+* Enhancement - Wartezeit des Bruteforce-Schutzes wird erklaert statt nur abgewartet: [#d84050d](https://github.com/BWTECH-github/owncloud.online/commit/d84050d)
+* Enhancement - Zahlreiche Barrierefreiheitskorrekturen (WCAG 2.1 AA): [#578acf4](https://github.com/BWTECH-github/owncloud.online/commit/578acf4)
+
+## Details
+
+* Security - Zwei jQuery-UI-Backports wirksam gemacht
+
+   Der Backport zu CVE-2016-7103 wies an `$.ui.dialog` statt an
+   `$.ui.dialog.prototype` zu und hatte damit keine Wirkung; sein Rumpf stammte
+   zudem aus jQuery UI 1.12 und haette mit der ausgelieferten 1.10 jeden Dialog
+   zerlegt. Derselbe Fehler steckte im Backport zu CVE-2021-41182. Beide
+   greifen jetzt, und der Datepicker haengt keinen Wert mehr an ein fremdes
+   Feld an.
+
+* Security - Verweis "Passwort vergessen" prueft jetzt das Schema
+
+   Ein hinterlegter Verweis konnte auf ein beliebiges Schema zeigen. Der
+   Anmeldedialog laesst nur noch http und https durch.
+
+* Security - Administratorpasswort aus der oeffentlichen Dokumentation entfernt
+
+   Die Installationsanleitungen nannten ein konkretes Administratorpasswort.
+   Sie fordern jetzt dazu auf, ein eigenes zu waehlen.
+
+* Enhancement - Zahlreiche Barrierefreiheitskorrekturen
+
+   Zoomsperre aus allen Seitenvorlagen, Kontraste und Fokusindikator der
+   Gastvorlage, Tastaturbedienung der Aktionen an oeffentlichen Links,
+   Fokusring innerhalb der Navigation, unsichtbares Kopierfeld aus der
+   Tabreihenfolge, Gruppenaktionen mit Knopfrolle. Der Hinweis des
+   Bruteforce-Schutzes liegt in 98 Sprachen vor.
 
 # Changelog for ownCloud.online [11.0.12] (2026-08-06)
 
