@@ -172,3 +172,13 @@ clover.xml
 /site/
 /docs/mkdocs-serve*.log
 /composer.phar
+
+# Arbeitsdateien der Entwicklung, die nie ins Repository gehoeren.
+# Sie lagen monatelang untracked im Arbeitsbaum und waren bei einem
+# 'git add -A' schon einmal fast in einem Release-Commit gelandet.
+/.playwright-mcp/
+/*.png
+/_base.sh
+/_ss.sh
+/personal_luckybeaver.yml
+/openidconnect/
