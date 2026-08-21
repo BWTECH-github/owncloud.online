@@ -49,6 +49,18 @@
 		</div>
 		<header role="banner">
 			<div id="header">
+				<?php /* OC-WCAG-089: Sprunglink als erster Tab-Stopp (SC 2.4.1).
+				         tabindex="1" ist noetig, solange die positiven tabindex-Werte
+				         im Header bestehen (OC-WCAG-057 bis -061): gleicher Wert und
+				         fruehere DOM-Position ergeben den ersten Stopp. Werden die
+				         positiven Werte zurueckgebaut, kann das Attribut entfallen -
+				         die Position als erstes Element im Header genuegt dann.
+				         Das Ziel #content traegt tabindex="-1", damit der Fokus beim
+				         Aktivieren wirklich wandert (content-focusing issue #12999,
+				         wegen dessen der Link 2014 in 6933ffbf83 entfernt wurde). */ ?>
+				<div id="skip-to-content">
+					<a href="#content" tabindex="1"><?php p($l->t('Skip to main content')); ?></a>
+				</div>
 				<a href="<?php print_unescaped(link_to('', 'index.php')); ?>" id="owncloud" tabindex="1">
 					<span class="logo-icon" role="img" aria-label="<?php p($theme->getName()); ?>"><!-- OC-A11Y-12: war <h1>, jetzt kein zweites Heading -->
 						<?php // print_unescaped($theme->getHTMLName()); ?>
@@ -135,7 +147,7 @@
 		</nav>
 
 		<div id="content-wrapper">
-			<div id="content" class="app-<?php p($_['appid']) ?>" role="main">
+			<div id="content" class="app-<?php p($_['appid']) ?>" role="main" tabindex="-1">
 				<?php print_unescaped($_['content']); ?>
 			</div>
 		</div>

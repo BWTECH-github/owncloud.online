@@ -7,7 +7,14 @@
 	-ms-user-select: none;
 }
 
-/* removed until content-focusing issue is fixed */
+/* OC-WCAG-089: Sprunglink "Zum Hauptinhalt springen" (SC 2.4.1).
+ * Das content-focusing issue (#12999), wegen dessen das Markup 2014
+ * entfernt wurde, loest tabindex="-1" am Sprungziel #content.
+ * Farbe: #26384d auf Header-Teal #00e4bd = 7,31:1 (SC 1.4.3 erfuellt);
+ * das alte color:#fff kaeme auf dem Teal-Header nur auf 1,61:1.
+ * Den Fokusrahmen liefert die globale :focus-visible-Regel aus
+ * styles.css; outline-offset zieht ihn in den Chip hinein, sonst
+ * laege er oberhalb der Headerkante. */
 #skip-to-content a {
 	position: absolute;
 	left: -10000px;
@@ -18,10 +25,24 @@
 }
 #skip-to-content a:focus {
 	left: 76px;
-	top: -9px;
-	color: #fff;
+	top: 0;
 	width: auto;
-	height: auto;
+	height: 45px;
+	line-height: 45px;
+	padding: 0 14px;
+	color: #26384d;
+	background-color: #00e4bd;
+	font-weight: 600;
+	z-index: 2001;
+	outline-offset: -4px;
+}
+
+/* OC-WCAG-089: Sprungziel - nur programmatisch fokussierbar
+ * (tabindex="-1"), kein Tab-Stopp, daher kein Indikator noetig.
+ * Die globale [tabindex]:focus-visible-Regel zeichnete sonst eine
+ * vom fixen Header verdeckte Teil-Linie am Inhaltsrand. */
+#content:focus {
+	outline: none !important;
 }
 
 

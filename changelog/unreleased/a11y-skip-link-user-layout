@@ -1,0 +1,18 @@
+Bugfix: Add a skip link to the signed-in layout
+
+The signed-in layout had no skip link. Five tab stops separated the start of
+every page from its first content element - the logo, the app menu toggle,
+the search box, the user menu and the burger button nested inside the app
+menu toggle - and they repeated on every page a keyboard user opened.
+
+A skip link had existed once before. It was introduced in December 2014 and
+removed five days later, because the focus did not move into the content when
+the link was activated. Its CSS scaffold stayed behind in header.css as dead
+code and shipped with every page for over ten years.
+
+The scaffold is in use again. The link is the first tab stop of the page and
+moves the focus into the main region, which tabindex="-1" on the content
+element now allows. The focus style was corrected for today's teal header,
+where the original white label text would have reached 1.61:1.
+
+WCAG 2.1 AA, SC 2.4.1

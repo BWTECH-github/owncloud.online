@@ -47,6 +47,7 @@ OC.L10N.register(
     "Set log level to debug" : "Log-Level auf \"debug\" gesetzt",
     "Reset log level" : "Ursprüngliches Log-Level wiederhergestellt",
     "Starting code integrity check" : "Code-Integrität wird überprüft",
+    "Skip to main content" : "Zum Hauptinhalt springen",
     "Finished code integrity check" : "Code-Integritätsprüfung abgeschlossen",
     "%s (3rdparty)" : "%s (3rdparty)",
     "%s (incompatible)" : "%s (nicht kompatibel)",
