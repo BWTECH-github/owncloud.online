@@ -60,14 +60,14 @@
 .ui-widget-content .ui-state-active,
 .ui-widget-header .ui-state-active {
 	border: 1px solid #00E4BD;
-	background: #f8f8f8 url('images/ui-bg_glass_100_f8f8f8_1x400.png') 50% 50% repeat-x;
+	background: #00E4BD;
 	font-weight: bold;
-	color: #00E4BD;
+	color: #26384d;
 }
 .ui-state-active a,
 .ui-state-active a:link,
 .ui-state-active a:visited {
-	color: #00E4BD;
+	color: #26384d;
 }
 
 /* Interaction Cues

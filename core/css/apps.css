@@ -690,7 +690,7 @@ em {
 }
 
 .subTabHeaders > .subTabHeader {
-	color: #888;
+	color: #6d6d6d; /* OC-WCAG-084: 4,87:1 auf #F8F8F8, #888 war 3,34:1 (vgl. apps/files/css/files.css:174) */
 	background-color: #F8F8F8;
 	padding: 5px;
 	cursor: pointer;

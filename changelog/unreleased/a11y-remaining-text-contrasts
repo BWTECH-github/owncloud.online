@@ -1,0 +1,20 @@
+Bugfix: Raise the text contrasts left on the brand turquoise
+
+Eight places in the interface carried text below the 4.5:1 minimum: the active
+and disabled state of primary buttons, the selected day of the date picker, the
+alternative login buttons, system tag chips, the sub-tab headers of the share
+dialog, the database picker of the installer and the success message of the
+settings pages. The worst of them reached 1.17:1.
+
+Seven shared one cause. The design integration replaced the previous dark fill
+with the brand turquoise without adjusting the light text colours that sat on
+it. Those places now use dark text on the unchanged brand colour, which reaches
+7.31:1 and leaves the brand tone itself alone. The sub-tab header and the
+success message needed their own values and received them.
+
+The disabled state of primary buttons no longer keeps a muted grey on the full
+brand fill. Text in inactive components is exempt from the contrast
+requirement, but a dead control that looks like the most prominent live one is
+misleading, so it now uses the muted surface the login page already applies.
+
+WCAG 2.1 AA, SC 1.4.3

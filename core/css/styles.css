@@ -556,7 +556,11 @@ a.two-factor-cancel {
 }
 #body-login form #selectDbType label {
 	position:static; margin:0 -3px 5px; padding:.4em;
-	font-size:12px; background:#f8f8f8; color:#888; cursor:pointer;
+	/* OC-WCAG-085: wirksamer Grund ist #00E4BD (Zeile 572), nicht #f8f8f8.
+	   #888 = 2,17:1, #6d6d6d nur 3,16:1. #26384d = 7,31:1 auf Teal und
+	   11,27:1 auf #f8f8f8 - haelt also auch bei Ruecknahme von Zeile 572.
+	   Gleicher Wert wie #body-login form label (Zeile 234). */
+	font-size:12px; background:#f8f8f8; color:#26384d; cursor:pointer;
 	border: 1px solid #ddd;
 }
 
@@ -770,7 +774,7 @@ form#alternative-logins {
 html #body-login input[type="submit"],
 html #body-login button[type="submit"] {
 	display: block;
-	color: #ffffff;
+	color: #26384d;
 	border-width: 1px;
 	border-color: rgba(0,0,0,0);
 	font-size: 1rem;
@@ -802,10 +806,10 @@ html #body-login button[type="submit"]:hover {
 /*
  * The login button while the brute-force countdown blocks it (js/login.js). There
  * was no disabled state at all before, so the browser default left the brand
- * turquoise looking merely broken. Muted surface with dark text instead, and it
- * reads better than the enabled state does: #4a5568 on #e6eaef is about 6.1:1,
- * where white on the brand turquoise manages 1.64:1 - a known open item of the
- * accessibility report, not touched here.
+ * turquoise looking merely broken. Muted surface with dark text instead: #4a5568
+ * on #e6eaef is 6.23:1. The enabled state used to read white on the brand
+ * turquoise at 1.64:1 (OC-WCAG-018); it is dark text on the same turquoise now,
+ * 7.31:1, so both states match in treatment.
  *
  * Must come AFTER the :hover rule above: same specificity, so the later rule
  * wins, and :hover still matches a disabled button - the blue hover background
