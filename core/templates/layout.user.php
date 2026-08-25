@@ -50,33 +50,32 @@
 		<header role="banner">
 			<div id="header">
 				<?php /* OC-WCAG-089: Sprunglink als erster Tab-Stopp (SC 2.4.1).
-				         tabindex="1" ist noetig, solange die positiven tabindex-Werte
-				         im Header bestehen (OC-WCAG-057 bis -061): gleicher Wert und
-				         fruehere DOM-Position ergeben den ersten Stopp. Werden die
-				         positiven Werte zurueckgebaut, kann das Attribut entfallen -
-				         die Position als erstes Element im Header genuegt dann.
+				         Der Link ist der erste Stopp durch seine Position allein -
+				         der Header traegt seit OC-WCAG-057 bis -061 und -281 keine
+				         positiven tabindex-Werte mehr, die ihn ueberholen koennten.
+				         Vor diesem Block darf kein fokussierbares Element stehen.
 				         Das Ziel #content traegt tabindex="-1", damit der Fokus beim
 				         Aktivieren wirklich wandert (content-focusing issue #12999,
 				         wegen dessen der Link 2014 in 6933ffbf83 entfernt wurde). */ ?>
 				<div id="skip-to-content">
-					<a href="#content" tabindex="1"><?php p($l->t('Skip to main content')); ?></a>
+					<a href="#content"><?php p($l->t('Skip to main content')); ?></a>
 				</div>
-				<a href="<?php print_unescaped(link_to('', 'index.php')); ?>" id="owncloud" tabindex="1">
+				<a href="<?php print_unescaped(link_to('', 'index.php')); ?>" id="owncloud">
 					<span class="logo-icon" role="img" aria-label="<?php p($theme->getName()); ?>"><!-- OC-A11Y-12: war <h1>, jetzt kein zweites Heading -->
 						<?php // print_unescaped($theme->getHTMLName()); ?>
 					</span>
 				</a>
-				<a href="#" class="header-appname-container menutoggle" tabindex="2">
-					<button class="burger">
+				<a href="#" class="header-appname-container menutoggle">
+					<span class="burger">
 						<?php echo $l->t('Menu'); ?>
-					</button>
+					</span>
 					<h1 class="header-appname">
 						<?php p(!empty($_['application']) ? $_['application'] : $l->t('Apps')); ?>
 					</h1>
 				</a>
 				<div id="logo-claim" style="display:none;"><?php print_unescaped($theme->getLogoClaim()); ?></div>
 				<div id="settings">
-					<div id="expand" tabindex="6" role="link" class="menutoggle">
+					<div id="expand" tabindex="0" role="link" class="menutoggle">
 						<?php if ($_['enableAvatars']): ?>
 						<div class="avatardiv<?php if ($_['userAvatarSet']) {
 							print_unescaped(' avatardiv-shown');
@@ -120,7 +119,7 @@
 					</label>
 					<input id="searchbox" type="search" name="query"
 						value="" required
-						autocomplete="off" tabindex="5">
+						autocomplete="off">
 				</form>
 			</div>
 		</header>
@@ -131,7 +130,7 @@
 					<ul>
 					<?php foreach ($_['navigation'] as $entry): ?>
 						<li data-id="<?php p($entry['id']); ?>">
-							<a href="<?php print_unescaped($entry['href']); ?>" tabindex="3"
+							<a href="<?php print_unescaped($entry['href']); ?>"
 								<?php if ($entry['active']): ?> class="active"<?php endif; ?>>
 								<img class="app-icon" alt="" src="<?php print_unescaped($entry['icon']); ?>">
 								<div class="icon-loading-dark" style="display:none;"></div>

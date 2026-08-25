@@ -1,0 +1,18 @@
+Bugfix: Let the tab order of the header follow the document
+
+The layout of every signed-in page assigned six positive tabindex values, to
+the skip link, the logo, the app menu, the app navigation, the search box and
+the user menu. A positive value pulls its element in front of every element
+with tabindex="0", so these six came before the whole page content, in an
+order that had to be kept by hand. The burger of the app menu was a button
+nested inside a link and therefore a seventh stop, which the browser placed
+after all six - the focus left the header at its right edge and jumped back
+to a control at its left.
+
+The values are gone and the tab order follows the document. The skip link
+remains the first stop of the page through its position alone. The user menu
+keeps tabindex="0", because it is a div and not focusable without it. The
+burger is a span and no longer a control of its own, which also removed a
+nested control from the markup.
+
+WCAG 2.1 AA, SC 2.4.3, SC 4.1.2

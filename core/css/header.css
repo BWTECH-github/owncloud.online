@@ -163,6 +163,10 @@
 #header .burger {
 	display: inline-block;
 	position: relative;
+	/* OC-WCAG-090: Der Balken ist kein <button> mehr, sondern ein <span>.
+	   Buttons bekommen border-box aus dem UA-Stylesheet, andere Elemente
+	   nicht - ohne diese Zeile waere der Balken 14 statt 10 px hoch. */
+	box-sizing: border-box;
 	min-width: inherit;
 	width: 14px;
 	height: 10px;
