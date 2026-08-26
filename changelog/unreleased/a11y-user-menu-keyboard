@@ -1,0 +1,15 @@
+Bugfix: Open the user menu with the keyboard
+
+The user menu in the header of the signed-in application - Settings, Users,
+Log out - could only be opened with a mouse. The toggle was reachable with
+the Tab key and showed a focus ring, but pressing Enter or Space had no
+effect, so keyboard users could not reach the log out entry or their personal
+settings at all. The toggle was a div carrying role="link", and a div does
+not turn a key press into a click the way a real control does.
+
+The toggle is now a native button. Enter and Space open and close the menu,
+the focus ring is unchanged, and the header looks exactly as before: every
+measured position and size of the toggle, the user name and the surrounding
+container is identical, with and without a profile picture.
+
+WCAG 2.1 AA, SC 2.1.1

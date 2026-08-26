@@ -390,6 +390,20 @@
 	cursor: pointer;
 	color: #262B45; /* OC-A11Y-01 */
 	transition: color .25s;
+	/* OC-WCAG-282: #expand ist seit dem Umbau auf <button> ein Formularelement
+	   und sammelt damit die generischen button-Regeln aus core/css/inputs.css
+	   ein (margin: 3px 3px 3px 0, Rahmen, Fuellung, 13px Arial, zentrierter
+	   Text) sowie box-sizing: border-box aus dem UA-Stylesheet. Ohne die
+	   folgenden sechs Deklarationen ruecken Name und Pfeil um 3 px und der
+	   Kasten schrumpft von 45 px auf 32 px Hoehe. Mit ihnen ist die Geometrie
+	   bitgleich zum vorherigen <div> - an testoo.bw.tech auf 0,00 px
+	   gegengemessen, mit und ohne Profilbild. */
+	margin: 0;
+	background: none;
+	border: 0;
+	font: inherit;
+	text-align: left;
+	box-sizing: content-box;
 }
 
 #expand * {

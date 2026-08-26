@@ -75,9 +75,16 @@
 				</a>
 				<div id="logo-claim" style="display:none;"><?php print_unescaped($theme->getLogoClaim()); ?></div>
 				<div id="settings">
-					<div id="expand" tabindex="0" role="link" class="menutoggle">
+					<?php /* OC-WCAG-282: war <div tabindex="0" role="link">. Ein <div>
+						synthetisiert bei der Eingabetaste keinen Klick, und OC.registerMenu
+						bindet ausschliesslich click.menu - das Menue war damit nur mit der
+						Maus zu oeffnen (SC 2.1.1). Das native <button> loest das ohne eine
+						Zeile JavaScript; tabindex und role entfallen, weil das Element beides
+						selbst mitbringt. Die generischen button-Regeln aus core/css/inputs.css
+						werden in core/css/header.css neutralisiert. */ ?>
+					<button type="button" id="expand" class="menutoggle">
 						<?php if ($_['enableAvatars']): ?>
-						<div class="avatardiv<?php if ($_['userAvatarSet']) {
+						<span class="avatardiv<?php if ($_['userAvatarSet']) {
 							print_unescaped(' avatardiv-shown');
 						} else {
 							print_unescaped('" style="display: none');
@@ -88,10 +95,10 @@
 								srcset="<?php p(\OC::$server->getURLGenerator()->linkToRoute('core.avatar.getAvatar', ['userId' => $_['user_uid'], 'size' => 64]));?> 2x, <?php p(\OC::$server->getURLGenerator()->linkToRoute('core.avatar.getAvatar', ['userId' => $_['user_uid'], 'size' => 128]));?> 4x"
 								>
 							<?php endif; ?>
-						</div>
+						</span>
 						<?php endif; ?>
 						<span id="expandDisplayName"><?php  p(\trim($_['user_displayname']) != '' ? $_['user_displayname'] : $_['user_uid']) ?></span>
-					</div>
+					</button>
 					<div id="expanddiv">
 					<ul>
 					<?php foreach ($_['settingsnavigation'] as $entry):?>
