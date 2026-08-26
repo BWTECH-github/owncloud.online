@@ -679,11 +679,46 @@ var OC = {
 
 	/**
 	 * For menu toggling
+	 *
+	 * Sets aria-haspopup and aria-expanded on the toggle when the menu opens
+	 * and closes, and aria-controls if the menu element carries an id.
 	 * @todo Write documentation
 	 */
 	registerMenu: function ($toggle, $menuEl) {
 		var self = this;
+		// Ob der Fokus beim Schliessen noch im Menue stand - nur dann darf er
+		// an den Umschalter zurueckgehen. Wer daneben klickt, behaelt sein Ziel.
+		var focusWasInside = false;
 		$menuEl.addClass('menu');
+
+		$toggle.attr('aria-haspopup', 'true');
+		$toggle.attr('aria-expanded', 'false');
+		if ($menuEl.attr('id')) {
+			$toggle.attr('aria-controls', $menuEl.attr('id'));
+		}
+
+		// beforeHide laeuft, solange der Fokus noch sichtbar im Menue sitzt;
+		// in afterHide ist er bereits an den Rumpf gefallen.
+		$menuEl.on('beforeHide.menu', function () {
+			focusWasInside = $menuEl[0].contains(document.activeElement) ||
+				$toggle[0] === document.activeElement;
+			$toggle.attr('aria-expanded', 'false');
+		});
+		$menuEl.on('afterHide.menu', function () {
+			if (focusWasInside) {
+				$toggle.focus();
+			}
+			focusWasInside = false;
+		});
+
+		$menuEl.add($toggle).on('keydown.menu', function (event) {
+			if (event.keyCode !== 27) {
+				return;
+			}
+			event.preventDefault();
+			self.hideMenus();
+		});
+
 		$toggle.on('click.menu', function (event) {
 			// prevent the link event (append anchor to URL)
 			event.preventDefault();
@@ -697,7 +732,11 @@ var OC = {
 				// close it
 				self.hideMenus();
 			}
-			$menuEl.slideToggle(OC.menuSpeed);
+			$menuEl.slideToggle(OC.menuSpeed, function () {
+				$menuEl.find('a, button, [tabindex]:not([tabindex="-1"])')
+					.filter(':visible').first().focus();
+			});
+			$toggle.attr('aria-expanded', 'true');
 			OC._currentMenu = $menuEl;
 			OC._currentMenuToggle = $toggle;
 		});
@@ -711,8 +750,11 @@ var OC = {
 		if ($menuEl.is(OC._currentMenu)) {
 			this.hideMenus();
 		}
-		$toggle.off('click.menu').removeClass('menutoggle');
-		$menuEl.removeClass('menu');
+		$toggle.off('click.menu keydown.menu').removeClass('menutoggle');
+		// Symmetrie zu registerMenu: die Fokus- und ARIA-Zutaten mit abraeumen,
+		// sonst bleibt ein abgemeldeter Umschalter als aufklappbar angesagt.
+		$toggle.removeAttr('aria-haspopup aria-expanded aria-controls');
+		$menuEl.off('beforeHide.menu afterHide.menu keydown.menu').removeClass('menu');
 	},
 
 	/**

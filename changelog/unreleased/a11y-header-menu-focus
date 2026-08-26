@@ -1,0 +1,16 @@
+Bugfix: Manage focus and announce state for the header menus
+
+Opening the app menu or the user menu with the keyboard left the focus
+sitting on the toggle instead of moving into the menu, and screen readers
+had no way to tell whether the menu was open or closed: it carried neither
+aria-expanded nor aria-haspopup. Pressing Escape had no effect while a menu
+was open, so keyboard users who tabbed in had no way back out except by
+clicking.
+
+The toggle now announces its expanded state, opening the menu moves focus
+to its first entry, and Escape closes the menu again from the entry or the
+toggle - the focus returns to the toggle only when it was still inside the
+menu when it closed. Action menus in the file list are unaffected, since
+they do not go through this code path.
+
+WCAG 2.1 AA, SC 2.4.3, SC 4.1.2

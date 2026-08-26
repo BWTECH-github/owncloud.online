@@ -350,6 +350,11 @@
 						self.getFilter(getCurrentApp())('');
 					}
 					self.hideResults();
+					// Dieser Handler haengt am document und fing Escape bisher ab,
+					// ohne die Kopfbereich-Menues zu beruehren: stand der Fokus
+					// ausserhalb eines offenen Menues, blieb es offen. Ist keines
+					// offen, ist der Aufruf wirkungslos. [OC-WCAG-283, SC 2.4.3]
+					OC.hideMenus();
 				}
 			});
 
