@@ -1,0 +1,20 @@
+Change: Remove unneeded code from the header stylesheet
+
+core/css/header.css carried code for browsers the product no longer
+supports. Eight declarations used the -ms-filter alpha syntax that only
+IE 8 and 9 ever read, each sitting next to the standard opacity every
+current browser uses. The app name container declared display in the
+-webkit-flex, -ms-flexbox and -moz-box variants of Chrome 18, IE 11 and
+Firefox 14 - all three overridden by the plain display: flex that
+followed them, and all three already marked for removal in the file
+itself. The navigation rule kept two commented-out overflow declarations
+with no reason recorded anywhere for switching them off.
+
+Two hover backgrounds passed their alpha channel to rgb() instead of
+rgba(). Current browsers accept the four-argument form of rgb(), but
+anything older than Chrome 65 or Firefox 52 drops such a declaration
+entirely and would have rendered the hover without its background, while
+the rest of the file uses rgba() throughout.
+
+None of this changes what is drawn. The stylesheet parses to the same
+rules and declarations as before, with identical computed values.
