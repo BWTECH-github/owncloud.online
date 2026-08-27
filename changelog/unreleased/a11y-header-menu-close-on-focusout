@@ -1,0 +1,13 @@
+Bugfix: Close the header menus when the focus leaves them
+
+The app menu and the user menu of the signed-in layout stayed open when the
+tab key carried the focus out of them. They closed on a mouse click only, and
+escape no longer reached them because its handler sits on the menu and on the
+toggle. The open panel is fixed above the app sidebar, so the sidebar entry
+that held the focus showed a ten pixel strip of itself and nothing else.
+
+Both menus now close as soon as the focus leaves the toggle and the menu. The
+focus is not pulled back to the toggle, it moves on to where the tab key sent
+it. Escape, the mouse and the pointer behaviour are unchanged.
+
+WCAG 2.2 AAA, SC 2.4.12

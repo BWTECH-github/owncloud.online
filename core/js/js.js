@@ -719,6 +719,35 @@ var OC = {
 			self.hideMenus();
 		});
 
+		// Der Tabulator fuehrt aus dem Menue heraus - dann schliesst es mit.
+		// Ohne diesen Handler bleibt es offen, ueberdeckt als position: fixed
+		// mit z-index 2000 den naechsten Tab-Stopp (SC 2.4.11) und meldet
+		// weiter aria-expanded="true" (SC 4.1.2). Escape greift dann nicht
+		// mehr, weil keydown.menu nur am Menue und am Umschalter haengt.
+		//
+		// focusout statt blur: nur focusout blubbert, und der Fokus sitzt in
+		// den Eintraegen, nicht am Menue selbst. Der Tick Verzoegerung ist
+		// noetig, weil document.activeElement waehrend focusout noch das alte
+		// Element ist; event.relatedTarget taugt nicht als Ersatz, es bleibt
+		// beim Wechsel in einen anderen Bereich des Browsers leer.
+		$menuEl.add($toggle).on('focusout.menu', function () {
+			window.setTimeout(function () {
+				if (!$menuEl.is(OC._currentMenu)) {
+					// in der Zwischenzeit anderweitig geschlossen
+					return;
+				}
+				if ($menuEl[0].contains(document.activeElement) ||
+					$toggle[0] === document.activeElement) {
+					// Fokus blieb innerhalb von Umschalter und Menue
+					return;
+				}
+				// beforeHide sieht den Fokus jetzt ausserhalb und holt ihn
+				// darum nicht an den Umschalter zurueck - der Tabulator
+				// laeuft weiter, wohin er gehoert.
+				self.hideMenus();
+			}, 0);
+		});
+
 		$toggle.on('click.menu', function (event) {
 			// prevent the link event (append anchor to URL)
 			event.preventDefault();
@@ -750,11 +779,11 @@ var OC = {
 		if ($menuEl.is(OC._currentMenu)) {
 			this.hideMenus();
 		}
-		$toggle.off('click.menu keydown.menu').removeClass('menutoggle');
+		$toggle.off('click.menu keydown.menu focusout.menu').removeClass('menutoggle');
 		// Symmetrie zu registerMenu: die Fokus- und ARIA-Zutaten mit abraeumen,
 		// sonst bleibt ein abgemeldeter Umschalter als aufklappbar angesagt.
 		$toggle.removeAttr('aria-haspopup aria-expanded aria-controls');
-		$menuEl.off('beforeHide.menu afterHide.menu keydown.menu').removeClass('menu');
+		$menuEl.off('beforeHide.menu afterHide.menu keydown.menu focusout.menu').removeClass('menu');
 	},
 
 	/**

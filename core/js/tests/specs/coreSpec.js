@@ -585,6 +585,50 @@ describe('Core base tests', function() {
 			clock.tick(1 * 1000);
 			expect($navigation.is(':visible')).toEqual(false);
 		});
+		it('Closes the navigation when the focus leaves it', function() {
+			window.initCore();
+			$('#testArea').append('<a href="#" id="outsideLink">outside</a>');
+			$toggle.click();
+			clock.tick(1 * 1000);
+			expect($navigation.is(':visible')).toEqual(true);
+
+			// Tabulator hinaus: der Fokus steht schon am neuen Ziel, wenn der
+			// Handler laeuft - genau diese Reihenfolge bildet der Test nach.
+			$('#outsideLink').focus();
+			$navigation.trigger('focusout');
+			clock.tick(1 * 1000);
+
+			expect($navigation.is(':visible')).toEqual(false);
+			expect($toggle.attr('aria-expanded')).toEqual('false');
+			// Der Fokus laeuft weiter und wird nicht an den Umschalter geholt.
+			expect(document.activeElement).toEqual($('#outsideLink')[0]);
+		});
+		it('Keeps the navigation open while the focus moves inside it', function() {
+			$navigation.append('<ul><li><a href="#" id="navFirst">A</a></li>' +
+				'<li><a href="#" id="navSecond">B</a></li></ul>');
+			window.initCore();
+			$toggle.click();
+			clock.tick(1 * 1000);
+
+			$('#navSecond').focus();
+			$navigation.trigger('focusout');
+			clock.tick(1 * 1000);
+
+			expect($navigation.is(':visible')).toEqual(true);
+			expect($toggle.attr('aria-expanded')).toEqual('true');
+		});
+		it('Keeps the navigation open while the focus returns to the toggle', function() {
+			$navigation.append('<ul><li><a href="#" id="navFirst">A</a></li></ul>');
+			window.initCore();
+			$toggle.click();
+			clock.tick(1 * 1000);
+
+			$toggle.focus();
+			$navigation.trigger('focusout');
+			clock.tick(1 * 1000);
+
+			expect($navigation.is(':visible')).toEqual(true);
+		});
 	});
 	describe('Util', function() {
 		describe('humanFileSize', function() {
