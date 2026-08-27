@@ -19,6 +19,15 @@ describe('OCA.External.Settings tests', function() {
 			if (args === 'val') {
 				return select2ApplicableUsers;
 			}
+			if (args === 'container') {
+				// OC-WCAG: settings.js benennt ueber select2('container') das Suchfeld,
+				// das select2 erst zur Laufzeit erzeugt. Der Doppelgaenger muss dafuer
+				// ein jQuery-Objekt liefern - sonst bricht schon das Einrichten der
+				// Speicherzeile, lange bevor der jeweilige Test etwas prueft.
+				return $('<div class="select2-container">' +
+					'<input type="text" class="select2-input">' +
+					'</div>');
+			}
 			return {
 				on: function() {}
 			};

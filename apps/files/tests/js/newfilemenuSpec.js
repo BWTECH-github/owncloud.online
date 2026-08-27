@@ -47,10 +47,13 @@ describe('OCA.Files.NewFileMenu', function() {
 		it('renders menu items', function() {
 			var $items = menu.$el.find('.menuitem');
 			expect($items.length).toEqual(2);
-			// label points to the file_upload_start item
+			// OC-WCAG-270: Der Upload-Eintrag ist ein <button> und kein
+			// <label for="file_upload_start"> mehr - er reicht den Klick selbst
+			// an das versteckte Dateifeld weiter, statt ueber die Label-Bindung
+			// zu gehen.
 			var $item = $items.eq(0);
-			expect($item.is('label')).toEqual(true);
-			expect($item.attr('for')).toEqual('file_upload_start');
+			expect($item.is('button')).toEqual(true);
+			expect($item.attr('data-action')).toEqual('upload');
 		});
 	});
 	describe('New file/folder', function() {

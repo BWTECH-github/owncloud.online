@@ -1,0 +1,60 @@
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  js-unit:
+    name: JS Unit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout owncloud.online
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+
+      - name: Cache yarn downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/yarn
+          key: yarn-${{ runner.os }}-${{ hashFiles('build/yarn.lock') }}
+          restore-keys: |
+            yarn-${{ runner.os }}-
+
+      - name: Install Node dependencies
+        run: |
+          make install-nodejs-deps
+
+      - name: Ensure Firefox is available
+        run: |
+          # karma startet FirefoxHeadless (tests/karma.config.js). Die Runner-
+          # Images bringen Firefox ueblicherweise mit; wo nicht, wird die
+          # tar-Fassung von Mozilla ausgepackt. Das Ubuntu-Paket "firefox" ist
+          # auf 24.04 nur ein Snap-Platzhalter und startet in CI nicht.
+          if command -v firefox >/dev/null 2>&1; then
+            firefox --version
+            exit 0
+          fi
+          echo "Firefox nicht im Image - lade die tar-Fassung von Mozilla"
+          curl -sSL -o /tmp/firefox.tar.xz \
+            "https://download.mozilla.org/?product=firefox-latest-ssl&os=linux64&lang=en-US"
+          sudo mkdir -p /opt/firefox
+          sudo tar -xJf /tmp/firefox.tar.xz -C /opt --strip-components=0
+          echo "FIREFOX_BIN=/opt/firefox/firefox" >> "$GITHUB_ENV"
+          /opt/firefox/firefox --version
+
+      - name: Run karma
+        run: |
+          make test-js
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: js-unit-results
+          path: tests/autotest-results-js.xml
+          if-no-files-found: warn

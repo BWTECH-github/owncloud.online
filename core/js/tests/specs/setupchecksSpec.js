@@ -321,7 +321,7 @@ describe('OC.SetupChecks tests', function() {
 
 			async.done(function( data, s, x ){
 				expect(data).toEqual([{
-					msg: 'The reverse proxy headers configuration is incorrect, or you are accessing ownCloud from a trusted proxy. If you are not accessing ownCloud from a trusted proxy, this is a security issue and can allow an attacker to spoof their IP address as visible to ownCloud. Further information can be found in our <a target="_blank" rel="noreferrer" href="https://docs.owncloud.com/foo/bar.html">documentation</a>.',
+					msg: 'The reverse proxy headers configuration is incorrect, or you are accessing the server from a trusted proxy. If you are not accessing the server from a trusted proxy, this is a security issue and can allow an attacker to spoof their IP address as visible to the server. Further information can be found in our <a target="_blank" rel="noreferrer" href="https://docs.owncloud.com/foo/bar.html">documentation</a>.',
 					type: OC.SetupChecks.MESSAGE_TYPE_WARNING
 				}]);
 				done();

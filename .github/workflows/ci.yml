@@ -46,6 +46,13 @@ jobs:
     with:
       php-versions: '["8.4"]'
 
+  # Die JS-Suite lief bis August 2026 in keiner Pipeline. Sie war seit dem
+  # Sprung auf jasmine-core 6 ohnehin nicht lauffaehig - und deckte in der Zeit
+  # mehrere Regressionen zu, die niemand sah. Sie gehoert deshalb hierher.
+  js-unit:
+    name: JS Unit
+    uses: ./.github/workflows/js-unit.yml
+
   # Alle anderen Jobs installieren frisch. Dieser hier aktualisiert eine
   # bestehende Installation - der einzige Weg, einen kaputten Update-Pfad zu
   # bemerken, bevor er beim Kunden auffaellt.
