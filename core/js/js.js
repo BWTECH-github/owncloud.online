@@ -1754,13 +1754,18 @@ function initCore() {
 	 */
 	function setupMainMenu() {
 		// toggle the navigation
-		var $toggle = $('#header .header-appname-container');
+		// OC-WCAG-284: Umschalter ist der <button> im Container, nicht der
+		// Container selbst. Stuende der alte Selektor hier, landeten der
+		// Klick-Handler und die von registerMenu gesetzten aria-haspopup,
+		// aria-expanded und aria-controls auf dem <div> statt auf dem
+		// Bedienelement.
+		var $toggle = $('#header .app-menu-toggle');
 		var $navigation = $('#navigation');
 
 		// init the menu
+		// oldhref und attr(href) entfallen: der Umschalter ist kein Link mehr,
+		// und oldhref wurde im gesamten Baum nirgends gelesen.
 		OC.registerMenu($toggle, $navigation);
-		$toggle.data('oldhref', $toggle.attr('href'));
-		$toggle.attr('href', '#');
 		$navigation.hide();
 
 		// show loading feedback

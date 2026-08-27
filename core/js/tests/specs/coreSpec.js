@@ -551,11 +551,16 @@ describe('Core base tests', function() {
 		beforeEach(function() {
 			jQuery.fx.off = true;
 			clock = sinon.useFakeTimers();
+			// OC-WCAG-284: Umschalter ist der <button> im Container, nicht mehr
+			// der <a>-Wrapper. setupMainMenu sucht .app-menu-toggle.
 			$('#testArea').append('<div id="header">' +
-				'<a class="menutoggle header-appname-container" href="#">' +
+				'<div class="header-appname-container">' +
+				'<button type="button" class="app-menu-toggle menutoggle">' +
+				'<span class="hidden-visually">Menu</span>' +
+				'<span class="burger"></span>' +
+				'</button>' +
 				'<h1 class="header-appname"></h1>' +
-				'<div class="icon-caret"></div>' +
-				'</a>' +
+				'</div>' +
 				'</div>' +
 				'<div id="navigation"></div>');
 			$toggle = $('#header').find('.menutoggle');

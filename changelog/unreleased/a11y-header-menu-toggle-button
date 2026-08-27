@@ -1,0 +1,17 @@
+Bugfix: Make the app menu toggle a button of its own
+
+The app menu toggle of the signed-in layout was an <a href="#"> that wrapped
+both the burger and the page heading. HTML does not allow interactive content
+inside an anchor, so the accessible name of the toggle merged the burger label
+with the heading. The toggle also sat behind the logo in the document, which
+put the focus on the centred logo before the control at the left edge of the
+header, and the burger itself measured 14 by 10 pixels.
+
+The wrapper is a plain div now, and the toggle is a button of 29 by 45 pixels
+that carries its own translated name. The block moved in front of the logo, so
+the tab order follows the header from left to right. The search box and the
+user menu share a flex container, which binds their display order to the markup
+instead of to their float direction. The skip link shows its focus below the
+header instead of over the app title. No element in the header moved.
+
+WCAG 2.1 AA, SC 2.4.3, SC 2.5.8, SC 4.1.2

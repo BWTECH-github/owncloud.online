@@ -60,74 +60,94 @@
 				<div id="skip-to-content">
 					<a href="#content"><?php p($l->t('Skip to main content')); ?></a>
 				</div>
+				<?php /* OC-WCAG-284: Der Umschalter steht vor dem Logo. Beide Bloecke sind
+				         position: absolute - ihre Bildschirmposition kommt vollstaendig aus
+				         dem CSS, die Markup-Reihenfolge wirkt also nur noch auf die
+				         Fokusreihenfolge. Vorher folgte der Fokus vom mittigen Logo
+				         (x = 922) zurueck an den linken Rand (x = 15), SC 2.4.3.
+				         Der Wrapper ist ein <div>: ein Bedienelement in einem Anker ist
+				         kein gueltiges HTML und lieferte zwei Tab-Stopps fuer eine
+				         Aktion. Den zugaenglichen Namen traegt jetzt das versteckte
+				         <span> im Button allein - vorher fiel er aus Burger-Text und
+				         Ueberschrift zusammen ("Menu Dateien"). Die <h1> bleibt
+				         ausserhalb des Buttons: <button> nimmt nur Phrasing-Inhalt auf,
+				         und die Button-Rolle wuerde die Ueberschrift verschlucken. */ ?>
+				<div class="header-appname-container">
+					<button type="button" class="app-menu-toggle menutoggle">
+						<span class="hidden-visually"><?php p($l->t('Menu')); ?></span>
+						<span class="burger"></span>
+					</button>
+					<h1 class="header-appname">
+						<?php p(!empty($_['application']) ? $_['application'] : $l->t('Apps')); ?>
+					</h1>
+				</div>
 				<a href="<?php print_unescaped(link_to('', 'index.php')); ?>" id="owncloud">
 					<span class="logo-icon" role="img" aria-label="<?php p($theme->getName()); ?>"><!-- OC-A11Y-12: war <h1>, jetzt kein zweites Heading -->
 						<?php // print_unescaped($theme->getHTMLName()); ?>
 					</span>
 				</a>
-				<a href="#" class="header-appname-container menutoggle">
-					<span class="burger">
-						<?php echo $l->t('Menu'); ?>
-					</span>
-					<h1 class="header-appname">
-						<?php p(!empty($_['application']) ? $_['application'] : $l->t('Apps')); ?>
-					</h1>
-				</a>
 				<div id="logo-claim" style="display:none;"><?php print_unescaped($theme->getLogoClaim()); ?></div>
-				<div id="settings">
-					<?php /* OC-WCAG-282: war <div tabindex="0" role="link">. Ein <div>
-						synthetisiert bei der Eingabetaste keinen Klick, und OC.registerMenu
-						bindet ausschliesslich click.menu - das Menue war damit nur mit der
-						Maus zu oeffnen (SC 2.1.1). Das native <button> loest das ohne eine
-						Zeile JavaScript; tabindex und role entfallen, weil das Element beides
-						selbst mitbringt. Die generischen button-Regeln aus core/css/inputs.css
-						werden in core/css/header.css neutralisiert. */ ?>
-					<button type="button" id="expand" class="menutoggle">
-						<?php if ($_['enableAvatars']): ?>
-						<span class="avatardiv<?php if ($_['userAvatarSet']) {
-							print_unescaped(' avatardiv-shown');
-						} else {
-							print_unescaped('" style="display: none');
-						} ?>">
-							<?php if ($_['userAvatarSet']): ?>
-								<img alt="" width="32" height="32"
-								src="<?php p(\OC::$server->getURLGenerator()->linkToRoute('core.avatar.getAvatar', ['userId' => $_['user_uid'], 'size' => 32]));?>"
-								srcset="<?php p(\OC::$server->getURLGenerator()->linkToRoute('core.avatar.getAvatar', ['userId' => $_['user_uid'], 'size' => 64]));?> 2x, <?php p(\OC::$server->getURLGenerator()->linkToRoute('core.avatar.getAvatar', ['userId' => $_['user_uid'], 'size' => 128]));?> 4x"
-								>
+				<?php /* OC-WCAG-284: Suche und Benutzermenue teilen sich einen Flex-Container.
+				         Beide waren float: right, und dort landet das erste Element im Markup
+				         am weitesten rechts - die Suche allein nach vorn zu ziehen haette den
+				         rechten Kopfbereich gespiegelt. Im Flex-Container gilt die
+				         Markup-Reihenfolge und Floats werden ignoriert, Anzeige- und
+				         Fokusreihenfolge fallen damit zusammen. */ ?>
+				<div class="header-right">
+					<form class="searchbox" action="#" method="post" role="search" novalidate>
+						<label for="searchbox" class="hidden-visually">
+							<?php p($l->t('Search'));?>
+						</label>
+						<input id="searchbox" type="search" name="query"
+							value="" required
+							autocomplete="off">
+					</form>
+					<div id="settings">
+						<?php /* OC-WCAG-282: war <div tabindex="0" role="link">. Ein <div>
+							synthetisiert bei der Eingabetaste keinen Klick, und OC.registerMenu
+							bindet ausschliesslich click.menu - das Menue war damit nur mit der
+							Maus zu oeffnen (SC 2.1.1). Das native <button> loest das ohne eine
+							Zeile JavaScript; tabindex und role entfallen, weil das Element beides
+							selbst mitbringt. Die generischen button-Regeln aus core/css/inputs.css
+							werden in core/css/header.css neutralisiert. */ ?>
+						<button type="button" id="expand" class="menutoggle">
+							<?php if ($_['enableAvatars']): ?>
+							<span class="avatardiv<?php if ($_['userAvatarSet']) {
+								print_unescaped(' avatardiv-shown');
+							} else {
+								print_unescaped('" style="display: none');
+							} ?>">
+								<?php if ($_['userAvatarSet']): ?>
+									<img alt="" width="32" height="32"
+									src="<?php p(\OC::$server->getURLGenerator()->linkToRoute('core.avatar.getAvatar', ['userId' => $_['user_uid'], 'size' => 32]));?>"
+									srcset="<?php p(\OC::$server->getURLGenerator()->linkToRoute('core.avatar.getAvatar', ['userId' => $_['user_uid'], 'size' => 64]));?> 2x, <?php p(\OC::$server->getURLGenerator()->linkToRoute('core.avatar.getAvatar', ['userId' => $_['user_uid'], 'size' => 128]));?> 4x"
+									>
+								<?php endif; ?>
+							</span>
 							<?php endif; ?>
-						</span>
-						<?php endif; ?>
-						<span id="expandDisplayName"><?php  p(\trim($_['user_displayname']) != '' ? $_['user_displayname'] : $_['user_uid']) ?></span>
-					</button>
-					<div id="expanddiv">
-					<ul>
-					<?php foreach ($_['settingsnavigation'] as $entry):?>
-						<li>
-							<a href="<?php print_unescaped($entry['href']); ?>"
-								<?php if ($entry["active"]): ?> class="active"<?php endif; ?>>
-								<img alt="" src="<?php print_unescaped($entry['icon']); ?>">
-								<?php p($entry['name']) ?>
-							</a>
-						</li>
-					<?php endforeach; ?>
-						<li>
-							<a id="logout" <?php print_unescaped(OC_User::getLogoutAttribute()); ?>>
-								<img alt="" src="<?php print_unescaped(image_path('', 'actions/logout.svg')); ?>">
-								<?php p($l->t('Log out'));?>
-							</a>
-						</li>
-					</ul>
+							<span id="expandDisplayName"><?php  p(\trim($_['user_displayname']) != '' ? $_['user_displayname'] : $_['user_uid']) ?></span>
+						</button>
+						<div id="expanddiv">
+						<ul>
+						<?php foreach ($_['settingsnavigation'] as $entry):?>
+							<li>
+								<a href="<?php print_unescaped($entry['href']); ?>"
+									<?php if ($entry["active"]): ?> class="active"<?php endif; ?>>
+									<img alt="" src="<?php print_unescaped($entry['icon']); ?>">
+									<?php p($entry['name']) ?>
+								</a>
+							</li>
+						<?php endforeach; ?>
+							<li>
+								<a id="logout" <?php print_unescaped(OC_User::getLogoutAttribute()); ?>>
+									<img alt="" src="<?php print_unescaped(image_path('', 'actions/logout.svg')); ?>">
+									<?php p($l->t('Log out'));?>
+								</a>
+							</li>
+						</ul>
+						</div>
 					</div>
 				</div>
-
-				<form class="searchbox" action="#" method="post" role="search" novalidate>
-					<label for="searchbox" class="hidden-visually">
-						<?php p($l->t('Search'));?>
-					</label>
-					<input id="searchbox" type="search" name="query"
-						value="" required
-						autocomplete="off">
-				</form>
 			</div>
 		</header>
 

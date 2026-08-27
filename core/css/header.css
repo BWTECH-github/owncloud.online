@@ -14,7 +14,10 @@
  * das alte color:#fff kaeme auf dem Teal-Header nur auf 1,61:1.
  * Den Fokusrahmen liefert die globale :focus-visible-Regel aus
  * styles.css; outline-offset zieht ihn in den Chip hinein, sonst
- * laege er oberhalb der Headerkante. */
+ * laege er oberhalb der Headerkante.
+ * OC-WCAG-284: Der Chip sitzt unterhalb des Kopfbereichs statt in ihm.
+ * Bei left: 76px; top: 0 lag er ueber dem App-Titel (x = 44 bis 96,
+ * y = 7 bis 39) und verdeckte ihn, solange er den Fokus hielt. */
 #skip-to-content a {
 	position: absolute;
 	left: -10000px;
@@ -24,8 +27,8 @@
 	overflow: hidden;
 }
 #skip-to-content a:focus {
-	left: 76px;
-	top: 0;
+	left: 0;
+	top: 45px; /* header height - der Chip sitzt unter dem Kopfbereich */
 	width: auto;
 	height: 45px;
 	line-height: 45px;
@@ -131,6 +134,35 @@
 	left: 15px;
 	height: 45px;
 	align-items: center;
+}
+
+/* OC-WCAG-284: Der Umschalter ist ein eigenes <button> und sammelt damit die
+   generischen button-Regeln aus core/css/inputs.css ein (width: 130px, dann
+   width: auto, min-width: 25px, padding: 5px, Rahmen, Fuellung, 13px, dazu
+   margin: 3px 3px 3px 0 und border-radius: 3px). Ohne die folgenden
+   Deklarationen waere er statt 29 x 45 px deutlich groesser und der
+   App-Titel rutschte von x = 44 weg. Gleiche Neutralisierung wie bei
+   #expand (OC-WCAG-282). 29 x 45 px liegt ueber den 24 x 24 px aus
+   SC 2.5.8 - die 14 x 10 px des Balkens allein taeten das nicht.
+   cursor fuer die Kindelemente, weil die Reset-Regel in styles.css jedem
+   <span> cursor: default gibt, der Balken aber das Klickziel ist. */
+#header .app-menu-toggle {
+	display: flex;
+	align-items: center;
+	height: 45px;
+	width: auto;
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	background: none;
+	border: 0;
+	border-radius: 0;
+	font: inherit;
+	color: inherit;
+}
+
+#header .app-menu-toggle * {
+	cursor: pointer;
 }
 
 /* hover effect for app switcher label */
@@ -345,6 +377,23 @@
 	max-width: 80%;
 	white-space: nowrap;
 	box-sizing: border-box;
+}
+
+/* OC-WCAG-284: Suche und Benutzermenue liegen im angemeldeten Kopfbereich in
+   einem gemeinsamen Flex-Container, damit ihre Anzeigereihenfolge an der
+   Markup-Reihenfolge haengt und nicht an der Float-Richtung. Bewusst auf
+   #body-user und #body-settings eingegrenzt: .header-right traegt auch den
+   Download-Knopf der Freigabeseite (apps/files_sharing/templates/public.php,
+   #body-public), und die braucht ihre Fuellung von 7px/5px weiter.
+   align-items: flex-start, nicht center - zentriert rutscht die Lupe um 4 px
+   nach unten, weil #searchbox seine Lage ueber margin-top: 9px setzt.
+   right bleibt 0; damit liegen Lupe und Benutzermenue exakt auf ihren alten
+   Positionen (auf 0,00 px gegengemessen). */
+#body-user #header .header-right,
+#body-settings #header .header-right {
+	display: flex;
+	align-items: flex-start;
+	padding: 0;
 }
 
 /* Profile picture in header */
