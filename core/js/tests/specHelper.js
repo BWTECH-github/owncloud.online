@@ -3,6 +3,10 @@
 *
 * @author Vincent Petry
 * @copyright Copyright (c) 2014 Vincent Petry <pvince81@owncloud.com>
+* @copyright Copyright (c) 2018, ownCloud GmbH
+*
+* Modified by BW-Tech GmbH on 2026-08-05.
+* test(js): seed oc_appconfig with the app namespaces the suite bootstraps
 *
 * This library is free software; you can redistribute it and/or
 * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
