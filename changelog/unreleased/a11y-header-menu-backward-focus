@@ -1,0 +1,11 @@
+Bugfix: Let shift+tab out of a header menu reach its toggle
+
+Opening the app menu or the user menu moved the focus into the menu, but going
+back from its first entry did not return to the toggle. It landed on the
+search box at the other end of the header instead, because the menu sits after
+the whole header in the document while it opens directly below its toggle on
+screen.
+
+Shift+tab on the first entry now moves the focus to the toggle it belongs to.
+
+WCAG 2.1 AA, SC 2.4.3

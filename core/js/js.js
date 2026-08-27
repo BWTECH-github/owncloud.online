@@ -712,11 +712,27 @@ var OC = {
 		});
 
 		$menuEl.add($toggle).on('keydown.menu', function (event) {
-			if (event.keyCode !== 27) {
+			if (event.keyCode === 27) {
+				event.preventDefault();
+				self.hideMenus();
+				return;
+			}
+			// Rueckweg zum Umschalter. Das <nav> steht im Dokument hinter dem
+			// gesamten Kopfbereich, waehrend es visuell unter seinem Umschalter
+			// aufklappt - Shift+Tabulator liefe darum ans andere Ende der
+			// Kopfzeile statt zurueck (SC 2.4.3). Der erste Eintrag wird ueber
+			// denselben Selektor gesucht wie beim Oeffnen, damit ein Menue mit
+			// wechselndem Inhalt weiter traegt.
+			if (event.keyCode !== 9 || !event.shiftKey) {
+				return;
+			}
+			var $first = $menuEl.find('a, button, [tabindex]:not([tabindex="-1"])')
+				.filter(':visible').first();
+			if (!$first.length || $first[0] !== event.target) {
 				return;
 			}
 			event.preventDefault();
-			self.hideMenus();
+			$toggle.focus();
 		});
 
 		// Der Tabulator fuehrt aus dem Menue heraus - dann schliesst es mit.

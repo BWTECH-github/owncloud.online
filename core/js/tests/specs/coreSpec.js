@@ -629,6 +629,34 @@ describe('Core base tests', function() {
 
 			expect($navigation.is(':visible')).toEqual(true);
 		});
+		it('Moves the focus to the toggle on shift+tab from the first entry', function() {
+			$navigation.append('<ul><li><a href="#" id="navFirst">A</a></li>' +
+				'<li><a href="#" id="navSecond">B</a></li></ul>');
+			window.initCore();
+			$toggle.click();
+			clock.tick(1 * 1000);
+
+			$('#navFirst').trigger($.Event('keydown', {keyCode: 9, shiftKey: true}));
+			clock.tick(1 * 1000);
+
+			expect(document.activeElement).toEqual($toggle[0]);
+			// Der Umschalter zaehlt als "innerhalb" - das Menue bleibt offen.
+			expect($navigation.is(':visible')).toEqual(true);
+		});
+		it('Leaves shift+tab between entries alone', function() {
+			$navigation.append('<ul><li><a href="#" id="navFirst">A</a></li>' +
+				'<li><a href="#" id="navSecond">B</a></li></ul>');
+			window.initCore();
+			$toggle.click();
+			clock.tick(1 * 1000);
+
+			var event = $.Event('keydown', {keyCode: 9, shiftKey: true});
+			$('#navSecond').trigger(event);
+			clock.tick(1 * 1000);
+
+			expect(event.isDefaultPrevented()).toEqual(false);
+			expect(document.activeElement).not.toEqual($toggle[0]);
+		});
 	});
 	describe('Util', function() {
 		describe('humanFileSize', function() {
