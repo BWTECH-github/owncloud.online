@@ -89,6 +89,13 @@
   RewriteRule ^(?:build|tests|config|lib|3rdparty|templates|changelog)/.* - [R=404,L]
   RewriteRule ^core/signature\.json - [R=404,L]
   RewriteRule ^(?:core/skeleton)/.* - [R=404,L]
+  # Paketbeschreibungen der Fremdbibliotheken. Makefile:290 loescht sie beim
+  # Bau des Tarballs; wer per git ausrollt, hat sie trotzdem im Baum, und dann
+  # liefert der Server auf /core/vendor/underscore/package.json die eingebaute
+  # Fassungsnummer im Klartext aus - ein Versionsscanner braucht danach nicht
+  # einmal ein Konto. Dasselbe gilt fuer die vendor-Baeume der Erweiterungen.
+  RewriteRule ^(?:core|apps|apps-external)/.*/(?:package|package-lock|composer|bower|\.bower|installed|testem)\.json$ - [R=404,L]
+  RewriteRule ^(?:core|apps|apps-external)/.*/(?:composer\.lock|yarn\.lock)$ - [R=404,L]
   RewriteCond %{REQUEST_URI} !^/.well-known/(acme-challenge|pki-validation)/.*
   RewriteRule ^(?:\.|autotest|occ|issue|indie|db_|console).* - [R=404,L]
 </IfModule>
