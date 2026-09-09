@@ -310,8 +310,17 @@ input:disabled+label, input:disabled:hover+label, input:disabled:focus+label {
 	background-color: #304d76;
 	color: #fff;
 }
+/*
+ * Gedrueckter Zustand: die Fuellung ist der Markenton selbst, deshalb traegt
+ * der Rahmen der Basisregel (#00E4BD) hier 1,00:1 und der Knopf grenzt sich mit
+ * 1,64:1 nicht mehr gegen die weisse Seite ab. #262B45 ist der Rahmen- und
+ * Umrissbestand des Forks (identisch mit dem globalen Fokusindikator in
+ * core/css/styles.css) und erreicht 8,48:1 auf der Fuellung, 13,87:1 gegen die
+ * Seite. Der Markenton selbst bleibt unangetastet. WCAG 2.1 AA, SC 1.4.11
+ */
 .primary:active, input[type="submit"].primary:active, input[type="button"].primary:active, button.primary:active, .button.primary:active {
 	background-color: #00E4BD;
+	border-color: #262B45;
 	color: #26384d;
 }
 .primary:disabled, input[type="submit"].primary:disabled, input[type="button"].primary:disabled, button.primary:disabled, .button.primary:disabled,

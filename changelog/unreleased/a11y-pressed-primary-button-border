@@ -1,0 +1,13 @@
+Bugfix: Give the pressed primary button a visible border
+
+While a primary button was held down it had no discernible boundary. The
+pressed state replaces the fill with the brand turquoise but kept the border
+colour of the base rule, which is that same turquoise, so the border vanished
+into the fill and the button separated from the white page by 1.64:1 alone.
+
+The pressed state now draws its border in the dark value this interface
+already uses for borders and focus outlines. It reaches 8.48:1 against the
+fill and 13.87:1 against the page, and it makes the state change easier to
+see rather than only compliant. The brand colour of the fill is unchanged.
+
+WCAG 2.1 AA, SC 1.4.11
