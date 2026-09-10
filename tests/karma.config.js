@@ -252,7 +252,23 @@ module.exports = function(config) {
 
 		// list of files to exclude
 		exclude: [
-
+			// Die App-Muster oben lauten 'apps/<app>/js/*.js' und ziehen damit
+			// auch die minifizierten Zwillinge ein - jede Datei kam zweimal in
+			// den Browser. Bei jquery.fileupload.js ist das nicht bloss
+			// Ballast: der zweite Durchlauf ruft $.widget('blueimp.fileupload')
+			// erneut auf, und jQuery UI 1.10 vergibt den Ereignis-Prefix dabei
+			// als "existingConstructor ? basePrototype.widgetEventPrefix : name"
+			// (core/vendor/jquery-ui/ui/minified/jquery-ui.custom.min.js). Beim
+			// zweiten Mal ist existingConstructor gesetzt und die Basis wieder
+			// $.Widget, dessen Prefix leer ist - aus 'fileuploadfail' wird
+			// schlicht 'fail'. Keiner der Zuhoerer in apps/files/js/file-upload.js
+			// sieht das Ereignis dann noch. Genau daran starb
+			// "does not add file if it exceeds free space" (OP-212).
+			//
+			// core/vendor bleibt bewusst ausgenommen: dort sind die .min-Dateien
+			// die einzige Fassung (jquery-ui, underscore), core.json nennt sie
+			// namentlich.
+			'apps/*/js/**/*.min.js'
 		],
 
 		proxies: {
