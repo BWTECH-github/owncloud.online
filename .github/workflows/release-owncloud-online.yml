@@ -114,12 +114,25 @@ jobs:
           # drei Release-Bauten hintereinander abgebrochen, obwohl am Stand
           # nichts fehlte. Der Composer-Cache haelt bereits Geholtes fest, jeder
           # Anlauf kommt also weiter. Fuenf Versuche mit wachsender Pause.
+          #
+          # Die Abhaengigkeiten werden hier ZUERST und getrennt geholt, nicht
+          # innerhalb von "make dist-dir". Grund: das Makefile fuehrt lib/composer
+          # als Verzeichnis-Ziel. Bricht "composer install" ab, bleibt das
+          # Verzeichnis mit halben Downloads (tmp-*.zip) zurueck und ist juenger
+          # als composer.json - der naechste make-Anlauf haelt die Abhaengigkeit
+          # damit faelschlich fuer erfuellt, ueberspringt composer und packt die
+          # Reste ins Release. Genau so entstand das kaputte 11.0.18-Archiv:
+          # lib/composer enthielt 26 tmp-*.zip und kein autoload.php.
+          # Deshalb vor jedem Anlauf den halben Stand wegraeumen; der
+          # Composer-Cache unter ~/.cache/composer bleibt davon unberuehrt, jeder
+          # Anlauf kommt also trotzdem weiter.
           for versuch in 1 2 3 4 5; do
-            if make dist-dir RELEASE_CHANNEL=bwtech; then
+            rm -rf lib/composer
+            if composer install --no-dev --no-interaction --no-progress; then
               break
             fi
             if [ "$versuch" = "5" ]; then
-              echo "::error::Bau nach fuenf Anlaeufen aufgegeben - siehe Meldungen oben."
+              echo "::error::Composer-Abhaengigkeiten nach fuenf Anlaeufen nicht vollstaendig - siehe Meldungen oben."
               exit 1
             fi
             pause=$((versuch * 30))
@@ -127,7 +140,20 @@ jobs:
             sleep "${pause}"
           done
 
+          # Harte Schranke: ohne diese beiden Dateien ist das Archiv unbrauchbar,
+          # und der Fehler faellt erst beim Kunden beim Entpacken auf.
+          test -f lib/composer/autoload.php
+          test -f lib/composer/composer/installed.json
+
+          make dist-dir RELEASE_CHANNEL=bwtech
+
           test -d build/dist/owncloud
+          test -f build/dist/owncloud/lib/composer/autoload.php
+          test -f build/dist/owncloud/lib/composer/composer/installed.json
+          if find build/dist/owncloud/lib/composer -name 'tmp-*.zip' -print -quit | grep -q .; then
+            echo "::error::Abgebrochene Composer-Downloads (tmp-*.zip) im Release-Baum."
+            exit 1
+          fi
 
       - name: Build release archives
         shell: bash
