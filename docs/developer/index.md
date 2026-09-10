@@ -9,7 +9,7 @@ ausführt, und der Weg, auf dem eine Änderung eingereicht wird.
 Der Quelltext liegt unter
 <https://github.com/BWTECH-github/owncloud.online>, fertige Pakete unter
 <https://github.com/BWTECH-github/owncloud.online/releases>. Aktuelle Fassung
-ist 11.0.19 (`version.php`).
+ist 11.0.18 (`version.php`).
 
 ## Aufbau des Repositorys
 
