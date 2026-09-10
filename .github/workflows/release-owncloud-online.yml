@@ -103,7 +103,30 @@ jobs:
         run: |
           set -euo pipefail
           composer config --global github-oauth.github.com "${{ secrets.GITHUB_TOKEN }}"
-          make dist-dir RELEASE_CHANNEL=bwtech
+
+          # Mehrere Anlaeufe, weil zwei Abhaengigkeiten an einem einzelnen
+          # fremden Server haengen: icewind/streams und icewind/smb liegen auf
+          # codeberg.org, und Packagist stellt fuer Codeberg-Projekte kein
+          # Fertigpaket bereit (icewind/smb: 0 von 48 Fassungen, icewind/streams:
+          # ausgerechnet die genutzte v0.7.8 nicht). composer.json holt sie
+          # deshalb per "preferred-install: source" direkt als git clone.
+          # Am 10.09.2026 hat eine Codeberg-Stoerung (504/502/Zeitueberschreitung)
+          # drei Release-Bauten hintereinander abgebrochen, obwohl am Stand
+          # nichts fehlte. Der Composer-Cache haelt bereits Geholtes fest, jeder
+          # Anlauf kommt also weiter. Fuenf Versuche mit wachsender Pause.
+          for versuch in 1 2 3 4 5; do
+            if make dist-dir RELEASE_CHANNEL=bwtech; then
+              break
+            fi
+            if [ "$versuch" = "5" ]; then
+              echo "::error::Bau nach fuenf Anlaeufen aufgegeben - siehe Meldungen oben."
+              exit 1
+            fi
+            pause=$((versuch * 30))
+            echo "::warning::Anlauf ${versuch} fehlgeschlagen, neuer Versuch in ${pause}s"
+            sleep "${pause}"
+          done
+
           test -d build/dist/owncloud
 
       - name: Build release archives
