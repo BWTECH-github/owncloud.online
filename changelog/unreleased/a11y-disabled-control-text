@@ -1,0 +1,13 @@
+Bugfix: Make the text of disabled controls readable
+
+The label of a disabled input, button or text area was drawn in a grey that
+reached 2.35:1 against its own surface, and the label beside such a field
+2.85:1 against the page. The contrast requirement exempts inactive controls, so
+neither was a violation, but a control whose label cannot be deciphered is
+still information while it is switched off.
+
+Both now use the muted text colour this interface already carries elsewhere,
+which reaches 6.20:1 and 7.53:1. The muted fill is unchanged, so a disabled
+control still reads as disabled.
+
+WCAG 2.1 AA, SC 1.4.3
