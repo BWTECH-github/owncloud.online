@@ -1,0 +1,16 @@
+Bugfix: Raise the border contrast of fields and controls
+
+Input fields, text areas, buttons and select boxes had no discernible
+boundary. The border that separated them from the page carried 1.36:1, and
+its button variant 1.32:1, where the standard asks for 3:1. Because the
+inside of a field and the page behind it are both white, and a button fill
+differs from the page by 1.12:1, that border was the only separation there
+was.
+
+They now draw it in a grey that reaches 4.05:1 against the page and keeps
+reserve against the button fill and the grey surfaces. Fill colours, text
+colours, corner radius and metrics are unchanged. The container of the
+picker in the external storage settings, which shared the same border, was
+raised with it.
+
+WCAG 2.1 AA, SC 1.4.11

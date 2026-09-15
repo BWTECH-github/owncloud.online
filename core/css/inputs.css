@@ -27,7 +27,16 @@ input[type="button"],
 	font-size: 13px;
 	background-color: #fff;
 	color: #333;
-	border: 1px solid #ddd;
+	/*
+	 * Feldrahmen. Das Feldinnere ist #fff und die Seite ebenfalls, der
+	 * Rahmen ist damit die einzige Abgrenzung des Bedienelements. #ddd
+	 * trug dort 1,36:1; #767f8c erreicht 4,05:1 gegen die Seite, 3,81:1
+	 * gegen #f8f8f8 und 3,62:1 gegen die Knopffuellung. Bewusst nicht der
+	 * Schwellwert #8596ae (3,01:1) - ein 1-px-Rahmen rendert bei 150 %
+	 * Skalierung als 0,667 Geraetepixel und wird kantengeglaettet.
+	 * WCAG 2.1 AA, SC 1.4.11
+	 */
+	border: 1px solid #767f8c;
 	outline: none;
 	border-radius: 3px;
 }
@@ -223,7 +232,8 @@ select:hover {
 }
 
 .select2-choices {
-	border: 1px solid #ddd;
+	/* dieselbe Feldrolle wie oben, siehe Rechenkommentar dort */
+	border: 1px solid #767f8c;
 	border-radius: 3px;
 	color: #333;
 	background-image: none;
@@ -263,7 +273,14 @@ button, .button,
 	background-color: rgba(240,240,240,.9);
 	font-weight: 600;
 	color: #555;
-	border: 1px solid rgba(221,221,221,.9);
+	/*
+	 * Knopfrahmen. Ueber Weiss komponiert ergab rgba(221,221,221,.9) den
+	 * Wert #e0e0e0 mit 1,32:1, und die Fuellung selbst grenzt sich mit
+	 * nur 1,12:1 ab - der Rahmen ist also auch hier die einzige
+	 * Abgrenzung. Deckend gesetzt, damit der Wert nicht vom Untergrund
+	 * abhaengt. WCAG 2.1 AA, SC 1.4.11
+	 */
+	border: 1px solid #767f8c;
 	cursor: pointer;
 }
 select, .button.multiselect {
