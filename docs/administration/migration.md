@@ -377,6 +377,16 @@ gewesen. Apps, die **mit** Code vorhanden sind, aber nicht zur Version passen,
 bleiben ein Abbruchgrund: dort gibt es etwas zu reparieren, und ein stilles
 Abschalten würde es verdecken.
 
+Abgeschaltet wird nur, was **wirklich** fehlt: Der Reparaturschritt prüft
+vorher, dass jeder Pfad aus `apps_paths` lesbar ist und dass die App in keinem
+davon einen Ordner hat. Ist ein Pfad nicht lesbar (Mount fehlt, Rechte) oder
+liegt ein Ordner ohne lesbare `appinfo/info.xml` da, wird nichts abgeschaltet
+und das Upgrade bricht wie früher ab — dann ist der Code nur gerade nicht
+erreichbar, und ein stilles Abschalten würde den eigentlichen Fehler verdecken.
+Jede Abschaltung steht zusätzlich mit dem bisherigen `enabled`-Wert im
+Serverprotokoll (`owncloud.log`, App `core`), auch wenn `occ upgrade
+--no-warnings` die Konsolenwarnung unterdrückt.
+
 Der genaue Grund steht immer im Serverprotokoll, siehe
 [Serverprotokoll und Fehlermeldungen](logging.md). Der vollständige Ablauf für
 Sicherung und Rückweg ist unter [Backups und Updates](backups-updates.md)

@@ -37,6 +37,7 @@ use OCP\App\AppNotInstalledException;
 use OCP\App\AppUpdateNotFoundException;
 use OCP\App\IAppManager;
 use OCP\IConfig;
+use OCP\ILogger;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use OCP\Util;
@@ -71,12 +72,28 @@ class Apps implements IRepairStep {
 	 * @param IConfig $config
 	 * @param \OC_Defaults $defaults
 	 */
-	public function __construct(IAppManager $appManager, EventDispatcherInterface $eventDispatcher, IConfig $config, \OC_Defaults $defaults, $forceMajorUpgrade = false) {
+	/** @var ILogger|null */
+	private $logger;
+
+	public function __construct(IAppManager $appManager, EventDispatcherInterface $eventDispatcher, IConfig $config, \OC_Defaults $defaults, $forceMajorUpgrade = false, ?ILogger $logger = null) {
 		$this->appManager = $appManager;
 		$this->eventDispatcher = $eventDispatcher;
 		$this->config = $config;
 		$this->defaults = $defaults;
 		$this->forceMajorUpgrade = $forceMajorUpgrade;
+		$this->logger = $logger;
+	}
+
+	/**
+	 * App-Pfade als Array aus path/url - Huelle, damit Tests sie ersetzen koennen.
+	 * @return string[][]
+	 */
+	protected function getAppRoots() {
+		return \OC::$APPSROOTS;
+	}
+
+	protected function getLogger(): ILogger {
+		return $this->logger ?? \OC::$server->getLogger();
 	}
 
 	/**
@@ -231,16 +248,62 @@ class Apps implements IRepairStep {
 		 * Apps MIT Code, die nur nicht zur Version passen ("incompatible"),
 		 * bleiben ein Abbruchgrund: dort gibt es etwas zu reparieren, und ein
 		 * stilles Abschalten wuerde es verdecken.
+		 *
+		 * "missing" heisst dabei nur: getAppInfo() liefert keine id. Das trifft
+		 * auch Apps, deren Code bloss gerade nicht lesbar ist - nicht
+		 * eingehaengter Pfad aus apps_paths, falsche Rechte, halb fertiger rsync,
+		 * kaputte info.xml. Die duerfen nicht still und dauerhaft abgeschaltet
+		 * werden. Abgeschaltet wird deshalb nur, wenn jeder App-Pfad lesbar ist
+		 * UND die App in keinem davon einen Ordner hat. Jede Abschaltung landet
+		 * mit dem alten "enabled"-Wert im Serverprotokoll, damit sie auch bei
+		 * --no-warnings nachvollziehbar bleibt.
 		 */
 		$disabledMissingApps = [];
-		foreach ($failedMissingApps as $app) {
-			try {
-				$this->appManager->disableApp($app);
-				$disabledMissingApps[] = $app;
-			} catch (\Exception $e) {
-				// isAlwaysEnabled - kann bei einer App ohne Code nicht
-				// vorkommen, aber wenn doch, bleibt sie ein Abbruchgrund.
-				$output->warning("Could not disable missing app $app: " . $e->getMessage());
+		if ($failedMissingApps !== []) {
+			$unreadableRoots = [];
+			foreach ($this->getAppRoots() as $root) {
+				if (!\is_dir($root['path']) || !\is_readable($root['path'])) {
+					$unreadableRoots[] = $root['path'];
+				}
+			}
+			if ($unreadableRoots !== []) {
+				$output->warning(
+					'Apps without code are NOT disabled automatically because an app directory is missing or not readable: '
+					. \implode(', ', $unreadableRoots)
+					. '. Fix the path (mount, permissions, apps_paths) and run the upgrade again.'
+				);
+			} else {
+				foreach ($failedMissingApps as $app) {
+					$appDirs = [];
+					foreach ($this->getAppRoots() as $root) {
+						if (\is_dir($root['path'] . '/' . $app)) {
+							$appDirs[] = $root['path'] . '/' . $app;
+						}
+					}
+					if ($appDirs !== []) {
+						// Code liegt da, ist aber nicht lesbar oder nicht parsebar: ein
+						// Installationsfehler, den der Admin sehen muss.
+						$output->warning(
+							"App $app has a directory (" . \implode(', ', $appDirs)
+							. ') but no readable appinfo/info.xml; it is not disabled automatically. Repair or remove the directory.'
+						);
+						continue;
+					}
+					$previous = $this->config->getAppValue($app, 'enabled', 'yes');
+					try {
+						$this->appManager->disableApp($app);
+						$disabledMissingApps[] = $app;
+						$this->getLogger()->warning(
+							"Upgrade: disabled app $app - it is enabled in the database (enabled=$previous) but has no code in any app directory"
+							. ' and could not be fetched from the marketplace. Install it from the marketplace and enable it again if you still need it.',
+							['app' => 'core']
+						);
+					} catch (\Exception $e) {
+						// isAlwaysEnabled - kann bei einer App ohne Code nicht
+						// vorkommen, aber wenn doch, bleibt sie ein Abbruchgrund.
+						$output->warning("Could not disable missing app $app: " . $e->getMessage());
+					}
+				}
 			}
 		}
 		if ($disabledMissingApps !== []) {

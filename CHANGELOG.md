@@ -39,7 +39,22 @@
 * [Changelog for 10.3.2](#changelog-for-owncloud-core-1032-2019-12-04)
 # Changelog for ownCloud.online [Unreleased]
 
-This section collects changes for the next ownCloud.online release. No entries yet.
+## Summary
+
+* Bugfix - Apps ohne Code werden beim Upgrade nur abgeschaltet, wenn sie wirklich fehlen
+
+## Details
+
+* Bugfix - Apps ohne Code werden beim Upgrade nur abgeschaltet, wenn sie wirklich fehlen
+
+   Seit 11.0.19 schaltet `occ upgrade` eingeschaltete Apps ohne Code ab statt
+   abzubrechen. „Ohne Code" konnte aber auch heißen: Pfad aus `apps_paths`
+   nicht eingehängt, Rechte falsch, Ordner ohne lesbare `info.xml` — dann wäre
+   die App still und dauerhaft abgeschaltet worden. Jetzt wird nur
+   abgeschaltet, wenn jeder App-Pfad lesbar ist und die App in keinem einen
+   Ordner hat; sonst bricht das Upgrade wie vor 11.0.19 ab und nennt den
+   Grund. Jede Abschaltung steht mit dem bisherigen `enabled`-Wert im
+   Serverprotokoll.
 
 # Changelog for ownCloud.online [11.0.19] (2026-09-16)
 

@@ -23,6 +23,7 @@ namespace Test\Repair;
 use OC\Repair\Apps;
 use OCP\App\IAppManager;
 use OCP\IConfig;
+use OCP\ILogger;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Test\TestCase;
@@ -157,13 +158,20 @@ class AppsTest extends TestCase {
 	}
 
 	/**
-	 * Eine eingeschaltete App ohne Code darf das Upgrade nicht mehr
-	 * blockieren: sie wird abgeschaltet und genannt, der Lauf geht weiter.
-	 *
-	 * Das ist der Fall jeder migrierten Instanz - Datenbank vom alten oc10
-	 * mit Enterprise-Apps und Apps der alten Plattform, Code von der neuen.
+	 * Reparaturschritt mit ersetzbaren App-Pfaden und eigenem Logger, damit
+	 * die Tests weder vom Dateisystem der Testinstanz noch vom Serverlog
+	 * abhaengen.
 	 */
-	public function testMissingAppsAreDisabledInsteadOfBlocking() {
+	private function repairMitAppRoots(array $roots, ?ILogger $logger = null) {
+		$repair = $this->getMockBuilder(Apps::class)
+			->setConstructorArgs([$this->appManager, $this->eventDispatcher, $this->config, $this->defaults, false, $logger])
+			->setMethods(['getAppRoots'])
+			->getMock();
+		$repair->method('getAppRoots')->willReturn($roots);
+		return $repair;
+	}
+
+	private function konfigOhneMarkt() {
 		$this->config->method('getSystemValue')
 			->willReturnCallback(function ($key, $default = null) {
 				$werte = [
@@ -175,7 +183,25 @@ class AppsTest extends TestCase {
 				];
 				return \array_key_exists($key, $werte) ? $werte[$key] : $default;
 			});
+		$this->config->method('getAppValue')->willReturn('yes');
+	}
 
+	private function leeresAppVerzeichnis() {
+		$dir = \sys_get_temp_dir() . '/repair-apps-' . \uniqid();
+		\mkdir($dir);
+		return $dir;
+	}
+
+	/**
+	 * Eine eingeschaltete App ohne Code darf das Upgrade nicht mehr
+	 * blockieren: sie wird abgeschaltet, genannt und protokolliert, der Lauf
+	 * geht weiter.
+	 *
+	 * Das ist der Fall jeder migrierten Instanz - Datenbank vom alten oc10
+	 * mit Enterprise-Apps und Apps der alten Plattform, Code von der neuen.
+	 */
+	public function testMissingAppsAreDisabledInsteadOfBlocking() {
+		$this->konfigOhneMarkt();
 		$this->appManager->method('getInstalledApps')
 			->willReturn(['account', 'systemtags_management', 'files']);
 		$this->appManager->method('getAppInfo')
@@ -197,14 +223,25 @@ class AppsTest extends TestCase {
 				$abgeschaltet[] = $appId;
 			});
 
+		$protokoll = [];
+		$logger = $this->createMock(ILogger::class);
+		$logger->method('warning')->willReturnCallback(function ($text) use (&$protokoll) {
+			$protokoll[] = $text;
+		});
+
 		$output = $this->createMock(\OCP\Migration\IOutput::class);
 		$meldungen = [];
 		$output->method('warning')->willReturnCallback(function ($text) use (&$meldungen) {
 			$meldungen[] = $text;
 		});
 
-		// Kein RepairException mehr.
-		$this->repair->run($output);
+		$dir = $this->leeresAppVerzeichnis();
+		try {
+			// Kein RepairException mehr.
+			$this->repairMitAppRoots([['path' => $dir, 'url' => '/apps']], $logger)->run($output);
+		} finally {
+			\rmdir($dir);
+		}
 
 		$this->assertEquals(['account', 'systemtags_management'], $abgeschaltet);
 		$this->assertNotEmpty(
@@ -214,6 +251,67 @@ class AppsTest extends TestCase {
 			}),
 			'Die abgeschalteten Apps muessen in der Warnung genannt werden'
 		);
+		$this->assertCount(2, $protokoll, 'Jede Abschaltung steht im Serverprotokoll');
+		$this->assertStringContainsString('disabled app account', $protokoll[0]);
+		$this->assertStringContainsString('enabled=yes', $protokoll[0]);
+	}
+
+	/**
+	 * Liegt ein Ordner der App da, ist der Code nur nicht lesbar oder nicht
+	 * parsebar - das ist ein Installationsfehler und bleibt Abbruchgrund.
+	 */
+	public function testMissingAppWithDirectoryIsNotDisabled() {
+		$this->konfigOhneMarkt();
+		$this->appManager->method('getInstalledApps')->willReturn(['brokenapp']);
+		$this->appManager->method('getAppInfo')->willReturn([]);
+		$this->appManager->expects($this->never())->method('disableApp');
+
+		$output = $this->createMock(\OCP\Migration\IOutput::class);
+		$meldungen = [];
+		$output->method('warning')->willReturnCallback(function ($text) use (&$meldungen) {
+			$meldungen[] = $text;
+		});
+
+		$dir = $this->leeresAppVerzeichnis();
+		\mkdir($dir . '/brokenapp');
+		try {
+			$this->expectException(\OC\RepairException::class);
+			$this->repairMitAppRoots([['path' => $dir, 'url' => '/apps']])->run($output);
+		} finally {
+			\rmdir($dir . '/brokenapp');
+			\rmdir($dir);
+			$this->assertNotEmpty(\array_filter($meldungen, function ($m) {
+				return \strpos($m, 'has a directory') !== false && \strpos($m, 'brokenapp') !== false;
+			}), 'Der vorhandene Ordner muss genannt werden');
+		}
+	}
+
+	/**
+	 * Ist ein App-Pfad nicht lesbar (Mount fehlt, Rechte), waere jede App
+	 * dort "missing" - dann wird nichts abgeschaltet und der Lauf bricht wie
+	 * frueher ab.
+	 */
+	public function testUnreadableAppRootPreventsAutoDisable() {
+		$this->konfigOhneMarkt();
+		$this->appManager->method('getInstalledApps')->willReturn(['account']);
+		$this->appManager->method('getAppInfo')->willReturn([]);
+		$this->appManager->expects($this->never())->method('disableApp');
+
+		$output = $this->createMock(\OCP\Migration\IOutput::class);
+		$meldungen = [];
+		$output->method('warning')->willReturnCallback(function ($text) use (&$meldungen) {
+			$meldungen[] = $text;
+		});
+
+		$fehlt = \sys_get_temp_dir() . '/repair-apps-gibt-es-nicht-' . \uniqid();
+		try {
+			$this->expectException(\OC\RepairException::class);
+			$this->repairMitAppRoots([['path' => $fehlt, 'url' => '/apps']])->run($output);
+		} finally {
+			$this->assertNotEmpty(\array_filter($meldungen, function ($m) use ($fehlt) {
+				return \strpos($m, 'NOT disabled automatically') !== false && \strpos($m, $fehlt) !== false;
+			}), 'Der unlesbare Pfad muss genannt werden');
+		}
 	}
 
 	/**
@@ -223,16 +321,7 @@ class AppsTest extends TestCase {
 		$oldChannel = \OCP\Util::getChannel();
 		\OCP\Util::setChannel('stable');
 
-		$this->config->method('getSystemValue')
-			->willReturnCallback(function ($key, $default = null) {
-				$werte = [
-					'has_internet_connection' => true,
-					'version' => '10.16.2.0',
-					'upgrade.automatic-app-update' => false,
-					'appstoreenabled' => null,
-				];
-				return \array_key_exists($key, $werte) ? $werte[$key] : $default;
-			});
+		$this->konfigOhneMarkt();
 		$this->appManager->method('getInstalledApps')->willReturn(['oldapp']);
 		$this->appManager->method('getAppInfo')->willReturn([
 			'id' => 'oldapp',
