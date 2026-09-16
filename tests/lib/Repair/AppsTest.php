@@ -156,6 +156,98 @@ class AppsTest extends TestCase {
 		);
 	}
 
+	/**
+	 * Eine eingeschaltete App ohne Code darf das Upgrade nicht mehr
+	 * blockieren: sie wird abgeschaltet und genannt, der Lauf geht weiter.
+	 *
+	 * Das ist der Fall jeder migrierten Instanz - Datenbank vom alten oc10
+	 * mit Enterprise-Apps und Apps der alten Plattform, Code von der neuen.
+	 */
+	public function testMissingAppsAreDisabledInsteadOfBlocking() {
+		$this->config->method('getSystemValue')
+			->willReturnCallback(function ($key, $default = null) {
+				$werte = [
+					'has_internet_connection' => true,
+					'version' => '10.16.2.0',
+					// Kein Marktbesuch: die Apps sollen als "nicht beschaffbar" ankommen.
+					'upgrade.automatic-app-update' => false,
+					'appstoreenabled' => null,
+				];
+				return \array_key_exists($key, $werte) ? $werte[$key] : $default;
+			});
+
+		$this->appManager->method('getInstalledApps')
+			->willReturn(['account', 'systemtags_management', 'files']);
+		$this->appManager->method('getAppInfo')
+			->willReturnCallback(function ($appId) {
+				if ($appId === 'files') {
+					return [
+						'id' => 'files',
+						'dependencies' => ['owncloud' => ['@attributes' => ['min-version' => '10', 'max-version' => '99']]],
+					];
+				}
+				// kein Code -> keine info.xml -> keine id
+				return [];
+			});
+
+		$abgeschaltet = [];
+		$this->appManager->expects($this->exactly(2))
+			->method('disableApp')
+			->willReturnCallback(function ($appId) use (&$abgeschaltet) {
+				$abgeschaltet[] = $appId;
+			});
+
+		$output = $this->createMock(\OCP\Migration\IOutput::class);
+		$meldungen = [];
+		$output->method('warning')->willReturnCallback(function ($text) use (&$meldungen) {
+			$meldungen[] = $text;
+		});
+
+		// Kein RepairException mehr.
+		$this->repair->run($output);
+
+		$this->assertEquals(['account', 'systemtags_management'], $abgeschaltet);
+		$this->assertNotEmpty(
+			\array_filter($meldungen, function ($m) {
+				return \strpos($m, 'have no code on this server') !== false
+					&& \strpos($m, 'account, systemtags_management') !== false;
+			}),
+			'Die abgeschalteten Apps muessen in der Warnung genannt werden'
+		);
+	}
+
+	/**
+	 * Eine App MIT Code, die nicht zur Version passt, bleibt ein Abbruchgrund.
+	 */
+	public function testIncompatibleAppsStillBlock() {
+		$oldChannel = \OCP\Util::getChannel();
+		\OCP\Util::setChannel('stable');
+
+		$this->config->method('getSystemValue')
+			->willReturnCallback(function ($key, $default = null) {
+				$werte = [
+					'has_internet_connection' => true,
+					'version' => '10.16.2.0',
+					'upgrade.automatic-app-update' => false,
+					'appstoreenabled' => null,
+				];
+				return \array_key_exists($key, $werte) ? $werte[$key] : $default;
+			});
+		$this->appManager->method('getInstalledApps')->willReturn(['oldapp']);
+		$this->appManager->method('getAppInfo')->willReturn([
+			'id' => 'oldapp',
+			'dependencies' => ['owncloud' => ['@attributes' => ['min-version' => '9', 'max-version' => '9']]],
+		]);
+		$this->appManager->expects($this->never())->method('disableApp');
+
+		try {
+			$this->expectException(\OC\RepairException::class);
+			$this->repair->run($this->createMock(\OCP\Migration\IOutput::class));
+		} finally {
+			\OCP\Util::setChannel($oldChannel);
+		}
+	}
+
 	private function configureRepair($mockedMethods, $forceMajorUpgrade = false) {
 		$this->repair = $this->getMockBuilder(Apps::class)
 			->setConstructorArgs(

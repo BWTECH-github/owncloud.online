@@ -347,6 +347,35 @@ Serverumzug und nicht in derselben Wartung.
 | „Turn on maintenance mode to use this command." | `maintenance:repair` ohne Wartungsmodus aufgerufen | `occ maintenance:mode --on`, Befehl wiederholen |
 | Oberfläche zeigt dauerhaft den Wartungsmodus | `maintenance` steht noch auf `true` | `occ maintenance:mode --off` |
 | Uploads scheitern mit Sperrfehlern | Sperreinträge aus der abgebrochenen Sitzung im Dump (nur ohne `memcache.locking`) | `occ maintenance:file-locks --cleanup-expired` |
+| `occ upgrade` bricht mit „Upgrade is not possible" ab und nennt Apps, die es auf dem neuen Server nicht gibt | Die Datenbank kommt von einer älteren Instanz mit Apps, deren Code auf dem Ziel fehlt (Enterprise-Apps wie `systemtags_management`, Apps der alten Plattform wie `account`) | Ab 11.0.19 schaltet der Reparaturschritt solche Apps ab und nennt sie in der Ausgabe; das Upgrade läuft durch. Davor: je App `occ app:disable <app>` — der Befehl steht auch im Upgrade-Zustand zur Verfügung —, dann `occ upgrade` erneut |
+
+### Umzug von einer älteren Fassung (etwa ownCloud 10)
+
+Wer beim Umzug zugleich die Version wechselt, bringt eine Datenbank mit, in der
+Apps als eingeschaltet vermerkt sind, die es auf dem Ziel nicht gibt — auf
+einer oc10-Instanz mit Enterprise-Apps sind das leicht ein Dutzend. Der
+Reparaturschritt „Upgrade app code from the marketplace" versucht zuerst, sie
+über den Markt zu beschaffen. Was der Markt nicht kennt, wurde bis 11.0.18 zum
+Abbruchgrund: „Upgrade is not possible", die Instanz blieb im Wartungsmodus,
+und für jede App war ein `occ app:disable` von Hand fällig.
+
+Seit 11.0.19 gilt: **Eine App ohne Code kann nichts tun** — der Eintrag
+„eingeschaltet" ist alles, was von ihr übrig ist, und er blockiert nur. Der
+Reparaturschritt setzt ihn auf „aus", nennt jede so behandelte App in der
+Ausgabe und läuft weiter:
+
+```
+Repair warning: The following apps were enabled but have no code on this
+server and could not be fetched from the marketplace. They have been
+disabled so the upgrade can continue; install them from the marketplace if
+you still need them: account, systemtags_management
+```
+
+Wer eine der Apps weiter braucht, installiert sie nach dem Upgrade über den
+Markt und schaltet sie ein — genau das wäre nach dem Abbruch auch nötig
+gewesen. Apps, die **mit** Code vorhanden sind, aber nicht zur Version passen,
+bleiben ein Abbruchgrund: dort gibt es etwas zu reparieren, und ein stilles
+Abschalten würde es verdecken.
 
 Der genaue Grund steht immer im Serverprotokoll, siehe
 [Serverprotokoll und Fehlermeldungen](logging.md). Der vollständige Ablauf für

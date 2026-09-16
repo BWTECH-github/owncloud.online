@@ -208,6 +208,50 @@ class Apps implements IRepairStep {
 			}
 		}
 
+		/*
+		 * Apps ohne Code werden abgeschaltet, nicht zum Abbruchgrund gemacht.
+		 *
+		 * Eine App steht hier als "missing", wenn sie in der Datenbank
+		 * eingeschaltet ist, auf diesem Server aber keinen Code hat - und der
+		 * Markt sie auch nicht liefern konnte. Genau so sieht jede migrierte
+		 * Instanz aus: die Datenbank kommt von einem alten oc10 mit
+		 * Enterprise-Apps (systemtags_management, files_classifier ...) und
+		 * Apps der alten Plattform (account), der Code kommt von der neuen.
+		 * Der Kern brach dann mit "Upgrade is not possible" ab und verlangte
+		 * "occ app:disable account" - fuer jede App einzeln, von Hand, auf
+		 * einer Instanz, die bis dahin im Wartungsmodus steht.
+		 *
+		 * Eine App ohne Code kann aber ohnehin nichts tun; der Eintrag
+		 * "enabled" ist das Einzige, was von ihr uebrig ist, und er blockiert
+		 * nur. Er wird deshalb hier gesetzt, jede App wird genannt, und das
+		 * Upgrade laeuft weiter. Wer die App wieder braucht, installiert sie
+		 * ueber den Markt und schaltet sie ein - so, wie er es nach dem
+		 * Abbruch auch haette tun muessen.
+		 *
+		 * Apps MIT Code, die nur nicht zur Version passen ("incompatible"),
+		 * bleiben ein Abbruchgrund: dort gibt es etwas zu reparieren, und ein
+		 * stilles Abschalten wuerde es verdecken.
+		 */
+		$disabledMissingApps = [];
+		foreach ($failedMissingApps as $app) {
+			try {
+				$this->appManager->disableApp($app);
+				$disabledMissingApps[] = $app;
+			} catch (\Exception $e) {
+				// isAlwaysEnabled - kann bei einer App ohne Code nicht
+				// vorkommen, aber wenn doch, bleibt sie ein Abbruchgrund.
+				$output->warning("Could not disable missing app $app: " . $e->getMessage());
+			}
+		}
+		if ($disabledMissingApps !== []) {
+			$output->warning(
+				'The following apps were enabled but have no code on this server and could not be fetched from the marketplace. '
+				. 'They have been disabled so the upgrade can continue; install them from the marketplace if you still need them: '
+				. \implode(', ', $disabledMissingApps)
+			);
+			$failedMissingApps = \array_values(\array_diff($failedMissingApps, $disabledMissingApps));
+		}
+
 		$hasBlockingMissingApps = \count($failedMissingApps);
 		$hasBlockingIncompatibleApps = $this->hasBlockingIncompatibleApps($failedIncompatibleApps);
 
