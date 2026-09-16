@@ -11,7 +11,7 @@
 (function() {
 
 	var TEMPLATE_FILE_ACTION_TRIGGER =
-		'<a class="action action-{{nameLowerCase}}" href="#" data-action="{{name}}">' +
+		'<button type="button" class="action action-{{nameLowerCase}}" data-action="{{name}}">' +
 		'{{#if icon}}' +
 			'<img class="svg" alt="{{altText}}" src="{{icon}}" />' +
 		'{{else}}' +
@@ -22,7 +22,7 @@
 			'{{#unless hasDisplayName}}<span class="hidden-visually">{{altText}}</span>{{/unless}}' +
 		'{{/if}}' +
 		'{{#if displayName}}<span> {{displayName}}</span>{{/if}}' +
-		'</a>';
+		'</button>';
 
 	/**
 	 * Construct a new FileActions instance
@@ -367,7 +367,7 @@
 				}
 
 				var $actionLink = this._makeActionLink(params, context);
-				context.$file.find('a.name>span.fileactions').append($actionLink);
+				context.$file.find('td.filename>span.fileactions').append($actionLink);
 				$actionLink.addClass('permanent');
 				return $actionLink;
 			}
@@ -580,15 +580,15 @@
 			};
 
 			actions = this._advancedFilter(actions, context);
-			var nameLinks;
 			if ($tr.data('renaming')) {
 				return;
 			}
 
 			// recreate fileactions container
-			nameLinks = parent.children('a.name');
-			nameLinks.find('.fileactions, .nametext .action').remove();
-			nameLinks.append('<span class="fileactions" />');
+			// span.fileactions sits beside a.name, not inside it - a button inside
+			// an anchor is no more valid than an anchor inside an anchor. [OC-WCAG-286]
+			parent.find('.fileactions, .nametext .action').remove();
+			parent.append('<span class="fileactions" />');
 			var defaultActions = this.getDefaultFileActions(
 				this.getCurrentMimeType(),
 				this.getCurrentType(),

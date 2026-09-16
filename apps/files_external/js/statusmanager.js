@@ -578,7 +578,8 @@ OCA.External.StatusManager.Utils = {
 			link.off('click.connectivity');
 			OCA.Files.App.fileList.fileActions.display(link.parent(), true, OCA.Files.App.fileList);
 		} else {
-			link.find('.fileactions, .nametext .action').remove();  // from files/js/fileactions (display)
+			// .fileactions sits beside a.name (link.parent() is td.filename), not inside it - OC-WCAG-286
+			link.parent().find('.fileactions, .nametext .action').remove();  // from files/js/fileactions (display)
 			link.off('click.connectivity');
 			link.on('click.connectivity', function (e) {
 				if (action && $.isFunction(action)) {

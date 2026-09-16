@@ -1,0 +1,11 @@
+Bugfix: Make the file row actions buttons instead of nested links
+
+The share and menu actions of every file row were anchors without a target,
+placed inside the link that opens the file. Screen readers announced three
+links per row where there is one file, and two of them led nowhere.
+
+Both actions are buttons now, and they sit beside the file link rather than
+inside it. Each row offers one link to its file and two buttons next to it,
+and the appearance is unchanged.
+
+WCAG 2.1 AA, SC 2.4.4

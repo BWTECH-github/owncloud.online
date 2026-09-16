@@ -12,9 +12,9 @@
 	var NS_DAV = OC.Files.Client.NS_DAV;
 
 	var TEMPLATE_LOCK_STATUS_ACTION =
-		'<a class="action action-lock-status permanent" title="{{message}}" href="#">' +
+		'<button type="button" class="action action-lock-status permanent" title="{{message}}">' +
 		'<span class="icon icon-lock-closed" />' +
-		'</a>';
+		'</button>';
 
 	/**
 	 * Parses an XML lock node
@@ -141,7 +141,7 @@
 					var isLocked = $file.data('activelocks');
 					if (isLocked && isLocked.length > 0) {
 						var $actionLink = $(self.renderLink());
-						context.$file.find('a.name>span.fileactions').append($actionLink);
+						context.$file.find('td.filename>span.fileactions').append($actionLink);
 						return $actionLink;
 					}
 					return '';

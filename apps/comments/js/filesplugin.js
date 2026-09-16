@@ -17,9 +17,9 @@
 	});
 
 	var TEMPLATE_COMMENTS_UNREAD =
-		'<a class="action action-comment permanent" title="{{countMessage}}" href="#">' +
+		'<button type="button" class="action action-comment permanent" title="{{countMessage}}">' +
 		'<img class="svg" src="{{iconUrl}}"/>' +
-		'</a>';
+		'</button>';
 
 	OCA.Comments = _.extend({}, OCA.Comments);
 	if (!OCA.Comments) {
@@ -96,7 +96,7 @@
 					var unreadComments = $file.data('comments-unread');
 					if (unreadComments) {
 						var $actionLink = $(self._formatCommentCount(unreadComments));
-						context.$file.find('a.name>span.fileactions').append($actionLink);
+						context.$file.find('td.filename>span.fileactions').append($actionLink);
 						return $actionLink;
 					}
 					return '';

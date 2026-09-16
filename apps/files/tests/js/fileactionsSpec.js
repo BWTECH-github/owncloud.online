@@ -99,6 +99,12 @@ describe('OCA.Files.FileActions tests', function() {
 			expect($tr.find('.action.action-testinline').length).toEqual(1);
 			expect($tr.find('.action.action-testinline').attr('data-action')).toEqual('Testinline');
 		});
+		it('renders inline file actions as buttons beside the name link, not inside it', function() {
+			// OC-WCAG-286: a button inside an anchor is no more valid than an
+			// anchor inside an anchor - the actions moved out of a.name
+			expect($tr.find('.action.action-testinline').prop('tagName')).toEqual('BUTTON');
+			expect($tr.find('a.name').find('a,button,input,select,textarea').length).toEqual(0);
+		});
 		it('does not render dropdown actions', function() {
 			delete(fileActions.Testdropdowndisplay);
 			expect($tr.find('.action.action-testdropdown').length).toEqual(0);

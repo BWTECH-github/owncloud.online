@@ -50,6 +50,26 @@ table td.filename .nametext {
 	display: none;
 }
 
+/* Dieselben mobilen Sichtbarkeits- und Abstandsregeln fuer die <button>-Variante
+   der Dateizeilen-Aktionen. Rein additiv, die Anker-Regel oben bleibt fuer die
+   uebrigen Listen-Templates unangetastet. display: inline wird zu
+   display: inline-block, damit padding am Symbol greift (vgl. files.css,
+   OC-WCAG-181..184). [OC-WCAG-286] */
+#fileList button.action {
+	-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=20)" !important;
+	filter: alpha(opacity=20) !important;
+	opacity: .2 !important;
+	display: inline-block !important;
+}
+/* some padding for better clickability */
+#fileList button.action img {
+	padding: 0 6px 0 12px;
+}
+/* hide text of the actions on mobile */
+#fileList button.action span {
+	display: none;
+}
+
 /* ellipsis on file names */
 .nametext {
 	width: 60%;

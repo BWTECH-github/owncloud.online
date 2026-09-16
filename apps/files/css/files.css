@@ -656,6 +656,10 @@ html.ie8 #fileList tr:hover td.filename > .selectCheckBox {
 /* File actions */
 .fileactions {
 	position: absolute;
+	/* .fileactions ist jetzt Geschwister von a.name statt dessen Kind (das
+	   Vorbild fuer die statische Position lag zuvor innerhalb von a.name);
+	   top: 0 haelt es auf Hoehe der Zeile statt darunter. [OC-WCAG-286] */
+	top: 0;
 	right: 0;
 }
 
@@ -700,6 +704,12 @@ html.ie8 #fileList tr:hover td.filename > .selectCheckBox {
 }
 
 a.action > img {
+	height: 16px;
+	width: 16px;
+	vertical-align: text-bottom;
+}
+
+button.action > img {
 	height: 16px;
 	width: 16px;
 	vertical-align: text-bottom;
@@ -868,6 +878,106 @@ html.ie8 .column-mtime .selectedActions {
 }
 
 #fileList tr:hover a.action.disabled:hover * {
+	cursor: default;
+}
+
+/* Die Aktionssymbole der Dateizeile sind <button>: sie oeffnen ein Menue oder
+   einen Dialog und navigieren nicht. Als Formularelemente sammeln sie die
+   generischen Regeln aus core/css/inputs.css ein (width: 130px, margin, padding,
+   Rahmen, Fuellung, 13px) sowie box-sizing: border-box aus dem UA-Stylesheet.
+   Ohne die folgenden Deklarationen waere jedes Symbol ein 130 px breiter weisser
+   Kasten. Gleiche Neutralisierung wie bei #expand (OC-WCAG-282) und dem
+   App-Menue-Umschalter (OC-WCAG-284). cursor fuer die Kindelemente, weil die
+   Reset-Regel in styles.css jedem <span> cursor: default gibt, das Symbol aber
+   das Klickziel ist. Die uebrigen Regeln unten spiegeln die a.action-Selektoren
+   dieser Datei fuer Buttons, additiv und unveraendert in der Aussage - auch dort,
+   wo das Original eine tote Regel oder einen Tippfehler enthaelt (siehe Abschnitt 9
+   der Arbeitsanweisung). Zwei Abweichungen sind notwendig, nicht kosmetisch: der
+   vertikale Innenabstand entfaellt (an einem Button-Kasten, anders als am
+   inline-<a>, wirkt er auf die Zeilenbox - vgl. OC-WCAG-181..184), und
+   display: inline wird zu display: inline-block, damit padding und
+   background-size am Symbol greifen. Das Popover-Menue (files.css:948, :952)
+   ist nicht betroffen, es verwendet weiterhin <a>. [OC-WCAG-286] */
+#fileList button.action {
+	width: auto;
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	background: none;
+	border: 0;
+	border-radius: 0;
+	font: inherit;
+	color: inherit;
+	box-sizing: content-box;
+}
+
+#fileList button.action * {
+	cursor: pointer;
+}
+
+#fileList button.action {
+	display: inline-block;
+	padding: 0 8px;
+	line-height: 50px;
+	filter: alpha(opacity=0);
+	opacity: 0;
+	display: none;
+}
+
+#fileList button.action.action-share {
+	padding: 0 14px;
+}
+
+#fileList button.action.action-menu {
+	padding: 0 0 0 14px;
+}
+
+.ie8 #fileList button.action img, #fileList tr:hover button.action, #fileList button.action.permanent, #fileList tr:focus button.action, #fileList button.action.permanent, #fileList tr:hover button.action.no-permission:hover, #fileList tr:focus button.action.no-permission:focus,
+/*#fileList .name:focus .action,*/
+/* also enforce the low opacity for disabled links that are hovered/focused */
+#fileList .name:focus button.action.disabled:focus,
+#fileList button.action.disabled img,
+#fileList tr:focus button.action.disabled:focus,
+#fileList tr:hover button.action.disabled:hover,
+.ie8 #fileList button.action.disabled:hover img {
+	filter: alpha(opacity=30);
+	opacity: 0.3;
+	display: inline-block;
+}
+
+#fileList .name:focus button.action:focus,
+#fileList tr button.action.disabled.action-download,
+#fileList tr:focus button.action.disabled.action-download:focus,
+#fileList tr:focus button.action:focus,
+#fileList tr:hover button.action.disabled.action-download:hover,
+#fileList tr:hover button.action:hover,
+.ie8 #fileList button.action:hover img {
+	filter: alpha(opacity=70);
+	opacity: 7;
+	display: inline-block;
+}
+
+#fileList tr button.action.disabled {
+	background: none;
+}
+
+#fileList button.action.action-favorite.permanent,
+#fileList button.action.permanent.shared-style {
+	filter: alpha(opacity=70) !important;
+	opacity: 0.7 !important;
+}
+
+#fileList button.action.action-menu.permanent {
+	filter: alpha(opacity=30) !important;
+	opacity: 0.3 !important;
+	display: inline-block !important;
+}
+
+#fileList tr button.action.action-download.disabled {
+	color: #000000;
+}
+
+#fileList tr:hover button.action.disabled:hover * {
 	cursor: default;
 }
 

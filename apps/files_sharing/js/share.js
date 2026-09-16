@@ -16,9 +16,9 @@
 	});
 
 	var TEMPLATE_PUBLIC_LINK_ACTION =
-		'<a class="action action-create-public-link permanent" title="{{tooltip}}">' +
+		'<button type="button" class="action action-create-public-link permanent" title="{{tooltip}}">' +
 		'	<span class="icon icon-public-create" />' +
-		'</a>';
+		'</button>';
 
 	if (!OCA.Sharing) {
 		OCA.Sharing = {};
@@ -234,7 +234,7 @@
 
 						if ((permissions & OC.PERMISSION_SHARE) !== 0) {
 							var $actionLink = $(self.renderPublicLinkAction());
-							context.$file.find('a.name>span.fileactions').append($actionLink);
+							context.$file.find('td.filename>span.fileactions').append($actionLink);
 							return $actionLink;
 						}
 

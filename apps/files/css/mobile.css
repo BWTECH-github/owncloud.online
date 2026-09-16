@@ -142,5 +142,34 @@ table #headerSize, #headerDate, #headerExpiration, .filesize, .modified, .date {
 	display: none !important;
 }
 
+/* Dieselben mobilen Sichtbarkeits- und Abstandsregeln fuer die <button>-Variante
+   der Dateizeilen-Aktionen. Rein additiv, die Anker-Regeln oben bleiben fuer die
+   uebrigen Listen-Templates (z.B. das Popover-Menue) unangetastet. [OC-WCAG-286] */
+#fileList button.action.action-menu img {
+	padding-left: 0;
+}
+
+#fileList button.action-share span {
+	display: none;
+}
+
+#fileList button.action.action-favorite {
+	-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=70)" !important;
+	opacity: .7 !important;
+}
+
+#fileList button.action.action-favorite {
+	-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=30)" !important;
+	opacity: .3 !important;
+}
+
+#fileList button.action.action-menu.permanent {
+	padding-right: 14px;
+}
+
+#fileList button.action.action-restore.permanent span:nth-child(2){
+	display: none !important;
+}
+
 }
 
