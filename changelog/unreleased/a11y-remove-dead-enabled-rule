@@ -1,0 +1,12 @@
+Bugfix: Remove a dead rule for enabled submit buttons
+
+A rule for submit buttons carrying the class "enabled" declared a green border
+on a green fill and was reported as a contrast violation. The class is never
+put on an input anywhere in the codebase, so no browser has ever applied the
+rule. It arrived years ago when the form styles moved between stylesheets and
+its user did not come along.
+
+Recolouring unreachable code would have closed the report without changing
+anything, so the rule was removed.
+
+WCAG 2.1 AA, SC 1.4.11
