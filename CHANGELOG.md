@@ -1,6 +1,7 @@
 # Table of Contents
 
 * [Changelog for ownCloud.online Unreleased](#changelog-for-owncloudonline-unreleased)
+* [Changelog for ownCloud.online 11.0.19](#changelog-for-owncloudonline-11019-2026-09-16)
 * [Changelog for ownCloud.online 11.0.14](#changelog-for-owncloudonline-11014-2026-08-20)
 * [Changelog for ownCloud.online 11.0.12](#changelog-for-owncloudonline-11012-2026-08-06)
 * [Changelog for ownCloud.online 11.0.11](#changelog-for-owncloudonline-11011-2026-07-23)
@@ -39,6 +40,28 @@
 # Changelog for ownCloud.online [Unreleased]
 
 This section collects changes for the next ownCloud.online release. No entries yet.
+
+# Changelog for ownCloud.online [11.0.19] (2026-09-16)
+
+The following sections list the changes in ownCloud.online 11.0.19 relevant to
+admins and users.
+
+[11.0.19]: https://github.com/BWTECH-github/owncloud.online
+
+## Summary
+
+* Bugfix - Upgrade bricht nicht mehr ab, wenn eingeschaltete Apps keinen Code haben: [#392e2a4](https://github.com/BWTECH-github/owncloud.online/commit/392e2a4)
+
+## Details
+
+* Bugfix - Upgrade bricht nicht mehr ab, wenn eingeschaltete Apps keinen Code haben
+
+   Migrierte Installationen (Datenbank von ownCloud 10, Code von owncloud.online)
+   bringen Apps wie `account` oder `systemtags_management` eingeschaltet mit, die
+   es hier nicht gibt. `occ upgrade` brach dann mit „Upgrade is not possible" ab
+   und ließ die Installation im Wartungsmodus zurück. Solche Apps werden jetzt
+   abgeschaltet und in einer Warnung genannt, das Upgrade läuft weiter. Apps mit
+   Code, die nicht zur Version passen, bleiben ein Abbruchgrund.
 
 # Changelog for ownCloud.online [11.0.14] (2026-08-20)
 
