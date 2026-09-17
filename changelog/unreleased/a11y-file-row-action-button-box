@@ -1,0 +1,14 @@
+Bugfix: Keep the file row action buttons in their own box
+
+The share and menu buttons of a file row were 16px tall while their icons sat
+18px lower, so the keyboard focus ring framed empty space above the icon. The
+action block also dropped below the file name in the file list and in both
+sharing lists, and covered the row underneath.
+
+The buttons now keep the height of the line they sit in, and the action block
+returns to the right edge of the name cell. In the incoming shares list, where
+the actions carry text, the row distributes name and actions one level up so
+that a long file name no longer runs under them. The focus ring frames the
+button a keyboard user is on.
+
+WCAG 2.1 AA, SC 2.4.7

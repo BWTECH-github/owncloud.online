@@ -900,6 +900,13 @@ html.ie8 .column-mtime .selectedActions {
    ist nicht betroffen, es verwendet weiterhin <a>. [OC-WCAG-286] */
 #fileList button.action {
 	width: auto;
+	/* tr .action (core/css/styles.css:961) setzt width und height auf 16px. Am
+	   frueheren Inline-Anker war beides wirkungslos, am inline-block-Button
+	   greift es: der Kasten wird 16px hoch, die Zeilenbox bleibt bei 50px
+	   (line-height unten), und das Symbol landet 18px unter seinem eigenen
+	   Kasten - der Fokusrahmen folgt dem Kasten. width ist hier schon
+	   beantwortet, height ebenso. [OP-270] */
+	height: auto;
 	min-width: 0;
 	margin: 0;
 	padding: 0;
@@ -1178,11 +1185,27 @@ html.ie8 #controls .button.new {
 	margin-right: 50px;
 }
 
-#app-content-files .fileactions,
-#app-content-sharingin .fileactions,
-#app-content-sharingout .fileactions {
-	position: inherit;
-	right: inherit;
+/* Nur im Freigabe-Eingang tragen die Aktionen Text (Annehmen, Ablehnen) und
+   werden rund 300px breit. Absolut positioniert liegen sie ueber dem
+   Dateinamen, sobald der lang genug ist. Die Zeile verteilt Name und
+   Aktionsblock deshalb eine Ebene hoeher - das ist die Entsprechung des
+   Flex-Verhaltens, das vor OP-214 innerhalb von a.name wirkte. Die uebrigen
+   Ansichten brauchen das nicht: dort ist der Aktionsblock schmal genug, und
+   die absolute Position deckt sich dort gemessen mit dem Stand vor OP-214.
+   [OP-270] */
+#app-content-sharingin #fileList td.filename {
+	display: flex;
+	align-items: center;
+}
+
+#app-content-sharingin #fileList td.filename a.name {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+#app-content-sharingin .fileactions {
+	flex: 0 0 auto;
+	position: static;
 }
 
 .fileActionsApplicationSelectMenu.bubble{
