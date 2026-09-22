@@ -171,7 +171,12 @@ class FilesPlugin extends ServerPlugin {
 		});
 		$this->server->on('beforeMove', [$this, 'checkMove']);
 		$this->server->on('validateTokens', [$this, 'validateTokens'], 0);
-		$this->server->on('method:PROPFIND', [$this, 'checkPropFind']);
+		// checkPropFind has to be done before other events such as httpPropFind
+		// so set its priority below the default of 100. At the default, Sabre's own
+		// httpPropFind - registered when the server is constructed, i.e. before this
+		// plugin - answers first and stops propagation, so the share-read check below
+		// never runs and an upload-only share stays listable.
+		$this->server->on('method:PROPFIND', [$this, 'checkPropFind'], 99);
 	}
 
 	/**

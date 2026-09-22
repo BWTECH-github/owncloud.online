@@ -695,4 +695,51 @@ class FilesPluginTest extends TestCase {
 		$this->plugin->checkPropFind($sabreRequest);
 		Filesystem::getMountManager()->removeMount('/user2/files/sharedfolder');
 	}
+
+	/**
+	 * checkPropFind() rejects a PROPFIND on a share without read permission -
+	 * that is what keeps an upload-only ("file drop") share from being listed.
+	 * It only gets the chance to do so when it runs BEFORE Sabre's own
+	 * httpPropFind handler, which sits at the default priority of 100 and stops
+	 * propagation once it has answered. Sabre registers that handler while the
+	 * server is constructed, i.e. before this plugin is initialized, so at an
+	 * equal priority it wins on insertion order and our check never executes.
+	 *
+	 * Pin the priority, because nothing else in this file would notice its loss.
+	 */
+	public function testCheckPropFindIsRegisteredBeforeSabresOwnHandler(): void {
+		$server = $this->getMockBuilder(Server::class)
+			->disableOriginalConstructor()
+			->getMock();
+		$server->xml = new Service();
+		$server->httpResponse = $this->createMock(ResponseInterface::class);
+		$server->httpRequest = $this->createMock(RequestInterface::class);
+
+		$registrations = [];
+		$server->method('on')->willReturnCallback(
+			static function ($event, $callback, $priority = 100) use (&$registrations): void {
+				$registrations[] = ['event' => $event, 'priority' => $priority];
+			}
+		);
+
+		$plugin = new FilesPlugin($this->tree, $this->config, $this->request);
+		$plugin->initialize($server);
+
+		$priorities = [];
+		foreach ($registrations as $registration) {
+			if ($registration['event'] === 'method:PROPFIND') {
+				$priorities[] = $registration['priority'];
+			}
+		}
+
+		self::assertNotEmpty($priorities, 'checkPropFind is not registered for method:PROPFIND at all');
+		foreach ($priorities as $priority) {
+			self::assertLessThan(
+				100,
+				$priority,
+				'checkPropFind must be registered below the default priority of 100, '
+					. 'otherwise an upload-only share stays listable over PROPFIND'
+			);
+		}
+	}
 }

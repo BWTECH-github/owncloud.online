@@ -1,0 +1,20 @@
+Bugfix: Run the PROPFIND share-read check before Sabre answers
+
+FilesPlugin registered checkPropFind() for method:PROPFIND without a priority,
+so it sat at Sabre's default of 100 - the same priority as Sabre's own
+httpPropFind handler. Sabre registers that handler while the server is
+constructed, i.e. before this plugin is initialized, so at an equal priority it
+wins on insertion order, answers the request and stops propagation. The check
+never ran.
+
+What the check does is reject a PROPFIND on a share whose permissions do not
+include read: that is what keeps an upload-only ("file drop") share from being
+listed by the person uploading into it. With the handler unreachable, the
+contents of such a share were listable over WebDAV.
+
+It is now registered at priority 99, as upstream does. A regression test pins
+the priority, because nothing else in the plugin's tests would notice its loss.
+
+Taken over from upstream owncloud/core.
+
+https://github.com/owncloud/core/pull/41676
