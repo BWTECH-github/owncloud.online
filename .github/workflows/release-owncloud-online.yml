@@ -263,12 +263,29 @@ jobs:
           cd build/release-artifacts
           sha256sum sbom-*.cdx.json >> SHA256SUMS.txt
 
+      # Nur wenn KEIN Release entsteht. Entsteht eines, tragen dessen Assets
+      # dieselben Dateien - der Artefaktspeicher waere eine zweite Kopie, die
+      # allein das Kontingent fuellt. Genau das ist am 22.09.2026 passiert:
+      # "Failed to CreateArtifact: Artifact storage quota has been hit", und
+      # weil der Schritt den Job beendete, wurden Attestierung UND Release
+      # uebersprungen. Der Tag v11.0.27 stand danach ohne Release da.
+      #
+      # Deshalb zusaetzlich continue-on-error: das Paket ist das Ergebnis, der
+      # Artefaktspeicher nur eine Bequemlichkeit. Ein volles Kontingent darf
+      # die Auslieferung nie wieder aufhalten.
+      #
+      # retention-days: 7 statt der voreingestellten 90 - fuer eine naechtlich
+      # gebaute Vorabversion reicht eine Woche, und ohne Grenze fuellt sich der
+      # Speicher zwangslaeufig wieder.
       - name: Upload release artifacts
+        if: ${{ !(startsWith(github.ref, 'refs/tags/') || env.CREATE_GITHUB_RELEASE == 'true') }}
+        continue-on-error: true
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: owncloud-online-${{ steps.version.outputs.release_version }}
           path: build/release-artifacts/*
           if-no-files-found: error
+          retention-days: 7
 
       # SEC-09: signed build-provenance attestation (Sigstore, keyless via OIDC).
       # Verifiable with: gh attestation verify <artifact> --repo BWTECH-github/owncloud.online
