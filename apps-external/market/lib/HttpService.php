@@ -114,22 +114,32 @@ class HttpService {
 	 * @throws AppManagerException
 	 */
 	public function downloadApp(string $url, string $path): void {
-		// File-system or bundled relative paths: copy from disk, no HTTP.
-		if (\str_starts_with($url, 'file://')) {
-			$source = \substr($url, 7);
-			$this->copyLocalFile($source, $path);
-			return;
-		}
-
-		if ($this->isLocalCatalog() && !\str_starts_with($url, 'http')) {
-			$source = $this->resolveCatalogRelativePath($url);
-			$this->copyLocalFile($source, $path);
-			return;
+		// Diese Adresse steht im Katalog, stammt also von der Gegenstelle. Ein
+		// lokaler Pfad wird deshalb nur im lokalen Katalogbetrieb angenommen
+		// und nur innerhalb des Katalogverzeichnisses: sonst koennte ein
+		// Marktplatz - oder wer seine Antwort beeinflusst - mit
+		// 'file:///var/www/owncloud/config/config.php' eine beliebige lokale
+		// Datei in den App-Installer schieben, statt ein Paket zu liefern.
+		if ($this->isLocalCatalog()) {
+			$source = \str_starts_with($url, 'file://') ? \substr($url, 7) : $url;
+			if (!self::isHttpUrl($url)) {
+				$this->copyLocalFile($this->resolveCatalogPath($source), $path);
+				return;
+			}
+		} elseif (!self::isHttpUrl($url)) {
+			throw new AppManagerException(
+				(string) $this->l10n->t('Refusing to fetch an app package from a non-HTTP location: %s', [$url])
+			);
 		}
 
 		$apiKey = $this->getApiKey();
 		// Größeres Timeout als für API-Abfragen: App-Pakete können mehrere MB groß sein.
 		$this->httpGet($url, ['sink' => $path, 'timeout' => 300], $apiKey);
+	}
+
+	private static function isHttpUrl(string $url): bool {
+		// Nicht str_starts_with($url, 'http'): das trifft auch 'httpfoo://'.
+		return \str_starts_with($url, 'https://') || \str_starts_with($url, 'http://');
 	}
 
 	/**
@@ -380,10 +390,31 @@ class HttpService {
 		}
 	}
 
-	private function resolveCatalogRelativePath(string $relative): string {
-		if (\str_starts_with($relative, '/')) {
-			return $relative;
+	/**
+	 * Einen Pfad aus dem Katalog auf eine Datei IM Katalogverzeichnis
+	 * abbilden. Alles andere wird abgewiesen - ein '..' oder ein absoluter
+	 * Pfad im Katalog ist kein Paket, sondern ein Versuch, an einer Datei zu
+	 * kommen, die dem Installer nicht zusteht.
+	 *
+	 * @throws AppManagerException
+	 */
+	private function resolveCatalogPath(string $source): string {
+		$root = \realpath($this->getLocalCatalogPath());
+		if ($root === false) {
+			throw new AppManagerException(
+				(string) $this->l10n->t('Local marketplace catalog directory %s does not exist.', [$this->getLocalCatalogPath()])
+			);
 		}
-		return $this->getLocalCatalogPath() . '/' . $relative;
+		$root = \rtrim($root, '/');
+
+		$candidate = \str_starts_with($source, '/') ? $source : $root . '/' . $source;
+		$resolved = \realpath($candidate);
+		if ($resolved === false || ($resolved !== $root && !\str_starts_with($resolved, $root . '/'))) {
+			throw new AppManagerException(
+				(string) $this->l10n->t('Local app archive %s is not inside the catalog directory.', [$source])
+			);
+		}
+
+		return $resolved;
 	}
 }

@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
+## [0.10.10] - 2026-09-22
+
+### Fixed
+
+- **Sicherheit:** `downloadApp()` nahm einen lokalen Pfad aus dem Katalog an,
+  ohne ihn einzugrenzen. Die Adresse eines App-Pakets steht in der
+  Katalogantwort, stammt also von der Gegenstelle:
+
+  - `file://...` wurde in **jedem** Betrieb angenommen, auch beim entfernten
+    Marktplatz. Ein Katalogeintrag mit
+    `file:///var/www/owncloud/config/config.php` liess damit eine beliebige
+    lokale Datei in den App-Installer laufen, statt ein Paket zu liefern.
+  - Im lokalen Katalogbetrieb wurde ein relativer Pfad ungeprueft an das
+    Katalogverzeichnis gehaengt (`../../..` fuehrte heraus), ein absoluter
+    Pfad sogar unveraendert uebernommen.
+
+  Ein lokaler Pfad wird jetzt nur noch im lokalen Katalogbetrieb angenommen
+  und muss nach dem Aufloesen **innerhalb** des Katalogverzeichnisses liegen;
+  sonst wird abgewiesen. Ausserhalb dieses Betriebs sind nur `http://` und
+  `https://` zulaessig - geprueft auf das vollstaendige Schema, nicht auf das
+  Praefix `http` (das trifft auch `httpfoo://`).
+
+- Die erwartete CSP-Liste in `PageControllerTest` fuehrte
+  `https://*.owncloud.online` nicht, das der Controller seit laengerem setzt.
+  Zwei Tests waren dadurch dauerhaft rot und haetten echte Fehlschlaege
+  verdeckt.
+
 ## [Unreleased]
 
 ### Added

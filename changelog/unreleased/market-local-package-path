@@ -1,0 +1,25 @@
+Security: Confine locally sourced app packages to the catalog directory
+
+The address of an app package comes from the catalog response, i.e. from the
+other end. HttpService::downloadApp() turned that into a local path without
+confining it:
+
+- `file://...` was accepted in every mode, including against the remote
+  marketplace. A catalog entry reading
+  `file:///var/www/owncloud/config/config.php` therefore fed an arbitrary local
+  file into the app installer instead of delivering a package.
+- In local-catalog mode a relative path was appended to the catalog directory
+  unchecked - `../../..` walked straight out of it - and an absolute path was
+  taken verbatim.
+
+A local path is now accepted only in local-catalog mode, and only if it resolves
+to a file inside the catalog directory; anything else is refused. Outside that
+mode only `http://` and `https://` are allowed, matched on the full scheme
+rather than the `http` prefix, which also matches `httpfoo://`.
+
+The bundled catalog points at an https address, so nothing in the field depends
+on a path outside the catalog directory.
+
+This is the copy of the app bundled in apps-external/. The same change went to
+BWTECH-github/market, where it carries the unit tests (72 tests; counter-checked
+by disabling the containment, which turns three of them red).
