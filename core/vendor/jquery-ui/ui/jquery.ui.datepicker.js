@@ -19,6 +19,37 @@ var PROP_NAME = "datepicker",
 	dpuuid = new Date().getTime(),
 	instActive;
 
+/*
+ * CVE-2021-41183 - owncloud.online.
+ *
+ * Der Kalender baut sein Markup als Zeichenkette zusammen und setzt die
+ * Textoptionen dabei roh ein: prevText, nextText, currentText, closeText,
+ * weekHeader, appendText, buttonText, die Namen der Tage und Monate, der
+ * Jahreszusatz und die Rueckgabe von calculateWeek. Wer eine dieser Optionen
+ * aus fremder Hand setzt - eine Erweiterung, eine Vorlage, eine Uebersetzung
+ * aus einer Datenbank - bringt damit Markup in die Seite.
+ *
+ * Behoben ist das ab jQuery UI 1.13.0, das dort dieselbe Entschaerfung
+ * einsetzt. Der Sprung auf 1.13 bricht Widgets, die hier in Gebrauch sind
+ * (button, buttonset, tabs), deshalb wird die Regel hier nachgezogen.
+ *
+ * Auch das einfache Anfuehrungszeichen wird entschaerft: die Vorlagen des
+ * Kalenders schreiben ihre Attribute mit einfachen Anfuehrungszeichen
+ * (title='...'), ein doppeltes allein wuerde daran vorbeilaufen.
+ */
+function datepicker_escapeText(text) {
+	if (text === null || text === undefined) {
+		return "";
+	}
+
+	return String(text)
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#x27;");
+}
+
 /* Date picker manager.
    Use the singleton instance of this class, $.datepicker, to interact with the date picker.
    Settings for (groups of) date pickers are maintained in an instance object,
@@ -194,7 +225,7 @@ $.extend(Datepicker.prototype, {
 			inst.append.remove();
 		}
 		if (appendText) {
-			inst.append = $("<span class='" + this._appendClass + "'>" + appendText + "</span>");
+			inst.append = $("<span class='" + this._appendClass + "'>" + datepicker_escapeText(appendText) + "</span>");
 			input[isRTL ? "before" : "after"](inst.append);
 		}
 
@@ -215,7 +246,7 @@ $.extend(Datepicker.prototype, {
 				$("<img/>").addClass(this._triggerClass).
 					attr({ src: buttonImage, alt: buttonText, title: buttonText }) :
 				$("<button type='button'></button>").addClass(this._triggerClass).
-					html(!buttonImage ? buttonText : $("<img/>").attr(
+					html(!buttonImage ? datepicker_escapeText(buttonText) : $("<img/>").attr(
 					{ src:buttonImage, alt:buttonText, title:buttonText })));
 			input[isRTL ? "before" : "after"](inst.trigger);
 			inst.trigger.click(function() {
@@ -1032,7 +1063,10 @@ $.extend(Datepicker.prototype, {
 			altFormat = this._get(inst, "altFormat") || this._get(inst, "dateFormat");
 			date = this._getDate(inst);
 			dateStr = this.formatDate(altFormat, date, this._getFormatConfig(inst));
-			$(altField).each(function() { $(this).val(dateStr); });
+			// CVE-2021-41182: $(x) deutet eine Zeichenkette mit "<" als
+			// Markup und baut sie. $(document).find(x) nimmt sie immer als
+			// Auswahlausdruck - genau die Korrektur aus jQuery UI 1.13.0.
+			$(document).find(altField).each(function() { $(this).val(dateStr); });
 		}
 	},
 
@@ -1635,6 +1669,7 @@ $.extend(Datepicker.prototype, {
 		prevText = (!navigationAsDateFormat ? prevText : this.formatDate(prevText,
 			this._daylightSavingAdjust(new Date(drawYear, drawMonth - stepMonths, 1)),
 			this._getFormatConfig(inst)));
+		prevText = datepicker_escapeText(prevText);
 
 		prev = (this._canAdjustMonth(inst, -1, drawYear, drawMonth) ?
 			"<a class='ui-datepicker-prev ui-corner-all' data-handler='prev' data-event='click'" +
@@ -1645,6 +1680,7 @@ $.extend(Datepicker.prototype, {
 		nextText = (!navigationAsDateFormat ? nextText : this.formatDate(nextText,
 			this._daylightSavingAdjust(new Date(drawYear, drawMonth + stepMonths, 1)),
 			this._getFormatConfig(inst)));
+		nextText = datepicker_escapeText(nextText);
 
 		next = (this._canAdjustMonth(inst, +1, drawYear, drawMonth) ?
 			"<a class='ui-datepicker-next ui-corner-all' data-handler='next' data-event='click'" +
@@ -1655,9 +1691,10 @@ $.extend(Datepicker.prototype, {
 		gotoDate = (this._get(inst, "gotoCurrent") && inst.currentDay ? currentDate : today);
 		currentText = (!navigationAsDateFormat ? currentText :
 			this.formatDate(currentText, gotoDate, this._getFormatConfig(inst)));
+		currentText = datepicker_escapeText(currentText);
 
 		controls = (!inst.inline ? "<button type='button' class='ui-datepicker-close ui-state-default ui-priority-primary ui-corner-all' data-handler='hide' data-event='click'>" +
-			this._get(inst, "closeText") + "</button>" : "");
+			datepicker_escapeText(this._get(inst, "closeText")) + "</button>" : "");
 
 		buttonPanel = (showButtonPanel) ? "<div class='ui-datepicker-buttonpane ui-widget-content'>" + (isRTL ? controls : "") +
 			(this._isInRange(inst, gotoDate) ? "<button type='button' class='ui-datepicker-current ui-state-default ui-priority-secondary ui-corner-all' data-handler='today' data-event='click'" +
@@ -1704,11 +1741,11 @@ $.extend(Datepicker.prototype, {
 					row > 0 || col > 0, monthNames, monthNamesShort) + // draw month headers
 					"</div><table class='ui-datepicker-calendar'><thead>" +
 					"<tr>";
-				thead = (showWeek ? "<th class='ui-datepicker-week-col'>" + this._get(inst, "weekHeader") + "</th>" : "");
+				thead = (showWeek ? "<th class='ui-datepicker-week-col'>" + datepicker_escapeText(this._get(inst, "weekHeader")) + "</th>" : "");
 				for (dow = 0; dow < 7; dow++) { // days of the week
 					day = (dow + firstDay) % 7;
 					thead += "<th" + ((dow + firstDay + 6) % 7 >= 5 ? " class='ui-datepicker-week-end'" : "") + ">" +
-						"<span title='" + dayNames[day] + "'>" + dayNamesMin[day] + "</span></th>";
+						"<span title='" + datepicker_escapeText(dayNames[day]) + "'>" + datepicker_escapeText(dayNamesMin[day]) + "</span></th>";
 				}
 				calender += thead + "</tr></thead><tbody>";
 				daysInMonth = this._getDaysInMonth(drawYear, drawMonth);
@@ -1723,7 +1760,7 @@ $.extend(Datepicker.prototype, {
 				for (dRow = 0; dRow < numRows; dRow++) { // create date picker rows
 					calender += "<tr>";
 					tbody = (!showWeek ? "" : "<td class='ui-datepicker-week-col'>" +
-						this._get(inst, "calculateWeek")(printDate) + "</td>");
+						datepicker_escapeText(this._get(inst, "calculateWeek")(printDate)) + "</td>");
 					for (dow = 0; dow < 7; dow++) { // create date picker days
 						daySettings = (beforeShowDay ?
 							beforeShowDay.apply((inst.input ? inst.input[0] : null), [printDate]) : [true, ""]);
@@ -1783,7 +1820,7 @@ $.extend(Datepicker.prototype, {
 
 		// month selection
 		if (secondary || !changeMonth) {
-			monthHtml += "<span class='ui-datepicker-month'>" + monthNames[drawMonth] + "</span>";
+			monthHtml += "<span class='ui-datepicker-month'>" + datepicker_escapeText(monthNames[drawMonth]) + "</span>";
 		} else {
 			inMinYear = (minDate && minDate.getFullYear() === drawYear);
 			inMaxYear = (maxDate && maxDate.getFullYear() === drawYear);
@@ -1792,7 +1829,7 @@ $.extend(Datepicker.prototype, {
 				if ((!inMinYear || month >= minDate.getMonth()) && (!inMaxYear || month <= maxDate.getMonth())) {
 					monthHtml += "<option value='" + month + "'" +
 						(month === drawMonth ? " selected='selected'" : "") +
-						">" + monthNamesShort[month] + "</option>";
+						">" + datepicker_escapeText(monthNamesShort[month]) + "</option>";
 				}
 			}
 			monthHtml += "</select>";
@@ -1834,7 +1871,7 @@ $.extend(Datepicker.prototype, {
 			}
 		}
 
-		html += this._get(inst, "yearSuffix");
+		html += datepicker_escapeText(this._get(inst, "yearSuffix"));
 		if (showMonthAfterYear) {
 			html += (secondary || !(changeMonth && changeYear) ? "&#xa0;" : "") + monthHtml;
 		}

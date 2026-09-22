@@ -123,7 +123,10 @@ $.fn.position = function( options ) {
 	options = $.extend( {}, options );
 
 	var atOffset, targetWidth, targetHeight, targetOffset, basePosition, dimensions,
-		target = $( options.of ),
+		// CVE-2021-41184: $(x) deutet eine Zeichenkette mit "<" als Markup
+		// und baut sie. Eine Zeichenkette ist hier aber immer als
+		// Auswahlausdruck gemeint - genau die Korrektur aus jQuery UI 1.13.0.
+		target = typeof options.of === "string" ? $( document ).find( options.of ) : $( options.of ),
 		within = $.position.getWithinInfo( options.within ),
 		scrollInfo = $.position.getScrollInfo( within ),
 		collision = ( options.collision || "flip" ).split( " " ),

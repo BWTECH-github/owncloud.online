@@ -224,6 +224,7 @@ test-js-debug: $(nodejs_deps)
 .PHONY: test-js-browser
 test-js-browser:
 	node tests/js/select2_xss_test.js
+	node tests/js/jquery_ui_xss_test.js
 
 .PHONY: test-acceptance-api
 test-acceptance-api: $(acceptance_test_deps)

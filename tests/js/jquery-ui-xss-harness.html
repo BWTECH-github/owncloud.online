@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<!--
+  @copyright Copyright (c) 2026, BW-Tech GmbH
+  @license AGPL-3.0
+
+  Pruefstand fuer CVE-2021-41182, -41183 und -41184 in jQuery UI 1.10.0.
+  Wird von tests/js/jquery_ui_xss_test.js in einem echten Chromium geladen.
+
+  Die zu pruefende Datei kommt ueber ?lib=... - ausgeliefert wird
+  ui/minified/jquery-ui.custom.min.js (siehe core/js/core.json), geprueft
+  werden beide Fassungen.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>jQuery UI XSS harness</title>
+<script src="/core/vendor/jquery/dist/jquery.min.js"></script>
+<script>
+	window.__xss = 0;
+	var params = new URLSearchParams(window.location.search);
+	var lib = params.get('lib') || 'ui/minified/jquery-ui.custom.min.js';
+	document.write('<scr' + 'ipt src="/core/vendor/jquery-ui/' + lib + '"></scr' + 'ipt>');
+</script>
+<style>
+	#anchor { position: absolute; left: 300px; top: 200px; width: 40px; height: 20px; }
+	#floater { position: absolute; width: 10px; height: 10px; }
+</style>
+</head>
+<body>
+
+<input type="text" id="hostile-datepicker">
+<input type="text" id="alt-target">
+<input type="text" id="plain-datepicker">
+<div id="anchor"></div>
+<div id="floater"></div>
+
+<script>
+var HOSTILE = '<img src=x onerror="window.__xss=1">';
+
+// --- CVE-2021-41183: die Textoptionen des Kalenders -----------------------
+// Jede dieser Optionen landete roh im zusammengebauten Markup.
+window.__openHostileDatepicker = function () {
+	$('#hostile-datepicker').datepicker({
+		showButtonPanel: true,
+		showWeek: true,
+		changeMonth: true,
+		changeYear: true,
+		prevText: HOSTILE,
+		nextText: HOSTILE,
+		currentText: HOSTILE,
+		closeText: HOSTILE,
+		weekHeader: HOSTILE,
+		yearSuffix: HOSTILE,
+		appendText: HOSTILE,
+		monthNames: Array(12).fill(HOSTILE),
+		monthNamesShort: Array(12).fill(HOSTILE),
+		dayNames: Array(7).fill(HOSTILE),
+		dayNamesMin: Array(7).fill(HOSTILE),
+		dayNamesShort: Array(7).fill(HOSTILE),
+		calculateWeek: function () { return HOSTILE; }
+	});
+	$('#hostile-datepicker').datepicker('show');
+};
+
+// --- CVE-2021-41182: altField --------------------------------------------
+window.__hostileAltField = function () {
+	$('#plain-datepicker').datepicker({
+		dateFormat: 'dd-mm-yy',
+		altField: HOSTILE,
+		altFormat: 'dd-mm-yy'
+	});
+	try {
+		$('#plain-datepicker').datepicker('setDate', new Date(2026, 8, 22));
+	} catch (e) {
+		// Ein altField, das kein Auswahlausdruck ist, wirft jetzt - genau wie
+		// in jQuery UI 1.13. Das ist die gewollte Antwort: lautstark nichts
+		// tun, statt still ein Element zu bauen.
+		window.__altFieldThrew = String(e.message || e);
+	}
+};
+
+// --- CVE-2021-41184: position({of: ...}) ---------------------------------
+window.__hostilePosition = function () {
+	try {
+		$('#floater').position({ my: 'left top', at: 'left top', of: HOSTILE });
+	} catch (e) {
+		// Eine Zeichenkette, die nichts trifft, darf werfen - Hauptsache, sie
+		// wird nicht als Markup gebaut.
+		window.__positionThrew = String(e.message || e);
+	}
+};
+
+// --- Regression: der Kalender muss weiterhin funktionieren ---------------
+window.__plainDatepicker = function () {
+	var out = {};
+	var $input = $('<input type="text" id="regression-datepicker">').appendTo('body');
+
+	$input.datepicker({
+		dateFormat: 'dd-mm-yy',
+		showButtonPanel: true,
+		showWeek: true,
+		changeMonth: true,
+		changeYear: true,
+		monthNames: ['Januar', 'Februar', 'Maerz', 'April', 'Mai', 'Juni',
+			'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
+		monthNamesShort: ['Jan', 'Feb', 'Mrz', 'Apr', 'Mai', 'Jun',
+			'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'],
+		dayNames: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'],
+		dayNamesMin: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'],
+		prevText: 'Zurueck',
+		nextText: 'Weiter',
+		weekHeader: 'KW'
+	});
+	$input.datepicker('setDate', new Date(2026, 8, 22));
+	$input.datepicker('show');
+
+	var $div = $('#ui-datepicker-div');
+	out.value = $input.val();
+	out.monthOptions = $div.find('.ui-datepicker-month option').length;
+	out.firstMonthOption = $div.find('.ui-datepicker-month option').first().text();
+	out.dayHeaders = $div.find('thead th span').map(function () { return $(this).text(); }).get().join('');
+	out.dayHeaderTitle = $div.find('thead th span').first().attr('title');
+	out.weekHeader = $div.find('.ui-datepicker-week-col').first().text();
+	out.prevTitle = $div.find('.ui-datepicker-prev').attr('title');
+	out.days = $div.find('td a').length;
+
+	$input.datepicker('hide').datepicker('destroy');
+	$input.remove();
+
+	return out;
+};
+
+// --- Regression: position({of: <selector>}) muss weiterhin positionieren --
+window.__plainPosition = function () {
+	$('#floater').position({ my: 'left top', at: 'left top', of: '#anchor' });
+	var f = $('#floater').offset(), a = $('#anchor').offset();
+
+	return { dx: Math.round(f.left - a.left), dy: Math.round(f.top - a.top) };
+};
+
+// --- Funktionsprobe der uebrigen Widgets ---------------------------------
+// jquery-ui.custom.min.js wird auf jeder Seite ausgeliefert und wurde fuer
+// diesen Fix neu erzeugt. Hier wird nachgewiesen, dass die Widgets, die im
+// Produkt tatsaechlich in Gebrauch sind, weiterhin arbeiten.
+window.__widgetSmoke = function () {
+	var out = {};
+
+	// tabs (8 Aufrufstellen)
+	var $tabs = $('<div id="smoke-tabs"><ul>' +
+		'<li><a href="#smoke-t1">Eins</a></li>' +
+		'<li><a href="#smoke-t2">Zwei</a></li></ul>' +
+		'<div id="smoke-t1">A</div><div id="smoke-t2">B</div></div>').appendTo('body');
+	$tabs.tabs();
+	out.tabsActive = $tabs.tabs('option', 'active');
+	$tabs.tabs('option', 'active', 1);
+	out.tabsSwitched = $tabs.tabs('option', 'active');
+	out.tabsPanelVisible = $('#smoke-t2').is(':visible');
+	$tabs.tabs('destroy');
+	$tabs.remove();
+
+	// button / buttonset (4 + 2 Aufrufstellen)
+	var $btnWrap = $('<div id="smoke-btns">' +
+		'<input type="radio" id="smoke-r1" name="smoke-r"><label for="smoke-r1">A</label>' +
+		'<input type="radio" id="smoke-r2" name="smoke-r"><label for="smoke-r2">B</label>' +
+		'</div>').appendTo('body');
+	var $btn = $('<button id="smoke-btn">Knopf</button>').appendTo('body');
+	$btn.button();
+	out.buttonClass = $btn.hasClass('ui-button');
+	$btnWrap.buttonset();
+	out.buttonsetClass = $btnWrap.hasClass('ui-buttonset');
+	$btn.button('destroy').remove();
+	$btnWrap.buttonset('destroy').remove();
+
+	// progressbar (2 Aufrufstellen)
+	var $bar = $('<div id="smoke-bar"></div>').appendTo('body');
+	$bar.progressbar({ value: 42 });
+	out.progressValue = $bar.progressbar('value');
+	out.progressWidth = $bar.find('.ui-progressbar-value').length;
+	$bar.progressbar('destroy').remove();
+
+	// autocomplete (4 Aufrufstellen) - der Vorschlag muss Text bleiben
+	var $ac = $('<input type="text" id="smoke-ac">').appendTo('body');
+	$ac.autocomplete({ source: ['<b>roh</b>', 'zweitens'], minLength: 0 });
+	$ac.autocomplete('search', '');
+	out.acItems = $('.ui-autocomplete li').length;
+	out.acFirstText = $('.ui-autocomplete li').first().text();
+	out.acBoldTags = $('.ui-autocomplete li b').length;
+	$ac.autocomplete('destroy').remove();
+
+	// draggable / droppable (2 + 7 Aufrufstellen)
+	var $drag = $('<div id="smoke-drag" style="width:10px;height:10px"></div>').appendTo('body');
+	var $drop = $('<div id="smoke-drop" style="width:10px;height:10px"></div>').appendTo('body');
+	$drag.draggable();
+	$drop.droppable();
+	out.draggableClass = $drag.hasClass('ui-draggable');
+	out.droppableClass = $drop.hasClass('ui-droppable');
+	$drag.draggable('destroy').remove();
+	$drop.droppable('destroy').remove();
+
+	out.version = $.ui.version;
+
+	return out;
+};
+
+window.__ready = true;
+</script>
+</body>
+</html>
