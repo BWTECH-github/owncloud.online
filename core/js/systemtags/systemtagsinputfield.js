@@ -339,29 +339,36 @@
 				this._allowActions = false;
 			}
 
-			return this._resultTemplate(_.extend({
+			// Als jQuery-Objekt, nicht als Zeichenkette: select2 setzt den
+			// Rueckgabewert eines eigenen Formatierers roh in die Liste ein
+			// (CVE-2016-10744), und ein Objekt ist die Form, die Select2 4.x
+			// als einzige noch mit Markup annimmt. Der Schlagwortname selbst
+			// steht in der Vorlage als {{name}} bzw. kommt ueber tagMarkup aus
+			// einem per DOM gebauten Element - beides entschaerft.
+			return $(this._resultTemplate(_.extend({
 				renameTooltip: t('core', 'Rename'),
 				deleteTooltip: t('core', 'Delete'),
 				allowActions: this._allowActions,
 				tagMarkup: this._isAdmin ? OC.SystemTags.getDescriptiveTag(data)[0].innerHTML : null,
 				isAdmin: this._isAdmin
-			}, data));
+			}, data)).trim());
 		},
 
 		/**
 		 * Formats a single selection item
 		 *
 		 * @param {Object} data data to format
-		 * @return {string} HTML markup
+		 * @return {jQuery} rendered element
 		 */
 		_formatSelection: function(data) {
 			if (!this._selectionTemplate) {
 				this._selectionTemplate = Handlebars.compile(SELECTION_TEMPLATE);
 			}
-			return this._selectionTemplate(_.extend({
+			// Siehe _formatDropDownResult: jQuery-Objekt statt Zeichenkette.
+			return $(this._selectionTemplate(_.extend({
 				tagMarkup: this._isAdmin ? OC.SystemTags.getDescriptiveTag(data)[0].innerHTML : null,
 				isAdmin: this._isAdmin
-			}, data));
+			}, data)).trim());
 		},
 
 		/**

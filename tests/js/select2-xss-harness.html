@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<!--
+  @copyright Copyright (c) 2026, BW-Tech GmbH
+  @license AGPL-3.0
+
+  Pruefstand fuer CVE-2016-10744. Wird von tests/js/select2_xss_test.js in
+  einem echten Chromium geladen - die Frage ist nicht, was der Quelltext
+  verspricht, sondern was im DOM ankommt.
+
+  Die zu pruefende select2-Datei kommt ueber ?lib=select2.js oder
+  ?lib=select2.min.js: die ausgelieferte Seite verwendet die minifizierte
+  Fassung, gepruefte werden beide.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>select2 XSS harness</title>
+<script src="/core/vendor/jquery/dist/jquery.min.js"></script>
+<script>
+	window.__xss = 0;
+	var params = new URLSearchParams(window.location.search);
+	var lib = params.get('lib') || 'select2.min.js';
+	document.write('<scr' + 'ipt src="/core/vendor/select2/' + lib + '"></scr' + 'ipt>');
+</script>
+</head>
+<body>
+<input type="hidden" id="dom-formatter">
+<input type="hidden" id="string-formatter">
+<input type="hidden" id="default-formatter">
+<input type="hidden" id="markup-object-formatter">
+
+<script>
+// Der Name, den ein Angreifer setzen wuerde: ein Bild, dessen Ladefehler
+// sicher eintritt und dann Code ausfuehrt.
+var HOSTILE = '<img src=x onerror="window.__xss=1">';
+
+function data(name) {
+	return [{ id: '1', text: name, name: name }];
+}
+
+function queryFor(name) {
+	return function (query) { query.callback({ results: data(name) }); };
+}
+
+// 1. Wie unsere Aufrufstellen es tun: ueber das DOM gebaut, Name als Text.
+$('#dom-formatter').select2({
+	query: queryFor(HOSTILE),
+	id: function (t) { return t.id; },
+	formatResult: function (t) { return $('<span class="built"></span>').text(t.name); },
+	formatSelection: function (t) { return $('<span class="built"></span>').text(t.name); }
+});
+
+// 2. Wie eine fremde Erweiterung es tun koennte: rohe Zeichenkette zurueck.
+//    Genau das ist CVE-2016-10744. escapeMarkup wird hier ausdruecklich
+//    stillgelegt - die Schwachstelle liegt nicht dort, und das soll der
+//    Pruefstand zeigen.
+$('#string-formatter').select2({
+	query: queryFor(HOSTILE),
+	id: function (t) { return t.id; },
+	formatResult: function (t) { return t.name; },
+	formatSelection: function (t) { return t.name; },
+	escapeMarkup: function (m) { return m; }
+});
+
+// 3. Ohne eigenen Formatierer: die eingebaute Hervorhebung muss Markup
+//    bleiben duerfen, sonst waere die Suche entstellt.
+$('#default-formatter').select2({
+	query: queryFor('harmless entry'),
+	id: function (t) { return t.id; }
+});
+
+// 4. Ein eigener Formatierer, der bewusst Markup traegt - als Objekt.
+//    Muss unveraendert durchgehen, sonst waeren unsere Listen kaputt.
+$('#markup-object-formatter').select2({
+	query: queryFor('plain'),
+	id: function (t) { return t.id; },
+	formatResult: function (t) {
+		return $('<span></span>').append($('<b class="deliberate"></b>').text(t.name));
+	},
+	formatSelection: function (t) {
+		return $('<span></span>').append($('<b class="deliberate"></b>').text(t.name));
+	}
+});
+
+window.__openAll = function () {
+	['dom-formatter', 'string-formatter', 'default-formatter', 'markup-object-formatter']
+		.forEach(function (id) { $('#' + id).select2('open'); });
+};
+
+window.__select = function (id) {
+	$('#' + id).select2('data', data(HOSTILE)[0]);
+};
+
+// --- Funktionsprobe -------------------------------------------------------
+// select2.min.js wird auf jeder angemeldeten Seite ausgeliefert. Die Datei
+// wurde fuer diesen Fix neu erzeugt, also wird hier nachgewiesen, dass sie
+// sich auch sonst wie zuvor verhaelt - nicht nur im Sicherheitsfall.
+window.__apiSmoke = function () {
+	var out = {};
+	var $multi = $('<input type="hidden" id="api-multi">').appendTo('body');
+	var entries = [
+		{ id: 'a', text: 'Alpha', name: 'Alpha' },
+		{ id: 'b', text: 'Beta', name: 'Beta' },
+		{ id: 'c', text: 'Gamma', name: 'Gamma' }
+	];
+
+	$multi.select2({
+		multiple: true,
+		query: function (query) {
+			query.callback({
+				results: entries.filter(function (e) {
+					return e.text.toLowerCase().indexOf(query.term.toLowerCase()) !== -1;
+				})
+			});
+		},
+		id: function (e) { return e.id; }
+	});
+
+	// Werte setzen und zurueckbekommen.
+	$multi.select2('data', [entries[0], entries[2]]);
+	out.valRoundTrip = $multi.select2('val').join(',');
+	out.dataRoundTrip = $multi.select2('data').map(function (e) { return e.text; }).join(',');
+
+	// Container und Dropdown gibt es.
+	out.hasContainer = $multi.select2('container').length;
+	out.hasDropdown = $multi.select2('dropdown').length;
+
+	// Suche filtert.
+	$multi.select2('open');
+	$('#api-multi').select2('search', 'bet');
+	out.searchResults = $('#select2-drop .select2-result-label').length;
+
+	// Mehrfachauswahl zeigt ihre Marken.
+	out.choices = $multi.select2('container').find('.select2-search-choice').length;
+
+	// Nach destroy() muss genau DIESER Container aus dem Dokument
+	// verschwunden sein. (select2('container') gibt danach das
+	// Ursprungselement zurueck, nicht eine leere Menge - deshalb wird der
+	// Knoten vorher festgehalten und hinterher im Dokument gesucht.)
+	var container = $multi.select2('container').get(0);
+	$multi.select2('destroy');
+	out.destroyed = document.body.contains(container) ? 'no' : 'yes';
+	$multi.remove();
+
+	return out;
+};
+
+window.__ready = true;
+</script>
+</body>
+</html>

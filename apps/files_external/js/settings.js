@@ -194,16 +194,28 @@ function addSelect2 ($elements, userListLimit) {
 				$div.html('<img width="32" height="32" src="'+url+'" alt="">');
 				$result.append('<span class="hidden-visually"> '+escapeHTML(t('files_external', '(group)'))+'</span>');
 			}
-			return $result.get(0).outerHTML;
+			// Das jQuery-Objekt selbst, nicht sein outerHTML: select2 setzt den
+			// Rueckgabewert eines eigenen Formatierers roh in die Liste ein
+			// (CVE-2016-10744). Ueber das DOM gebaut ist er durch Konstruktion
+			// sicher - und es ist die Form, die Select2 4.x als einzige noch
+			// mit Markup annimmt.
+			return $result;
 		},
 		formatSelection: function (element) {
-			if (element.type === 'group') {
-				return '<span title="'+escapeHTML(element.name)+'" class="group">'+escapeHTML(element.displayname+' '+t('files_external', '(group)'))+'</span>';
-			} else {
-				return '<span title="'+escapeHTML(element.name)+'" class="user">'+escapeHTML(element.displayname)+'</span>';
-			}
-		},
-		escapeMarkup: function (m) { return m; } // we escape the markup in formatResult and formatSelection
+			// Name und Anzeigename gehen als Text in die Elemente, nicht in
+			// eine zusammengesetzte Zeichenkette. Damit entfaellt auch das
+			// eigene escapeMarkup, das hier nur die Doppelentschaerfung
+			// verhindert hat.
+			var isGroup = element.type === 'group',
+				label = isGroup
+					? element.displayname + ' ' + t('files_external', '(group)')
+					: element.displayname;
+
+			return $('<span></span>')
+				.attr('title', element.name)
+				.addClass(isGroup ? 'group' : 'user')
+				.text(label);
+		}
 	}).on('select2-loaded', function() {
 		$.each($('.avatardiv'), function(i, div) {
 			var $div = $(div);

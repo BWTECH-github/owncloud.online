@@ -385,6 +385,54 @@ the specific language governing permissions and limitations under the Apache Lic
     }
 
     /**
+     * CVE-2016-10744 - owncloud.online.
+     *
+     * Select2 setzt den Rueckgabewert von formatResult und formatSelection roh
+     * in die Auswahlliste ein: label.html() beim Ergebnis, container.append()
+     * und .html() bei der Auswahl. Das geschieht unabhaengig von escapeMarkup -
+     * diese Option greift nur dort, wo die Bibliothek selbst formatiert (die
+     * eingebaute Hervorhebung, formatLoadMore). Sobald eine Aufrufstelle einen
+     * eigenen Formatierer mitbringt, entscheidet allein dessen Rueckgabewert,
+     * ob fremde Zeichen als Markup ankommen.
+     *
+     * Behoben ist das erst ab 4.0.6, und der Sprung auf 4.x bricht die API an
+     * mehreren Stellen. Hier gilt deshalb dieselbe Regel wie dort, gesetzt an
+     * der einzigen Stelle, durch die alle Optionen laufen:
+     *
+     *   - Ein DOM-Knoten oder jQuery-Objekt geht unveraendert durch. Wer sein
+     *     Markup ueber das DOM baut, hat die Fremddaten bereits als Text
+     *     gesetzt; das ist durch Konstruktion sicher und in 4.x die einzige
+     *     Form, die noch Markup tragen darf.
+     *   - Eine Zeichenkette wird entschaerft.
+     *
+     * Die eingebauten Formatierer sind ausgenommen: sie escapen bereits selbst
+     * ueber escapeMarkup und bauen ihre Hervorhebung als Markup darum herum.
+     */
+    function guardFormatter(formatter, builtin) {
+        var guarded;
+
+        if (typeof formatter !== "function" || formatter === builtin || formatter.select2Guarded) {
+            return formatter;
+        }
+
+        guarded = function () {
+            var formatted = formatter.apply(this, arguments);
+
+            if (formatted === undefined || formatted === null) {
+                return formatted;
+            }
+            if (formatted instanceof $ || formatted.nodeType === 1 || formatted.nodeType === 11) {
+                return formatted;
+            }
+
+            return defaultEscapeMarkup(String(formatted));
+        };
+        guarded.select2Guarded = true;
+
+        return guarded;
+    }
+
+    /**
      * Produces an ajax-based query function
      *
      * @param options object containing configuration parameters
@@ -1146,6 +1194,13 @@ the specific language governing permissions and limitations under the Apache Lic
                     populate(results, container, 0);
                 }
             }, $.fn.select2.defaults, opts);
+
+            // CVE-2016-10744: hier laufen alle Optionen zusammen - die des
+            // Aufrufers und die eingebauten. Danach steht fest, welcher
+            // Formatierer gilt, und nur hier laesst sich das einmal fuer jede
+            // Aufrufstelle absichern.
+            opts.formatResult = guardFormatter(opts.formatResult, $.fn.select2.defaults.formatResult);
+            opts.formatSelection = guardFormatter(opts.formatSelection, $.fn.select2.defaults.formatSelection);
 
             if (typeof(opts.id) !== "function") {
                 idKey = opts.id;

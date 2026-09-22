@@ -104,17 +104,18 @@
 						}
 					},
 
+					// Beide Formatierer geben das jQuery-Objekt zurueck, das
+					// getDescriptiveTag() ueber das DOM baut - der Schlagwortname
+					// steht darin als Text. Frueher ging die Auswahl als
+					// outerHTML-Zeichenkette hinaus und wurde von select2 roh
+					// eingesetzt (CVE-2016-10744). Ein Objekt ist ausserdem die
+					// Form, die Select2 4.x als einzige noch mit Markup annimmt.
 					formatResult: function (tag) {
 						return OC.SystemTags.getDescriptiveTag(tag);
 					},
 
 					formatSelection: function (tag) {
-						return OC.SystemTags.getDescriptiveTag(tag)[0].outerHTML;
-					},
-
-					escapeMarkup: function (m) {
-						// prevent double markup escape
-						return m;
+						return OC.SystemTags.getDescriptiveTag(tag);
 					}
 				});
 				this.$filterField.on('change', _.bind(this._onTagsChanged, this));

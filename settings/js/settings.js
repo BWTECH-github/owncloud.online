@@ -82,15 +82,16 @@ OC.Settings = _.extend(OC.Settings, {
 					});
 					callback(selection);
 				},
+				// Der Anzeigename geht als Text in ein Element, nicht als
+				// Zeichenkette an select2 - das setzte den Rueckgabewert roh
+				// ein (CVE-2016-10744). Damit entfaellt auch das eigene
+				// escapeMarkup: es hat hier nur die Doppelentschaerfung des
+				// bereits escapeHTML-behandelten Namens verhindert.
 				formatResult: function (element) {
-					return escapeHTML(element.displayname);
+					return $('<span></span>').text(element.displayname);
 				},
 				formatSelection: function (element) {
-					return escapeHTML(element.displayname);
-				},
-				escapeMarkup: function(m) {
-					// prevent double markup escape
-					return m;
+					return $('<span></span>').text(element.displayname);
 				}
 			}, extraOptions || {}));
 		}

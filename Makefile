@@ -217,6 +217,14 @@ test-js: $(nodejs_deps)
 test-js-debug: $(nodejs_deps)
 	NODE_PATH='$(NODE_PREFIX)/node_modules' $(KARMA) start tests/karma.config.js
 
+# Laeuft im echten Chromium und braucht kein karma: die Frage ist, was im DOM
+# ankommt, nicht was der Quelltext verspricht. Haelt CVE-2016-10744 in beiden
+# ausgelieferten select2-Fassungen geschlossen und prueft zugleich, dass die
+# Bibliothek sonst unveraendert arbeitet.
+.PHONY: test-js-browser
+test-js-browser:
+	node tests/js/select2_xss_test.js
+
 .PHONY: test-acceptance-api
 test-acceptance-api: $(acceptance_test_deps)
 	./tests/acceptance/run.sh --type api
@@ -248,7 +256,7 @@ test-php-phpstan: vendor-bin/phpstan/vendor
 	$(PHPSTAN) analyse --memory-limit=2G --configuration=./phpstan.neon apps core settings lib/private lib/public ocs ocs-provider
 
 .PHONY: test
-test: test-php-style test-php-unit test-js test-acceptance-api test-acceptance-cli test-acceptance-webui
+test: test-php-style test-php-unit test-js test-js-browser test-acceptance-api test-acceptance-cli test-acceptance-webui
 
 .PHONY: clean-test-acceptance
 clean-test-acceptance:
