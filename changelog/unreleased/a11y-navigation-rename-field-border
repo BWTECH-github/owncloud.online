@@ -1,0 +1,10 @@
+Bugfix: Raise the border contrast of the navigation rename field
+
+The field for renaming an entry in the app navigation was bounded by a light
+grey border at 1.73:1 against its surroundings. As the field and the
+navigation behind it are both white, that border was the only thing marking
+the control, and it was barely visible.
+
+The border now reaches 4.05:1, the same value the other input fields use.
+
+WCAG 2.1 AA, SC 1.4.11

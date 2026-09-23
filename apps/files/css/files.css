@@ -574,7 +574,13 @@ html.ie8 #fileList tr:hover td.filename > .selectCheckBox,
 html:not(.ie8) #fileList tr td.filename > .selectCheckBox:checked + label:before,
 html:not(.ie8) #fileList tr.selected td.filename > .selectCheckBox + label:before,
 html:not(.ie8) #fileList tr:focus td.filename > .selectCheckBox + label:before,
-html:not(.ie8) #fileList tr:hover td.filename > .selectCheckBox + label:before {
+html:not(.ie8) #fileList tr:hover td.filename > .selectCheckBox + label:before,
+/* Die Checkbox selbst liegt per inputs.css ausserhalb des Bildschirms
+   (left:-10000px); ohne diese Zeile bleibt ihr sichtbarer Stellvertreter
+   (label:before) bei reiner Tastatur-Fokussierung opacity:0, obwohl
+   inputs.css:161 dafuer bereits einen Fokusring zeichnet - der Ring war
+   unsichtbar, nicht fehlend. [WCAG 2.4.7] */
+html:not(.ie8) #fileList tr td.filename > .selectCheckBox:focus-visible + label:before {
 	opacity: 1;
 }
 
@@ -836,6 +842,12 @@ html.ie8 .column-mtime .selectedActions {
 #fileList tr:focus a.action:focus,
 #fileList tr:hover a.action.disabled.action-download:hover,
 #fileList tr:hover a.action:hover,
+/* Ohne .permanent (z. B. der Favoriten-Stern nicht favorisierter Dateien)
+   bleibt a.action sonst nur bei tr:hover/tr:focus sichtbar - beides trifft
+   nicht zu, wenn das Symbol selbst per Tab fokussiert wird. Der globale
+   Fokusring (styles.css) wird dann korrekt berechnet, aber auf einem
+   opacity:0-Element gezeichnet und ist damit unsichtbar. [WCAG 2.4.7] */
+#fileList a.action:focus-visible,
 .ie8 #fileList a.action:hover img {
 	filter: alpha(opacity=70);
 	opacity: 7;
@@ -958,6 +970,8 @@ html.ie8 .column-mtime .selectedActions {
 #fileList tr:focus button.action:focus,
 #fileList tr:hover button.action.disabled.action-download:hover,
 #fileList tr:hover button.action:hover,
+/* Analog zu a.action:focus-visible weiter oben in dieser Datei. [WCAG 2.4.7] */
+#fileList button.action:focus-visible,
 .ie8 #fileList button.action:hover img {
 	filter: alpha(opacity=70);
 	opacity: 7;
