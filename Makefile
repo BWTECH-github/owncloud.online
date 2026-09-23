@@ -222,7 +222,7 @@ test-js-debug: $(nodejs_deps)
 # ausgelieferten select2-Fassungen geschlossen und prueft zugleich, dass die
 # Bibliothek sonst unveraendert arbeitet.
 .PHONY: test-js-browser
-test-js-browser:
+test-js-browser: check-minified
 	node tests/js/select2_xss_test.js
 	node tests/js/jquery_ui_xss_test.js
 
@@ -340,6 +340,29 @@ clean-dist:
 .PHONY: minify-assets
 minify-assets:
 	bash build/minify-assets.sh $(if $(MINIFY_ROOT),$(MINIFY_ROOT),.)
+
+# Dasselbe, aber als Tor: erzeugt die .min-Geschwister neu und bricht ab,
+# wenn sich dabei etwas aendert. Dann war eine Quelle geaendert, ihr
+# erzeugtes Gegenstueck aber nicht - was im Betrieb heisst, dass die alte
+# Fassung ausgeliefert wird.
+#
+# Die geaenderten Dateien bleiben danach im Arbeitsverzeichnis stehen: sie
+# sind das Ergebnis, das eingecheckt gehoert.
+#
+# Terser und clean-css muessen dabei in den in build/package.json gepinnten
+# Fassungen vorliegen (terser 5.49.1, clean-css-cli 5.6.3), sonst entstehen
+# andere Bytes und das Tor schlaegt grundlos an.
+.PHONY: check-minified
+check-minified:
+	bash build/minify-assets.sh $(if $(MINIFY_ROOT),$(MINIFY_ROOT),.)
+	@status="$$(git status --porcelain -- '*.min.js' '*.min.css')"; \
+	if [ -n "$$status" ]; then \
+		echo "$$status"; \
+		echo "Veraltete .min-Geschwister: eine Quelle wurde geaendert, das erzeugte Gegenstueck nicht."; \
+		echo "Die neu erzeugten Dateien liegen jetzt im Arbeitsverzeichnis - pruefen und einchecken."; \
+		exit 1; \
+	fi
+	@echo "check-minified: alle .min-Geschwister sind aktuell"
 
 #
 # Build qa distribution

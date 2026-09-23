@@ -1,0 +1,14 @@
+Change: Regenerate the minified call sites of the Select2 fix and check them
+
+Changing a source file under core/js, settings/js or apps/*/js without
+regenerating its .min sibling ships the old code: the minified file is what a
+deployment serves. The Select2 fix changed four call sites
+(apps/files_external/js/settings.js, apps/systemtags/js/systemtagsfilelist.js,
+core/js/systemtags/systemtagsinputfield.js, settings/js/settings.js); their
+.min siblings are now regenerated with the pinned tools (terser 5.49.1,
+clean-css-cli 5.6.3).
+
+`make check-minified` regenerates the siblings and fails if anything changed,
+leaving the regenerated files in the working tree because they are the result
+that belongs in the commit. `make test-js-browser` depends on it. On main the
+lint workflow already runs the same check on every push.
