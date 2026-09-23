@@ -1,0 +1,13 @@
+Bugfix: Let the favourites star report its state
+
+Marking a file as a favourite told assistive technology nothing: the star
+swapped its icon but reported no state, and the name it announced kept its
+previous value. Once the server answered, the row was drawn again and the
+keyboard focus fell back to the top of the page. The star in the details
+sidebar had no name at all, and both stars were links that led nowhere.
+
+Both stars are buttons now. They keep the same name in either state, report
+whether they are pressed, update that state as soon as they are toggled, and
+keep the keyboard focus when the row or the sidebar is drawn again.
+
+WCAG 2.1 AA, SC 4.1.2, SC 2.4.4

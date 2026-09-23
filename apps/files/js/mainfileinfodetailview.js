@@ -24,9 +24,13 @@
 			'</a>' +
 		'</div>' +
 		'	<div class="file-details ellipsis">' +
-		'		<a href="#" class="action action-favorite favorite permanent">' +
-		'			<span class="icon {{starClass}}" title="{{starAltText}}"></span>' +
-		'		</a>' +
+		// Umschalter wie der Stern der Dateizeile (tagsplugin.js). Die Beschriftung
+		// stand frueher nur als title am inneren span; den leert render() mit
+		// .tooltip() gleich wieder, der Stern hatte damit keinen Namen. [OC-WCAG-287]
+		'		<button type="button" class="action action-favorite favorite permanent" aria-pressed="{{starPressed}}">' +
+		'			<span class="icon {{starClass}}"></span>' +
+		'			<span class="hidden-visually">{{starAltText}}</span>' +
+		'		</button>' +
 		'		{{#if hasSize}}<span class="size" title="{{altSize}}">{{size}}</span>, {{/if}}<span class="date" title="{{altDate}}">{{date}}</span>' +
 		'	</div>' +
 		'</div>' +
@@ -61,7 +65,7 @@
 		_fileActions: null,
 
 		events: {
-			'click a.action-favorite': '_onClickFavorite',
+			'click button.action-favorite': '_onClickFavorite',
 			'click a.action-default': '_onClickDefaultAction',
 			'click a.permalink': '_onClickPermalink',
 			'focus .permalink-field>input': '_onFocusPermalink'
@@ -150,6 +154,10 @@
 		render: function() {
 			if (this.model) {
 				var isFavorite = (this.model.get('tags') || []).indexOf(OC.TAG_FAVORITE) >= 0;
+				// Jede Modellaenderung zeichnet die Ansicht neu, auch die, die der
+				// Stern selbst ausloest. Der fokussierte Stern wird dabei ersetzt;
+				// den Fokus auf den neuen uebertragen, sonst faellt er auf <body>.
+				var starHadFocus = this.$('.action-favorite').is(document.activeElement);
 				this.$el.html(this.template({
 					type: this.model.isImage()? 'image': '',
 					nameLabel: t('files', 'Name'),
@@ -163,7 +171,8 @@
 					dateLabel: t('files', 'Modified'),
 					altDate: OC.Util.formatDate(this.model.get('mtime')),
 					date: OC.Util.relativeModifiedDate(this.model.get('mtime')),
-					starAltText: isFavorite ? t('files', 'Favorited') : t('files', 'Favorite'),
+					starAltText: t('files', 'Favorite'),
+					starPressed: isFavorite ? 'true' : 'false',
 					starClass: isFavorite ? 'icon-starred' : 'icon-star',
 					permalink: this._makePermalink(this.model.get('id')),
 					permalinkTitle: t('files', 'Private link:  Only people who have access to the file/folder can use it. Use it as a permanent link for yourself or to point others to files within shares')
@@ -181,6 +190,9 @@
 					OC.Util.scaleFixForIE8($iconDiv);
 				}
 				this.$el.find('[title]').tooltip({placement: 'bottom'});
+				if (starHadFocus) {
+					this.$('.action-favorite').focus();
+				}
 			} else {
 				this.$el.empty();
 			}

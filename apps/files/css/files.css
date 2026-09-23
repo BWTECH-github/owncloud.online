@@ -654,6 +654,20 @@ html.ie8 #fileList tr:hover td.filename > .selectCheckBox {
 	text-align: center;
 }
 
+/* Der Stern ist ein <button>: er schaltet einen Zustand um und navigiert nicht.
+   #fileList button.action weiter unten setzt fuer die Aktionen der Dateizeile
+   height: auto und padding: 0 8px, weil dort line-height: 50px die Hoehe traegt.
+   Am Stern gilt aber line-height: 100% aus der Regel darueber. Ohne die beiden
+   Deklarationen schrumpft sein Kasten von 46x50 auf 46x16 px, das Symbol rueckt
+   17 px nach oben an die Zeilenkante, und der Fokusrahmen umschliesst nur noch
+   diesen Streifen. Die Werte sind die des frueheren Ankers: height aus
+   tr .action (core/css/styles.css:961), padding aus #fileList a.action.
+   [OC-WCAG-287] */
+#fileList tr td.filename button.action-favorite {
+	height: 16px;
+	padding: 17px 8px;
+}
+
 #delete-confirm,
 #uploadsize-message {
 	display: none;

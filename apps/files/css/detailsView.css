@@ -110,6 +110,28 @@
 	opacity: .7 !important;
 }
 
+/* Der Stern der Detailleiste ist ein <button>. Ausserhalb von #fileList greift
+   die Neutralisierung aus files.css nicht, er sammelt sonst Fuellung, Rahmen,
+   Rundung, 13px und cursor: default aus core/css/inputs.css und dem
+   UA-Stylesheet ein. padding und margin kommen weiter aus der Regel darueber.
+   Bewusst ohne line-height: jeder Wert dort veraendert die Hoehe der Zeile mit
+   Groesse und Datum (gemessen 24 -> 21,5 bzw. 20,5 px). [OC-WCAG-287] */
+#app-sidebar button.action-favorite {
+	width: auto;
+	min-width: 0;
+	height: auto;
+	background: none;
+	border: 0;
+	border-radius: 0;
+	font: inherit;
+	color: inherit;
+	box-sizing: content-box;
+}
+
+#app-sidebar button.action-favorite * {
+	cursor: pointer;
+}
+
 #app-sidebar .detailList {
 	float: left;
 }

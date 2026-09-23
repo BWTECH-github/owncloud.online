@@ -74,6 +74,24 @@ describe('OCA.Files.TagsPlugin tests', function() {
 		it('adds has-favorites class on table', function() {
 			expect(fileList.$el.hasClass('has-favorites')).toEqual(true);
 		});
+		it('renders the star as a toggle button', function() {
+			fileList.setFiles(testFiles);
+			var $action = fileList.findFileEl('One.txt').find('.action-favorite');
+			expect($action.prop('tagName')).toEqual('BUTTON');
+			expect($action.attr('type')).toEqual('button');
+			expect($action.attr('href')).not.toBeDefined();
+			expect($action.attr('aria-pressed')).toEqual('false');
+			expect($action.find('.hidden-visually').text()).toEqual('Favorite');
+			// das Label ist Geschwister des Icons, nicht sein Kind
+			expect($action.find('.icon .hidden-visually').length).toEqual(0);
+		});
+		it('renders a pressed toggle button for favorites, same label', function() {
+			testFiles[0].tags.push(OC.TAG_FAVORITE);
+			fileList.setFiles(testFiles);
+			var $action = fileList.findFileEl('One.txt').find('.action-favorite');
+			expect($action.attr('aria-pressed')).toEqual('true');
+			expect($action.find('.hidden-visually').text()).toEqual('Favorite');
+		});
 	});
 	describe('Applying tags', function() {
 		it('sends request to server and updates icon', function() {
@@ -122,6 +140,66 @@ describe('OCA.Files.TagsPlugin tests', function() {
 			expect(fileList.files[0].tags).toEqual(['tag1', 'tag2', 'tag3']);
 			expect($action.find('.icon').hasClass('icon-star')).toEqual(true);
 			expect($action.find('.icon').hasClass('icon-starred')).toEqual(false);
+		});
+		it('reports the new state before the server answers', function() {
+			fileList.setFiles(testFiles);
+			var $action = fileList.findFileEl('One.txt').find('.action-favorite');
+			$action.click();
+
+			// no response yet: this is still the element that was clicked
+			expect(fakeServer.requests.length).toEqual(1);
+			expect($action.attr('aria-pressed')).toEqual('true');
+			expect($action.hasClass('permanent')).toEqual(true);
+			expect($action.find('.icon').hasClass('icon-starred')).toEqual(true);
+			expect($action.find('.icon').hasClass('icon-star')).toEqual(false);
+			// the icon classes belong to the icon, not to the button
+			expect($action.hasClass('icon-starred')).toEqual(false);
+			expect($action.hasClass('icon-star')).toEqual(false);
+			expect($action.find('.hidden-visually').text()).toEqual('Favorite');
+		});
+		it('keeps the focus on the star when the row is rebuilt', function() {
+			fileList.setFiles(testFiles);
+			var $action = fileList.findFileEl('One.txt').find('.action-favorite');
+			$action.focus();
+			$action.click();
+			fakeServer.requests[0].respond(200, {'Content-Type': 'application/json'}, JSON.stringify({
+				tags: ['tag1', 'tag2', OC.TAG_FAVORITE]
+			}));
+
+			var $newAction = fileList.findFileEl('One.txt').find('.action-favorite');
+			expect($newAction[0]).not.toBe($action[0]);
+			expect(document.activeElement).toBe($newAction[0]);
+			expect($newAction.attr('aria-pressed')).toEqual('true');
+		});
+		it('leaves the focus alone when it moved on before the answer', function() {
+			var $elsewhere = $('<input type="text">');
+			$('#testArea').append($elsewhere);
+			fileList.setFiles(testFiles);
+			var $action = fileList.findFileEl('One.txt').find('.action-favorite');
+			$action.focus();
+			$action.click();
+			$elsewhere.focus();
+			fakeServer.requests[0].respond(200, {'Content-Type': 'application/json'}, JSON.stringify({
+				tags: ['tag1', 'tag2', OC.TAG_FAVORITE]
+			}));
+
+			expect(document.activeElement).toBe($elsewhere[0]);
+			$elsewhere.remove();
+		});
+		it('restores the previous state when the server refuses', function() {
+			var notificationStub = sinon.stub(OC.Notification, 'show');
+			fileList.setFiles(testFiles);
+			var $action = fileList.findFileEl('One.txt').find('.action-favorite');
+			$action.click();
+			fakeServer.requests[0].respond(500, {'Content-Type': 'application/json'}, '{}');
+
+			expect(fileList.findFileEl('One.txt').find('.action-favorite')[0]).toBe($action[0]);
+			expect($action.attr('aria-pressed')).toEqual('false');
+			expect($action.hasClass('permanent')).toEqual(false);
+			expect($action.find('.icon').hasClass('icon-star')).toEqual(true);
+			expect($action.find('.icon').hasClass('icon-starred')).toEqual(false);
+			expect(notificationStub.calledOnce).toEqual(true);
+			notificationStub.restore();
 		});
 	});
 	describe('elementToFile', function() {

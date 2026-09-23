@@ -78,6 +78,31 @@ describe('OCA.Files.MainFileInfoDetailView tests', function() {
 			expect(view.$el.find('.action-favorite > span').hasClass('icon-starred')).toEqual(false);
 			expect(view.$el.find('.action-favorite > span').hasClass('icon-star')).toEqual(true);
 		});
+		it('renders the star as a named toggle button', function() {
+			testFileInfo.set('tags', [OC.TAG_FAVORITE]);
+			view.setFileInfo(testFileInfo);
+			var $star = view.$el.find('.action-favorite');
+			expect($star.prop('tagName')).toEqual('BUTTON');
+			expect($star.attr('type')).toEqual('button');
+			expect($star.attr('aria-pressed')).toEqual('true');
+			expect($star.find('.hidden-visually').text()).toEqual('Favorite');
+			// the name must not depend on a title that .tooltip() takes away
+			expect($star.find('[title]').length).toEqual(0);
+
+			testFileInfo.set('tags', []);
+			$star = view.$el.find('.action-favorite');
+			expect($star.attr('aria-pressed')).toEqual('false');
+			expect($star.find('.hidden-visually').text()).toEqual('Favorite');
+		});
+		it('keeps the focus on the star when the model changes', function() {
+			$('#testArea').append(view.$el);
+			view.setFileInfo(testFileInfo);
+			view.$el.find('.action-favorite').focus();
+
+			testFileInfo.set('tags', [OC.TAG_FAVORITE]);
+
+			expect(document.activeElement).toBe(view.$el.find('.action-favorite')[0]);
+		});
 		it('displays mime icon', function() {
 			// File
 			var lazyLoadPreviewStub = sinon.stub(fileList, 'lazyLoadPreview');

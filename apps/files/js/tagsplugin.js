@@ -17,12 +17,19 @@
 		PROPERTY_FAVORITE:	'{' + OC.Files.Client.NS_OWNCLOUD + '}favorite'
 	});
 
+	// Der Stern schaltet einen Zustand um und navigiert nicht: <button> mit
+	// aria-pressed. Die Beschriftung bleibt in beiden Zustaenden "Favorite" -
+	// den Zustand meldet aria-pressed, ein wechselnder Name dazu wuerde ihn
+	// doppelt und widerspruechlich ansagen ("Favorited, pressed"). Der
+	// Icon-Span ist explizit geschlossen: "<span ... />" ist kein Void-Element,
+	// das Label landete sonst als Kind im Icon-Span. [OC-WCAG-287]
 	var TEMPLATE_FAVORITE_ACTION =
-		'<a href="#" ' +
-		'class="action action-favorite {{#isFavorite}}permanent{{/isFavorite}}">' +
-		'<span class="icon {{iconClass}}" />' +
+		'<button type="button" ' +
+		'class="action action-favorite {{#isFavorite}}permanent{{/isFavorite}}" ' +
+		'aria-pressed="{{pressed}}">' +
+		'<span class="icon {{iconClass}}"></span>' +
 		'<span class="hidden-visually">{{altText}}</span>' +
-		'</a>';
+		'</button>';
 
 	/**
 	 * Returns the icon class for the matching state
@@ -46,7 +53,8 @@
 		}
 		return this._template({
 			isFavorite: state,
-			altText: state ? t('files', 'Favorited') : t('files', 'Favorite'),
+			pressed: state ? 'true' : 'false',
+			altText: t('files', 'Favorite'),
 			iconClass: getStarIconClass(state)
 		});
 	}
@@ -58,8 +66,12 @@
 	 * @param {boolean} state true if starred, false otherwise
 	 */
 	function toggleStar($actionEl, state) {
-		$actionEl.removeClass('icon-star icon-starred').addClass(getStarIconClass(state));
+		// Die Symbolklasse gehoert an den Icon-Span, nicht an das Bedienelement.
+		// Frueher landete sie am Element selbst und haeufte sich dort an; sichtbar
+		// wurde der Wechsel nur, weil die Zeile nach der Serverantwort neu entsteht.
+		$actionEl.find('.icon').removeClass('icon-star icon-starred').addClass(getStarIconClass(state));
 		$actionEl.toggleClass('permanent', state);
+		$actionEl.attr('aria-pressed', state ? 'true' : 'false');
 	}
 
 	OCA.Files = OCA.Files || {};
@@ -128,6 +140,12 @@
 						$actionEl,
 						isFavorite
 					).then(function(result) {
+						// Das Modell-Update baut die Zeile neu auf (getModelForFile ->
+						// updateRow). Der Stern, auf dem der Fokus lag, verlaesst dabei
+						// das Dokument, und der Fokus faellt auf <body> zurueck - wer per
+						// Tastatur umschaltet, stuende danach am Seitenanfang. Nur
+						// zurueckholen, wenn er beim Eintreffen der Antwort noch dort ist.
+						var hadFocus = document.activeElement === $actionEl[0];
 						context.fileInfoModel.trigger('busy', context.fileInfoModel, false);
 						// response from server should contain updated tags
 						var newTags = result.tags;
@@ -138,6 +156,9 @@
 							'tags': newTags,
 							'favorite': !isFavorite
 						});
+						if (hadFocus) {
+							context.fileList.findFileEl(fileName).find('.action-favorite').focus();
+						}
 					});
 				}
 			});
