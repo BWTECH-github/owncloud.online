@@ -30,6 +30,16 @@ jobs:
   build-release:
     name: Build clean owncloud.online release packages
     runs-on: ubuntu-latest
+    # Ohne Grenze gälte die Vorgabe von 360 Minuten, und eine hängende
+    # Verbindung kostete sechs Stunden. 60 und nicht 30: die Grenze muss das
+    # Wiederholungsbudget des Composer-Schritts fassen (fünf Anläufe mit
+    # 30+60+90+120 s Pause, icewind/* per git clone von codeberg.org).
+    timeout-minutes: 60
+    # Zwei Läufe für dieselbe Version laufen nacheinander, nicht gleichzeitig;
+    # sonst überschriebe das zweite Release das erste still.
+    concurrency:
+      group: release-build-${{ github.event.inputs.version || github.ref_name }}
+      cancel-in-progress: false
 
     steps:
       - name: Checkout owncloud.online
@@ -48,14 +58,46 @@ jobs:
         with:
           node-version: "20"
 
+      # Läuft nach dem Tag: eine einzelne Netzstörung darf hier kein Release
+      # verhindern, deshalb Wiederholungen wie beim Composer-Schritt.
       - name: Install build tools
+        shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y make rsync tar zip unzip bzip2
+          set -euo pipefail
+
+          nochmal() {
+            local versuch
+            for versuch in 1 2 3 4; do
+              if "$@"; then
+                return 0
+              fi
+              [ "$versuch" = "4" ] && break
+              echo "::warning::'$*' fehlgeschlagen (Anlauf ${versuch}), neuer Versuch in $((versuch * 15))s"
+              sleep "$((versuch * 15))"
+            done
+            echo "::error::'$*' nach vier Anläufen fehlgeschlagen."
+            return 1
+          }
+
+          # Die Werkzeuge liegen im Runner-Bild bereits; apt nur, wenn eines fehlt.
+          fehlend=""
+          for werkzeug in make rsync tar zip unzip bzip2; do
+            command -v "$werkzeug" >/dev/null 2>&1 || fehlend="$fehlend $werkzeug"
+          done
+          if [ -n "$fehlend" ]; then
+            echo "Fehlt im Runner-Bild:$fehlend"
+            nochmal sudo apt-get update
+            # shellcheck disable=SC2086 # Worttrennung ist hier gewollt
+            nochmal sudo apt-get install -y $fehlend
+          else
+            echo "Alle Werkzeuge im Runner-Bild vorhanden, apt wird nicht gebraucht."
+          fi
+
           # Dieselbe terser-Version wie build/package.json und das Lint-Tor.
           # Weicht sie ab, erzeugt der Release-Build andere Bytes als die
-          # eingecheckten .min-Dateien.
-          npm install -g yarn@1.22.22 terser@5.49.1 clean-css-cli@5.6.3
+          # eingecheckten .min-Dateien. yarn wird nicht mehr gebraucht, siehe
+          # "make -o build/node_modules dist-dir".
+          nochmal npm install -g terser@5.49.1 clean-css-cli@5.6.3
 
       - name: Resolve release version
         id: version
@@ -145,7 +187,13 @@ jobs:
           test -f lib/composer/autoload.php
           test -f lib/composer/composer/installed.json
 
-          make dist-dir RELEASE_CHANNEL=bwtech
+          # -o build/node_modules: "als erfüllt behandeln, nicht neu bauen".
+          # core/vendor hängt im Makefile an build/node_modules, also zog
+          # "make dist-dir" bisher verdeckt ein vollständiges "yarn install"
+          # nach (278 Pakete, 20 direkt von github.com, ohne Wiederholung).
+          # Für das Paket bewirkt das nichts: core/vendor ist eingecheckt und
+          # wird aus dem Repository kopiert, build/ gehört nicht zum Paket.
+          make -o build/node_modules dist-dir RELEASE_CHANNEL=bwtech
 
           test -d build/dist/owncloud
           test -f build/dist/owncloud/lib/composer/autoload.php
@@ -213,11 +261,16 @@ jobs:
               \) -print -exec rm -rf {} + >> "${prune_report}"
           )
 
+          # "commit" ist das tatsächlich gebaute Commit, als eigene Zuweisung
+          # VOR dem Heredoc: der Exit-Code einer Befehlsersetzung im Heredoc
+          # zählt nicht, ein Fehlschlag von git ergäbe dort still "commit": "".
+          gebaut="$(git -C "${GITHUB_WORKSPACE}" rev-parse HEAD)"
+          test -n "${gebaut}"
           cat > "${artifact_dir}/release-manifest.json" <<EOF
           {
             "product": "owncloud.online",
             "version": "${version}",
-            "commit": "${GITHUB_SHA}",
+            "commit": "${gebaut}",
             "php": "$(php -r 'echo PHP_VERSION;')",
             "bundle": {
               "name": "owncloud-online",

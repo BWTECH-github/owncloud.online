@@ -282,7 +282,10 @@ test-doc-links:
 # Build distribution
 #
 $(dist_dir)/owncloud: $(composer_deps) $(core_vendor) $(core_all_src)
-	cd $(NODE_PREFIX) && $(YARN) run clean-modules
+	@# Nur aufräumen, wo es etwas aufzuräumen gibt: der Release-Bau ruft
+	@# "make -o build/node_modules dist-dir" und holt node_modules gar nicht
+	@# erst - ohne node_modules ist auch modclean nicht installiert.
+	@if [ -d $(NODE_PREFIX)/node_modules ]; then cd $(NODE_PREFIX) && $(YARN) run clean-modules; fi
 	rm -Rf $@; mkdir -p $@/config
 	cp -RL $(core_all_src) $@
 	mkdir -p $@/apps-external && cp -RL apps-external/market $@/apps-external/market
