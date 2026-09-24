@@ -24,6 +24,7 @@
  *
  * Modified by BW-Tech GmbH on 2026-03-16.
  * Changes:
+ *   - release the file handle when a bitmap preview cannot be decoded (#41835)
  *   - PHP 8.4 compatibility and owncloud.online design integration
  *   - php8.3 (#41449)
  */
@@ -51,6 +52,12 @@ abstract class Bitmap implements IProvider2 {
 			return false;
 		}
 		$stream = $file->fopen('r');
+		if ($stream === false) {
+			// stream_get_contents() below would raise a TypeError, which is an \Error and
+			// so would escape the handler underneath rather than degrade to no preview
+			Util::writeLog('core', 'Could not open ' . $file->getPath() . ' for a preview', Util::ERROR);
+			return false;
+		}
 
 		// Creates \Imagick object from bitmap or vector file
 		try {
@@ -58,13 +65,15 @@ abstract class Bitmap implements IProvider2 {
 		} catch (\Exception $e) {
 			Util::writeLog('core', 'ImageMagick says: ' . $e->getmessage(), Util::ERROR);
 			return false;
+		} finally {
+			// also on the failure path: any content ImageMagick has no coder for lands
+			// here, so leaking the handle would be routine rather than exceptional
+			\fclose($stream);
 		}
-
-		\fclose($stream);
 
 		//new bitmap image object
 		$image = new \OC_Image();
-		$image->loadFromData($bp);
+		$image->loadFromData((string)$bp);
 		//check if image object is valid
 		return $image->valid() ? $image : false;
 	}
