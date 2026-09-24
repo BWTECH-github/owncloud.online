@@ -1105,6 +1105,11 @@ OC.Uploader.prototype = _.extend({
 		}
 		this._progressBarInterval = window.setInterval(_.bind(this._updateProgressBar, this), 1000);
 		this._lastProgress = 0;
+		// Die Zeit des letzten Fortschritts stammt sonst aus der vorigen
+		// Übertragung. Meldet die neue ihr erstes Fortschrittsereignis mit
+		// 0 Bytes, bevor der erste Takt des Wächters läuft, sieht er
+		// "kein Fortschritt seit Minuten" und startet sie sofort neu.
+		this._lastProgressTime = new Date().getTime();
 		this._assemblyPercent = null;
 	},
 

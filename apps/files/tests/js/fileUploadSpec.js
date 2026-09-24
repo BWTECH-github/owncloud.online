@@ -550,6 +550,27 @@ describe('OC.Upload tests', function() {
 			doneStub.restore();
 		});
 
+		it('does not take the pause before a new upload for a stall', function() {
+			var clock = sinon.useFakeTimers();
+			uploader = new OC.Uploader($dummyUploader, {
+				uploadStallTimeout: 10
+			});
+			// die vorige Übertragung endete vor einer Stunde
+			uploader._lastProgressTime = new Date().getTime();
+			clock.tick(3600 * 1000);
+
+			var result = addFiles(uploader, [testFile]);
+			var upload = uploader.getUpload(result[0]);
+			$dummyUploader.trigger('fileuploadstart', result[0]);
+			$dummyUploader.trigger('fileuploadprogressall', {loaded: 0, total: 5000});
+			clock.tick(1000);
+
+			expect(upload.data.stalled).toBeFalsy();
+			expect(result[0].abort.notCalled).toEqual(true);
+
+			clock.restore();
+		});
+
 		describe('assembly job status', function() {
 			var clock;
 			var showStub;

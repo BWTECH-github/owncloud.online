@@ -1,0 +1,7 @@
+Bugfix: A new web upload is no longer restarted right away after a pause
+
+The stall watchdog of the web upload compared against the time of the last
+progress of the previous upload. When a new upload started more than a minute
+after the previous one and reported 0 bytes at its first tick, the watchdog
+took it for stalled and aborted and restarted it immediately. The time is now
+reset whenever an upload starts.
