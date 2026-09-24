@@ -158,6 +158,87 @@ class SyncServiceTest extends TestCase {
 		static::invokePrivate($s, 'verifyHomeLocation', ['/var/www/owncloud/data/../apps/evil', 'alice', 'TestBackend']);
 	}
 
+	/**
+	 * A home directory is created lazily on first login, so at the time the
+	 * backend-supplied path is checked it usually does not exist yet. realpath()
+	 * then returns false for the whole path and only the lexical form is left -
+	 * and that form cannot see a symlink in an intermediate segment. Without
+	 * resolving the existing prefix, '<data>/link/newuser' passes while the
+	 * user's files actually land wherever 'link' points.
+	 */
+	public function testVerifyHomeLocationRejectsSymlinkedPrefixForMissingHome() {
+		$root = \sys_get_temp_dir() . '/oc-synchome-' . \getmypid();
+		$dataDir = $root . '/data';
+		$outside = $root . '/outside';
+		@\mkdir($dataDir, 0777, true);
+		@\mkdir($outside, 0777, true);
+		@\symlink($outside, $dataDir . '/link');
+
+		try {
+			if (!\is_link($dataDir . '/link')) {
+				$this->markTestSkipped('symlinks are not available here');
+			}
+
+			$config = $this->createMock(IConfig::class);
+			$config->method('getSystemValue')->willReturnMap([
+				['datadirectory', \OC::$SERVERROOT . '/data', $dataDir],
+				['user.home_base_dirs', [], []],
+			]);
+			$service = new SyncService($config, $this->logger, $this->mapper);
+
+			// the home itself does not exist - only the symlinked parent does
+			self::assertFalse(\file_exists($dataDir . '/link/newuser'));
+
+			$this->expectException(\InvalidArgumentException::class);
+			static::invokePrivate(
+				$service,
+				'verifyHomeLocation',
+				[$dataDir . '/link/newuser', 'newuser', 'TestBackend']
+			);
+		} finally {
+			@\unlink($dataDir . '/link');
+			@\rmdir($outside);
+			@\rmdir($dataDir);
+			@\rmdir($root);
+		}
+	}
+
+	/**
+	 * The counterpart: a symlinked data directory itself must keep working, or
+	 * the guard would break every admin who mounts their data on another volume.
+	 */
+	public function testVerifyHomeLocationAcceptsSymlinkedDataDirectory() {
+		$root = \sys_get_temp_dir() . '/oc-syncdata-' . \getmypid();
+		$real = $root . '/real-data';
+		$link = $root . '/data';
+		@\mkdir($real, 0777, true);
+		@\symlink($real, $link);
+
+		try {
+			if (!\is_link($link)) {
+				$this->markTestSkipped('symlinks are not available here');
+			}
+
+			$config = $this->createMock(IConfig::class);
+			$config->method('getSystemValue')->willReturnMap([
+				['datadirectory', \OC::$SERVERROOT . '/data', $link],
+				['user.home_base_dirs', [], []],
+			]);
+			$service = new SyncService($config, $this->logger, $this->mapper);
+
+			static::invokePrivate(
+				$service,
+				'verifyHomeLocation',
+				[$link . '/alice', 'alice', 'TestBackend']
+			);
+			$this->addToAssertionCount(1); // no exception thrown
+		} finally {
+			@\unlink($link);
+			@\rmdir($real);
+			@\rmdir($root);
+		}
+	}
+
 	public function testVerifyHomeLocationAcceptsConfiguredBaseDir() {
 		$s = $this->configWithBaseDirs(['/srv/homes']);
 		static::invokePrivate($s, 'verifyHomeLocation', ['/srv/homes/bob', 'bob', 'TestBackend']);

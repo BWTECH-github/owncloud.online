@@ -326,6 +326,12 @@ class SyncService {
 		if ($realHome !== false) {
 			$candidates[] = \str_replace('\\', '/', $realHome);
 		}
+		// A home is created lazily on first login, so realpath() above usually
+		// finds nothing and only the lexical form gets checked - and that form
+		// cannot see a symlink in an intermediate segment. Resolve the longest
+		// prefix that DOES exist: '/data/link/newuser' with '/data/link' ->
+		// '/srv/www' becomes '/srv/www/newuser' and is caught.
+		$candidates[] = $this->resolveExistingPrefix($home);
 
 		foreach ($candidates as $candidate) {
 			if (!$this->isWithinAllowedBase($candidate, $allowedBases)) {
@@ -362,6 +368,38 @@ class SyncService {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Resolve symlinks on the longest leading part of the path that exists on
+	 * disk and append the rest lexically. realpath() alone is not enough here:
+	 * the home directory usually does not exist yet at the time it is checked,
+	 * and realpath() then returns false for the whole path, leaving an
+	 * intermediate symlink unresolved.
+	 *
+	 * @param string $path
+	 * @return string
+	 */
+	private function resolveExistingPrefix($path) {
+		$lexical = $this->canonicalizePath($path);
+
+		$suffix = [];
+		$candidate = $lexical;
+		while ($candidate !== '' && $candidate !== '/') {
+			$real = @\realpath($candidate);
+			if ($real !== false) {
+				$real = \rtrim(\str_replace('\\', '/', $real), '/');
+				return $suffix === [] ? $real : $real . '/' . \implode('/', $suffix);
+			}
+			\array_unshift($suffix, \basename($candidate));
+			$parent = \dirname($candidate);
+			if ($parent === $candidate) {
+				break;
+			}
+			$candidate = $parent;
+		}
+
+		return $lexical;
 	}
 
 	/**

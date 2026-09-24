@@ -1,0 +1,12 @@
+Change: Reject a user home that leaves the data directory through a symlink
+
+verifyHomeLocation() checks the home path a user backend reports against the
+configured datadirectory. It resolved the reported path with realpath(), which
+returns false for a directory that does not exist yet - the normal case for a
+user who has never logged in. Only the lexical form was checked then, and that
+form cannot see a symlink in an intermediate segment of the path.
+
+The longest existing prefix of the path is now resolved as well and must also
+lie inside the data directory. A home below a symlink that points outside the
+data directory is rejected before the home directory is created. A data
+directory that is itself reached through a symlink keeps working as before.
