@@ -1,0 +1,11 @@
+Security: Bitmap-Vorschauen geben keine Skript-Inhalte mehr an ImageMagick
+
+Konnte die SVG-Bereinigung eine Datei nicht lesen, reichten die Bitmap-Vorschauen
+(PDF, TIFF, PSD, SGI, HEIC, Schriften u. a.) bisher die ungeprüften Rohdaten an
+ImageMagick weiter. Eine präparierte SVG- oder MVG-Datei konnte so beim Erzeugen
+der Vorschau Dateien als Webserver-Benutzer lesen oder schreiben.
+
+Bitmap-Vorschauen lehnen Text-, SVG-, XML- und MVG-Inhalte jetzt ab, bevor
+ImageMagick sie sieht, und legen das erwartete Bildformat je Vorschau-Typ fest,
+statt es ImageMagick erraten zu lassen. Dateien, deren Endung nicht zum Inhalt
+passt, bekommen deshalb keine Vorschau mehr.
