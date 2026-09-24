@@ -1,6 +1,6 @@
 # Market — BW-Tech / owncloud.online fork
 
-Marketplace / AppStore integration for ownCloud, modernised for **PHP 8.4** and
+Marketplace / AppStore integration for owncloud.online, modernised for **PHP 8.4** and
 shipped with a **fully self-contained local app catalog** (no external
 marketplace required) plus a **refreshed UI** with dark-mode support and a
 **live search**.
@@ -17,7 +17,7 @@ This is a community fork maintained by **BW-Tech GmbH** for
   plugin directory; no remote backend needed. Add an entry, point `download`
   to a GitHub release URL, you're done.
 - **Drop-in remote mode** — set `appstoreurl` in `config.php` to use the
-  classic ownCloud marketplace API or your own HTTPS catalog instead.
+  classic owncloud.online marketplace API or your own HTTPS catalog instead.
 - **PHP 8.4** — constructor property promotion, `readonly`, `#[\Override]`,
   typed properties, `match`, native first-class function syntax.
 - **Modern UI** — refreshed tile cards, custom CSS variables, automatic
@@ -31,7 +31,7 @@ This is a community fork maintained by **BW-Tech GmbH** for
 
 ## Requirements
 
-- ownCloud Server **10.x** (10.11+ recommended)
+- owncloud.online Server **10.x** (10.11+ recommended)
 - **PHP 8.4** or newer
 - Composer 2.x (only for development / building the dist artifact)
 - Node.js 20 (only for building the JS bundle)
@@ -40,7 +40,7 @@ This is a community fork maintained by **BW-Tech GmbH** for
 
 ```bash
 cd /var/www/owncloud/apps
-git clone https://github.com/BWTECH-github/owncloud.online.git market
+git clone https://github.com/BWTECH-github/market.git
 cd market
 composer install --no-dev
 sudo chown -R www-data:www-data .
@@ -48,7 +48,7 @@ sudo -u www-data php /var/www/owncloud/occ app:enable market
 ```
 
 If you prefer the prebuilt artifact, download the latest release archive from
-the [Releases page](https://github.com/BWTECH-github/owncloud.online/releases)
+the [Releases page](https://github.com/BWTECH-github/market/releases)
 and extract it into `apps/market/`.
 
 ## Configuration
@@ -66,7 +66,7 @@ $CONFIG = [
     'appstoreurl' => 'file:///srv/owncloud-catalog',
 
     // (3) remote HTTPS marketplace (classic mode)
-    // 'appstoreurl' => 'https://marketplace.owncloud.com',
+    // 'appstoreurl' => 'https://marketplace.owncloud.online',
     // 'marketplace.key' => 'your-api-key',
     // 'marketplace.ca' => '/etc/ssl/custom-ca.pem',
 
@@ -77,7 +77,7 @@ $CONFIG = [
 
 | Key                       | Default   | Description                                                       |
 | ------------------------- | --------- | ----------------------------------------------------------------- |
-| `appstoreurl`             | `local`   | `local` for the bundled catalog, `file://` for a local directory, or an HTTPS URL of a remote ownCloud marketplace. |
+| `appstoreurl`             | `local`   | `local` for the bundled catalog, `file://` for a local directory, or an HTTPS URL of a remote owncloud.online marketplace. |
 | `marketplace.key`         | unset     | API key sent as `Authorization: apikey: …` for remote marketplaces. |
 | `marketplace.ca`          | unset     | Path to a custom CA bundle for remote TLS validation.             |
 | `has_internet_connection` | `true`    | If `false`, remote calls are blocked. Local catalog mode ignores this. |
@@ -136,7 +136,7 @@ relative to the catalog directory.
 
 ## Daily usage
 
-1. Open ownCloud and go to **Apps → Market**.
+1. Open owncloud.online and go to **Apps → Market**.
 2. Use the search box at the top of the sidebar to find apps.
 3. Click an app, then **Install**.
 4. Updates appear under **Updates** in the sidebar with a counter badge;
@@ -170,24 +170,9 @@ make test-php-unit           # phpunit
 CI runs the same checks on every push and pull request — see
 `.github/workflows/`.
 
-### Release bundle
-
-`js/market.bundle.js` is a checked-in build artifact. After changing
-anything under `src/`, rebuild and commit the bundle in the same commit:
-
-```bash
-npm ci                       # exact versions from package-lock.json
-npm run build                # production webpack build
-```
-
-The core repo's `market-bundle` workflow rebuilds the bundle from `src/` on
-every market change and fails when the committed bundle does not match —
-build with `npm ci` (never a bare `npm install`) so the output stays
-byte-reproducible.
-
 ## Attribution
 
-This is a fork of [`owncloud/market`](https://github.com/owncloud/market)
+This is a fork of [`owncloud/market`](https://github.com/BWTECH-github/market)
 (© ownCloud GmbH, AGPL-3.0). Modifications by **BW-Tech GmbH** for
 [owncloud.online](https://owncloud.online). The licence remains AGPL-3.0.
 

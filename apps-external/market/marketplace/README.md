@@ -104,5 +104,5 @@ The plugin then reads `apps.json`, `categories.json`, and `bundles.json` from
 that directory instead of the bundled one.
 
 If you want a remote HTTPS marketplace, set `appstoreurl` to its base URL
-(e.g. `https://marketplace.owncloud.com`) and the plugin falls back to the
+(e.g. `https://marketplace.owncloud.online`) and the plugin falls back to the
 classic `/api/v1/...` endpoints.

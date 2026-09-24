@@ -1,0 +1,19 @@
+Change: Take the bundled market app from its own repository
+
+The market app existed twice: as its own repository (BWTECH-github/market) and
+as the copy under apps-external/market that ships in the release package. The
+two had drifted apart. Every fix had to be applied by hand in both places; the
+bundled copy still called itself "ownCloud" in its summary and description,
+linked to the wrong repository, and shipped a vendor/ directory holding only a
+Composer development plugin (bamarni/composer-bin-plugin) that nothing loads.
+
+The repository is now the only source. build/sync-market.sh copies a given
+commit of it into apps-external/market - every versioned file except .github/,
+.gitignore and tests/ - and records the commit in build/market.ref. The push
+check (job market-copy in .github/workflows/lint-and-codestyle.yml) compares the committed
+copy with the recorded commit on every push to main and fails if the copy was
+edited directly.
+
+The PHP code of both copies was already identical once comments are ignored,
+and so was the JavaScript bundle; the app version stays 0.10.10, so no upgrade
+is triggered on existing instances.

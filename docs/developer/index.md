@@ -21,7 +21,7 @@ ist 11.0.19 (`version.php`).
 | `lib/private/OCO/` | eigene Ergänzungen dieses Forks, Namensraum `OCO\` (in `composer.json` registriert) |
 | `settings/` | persönliche Einstellungen und Verwaltungsseiten |
 | `apps/` | mitgelieferte Apps: `comments`, `dav`, `federatedfilesharing`, `federation`, `files`, `files_external`, `files_sharing`, `files_trashbin`, `files_versions`, `oco_mcp`, `provisioning_api`, `systemtags`, `updatenotification`. Eigene `occ`-Befehle einer App liegen unter `apps/<id>/lib/Command` |
-| `apps-external/market/` | die Market-App, über die Apps aus dem eigenen Markt installiert werden |
+| `apps-external/market/` | die Market-App, über die Apps aus dem eigenen Markt installiert werden. Eine Kopie aus [BWTECH-github/market](https://github.com/BWTECH-github/market), die nicht hier bearbeitet wird (siehe unten) |
 | `ocs/`, `ocs-provider/`, `ocm-provider/` | OCS-Schnittstelle und die Kennungen für Verbund-Freigaben |
 | `config/` | `config.sample.php` mit allen Schlüsseln samt Erklärung. Die eigene `config.php` entsteht bei der Installation und ist nicht versioniert |
 | `core/l10n/`, `settings/l10n/` | Übersetzungen als `.json` und `.js`, direkt im Repository gepflegt. Unter `l10n/` liegen nur die Hilfsskripte dazu |
@@ -234,9 +234,24 @@ Neben den Testzielen laufen in der CI noch zwei Prüfungen, die man leicht
   (`apps/oco_mcp/tests/basic_auth_test.php` und `security_test.php`), die ohne
   Instanz laufen und sich genauso lokal aufrufen lassen.
 
-Wer an `apps-external/market/` arbeitet: `.github/workflows/market-bundle.yml`
-baut `js/market.bundle.js` aus `src/` nach und lässt den Job scheitern, wenn
-das eingecheckte Bündel davon abweicht.
+`apps-external/market/` wird nicht in diesem Repository bearbeitet. Die
+Market-App hat ihr eigenes Repository,
+[BWTECH-github/market](https://github.com/BWTECH-github/market); hier liegt eine
+Kopie davon, weil sie ins Release-Paket gehört. Welcher Stand das ist, hält
+`build/market.ref` fest. Eine Änderung an der Market-App läuft deshalb so:
+
+1. im Market-Repository ändern, testen, committen und pushen
+2. hier `build/sync-market.sh <commit>` ausführen – das übernimmt genau diesen
+   Stand nach `apps-external/market/` und schreibt `build/market.ref` neu
+3. beides hier committen
+
+Das Skript übernimmt alle versionierten Dateien des Market-Repositorys außer
+`.github/`, `.gitignore` und `tests/`. Der Job `market-copy` in `.github/workflows/lint-and-codestyle.yml`
+vergleicht bei jedem Push auf `main` die Kopie mit dem festgehaltenen Stand
+(`build/sync-market.sh --check`) und wird rot, wenn jemand die Kopie direkt
+bearbeitet hat. Zusätzlich baut `.github/workflows/market-bundle.yml`
+`js/market.bundle.js` aus `src/` nach und lässt den Job scheitern, wenn das
+eingecheckte Bündel davon abweicht.
 
 ## Codestil
 

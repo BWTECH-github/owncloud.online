@@ -146,3 +146,18 @@ jobs:
             echo "Stale or uncommitted .min siblings detected - run 'make minify-assets' and commit."
             exit 1
           fi
+
+  market-copy:
+    name: Market-App gegen ihr Repository prüfen
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Kopie mit dem festgehaltenen Stand vergleichen
+        # apps-external/market ist eine Kopie von BWTECH-github/market in dem
+        # Stand aus build/market.ref. Das Repository ist öffentlich, der Abruf
+        # braucht kein Token. Scheitert er, endet das Skript mit 2 und der Job
+        # wird rot - ein Netzproblem darf nicht als "stimmt überein" durchgehen.
+        run: bash build/sync-market.sh --check

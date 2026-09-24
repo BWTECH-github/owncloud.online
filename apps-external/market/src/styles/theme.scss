@@ -62,6 +62,9 @@
 		border-radius: var(--bwt-radius-sm);
 		font-weight: 500;
 		letter-spacing: 0;
+		// In der schmalen Aktionsspalte der App-Liste brach die Beschriftung
+		// sonst mitten im Wort um ("DETAIL" / "S").
+		white-space: nowrap;
 		transition: background-color var(--bwt-transition),
 		            border-color var(--bwt-transition),
 		            color var(--bwt-transition),

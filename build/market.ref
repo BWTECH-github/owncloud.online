@@ -1,0 +1,5 @@
+# Quelle der Market-App unter apps-external/market. Von build/sync-market.sh
+# geschrieben - nicht von Hand ändern, sondern das Skript mit dem neuen Stand
+# aufrufen.
+repo=https://github.com/BWTECH-github/market.git
+commit=bf7c9f89a62bf9556d061f282ed9841327e532d4

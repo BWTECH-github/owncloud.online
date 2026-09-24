@@ -31,6 +31,28 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
   Zwei Tests waren dadurch dauerhaft rot und haetten echte Fehlschlaege
   verdeckt.
 
+## [0.10.8] - 2026-08-13
+
+### Changed
+
+- README als Betriebsdokumentation neu geschrieben: Installation, Einstellungen,
+  Kommandozeile und Fehlersuche; tote und fremde Verweise entfernt.
+
+## [0.10.7] - 2026-08-13
+
+### Fixed
+
+- Beschriftung der Knoepfe bricht in der schmalen Aktionsspalte der App-Liste
+  nicht mehr mitten im Wort um.
+
+## [0.10.6] - 2026-08-13
+
+### Changed
+
+- Produktname, Beschreibung und uebersetzte Zeichenketten nennen owncloud.online;
+  Verweise auf Fehlerbereich, Repository und Dokumentation zeigen auf das eigene
+  Repository. Screenshots aus fremden Repositories entfernt.
+
 ## [Unreleased]
 
 ### Added
