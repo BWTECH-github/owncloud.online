@@ -497,7 +497,7 @@ OC.FileUpload.prototype = {
 			if (response.errorThrown === 'timeout') {
 				return {
 					status: 0,
-					message: t('files', 'Upload timeout for file "{file}"', {file: this.getFileName()})
+					message: t('files', 'Upload timeout for file "{file}"', {file: this.getFileName()}, undefined, {escape: false})
 				};
 			}
 
@@ -530,16 +530,26 @@ OC.FileUpload.prototype = {
 		} else if (response.result) {
 			response = response.result;
 		} else if (response.jqXHR) {
+			// Die Meldungen gehen als Text an OC.Notification.show(), das selbst
+			// maskiert - t() darf deshalb nicht zusätzlich maskieren, sonst
+			// stehen &quot; und &amp; sichtbar im Hinweis.
 			if (response.jqXHR.status === 0 && response.jqXHR.statusText === 'error') {
 				// timeout (IE11)
 				return {
 					status: 0,
-					message: t('files', 'Upload timeout for file "{file}"', {file: this.getFileName()})
+					message: t('files', 'Upload timeout for file "{file}"', {file: this.getFileName()}, undefined, {escape: false})
 				};
 			}
+			// Unter HTTP/2 gibt es keinen Statustext, jQuery setzt dann nur
+			// "error". Ohne den Statuscode bliebe unsichtbar, ob ein Proxy mit
+			// 413, 502 oder 504 abgebrochen hat.
+			var statusText = response.jqXHR.statusText;
+			var error = response.jqXHR.status
+				? 'HTTP ' + response.jqXHR.status + (statusText && statusText !== 'error' ? ' ' + statusText : '')
+				: statusText;
 			return {
 				status: response.jqXHR.status,
-				message: t('files', 'Unknown error "{error}" uploading file "{file}"', {error: response.jqXHR.statusText, file: this.getFileName()})
+				message: t('files', 'Unknown error "{error}" uploading file "{file}"', {error: error, file: this.getFileName()}, undefined, {escape: false})
 			};
 		}
 		return response;
@@ -731,7 +741,7 @@ OC.Uploader.prototype = _.extend({
 						deferred.resolve();
 						return;
 					}
-					OC.Notification.show(t('files', 'Could not create folder "{dir}"', {dir: fullPath}), {type: 'error'});
+					OC.Notification.show(t('files', 'Could not create folder "{dir}"', {dir: fullPath}, undefined, {escape: false}), {type: 'error'});
 					deferred.reject();
 				});
 			}, function() {
@@ -816,6 +826,17 @@ OC.Uploader.prototype = _.extend({
 			return this._uploads[data.uploadId];
 		}
 		return null;
+	},
+
+	/**
+	 * Vorübergehender Fehler, nach dem ein Chunk-Upload fortgesetzt werden darf
+	 *
+	 * @param {int} status HTTP-Status (0 = keine Antwort)
+	 * @return {bool}
+	 */
+	_isTransientUploadError: function(status) {
+		return status === 0 || status === 408 || status === 429
+			|| (status >= 500 && status !== 501 && status !== 507);
 	},
 
 	showUploadCancelMessage: _.debounce(function() {
@@ -946,7 +967,7 @@ OC.Uploader.prototype = _.extend({
 			if (fileInfo) {
 				var sharePermission = parseInt($("#sharePermission").val());
 				if (sharePermission === (OC.PERMISSION_READ | OC.PERMISSION_CREATE)) {
-					OC.Notification.show(t('files', 'The file {file} already exists', {file: fileInfo.name}), {type: 'error'});
+					OC.Notification.show(t('files', 'The file {file} already exists', {file: fileInfo.name}, undefined, {escape: false}), {type: 'error'});
 					return false;
 				}
 				conflicts.push([
@@ -1296,6 +1317,24 @@ OC.Uploader.prototype = _.extend({
 				},
 				fail: function(e, data) {
 					var upload = self.getUpload(data);
+					// Ein einzelner vorübergehender Fehler (Netzabbruch, 408, 429,
+					// 5xx außer 501/507 - etwa ein Proxy-Timeout oder ein
+					// PHP-FPM-Neustart) verwarf bisher den ganzen Upload. Bei einer
+					// 44-GB-Datei sind das rund 4 400 Chunks über Stunden; ein
+					// Aussetzer genügte. Solche Fehler laufen jetzt über dieselbe
+					// Fortsetzung wie ein Stillstand: bereits hochgeladene Chunks
+					// werden gelistet und der Upload setzt dort wieder an. Nur für
+					// v2-Chunking angemeldeter Nutzer - das Legacy-Chunking der
+					// öffentlichen Links setzt auf dem letzten Chunk zusammen und
+					// kann nicht gefahrlos wiederholt werden.
+					if (upload && upload.data && !upload.data.stalled
+						&& upload.data.isChunked && !upload.data.isLegacyChunk
+						&& OC.getCurrentUser().uid && data.textStatus !== 'abort'
+						&& self._isTransientUploadError(upload.getResponseStatus())) {
+						self.log('vorübergehender Fehler, Fortsetzung', e, upload);
+						upload.data.stalled = true;
+						upload.data.transientError = true;
+					}
 					// Only chunked uploads can be resumed: the retry below lists the
 					// already-uploaded chunks under uploads/<uid>/<id>. A non-chunked
 					// single PUT — every public-link upload, and any file below
@@ -1341,12 +1380,25 @@ OC.Uploader.prototype = _.extend({
 									fu._trigger('fail', e, data);
 								});
 							};
+						// Wer seit dem letzten Versuch weitergekommen ist, bekommt
+						// wieder alle Versuche: ein langer Upload darf über Stunden
+						// verteilte Einzelaussetzer überstehen.
+						if (data.uploadedBytes > (upload.data.retryBytes || 0)) {
+							retries = 0;
+						}
 						if (upload && upload.data && upload.data.stalled &&
 							data.uploadedBytes < data.files[0].size &&
 							retries < fu.options.maxRetries) {
 							retries += 1;
 							upload.data.retries = retries;
-							window.setTimeout(retry, retries * fu.options.retryTimeout);
+							upload.data.retryBytes = data.uploadedBytes;
+							// Serverfehler brauchen länger als ein Stillstand, bis der
+							// Dienst wieder antwortet (5, 10, 15 s statt 0,5 s-Schritten).
+							var pause = upload.data.transientError
+								? retries * 5000
+								: retries * fu.options.retryTimeout;
+							upload.data.transientError = false;
+							window.setTimeout(retry, pause);
 							return;
 						}
 						// Retries erschoepft (oder alle Bytes bereits
@@ -1397,14 +1449,14 @@ OC.Uploader.prototype = _.extend({
 						// target folder does not exist any more
 						var dir = upload.getFullPath();
 						if (dir && dir !== '/') {
-							OC.Notification.show(t('files', 'Target folder "{dir}" does not exist any more', {dir: dir}), {type: 'error'});
+							OC.Notification.show(t('files', 'Target folder "{dir}" does not exist any more', {dir: dir}, undefined, {escape: false}), {type: 'error'});
 						} else {
 							OC.Notification.show(t('files', 'Target folder does not exist any more'), {type: 'error'});
 						}
 						self.cancelUploads();
 					} else if (status === 423) {
 						// file is locked
-						OC.Notification.show(t('files', 'The file {file} is currently locked, please try again later', {file: upload.getFileName()}), {type: 'error'});
+						OC.Notification.show(t('files', 'The file {file} is currently locked, please try again later', {file: upload.getFileName()}, undefined, {escape: false}), {type: 'error'});
 					} else if (status === 507) {
 						// not enough space
 						OC.Notification.show(t('files', 'Not enough free space'), {type: 'error'});
@@ -1414,7 +1466,7 @@ OC.Uploader.prototype = _.extend({
 						var message = '';
 						if (upload) {
 							var response = upload.getResponse();
-							message = t('files', 'Failed to upload the file "{fileName}": {error}', {fileName: upload.getFileName(), error: response.message});
+							message = t('files', 'Failed to upload the file "{fileName}": {error}', {fileName: upload.getFileName(), error: response.message}, undefined, {escape: false});
 						}
 
 						OC.Notification.show(message || data.errorThrown, {type: 'error'});

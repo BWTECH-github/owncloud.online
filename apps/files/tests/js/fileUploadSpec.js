@@ -418,6 +418,119 @@ describe('OC.Upload tests', function() {
 			clock.restore();
 		});
 
+		it('resumes a chunked upload after a transient server error', function() {
+			var clock = sinon.useFakeTimers();
+
+			uploader = new OC.Uploader($dummyUploader, {
+				maxChunkSize: 150
+			});
+			uploader.on('fail', failStub);
+
+			var result = addFiles(uploader, [testFile]);
+			var upload = uploader.getUpload(result[0]);
+
+			// Proxy bricht einen Chunk mit 502 ab (HTTP/2: Statustext nur "error")
+			result[0].jqXHR.status = 502;
+			result[0].response = sinon.stub().returns({jqXHR: result[0].jqXHR, textStatus: 'error', errorThrown: ''});
+			result[0].jqXHR.statusText = 'error';
+			result[0].uploadedBytes = 300;
+
+			uploader.fileUploadParam.fail.call($dummyUploader[0], {}, result[0]);
+
+			expect(upload.data.stalled).toEqual(true);
+			expect(upload.data.retries).toEqual(1);
+			expect(failStub.notCalled).toEqual(true);
+
+			var deferred = $.Deferred();
+			getFolderContentsStub.returns(deferred.promise());
+
+			// Serverfehler: erste Pause 5 s, nicht 0,5 s
+			clock.tick(4000);
+			expect(getFolderContentsStub.notCalled).toEqual(true);
+			clock.tick(2000);
+			expect(getFolderContentsStub.calledOnce).toEqual(true);
+			expect(getFolderContentsStub.getCall(0).args[0]).toEqual('uploads/current@user/' + upload.getId());
+
+			deferred.resolve(207, [{name: '0', size: 150}, {name: '150', size: 150}]);
+			expect(result[0].uploadedBytes).toEqual(300);
+			expect(result[0].submit.calledOnce).toEqual(true);
+
+			clock.restore();
+		});
+
+		it('gives a long upload its retries back after progress', function() {
+			var clock = sinon.useFakeTimers();
+
+			uploader = new OC.Uploader($dummyUploader, {
+				maxChunkSize: 150,
+				uploadStallRetries: 1
+			});
+			uploader.on('fail', failStub);
+
+			var showStub = sinon.stub(OC.Notification, 'show');
+			var result = addFiles(uploader, [testFile]);
+			var upload = uploader.getUpload(result[0]);
+			getFolderContentsStub.returns($.Deferred().promise());
+			result[0].jqXHR.status = 503;
+			result[0].response = sinon.stub().returns({jqXHR: result[0].jqXHR, textStatus: 'error', errorThrown: ''});
+
+			result[0].uploadedBytes = 300;
+			uploader.fileUploadParam.fail.call($dummyUploader[0], {}, result[0]);
+			expect(upload.data.retries).toEqual(1);
+			upload.data.stalled = false;
+
+			// weitergekommen: der nächste Aussetzer darf wieder fortsetzen
+			result[0].uploadedBytes = 3000;
+			uploader.fileUploadParam.fail.call($dummyUploader[0], {}, result[0]);
+			expect(upload.data.retries).toEqual(1);
+			expect(showStub.notCalled).toEqual(true);
+
+			// ohne Fortschritt ist nach dem einen Versuch Schluss: Hinweis mit Status
+			upload.data.stalled = false;
+			uploader.fileUploadParam.fail.call($dummyUploader[0], {}, result[0]);
+			expect(showStub.calledOnce).toEqual(true);
+			expect(showStub.getCall(0).args[0]).toContain('HTTP 503');
+
+			showStub.restore();
+			clock.restore();
+		});
+
+		it('does not resume after an insufficient storage error', function() {
+			var showStub = sinon.stub(OC.Notification, 'show');
+			uploader = new OC.Uploader($dummyUploader, {
+				maxChunkSize: 150
+			});
+			uploader.on('fail', failStub);
+
+			var result = addFiles(uploader, [testFile]);
+			var upload = uploader.getUpload(result[0]);
+			result[0].jqXHR.status = 507;
+			result[0].response = sinon.stub().returns({jqXHR: result[0].jqXHR, textStatus: 'error', errorThrown: ''});
+			result[0].uploadedBytes = 300;
+
+			uploader.fileUploadParam.fail.call($dummyUploader[0], {}, result[0]);
+
+			expect(upload.data.retries).toBeFalsy();
+			expect(upload.data.stalled).toBeFalsy();
+			expect(showStub.calledOnce).toEqual(true);
+			expect(showStub.getCall(0).args[0]).toEqual(t('files', 'Not enough free space'));
+			showStub.restore();
+		});
+
+		it('names the HTTP status and does not escape twice', function() {
+			var result = addFiles(uploader, [{name: 'Archive "neu".zip', size: 50, type: 'application/zip'}]);
+			var upload = uploader.getUpload(result[0]);
+			result[0].response = sinon.stub().returns({
+				jqXHR: {status: 504, statusText: 'error'}
+			});
+
+			var message = upload.getResponse().message;
+
+			expect(message).toContain('HTTP 504');
+			expect(message).toContain('Archive "neu".zip');
+			expect(message).not.toContain('&quot;');
+		});
+
 		it('stalled progress will set stalled flag after a while', function() {
 			var clock = sinon.useFakeTimers();
 

@@ -1,0 +1,15 @@
+Bugfix: Large web uploads survive a single failed chunk and name the cause
+
+A chunked upload in the web interface of a logged-in user was abandoned as a
+whole as soon as one chunk request failed - a 44 GB file is about 4,400
+chunks, so a single proxy timeout or PHP-FPM restart during hours of uploading
+was enough. Transient failures (no response, 408, 429 and 5xx except 501/507)
+now go through the same resume path as a stalled upload: the chunks already on
+the server are listed and the upload continues from there, with pauses of
+5, 10 and 15 seconds. Making progress since the last failure restores the full
+number of retries.
+
+The error message now names the HTTP status. Under HTTP/2 there is no status
+text and jQuery only reports "error", which hid whether a proxy answered with
+413, 502 or 504. Upload messages are no longer escaped twice, so quotes and
+ampersands in file names show up as such instead of &quot; and &amp;.
