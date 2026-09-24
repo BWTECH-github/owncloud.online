@@ -139,6 +139,16 @@ class SubAdmin extends PublicEmitter {
 	 * @return IGroup[]
 	 */
 	public function getSubAdminsGroups(IUser $user) {
+		// SEC-27: Spiegelt isSubAdmin() - der Schalter steht hinter der
+		// Admin-Pruefung, damit das Abschalten des Features einem echten
+		// Administrator nie die Benutzerverwaltung entzieht. Fuer alle anderen
+		// gilt: Feature aus heisst keine Gruppen, also auch keine Restsicht auf
+		// die Mitglieder der frueheren Gruppen.
+		if (!$this->groupManager->isAdmin($user->getUID())
+			&& $this->config->getSystemValue('allow_subadmins', true) !== true) {
+			return [];
+		}
+
 		$qb = $this->dbConn->getQueryBuilder();
 
 		$result = $qb->select('gid')
@@ -164,6 +174,12 @@ class SubAdmin extends PublicEmitter {
 	 * @return IUser[]
 	 */
 	public function getGroupsSubAdmins(IGroup $group) {
+		// SEC-27: Ist das Feature abgeschaltet, gibt es keine Gruppenadmins -
+		// eine Liste davon waere eine Restsicht auf einen widerrufenen Zustand.
+		if ($this->config->getSystemValue('allow_subadmins', true) !== true) {
+			return [];
+		}
+
 		$qb = $this->dbConn->getQueryBuilder();
 
 		$result = $qb->select('uid')
@@ -188,6 +204,12 @@ class SubAdmin extends PublicEmitter {
 	 * @return array
 	 */
 	public function getAllSubAdmins() {
+		// SEC-27: Ist das Feature abgeschaltet, gibt es keine Gruppenadmins -
+		// eine Liste davon waere eine Restsicht auf einen widerrufenen Zustand.
+		if ($this->config->getSystemValue('allow_subadmins', true) !== true) {
+			return [];
+		}
+
 		$qb = $this->dbConn->getQueryBuilder();
 
 		$result = $qb->select('*')

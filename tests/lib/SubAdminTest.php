@@ -373,4 +373,65 @@ class SubAdminTest extends TestCase {
 		$this->assertTrue($subAdmin->deleteSubAdmin($u, $g));
 		$this->assertEquals(2, $count);
 	}
+
+	private function configWithSubAdminsDisabled() {
+		$config = $this->createMock(\OCP\IConfig::class);
+		$config->method('getSystemValue')->willReturnCallback(
+			static function ($key, $default = null) {
+				return $key === 'allow_subadmins' ? false : $default;
+			}
+		);
+		return $config;
+	}
+
+	/**
+	 * SEC-27: 'allow_subadmins' => false has to revoke the feature, not just
+	 * the decision. Leaving the enumeration ungated left a former group admin
+	 * with a working view of the members of their old groups - no write access,
+	 * but a stale sight of a state that was supposed to be withdrawn.
+	 */
+	public function testDisablingSubAdminsRevokesTheGroupListing() {
+		$enabled = new \OC\SubAdmin($this->userManager, $this->groupManager, $this->dbConn);
+		$enabled->createSubAdmin($this->users[0], $this->groups[0]);
+		self::assertCount(1, $enabled->getSubAdminsGroups($this->users[0]), 'precondition: the row exists');
+
+		$disabled = new \OC\SubAdmin(
+			$this->userManager,
+			$this->groupManager,
+			$this->dbConn,
+			$this->configWithSubAdminsDisabled()
+		);
+		self::assertSame([], $disabled->getSubAdminsGroups($this->users[0]));
+		self::assertSame([], $disabled->getGroupsSubAdmins($this->groups[0]));
+		self::assertSame([], $disabled->getAllSubAdmins());
+
+		$enabled->deleteSubAdmin($this->users[0], $this->groups[0]);
+	}
+
+	/**
+	 * And the other half of SEC-27, which is why the switch sits BEHIND the
+	 * admin check: turning the feature off must never take user management away
+	 * from a real administrator.
+	 */
+	public function testDisablingSubAdminsLeavesRealAdminsAlone() {
+		$admin = $this->users[0];
+		$this->groupManager->get('admin')->addUser($admin);
+
+		try {
+			$subAdmin = new \OC\SubAdmin(
+				$this->userManager,
+				$this->groupManager,
+				$this->dbConn,
+				$this->configWithSubAdminsDisabled()
+			);
+
+			// isSubAdmin() short-circuits for admins, and the enumeration must
+			// follow the same rule - otherwise isUserAccessible() collapses and
+			// the admin loses the user management screen.
+			self::assertTrue($subAdmin->isSubAdmin($admin));
+			self::assertIsArray($subAdmin->getSubAdminsGroups($admin));
+		} finally {
+			$this->groupManager->get('admin')->removeUser($admin);
+		}
+	}
 }

@@ -1,0 +1,11 @@
+Change: Honour the sub-admin switch when listing group administrators
+
+With `allow_subadmins` turned off, sub-admins could no longer act, but
+the group listings still reported who held the role: getSubAdminsGroups(),
+getGroupsSubAdmins() and getAllSubAdmins() answered from the database regardless
+of the setting. Administration pages built on them showed a group as "managed by"
+people who had no such permission any more.
+
+The three read paths now follow the same switch as the permission checks. A real
+administrator keeps the full listing, so the existing behaviour of treating
+administrators as sub-admins of every group is unaffected.
