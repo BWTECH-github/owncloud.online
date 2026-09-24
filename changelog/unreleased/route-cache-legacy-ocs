@@ -1,0 +1,13 @@
+Bugfix: Legacy OCS routes answered with empty data once the route cache was warm
+
+With the route cache active (default), every /ocs/v1.php route of the old
+API style - the provisioning API (cloud/users, cloud/groups, cloud/apps) and
+the sharing API (apps/files_sharing/api/v1/shares) - answered with status 100
+and an empty "data" after the first request had filled the cache, and the
+log filled with "Undefined array key" from lib/private/legacy/api.php. The
+cache kept the static action ['OC_API', 'call'] of those routes, so the
+router took them for ready-to-use routes and skipped loading the owner app
+whose routes.php registers the actual handlers. Such routes are now
+recognised by their list of owner apps in the cache and go through the same
+reload path as routes without an action; 'core' and 'settings' are skipped
+as owners because they are no loadable apps.

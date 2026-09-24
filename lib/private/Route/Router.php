@@ -504,7 +504,20 @@ class Router implements IRouter {
 		}
 		$routeName = $parameters['_route'];
 
-		if (!isset($parameters['action']) && !isset($parameters['file'])) {
+		// Legacy-OCS-Routen tragen die statische Aktion ['OC_API', 'call']. Die
+		// ist var_export-bar, bleibt deshalb im Cache stehen und sieht wie eine
+		// fertig verwendbare Aktion aus – aufrufbar ist sie trotzdem nicht:
+		// OC_API::call() schlägt den Routennamen in OC_API::$actions nach, und
+		// diese Tabelle füllt erst OC_API::register() beim Laden der
+		// routes.php der Besitzer-App. Ohne Nachladen antwortet jede
+		// /ocs/v1.php-Anfrage mit leerem "data" und protokolliert "Undefined
+		// array key" (api.php#184). Erkennungsmerkmal ohne Blick auf die
+		// Aktion: RouteCache::store() hinterlegt nur für die 'ocs'-Sammlung
+		// eine LISTE von Besitzer-Apps, für jede andere Route einen einzelnen
+		// Namen.
+		$istLegacyOcs = \is_array($this->routeCacheData['routeApps'][$routeName] ?? null);
+
+		if ($istLegacyOcs || (!isset($parameters['action']) && !isset($parameters['file']))) {
 			if (!\array_key_exists($routeName, $this->routeCacheData['routeApps'])) {
 				return null;
 			}
@@ -515,6 +528,12 @@ class Router implements IRouter {
 			}
 
 			$owners = $owner === RouteCache::OWNER_CORE ? [] : (array)$owner;
+			// 'core' und 'settings' sind keine ladbaren Apps – OC_App::loadApp()
+			// suchte dafür ein apps/core/appinfo/app.php. Ihre Routen holt
+			// loadRoutes('core') weiter unten.
+			$owners = \array_values(\array_filter($owners, static function ($app) {
+				return $app !== 'core' && $app !== 'settings';
+			}));
 			foreach ($owners as $app) {
 				if (!\OC_App::isAppLoaded($app)) {
 					\OC_App::loadApp($app);
