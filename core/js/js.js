@@ -3032,6 +3032,21 @@ $.datepicker._attachments = function (input, inst) {
 			});
 		}
 	};
+	// CVE-2021-41183: Diese Überschreibung ersetzt zur Laufzeit die Fassung
+	// aus core/vendor/jquery-ui - der Backport dort wirkt für
+	// _generateHTML also NICHT. weekHeader, Tagesnamen und -kürzel und die
+	// Rückgabe von calculateWeek standen hier weiter roh im Markup
+	// (Gegen-Review 23.09.2026). Sie gehen jetzt über dieselbe Entschärfung
+	// wie in jQuery UI 1.13, einfaches Anführungszeichen eingeschlossen (die
+	// Attribute stehen in '…').
+	var ocoKalenderText = function (wert) {
+		return String(wert)
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#39;');
+	};
 	$.datepicker._generateHTML = function( inst ) {
 		var maxDraw, prevText, prev, nextText, next, currentText, gotoDate,
 			controls, buttonPanel, firstDay, showWeek, dayNames, dayNamesMin,
@@ -3221,11 +3236,11 @@ $.datepicker._attachments = function (input, inst) {
 						row > 0 || col > 0, monthNames, monthNamesShort ) + // draw month headers
 					"</div><table class='ui-datepicker-calendar'><thead>" +
 					"<tr>";
-				thead = ( showWeek ? "<th class='ui-datepicker-week-col'>" + this._get( inst, "weekHeader" ) + "</th>" : "" );
+				thead = ( showWeek ? "<th class='ui-datepicker-week-col'>" + ocoKalenderText( this._get( inst, "weekHeader" ) ) + "</th>" : "" );
 				for ( dow = 0; dow < 7; dow++ ) { // days of the week
 					day = ( dow + firstDay ) % 7;
 					thead += "<th scope='col'" + ( ( dow + firstDay + 6 ) % 7 >= 5 ? " class='ui-datepicker-week-end'" : "" ) + ">" +
-						"<span title='" + dayNames[ day ] + "'>" + dayNamesMin[ day ] + "</span></th>";
+						"<span title='" + ocoKalenderText( dayNames[ day ] ) + "'>" + ocoKalenderText( dayNamesMin[ day ] ) + "</span></th>";
 				}
 				calender += thead + "</tr></thead><tbody>";
 				daysInMonth = this._getDaysInMonth( drawYear, drawMonth );
@@ -3240,7 +3255,7 @@ $.datepicker._attachments = function (input, inst) {
 				for ( dRow = 0; dRow < numRows; dRow++ ) { // create date picker rows
 					calender += "<tr>";
 					tbody = ( !showWeek ? "" : "<td class='ui-datepicker-week-col'>" +
-						this._get( inst, "calculateWeek" )( printDate ) + "</td>" );
+						ocoKalenderText( this._get( inst, "calculateWeek" )( printDate ) ) + "</td>" );
 					for ( dow = 0; dow < 7; dow++ ) { // create date picker days
 						daySettings = ( beforeShowDay ?
 							beforeShowDay.apply( ( inst.input ? inst.input[ 0 ] : null ), [ printDate ] ) : [ true, "" ] );

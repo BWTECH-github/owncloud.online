@@ -18,12 +18,23 @@
 
 'use strict';
 
-const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '../..');
+
+// Playwright liegt je nach Rechner woanders: Umgebungsvariable zuerst, dann die
+// node_modules des Repos, dann die globale Installation des DEV-Rechners.
+// Vorher stand hier nur der letzte Pfad fest, und `make test-js-browser`
+// scheiterte auf jedem anderen Rechner an „Cannot find module“.
+const PLAYWRIGHT = [process.env.PLAYWRIGHT_MODULE, path.join(ROOT, 'node_modules', 'playwright'), '/opt/node22/lib/node_modules/playwright']
+	.find((p) => p && fs.existsSync(p));
+if (!PLAYWRIGHT) {
+	console.error('Playwright nicht gefunden: PLAYWRIGHT_MODULE setzen oder `npm install playwright` im Repo');
+	process.exit(2);
+}
+const { chromium } = require(PLAYWRIGHT);
 const TYPES = {
 	'.js': 'application/javascript',
 	'.html': 'text/html',
