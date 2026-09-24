@@ -29,6 +29,7 @@ namespace Tests\Core\Command\Config\System;
 
 use OC\Core\Command\Config\System\SetConfig;
 use Test\TestCase;
+use OCP\IConfig;
 
 class SetConfigTest extends TestCase {
 	/** @var \PHPUnit\Framework\MockObject\MockObject */
@@ -220,5 +221,75 @@ class SetConfigTest extends TestCase {
 		$this->expectException(\InvalidArgumentException::class);
 
 		self::invokePrivate($this->command, 'castValue', [$value, $type]);
+	}
+
+	public function sensitiveValueProvider() {
+		return [
+			// masked because the key is on the SystemConfig sensitive list
+			[['dbpassword'], 'string', 'topsecret', true, true],
+			[['log.condition', 0, 'shared_secret'], 'string', 'topsecret', true, true],
+			// masked because the key name matches a sensitive name pattern,
+			// even though it is not on the list
+			[['wopi.token.key'], 'string', 'Pc7rTwpsnKfT3NfpvbChTPMxVfMr9X7t', false, true],
+			[['some_app.api_secret'], 'string', 'topsecret', false, true],
+			[['custom.smtp_password'], 'string', 'topsecret', false, true],
+			[['ldap.bind_pwd'], 'string', 'topsecret', false, true],
+			[['some.private_salt'], 'string', 'topsecret', false, true],
+			[['aws.credentials'], 'json', '{"a":"topsecret"}', false, true],
+			// a secret can be numeric as well
+			[['some.secret_pin'], 'integer', '123456', false, true],
+			// name matching is case insensitive
+			[['My.Secret.Thing'], 'string', 'topsecret', false, true],
+			// harmless keys keep showing the value
+			[['loglevel'], 'integer', '2', false, false],
+			[['trusted_domains'], 'string', 'example.com', false, false],
+			// a boolean holds no secret, so it stays readable even when the key
+			// name matches a pattern - "token_auth_enforced" is a real example
+			[['token_auth_enforced'], 'boolean', 'true', false, false],
+			[['grace_period.demo_key.show_popup'], 'boolean', 'false', false, false],
+		];
+	}
+
+	/**
+	 * @dataProvider sensitiveValueProvider
+	 *
+	 * @param array $configNames
+	 * @param string $type
+	 * @param string $newValue
+	 * @param bool $onSensitiveList
+	 * @param bool $expectMasked
+	 */
+	public function testSensitiveValueIsNotEchoed($configNames, $type, $newValue, $onSensitiveList, $expectMasked) {
+		$this->systemConfig->method('isSensitiveKey')
+			->willReturn($onSensitiveList);
+		$this->systemConfig->method('getValue')
+			->willReturn(null);
+
+		$this->consoleInput->method('getArgument')
+			->with('name')
+			->willReturn($configNames);
+		$this->consoleInput->method('getOption')
+			->will($this->returnValueMap([
+				['value', $newValue],
+				['type', $type],
+			]));
+
+		$message = null;
+		$this->consoleOutput->expects($this->once())
+			->method('writeln')
+			->willReturnCallback(function ($line) use (&$message) {
+				$message = $line;
+			});
+
+		self::invokePrivate($this->command, 'execute', [$this->consoleInput, $this->consoleOutput]);
+
+		$this->assertStringContainsString(\implode(' => ', $configNames), $message);
+		if ($expectMasked) {
+			$this->assertStringNotContainsString($newValue, $message);
+			$this->assertStringContainsString(IConfig::SENSITIVE_VALUE, $message);
+		} else {
+			$this->assertStringContainsString($newValue, $message);
+			$this->assertStringNotContainsString(IConfig::SENSITIVE_VALUE, $message);
+		}
 	}
 }
