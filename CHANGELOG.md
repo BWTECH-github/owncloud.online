@@ -56,10 +56,12 @@ admins and users.
 * Bugfix - Große Web-Uploads überstehen einzelne Chunk-Fehler und nennen die Ursache: [#f5e1be9](https://github.com/BWTECH-github/owncloud.online/commit/f5e1be9)
 * Bugfix - Verbindungsabbruch lädt die Seite während eines Uploads nicht mehr neu: [#8432d20](https://github.com/BWTECH-github/owncloud.online/commit/8432d20)
 * Bugfix - Zusammenbau großer Web-Uploads hängt nicht mehr an der offenen Verbindung: [#d4b4f52](https://github.com/BWTECH-github/owncloud.online/commit/d4b4f52)
+* Bugfix - Legacy-OCS-Routen (Provisioning- und Freigabe-API) antworten bei warmem Routen-Cache nicht mehr leer: [#2938f16](https://github.com/BWTECH-github/owncloud.online/commit/2938f16)
 * Bugfix - Apps ohne Code werden beim Upgrade nur abgeschaltet, wenn sie wirklich fehlen: [#ddddb8e](https://github.com/BWTECH-github/owncloud.online/commit/ddddb8e)
 * Bugfix - Bitmap-Vorschau gibt den Dateizeiger auch im Fehlerfall frei: [#80d6175](https://github.com/BWTECH-github/owncloud.online/commit/80d6175)
 * Change - owncloud.log wird ab Werk bei 100 MB rotiert: [#1067b96](https://github.com/BWTECH-github/owncloud.online/commit/1067b96)
 * Change - Market-App 0.10.10 kommt nur noch aus ihrem eigenen Repository: [#186317d](https://github.com/BWTECH-github/owncloud.online/commit/186317d)
+* Change - Market: JS-Bündel reproduzierbar aus den Quellen neu gebaut: [#26df38f](https://github.com/BWTECH-github/owncloud.online/commit/26df38f)
 * Change - Release-Bau gegen Netzstörungen und stille Fehler gehärtet: [#690b738](https://github.com/BWTECH-github/owncloud.online/commit/690b738)
 * Enhancement - Barrierefreiheit: Kontraste, Dateiaktionen als Knöpfe, Favoritenstern: [#60929f0](https://github.com/BWTECH-github/owncloud.online/commit/60929f0)
 
@@ -143,6 +145,19 @@ admins and users.
    festgehalten; `fopen()` im Zusammenbau löst die PHP-8.4-Deprecation nicht
    mehr aus.
 
+* Bugfix - Legacy-OCS-Routen antworten bei warmem Routen-Cache nicht mehr leer
+
+   Mit aktivem Routen-Cache (Standard) lieferte jede `/ocs/v1.php`-Route der
+   alten Bauart – Provisioning-API (`cloud/users`, `cloud/groups`,
+   `cloud/apps`) und Freigabe-API (`apps/files_sharing/api/v1/shares`) – ab
+   der zweiten Anfrage Status 100 mit leerem `data`, im Protokoll stand
+   „Undefined array key“ aus `lib/private/legacy/api.php`; betroffen seit
+   Einführung des Routen-Caches, also auch 11.0.19. Die statische Aktion
+   `['OC_API', 'call']` überlebte den Cache-Dump, der Router hielt die Route
+   für fertig und lud die Besitzer-App nicht nach, deren `routes.php` erst die
+   Aktionstabelle füllt. Solche Routen werden jetzt an ihrer Besitzer-Liste im
+   Cache erkannt und nachgeladen.
+
 * Bugfix - Apps ohne Code werden beim Upgrade nur abgeschaltet, wenn sie wirklich fehlen
 
    Seit 11.0.19 schaltet `occ upgrade` eingeschaltete Apps ohne Code ab statt
@@ -171,6 +186,13 @@ admins and users.
    `apps-external/market` ist eine Kopie von BWTECH-github/market in dem
    Stand aus `build/market.ref`, erzeugt mit `build/sync-market.sh`; der
    Lint-Workflow prüft die Kopie bei jedem Push.
+
+* Change - Market: JS-Bündel reproduzierbar aus den Quellen neu gebaut
+
+   Das eingecheckte `js/market.bundle.js` ließ sich nicht aus `src/` und
+   Lockfile reproduzieren (Prüf-Workflow „Market bundle“ rot seit 07.09.);
+   BWTECH-github/market dbf52b8 enthält den exakten Bau mit Node 22 und
+   webpack 5.105.2, die Kopie unter `apps-external/market` folgt ihm.
 
 * Change - Release-Bau gegen Netzstörungen und stille Fehler gehärtet
 
