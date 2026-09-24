@@ -1,0 +1,9 @@
+Bugfix: A connection hiccup no longer reloads the page during an upload
+
+Any background request of the web interface that failed without a response
+(status 0) - the notifications poll every 30 seconds, for example - made the
+global error handler reload the page after five seconds. A running upload was
+lost with it; for a file of several gigabytes that meant hours of uploading.
+While an upload is in progress the page now stays: the upload resumes after
+its own failures, and the background requests retry by themselves. Lost
+sessions (401) and redirects still reload the page as before.

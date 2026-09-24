@@ -1190,6 +1190,30 @@ describe('Core base tests', function() {
 			clock.tick(waitTimeMs);
 			expect(reloadStub.notCalled).toEqual(true);
 		});
+		it('does not reload on connection loss while an upload is running', function() {
+			var laeuft = true;
+			var pruefung = function() { return laeuft; };
+			OC._uploadInProgressChecks.push(pruefung);
+
+			$(document).trigger(new $.Event('ajaxError'), { status: 0 });
+			clock.tick(waitTimeMs);
+			expect(reloadStub.notCalled).toEqual(true);
+
+			// Sitzung weg: auch während eines Uploads neu laden
+			$(document).trigger(new $.Event('ajaxError'), { status: 401 });
+			clock.tick(waitTimeMs);
+			expect(reloadStub.calledOnce).toEqual(true);
+
+			// ohne laufenden Upload wie bisher
+			reloadStub.reset();
+			OC._reloadCalled = false;
+			laeuft = false;
+			$(document).trigger(new $.Event('ajaxError'), { status: 0 });
+			clock.tick(waitTimeMs);
+			expect(reloadStub.calledOnce).toEqual(true);
+
+			OC._uploadInProgressChecks.splice(OC._uploadInProgressChecks.indexOf(pruefung), 1);
+		});
 		it('displays notification', function() {
 			var xhr = { status: 401 };
 

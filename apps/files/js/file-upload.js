@@ -1674,6 +1674,14 @@ OC.Uploader.prototype = _.extend({
 			}
 		}
 
+		// Solange hochgeladen wird, darf die globale Fehlerbehandlung die Seite
+		// bei einem Verbindungsabbruch nicht neu laden (core/js/js.js).
+		if (OC._uploadInProgressChecks) {
+			OC._uploadInProgressChecks.push(function() {
+				return self.isProcessing();
+			});
+		}
+
 		// warn user not to leave the page while upload is in progress
 		$(window).on('beforeunload', function(e) {
 			if (self.isProcessing()) {

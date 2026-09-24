@@ -879,6 +879,27 @@ var OC = {
 	},
 
 	/**
+	 * Prüfungen, ob gerade ein Datei-Upload läuft. OC.Uploader trägt sich
+	 * hier ein (siehe apps/files/js/file-upload.js).
+	 *
+	 * @type {Array.<Function>}
+	 */
+	_uploadInProgressChecks: [],
+
+	/**
+	 * @return {bool} true, solange irgendein Upload der Seite läuft
+	 */
+	_isUploadInProgress: function () {
+		return _.some(this._uploadInProgressChecks, function (check) {
+			try {
+				return !!check();
+			} catch (e) {
+				return false;
+			}
+		});
+	},
+
+	/**
 	 * Process ajax error, redirects to main page
 	 * if an error/auth error status was returned.
 	 */
@@ -888,6 +909,18 @@ var OC = {
 		// this._userIsNavigatingAway needed to distinguish ajax calls cancelled by navigating away
 		// from calls cancelled by failed cross-domain ajax due to SSO redirect
 		if (xhr.status === 0 && (xhr.statusText === 'abort' || xhr.statusText === 'timeout' || self._reloadCalled)) {
+			return;
+		}
+
+		// Ein Verbindungsabbruch (Status 0) einer Hintergrundanfrage - etwa der
+		// Abfrage der Benachrichtigungen - lud bisher die Seite neu und verwarf
+		// damit einen laufenden Upload, bei großen Dateien Stunden an Arbeit.
+		// Solange ein Upload läuft, bleibt die Seite stehen: der Upload setzt
+		// nach eigenen Fehlern selbst fort, die Abfragen wiederholen sich.
+		if (xhr.status === 0 && self._isUploadInProgress()) {
+			if (window.console && console.warn) {
+				console.warn('Verbindungsproblem während eines Uploads - Seite wird nicht neu geladen');
+			}
 			return;
 		}
 
