@@ -1,6 +1,6 @@
 # Table of Contents
 
-* [Changelog for ownCloud.online Unreleased](#changelog-for-owncloudonline-unreleased)
+* [Changelog for ownCloud.online 11.0.20](#changelog-for-owncloudonline-11020-2026-09-24)
 * [Changelog for ownCloud.online 11.0.19](#changelog-for-owncloudonline-11019-2026-09-16)
 * [Changelog for ownCloud.online 11.0.14](#changelog-for-owncloudonline-11014-2026-08-20)
 * [Changelog for ownCloud.online 11.0.12](#changelog-for-owncloudonline-11012-2026-08-06)
@@ -37,13 +37,111 @@
 * [Changelog for 10.4.1](#changelog-for-owncloud-core-1041-2020-03-30)
 * [Changelog for 10.4.0](#changelog-for-owncloud-core-1040-2020-02-10)
 * [Changelog for 10.3.2](#changelog-for-owncloud-core-1032-2019-12-04)
-# Changelog for ownCloud.online [Unreleased]
+# Changelog for ownCloud.online [11.0.20] (2026-09-24)
+
+The following sections list the changes in ownCloud.online 11.0.20 relevant to
+admins and users.
+
+[11.0.20]: https://github.com/BWTECH-github/owncloud.online
 
 ## Summary
 
-* Bugfix - Apps ohne Code werden beim Upgrade nur abgeschaltet, wenn sie wirklich fehlen
+* Security - WebDAV-Rechteprüfung bei PROPFIND lief nie: [#c941c56](https://github.com/BWTECH-github/owncloud.online/commit/c941c56)
+* Security - `occ config:*:set` gibt Geheimnisse nicht mehr aus: [#ce4db98](https://github.com/BWTECH-github/owncloud.online/commit/ce4db98)
+* Security - Select2: CVE-2016-10744 am Sink geschlossen: [#fc1cc06](https://github.com/BWTECH-github/owncloud.online/commit/fc1cc06)
+* Security - jQuery UI: Korrekturen aus 1.13.0 zurückportiert, auch im Datepicker von js.js: [#9aee75c](https://github.com/BWTECH-github/owncloud.online/commit/9aee75c)
+* Security - Market: lokale Paketquellen auf das Katalogverzeichnis begrenzt: [#0f9e738](https://github.com/BWTECH-github/owncloud.online/commit/0f9e738)
+* Security - Gruppenadmin-Listen folgen dem Schalter `allow_subadmins`: [#1049aa2](https://github.com/BWTECH-github/owncloud.online/commit/1049aa2)
+* Security - Heimatverzeichnis: Symlink im Pfad wird erkannt: [#08b9bdf](https://github.com/BWTECH-github/owncloud.online/commit/08b9bdf)
+* Bugfix - Große Web-Uploads überstehen einzelne Chunk-Fehler und nennen die Ursache: [#f5e1be9](https://github.com/BWTECH-github/owncloud.online/commit/f5e1be9)
+* Bugfix - Verbindungsabbruch lädt die Seite während eines Uploads nicht mehr neu: [#8432d20](https://github.com/BWTECH-github/owncloud.online/commit/8432d20)
+* Bugfix - Zusammenbau großer Web-Uploads hängt nicht mehr an der offenen Verbindung: [#d4b4f52](https://github.com/BWTECH-github/owncloud.online/commit/d4b4f52)
+* Bugfix - Apps ohne Code werden beim Upgrade nur abgeschaltet, wenn sie wirklich fehlen: [#ddddb8e](https://github.com/BWTECH-github/owncloud.online/commit/ddddb8e)
+* Bugfix - Bitmap-Vorschau gibt den Dateizeiger auch im Fehlerfall frei: [#80d6175](https://github.com/BWTECH-github/owncloud.online/commit/80d6175)
+* Change - owncloud.log wird ab Werk bei 100 MB rotiert: [#1067b96](https://github.com/BWTECH-github/owncloud.online/commit/1067b96)
+* Change - Market-App 0.10.10 kommt nur noch aus ihrem eigenen Repository: [#186317d](https://github.com/BWTECH-github/owncloud.online/commit/186317d)
+* Change - Release-Bau gegen Netzstörungen und stille Fehler gehärtet: [#690b738](https://github.com/BWTECH-github/owncloud.online/commit/690b738)
+* Enhancement - Barrierefreiheit: Kontraste, Dateiaktionen als Knöpfe, Favoritenstern: [#60929f0](https://github.com/BWTECH-github/owncloud.online/commit/60929f0)
 
 ## Details
+
+* Security - WebDAV-Rechteprüfung bei PROPFIND lief nie
+
+   Die Prüfung `checkPropFind` war ohne Priorität registriert und lief damit
+   nach Sabres eigener Antwort – also nie. Freigaben, die nur das Hochladen
+   erlauben, ließen sich per WebDAV auflisten. Jetzt Priorität 99 wie upstream
+   (#41676), mit Regressionstest.
+
+* Security - `occ config:*:set` gibt Geheimnisse nicht mehr aus
+
+   `config:system:set` und `config:app:set` gaben den geschriebenen Wert aus;
+   ein so gesetztes Passwort oder API-Schlüssel landete im Terminal, im
+   Container- oder CI-Log. Erkannte Geheimnisse erscheinen jetzt als
+   Platzhalter (upstream #41779/#41780).
+
+* Security - Select2: CVE-2016-10744 am Sink geschlossen
+
+   Ein eigener Formatierer darf nur noch ein DOM-Element oder jQuery-Objekt
+   liefern, eine Zeichenkette wird entschärft – dieselbe Regel wie Select2 ab
+   4.0.6. Das gilt auch für Erweiterungen Dritter. Die Formatierer des Kerns
+   liefern jQuery-Objekte; die Minifikate sind neu erzeugt.
+
+* Security - jQuery UI: Korrekturen aus 1.13.0 zurückportiert
+
+   CVE-2021-41182/41183/41184 in den ausgelieferten Dateien und in der
+   Datepicker-Überschreibung von `core/js/js.js` (weekHeader, Tagesnamen,
+   Kalenderwoche). Nachweis im Browser: `make test-js-browser`.
+
+* Security - Market: lokale Paketquellen auf das Katalogverzeichnis begrenzt
+
+   `file://`-Pakete werden nur noch im lokalen Katalogbetrieb und nur
+   innerhalb des Katalogverzeichnisses angenommen, sonst nur http(s).
+
+* Security - Gruppenadmin-Listen folgen dem Schalter `allow_subadmins`
+
+   Bei abgeschaltetem Schalter nannten drei Listen weiterhin, wer die Rolle
+   innehat. Echte Administratoren behalten die vollständige Liste.
+
+* Security - Heimatverzeichnis: Symlink im Pfad wird erkannt
+
+   Ein Heimatverzeichnis hinter einem Symlink, der aus dem Datenverzeichnis
+   herausführt, wird schon vor dem Anlegen abgelehnt. Ein Datenverzeichnis,
+   das selbst über einen Symlink erreicht wird, funktioniert wie bisher.
+
+* Bugfix - Große Web-Uploads überstehen einzelne Chunk-Fehler
+
+   Ein einzelner fehlgeschlagener Chunk verwarf bisher den ganzen Upload; bei
+   einer 44-GB-Datei (rund 4 400 Chunks) genügte ein Proxy-Timeout oder ein
+   PHP-FPM-Neustart. Vorübergehende Fehler (keine Antwort, 408, 429, 5xx außer
+   501/507) setzen den Upload jetzt fort. Die Meldung nennt den HTTP-Status
+   (unter HTTP/2 stand bisher nur „error“), Anführungszeichen erscheinen nicht
+   mehr als `&quot;`.
+
+* Bugfix - Verbindungsabbruch lädt die Seite während eines Uploads nicht mehr neu
+
+   Scheiterte eine Hintergrundanfrage ohne Antwort (etwa die
+   Benachrichtigungen), lud die Seite nach fünf Sekunden neu und verwarf den
+   laufenden Upload. Solange hochgeladen wird, bleibt die Seite jetzt stehen –
+   auch nach dem letzten Chunk, während der Server die Datei zusammensetzt
+   („Verarbeite Daten“). Genau dort erschien bisher am Ende eines 17-GB-Uploads
+   „Problem beim Laden der Seite“, das Neuladen brach den Zusammenbau ab und
+   die Datei fehlte.
+
+* Bugfix - Zusammenbau großer Web-Uploads hängt nicht mehr an der offenen Verbindung
+
+   Der abschließende MOVE der Web-Oberfläche blieb bisher offen, bis der
+   Server die Datei zusammengesetzt hatte – Minuten bei wenigen Gigabyte,
+   Stunden mit langsamem Virenscanner; jeder Proxy-Timeout, PHP-FPM-Reload
+   oder Seitenwechsel dazwischen brach ab und ließ eine `.part`-Datei zurück.
+   Der asynchrone MOVE (OC-LazyOps) steht jetzt jeder Anfrage offen, die ihn
+   verlangt; `dav.enable.async` steuert weiterhin nur die Capability für
+   Sync-Clients. Der Server antwortet sofort mit 202 (Content-Length 0, unter
+   PHP-FPM mit `fastcgi_finish_request()`), setzt danach zusammen und führt
+   den Auftragsstatus, den die Oberfläche abfragt. Meldet der Server das
+   Ergebnis nicht mehr, sagt die Oberfläche das, statt „status code 202“ zu
+   zeigen. Ein PHP-Fehler beim Zusammenbau wird als Auftragsfehler
+   festgehalten; `fopen()` im Zusammenbau löst die PHP-8.4-Deprecation nicht
+   mehr aus.
 
 * Bugfix - Apps ohne Code werden beim Upgrade nur abgeschaltet, wenn sie wirklich fehlen
 
@@ -55,6 +153,38 @@
    Ordner hat; sonst bricht das Upgrade wie vor 11.0.19 ab und nennt den
    Grund. Jede Abschaltung steht mit dem bisherigen `enabled`-Wert im
    Serverprotokoll.
+
+* Bugfix - Bitmap-Vorschau gibt den Dateizeiger auch im Fehlerfall frei
+
+   Dateien ohne passenden ImageMagick-Decoder hielten bisher ihren
+   Dateizeiger bis zum Ende des Prozesses (upstream #41835).
+
+* Change - owncloud.log wird ab Werk bei 100 MB rotiert
+
+   `log_rotate_size` steht ohne eigene Einstellung jetzt auf 100 MB statt
+   `false`. Rotiert wird im Cron-Lauf; mit `owncloud.log.1` belegen die
+   Protokolle höchstens 200 MB. Ein ausdrückliches `false` oder `0` schaltet
+   die Rotation weiterhin ab, vorhandene Einstellungen bleiben unberührt.
+
+* Change - Market-App 0.10.10 kommt nur noch aus ihrem eigenen Repository
+
+   `apps-external/market` ist eine Kopie von BWTECH-github/market in dem
+   Stand aus `build/market.ref`, erzeugt mit `build/sync-market.sh`; der
+   Lint-Workflow prüft die Kopie bei jedem Push.
+
+* Change - Release-Bau gegen Netzstörungen und stille Fehler gehärtet
+
+   Zeitgrenze und Nebenläufigkeitssperre je Version, Wiederholungen für die
+   Build-Werkzeuge, kein verdecktes `yarn install` mehr, das Manifest nennt das
+   tatsächlich gebaute Commit, ein volles Artefakt-Kontingent hält das Release
+   nicht mehr auf.
+
+* Enhancement - Barrierefreiheit: Kontraste, Dateiaktionen als Knöpfe, Favoritenstern
+
+   Rahmen von Feldern und Bedienelementen sowie des Umbenennen-Felds mit
+   ausreichendem Kontrast, lesbarer Text deaktivierter Elemente, Aktionen in
+   der Dateizeile als eigene Knöpfe statt verschachtelter Links, der
+   Favoritenstern meldet seinen Zustand (aria-pressed).
 
 # Changelog for ownCloud.online [11.0.19] (2026-09-16)
 

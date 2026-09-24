@@ -121,7 +121,7 @@ bricht bei mehreren gleichzeitigen Zugriffen ein. Näheres unter
 
 Die Releases liegen unter
 <https://github.com/BWTECH-github/owncloud.online/releases>. Der Tag eines
-Release lautet `v<Version>`, aktuell **11.0.13**.
+Release lautet `v<Version>`, aktuell **11.0.20**.
 
 Ein Release enthält:
 
@@ -138,8 +138,8 @@ Archiv und Prüfsummendatei herunterladen:
 
 ```bash
 cd /tmp
-curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.13/owncloud-online-11.0.13.tar.gz
-curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.13/SHA256SUMS.txt
+curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.20/owncloud-online-11.0.20.tar.gz
+curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.20/SHA256SUMS.txt
 ```
 
 Prüfsumme vergleichen — der Befehl muss `OK` ausgeben:
@@ -160,7 +160,7 @@ entsteht es unterhalb des Zielpfades und wird danach umbenannt:
 
 ```bash
 sudo mkdir -p /var/www
-sudo tar -xzf /tmp/owncloud-online-11.0.13.tar.gz -C /var/www
+sudo tar -xzf /tmp/owncloud-online-11.0.20.tar.gz -C /var/www
 sudo mv /var/www/owncloud /var/www/owncloud.online
 ```
 

@@ -7,7 +7,7 @@ wird es nicht von Hand: Ein Git-Tag stößt den Workflow
 legt Prüfsummen, eine Stückliste (SBOM) und ein Manifest daneben und
 veröffentlicht alles als GitHub-Release. Fertige Releases stehen unter
 <https://github.com/BWTECH-github/owncloud.online/releases>, die aktuelle
-Fassung ist 11.0.13.
+Fassung ist 11.0.20.
 
 Diese Seite beschreibt den Weg vom Versionsstand im Repository bis zum
 geprüften Archiv auf dem Server. Wer nichts baut, sondern nur ein
@@ -23,7 +23,7 @@ Release-Archive, wenn der Bau ohne Tag angestoßen wird.
 | Feld | Bedeutung |
 | --- | --- |
 | `$OC_Version` | Vierstellige Fassung, etwa `[11, 0, 13, 0]`. Die vierte Stelle ist laut Kommentar in der Datei ausdrücklich **nicht** Teil der öffentlichen Versionsnummer, sondern löst Datenbank-Aktualisierungen zwischen Vorabfassungen aus |
-| `$OC_VersionString` | Die lesbare Version, etwa `11.0.13`. Diesen Wert liest der Release-Workflow aus, wenn ihm keine Version übergeben wurde |
+| `$OC_VersionString` | Die lesbare Version, etwa `11.0.20`. Diesen Wert liest der Release-Workflow aus, wenn ihm keine Version übergeben wurde |
 | `$OC_VersionCanBeUpgradedFrom` | Älteste Stände, von denen aus eine Aktualisierung erlaubt ist |
 | `$OC_Channel` | Auslieferungskanal, im Repository `bwtech`. Der Bau überschreibt ihn mit dem Wert von `RELEASE_CHANNEL` |
 | `$OC_Build` | Im Repository leer. Der Bau trägt hier Zeitstempel und Commit ein |
@@ -80,8 +80,8 @@ ist, wird also trotzdem gebaut; prüfen Sie vorher den letzten Lauf.
 Der Workflow reagiert auf jeden Tag, der mit `v` beginnt:
 
 ```bash
-git tag -a v11.0.13 -m "owncloud.online 11.0.13"
-git push origin v11.0.13
+git tag -a v11.0.20 -m "owncloud.online 11.0.20"
+git push origin v11.0.20
 ```
 
 Damit ist der Bau angestoßen. Die Version ermittelt der Workflow aus dem
@@ -159,7 +159,7 @@ Für die Herkunft gibt es die Bau-Bescheinigung (Sigstore, schlüssellos über
 OIDC), die der Workflow für die Archive und die SBOM ausstellt:
 
 ```bash
-gh attestation verify owncloud-online-11.0.13.tar.gz \
+gh attestation verify owncloud-online-11.0.20.tar.gz \
   --repo BWTECH-github/owncloud.online
 ```
 

@@ -206,7 +206,7 @@ Die mitgelieferten Apps kommen mit dem Server. Sie stecken im Release-Archiv
 und werden nicht einzeln nachinstalliert, sondern mit dem Server aktualisiert.
 Zu jedem Release gehören außerdem `SHA256SUMS.txt` zur Prüfung der Archive,
 `sbom-owncloud-online-<version>.cdx.json`, `release-manifest.json` und
-`removed-release-files.txt`. Aktuelle Fassung ist 11.0.13.
+`removed-release-files.txt`. Aktuelle Fassung ist 11.0.20.
 
 ## Aktivieren und abschalten
 
