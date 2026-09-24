@@ -101,6 +101,9 @@ class LazyOpsPlugin extends ServerPlugin {
 
 		$response->setStatus(202);
 		$response->setHeader('Connection', 'close');
+		// Ohne Content-Length wartet der Client bis zum Skriptende, also bis
+		// der Zusammenbau fertig ist – die 202 wäre dann wertlos.
+		$response->setHeader('Content-Length', '0');
 		$response->setHeader('OC-JobStatus-Location', $location);
 
 		$this->shutdownManager->register(function () use ($request, $response) {
@@ -116,6 +119,11 @@ class LazyOpsPlugin extends ServerPlugin {
 		}
 
 		\flush();
+		// Unter PHP-FPM hält nginx die Verbindung sonst bis zum Skriptende;
+		// die Antwort geht jetzt raus, der Zusammenbau läuft losgelöst weiter.
+		if (\function_exists('fastcgi_finish_request')) {
+			\fastcgi_finish_request();
+		}
 		$request->removeHeader('OC-LazyOps');
 		$responseDummy = new Response();
 		try {
@@ -129,7 +137,7 @@ class LazyOpsPlugin extends ServerPlugin {
 				'fileId' => $response->getHeader('OC-FileId'),
 				'ETag' => $response->getHeader('ETag')
 			]);
-		} catch (\Exception $ex) {
+		} catch (\Throwable $ex) {
 			$this->logger->logException($ex);
 
 			$this->setJobStatus([

@@ -354,6 +354,7 @@ OC.FileUpload.prototype = {
 			return $.Deferred().resolve().promise();
 		}
 
+		var self = this;
 		var uid = OC.getCurrentUser().uid;
 		var mtime = this.getLastModified();
 		var size = this.getFile().size;
@@ -399,7 +400,8 @@ OC.FileUpload.prototype = {
 								OC.Notification.show(obj.errorMessage);
 							}
 							doneDeferred.reject(status, response);
-						} else if (obj && (obj.status === 'started' || obj.status === 'initial')) {
+						} else if (obj && (obj.status === 'started' || obj.status === 'init' || obj.status === 'initial')) {
+							// LazyOpsPlugin schreibt vor dem Start "init", nicht "initial"
 							pollRetries = 0;
 							// call it again after some short delay
 							setTimeout(poll, 1000);
@@ -418,7 +420,11 @@ OC.FileUpload.prototype = {
 				var schedulePollRetry = function() {
 					pollRetries++;
 					if (pollRetries > maxPollRetries) {
-						doneDeferred.reject(status, response);
+						// Der Server meldet sich nicht mehr: das sagen, statt
+						// "status code 202" zu zeigen
+						doneDeferred.reject(status, {
+							message: t('files', 'The server did not report whether "{file}" was assembled. Reload the folder later to check whether the file is there.', {file: self.getFileName()}, undefined, {escape: false})
+						});
 						return;
 					}
 					// Backoff: 1s, 2s, 4s, 8s, 16s
@@ -827,6 +833,13 @@ OC.Uploader.prototype = _.extend({
 		}
 		return null;
 	},
+
+	/**
+	 * Anzahl der Uploads, deren Zusammenbau auf dem Server noch läuft
+	 *
+	 * @type {int}
+	 */
+	_finalizing: 0,
 
 	/**
 	 * Vorübergehender Fehler, nach dem ein Chunk-Upload fortgesetzt werden darf
@@ -1642,7 +1655,14 @@ OC.Uploader.prototype = _.extend({
 				});
 				fileupload.on('fileuploaddone', function(e, data) {
 					var upload = self.getUpload(data);
-					upload.done().then(function() {
+					// Nach dem letzten Chunk setzt der Server die Datei zusammen
+					// (MOVE, bei großen Dateien Minuten); die Uploads gelten dann
+					// nicht mehr als "pending", der Schutz vor dem Neuladen der
+					// Seite muss diese Phase trotzdem abdecken.
+					self._finalizing++;
+					upload.done().always(function() {
+						self._finalizing = Math.max(0, self._finalizing - 1);
+					}).then(function() {
 						self.trigger('done', e, upload);
 						// defer because sometimes the current upload is still in pending
 						// state but frees itself afterwards
@@ -1678,7 +1698,7 @@ OC.Uploader.prototype = _.extend({
 		// bei einem Verbindungsabbruch nicht neu laden (core/js/js.js).
 		if (OC._uploadInProgressChecks) {
 			OC._uploadInProgressChecks.push(function() {
-				return self.isProcessing();
+				return self.isProcessing() || self._finalizing > 0;
 			});
 		}
 

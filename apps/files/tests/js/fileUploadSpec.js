@@ -531,6 +531,25 @@ describe('OC.Upload tests', function() {
 			expect(message).not.toContain('&quot;');
 		});
 
+		it('keeps the page from reloading while the server assembles the file', function() {
+			var result = addFiles(uploader, [testFile]);
+			var upload = uploader.getUpload(result[0]);
+			var check = _.last(OC._uploadInProgressChecks);
+			var assembly = $.Deferred();
+			var doneStub = sinon.stub(upload, 'done').returns(assembly.promise());
+
+			// alle Chunks sind oben, der MOVE läuft noch
+			$dummyUploader.trigger('fileuploaddone', result[0]);
+			expect(doneStub.calledOnce).toEqual(true);
+			expect(uploader.isProcessing()).toEqual(false);
+			expect(check()).toEqual(true);
+
+			assembly.resolve(201, {});
+			expect(check()).toEqual(false);
+
+			doneStub.restore();
+		});
+
 		it('stalled progress will set stalled flag after a while', function() {
 			var clock = sinon.useFakeTimers();
 

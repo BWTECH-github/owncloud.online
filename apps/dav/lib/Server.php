@@ -110,15 +110,17 @@ class Server {
 		$this->server = new Connector\Sabre\Server($tree);
 
 		$config = OC::$server->getConfig();
-		if ($config->getSystemValue('dav.enable.async', false)) {
-			$this->server->addPlugin(new LazyOpsPlugin(
-				OC::$server->getUserSession(),
-				OC::$server->getURLGenerator(),
-				OC::$server->getShutdownHandler(),
-				OC::$server->query(JobStatusMapper::class),
-				OC::$server->getLogger()
-			));
-		}
+		// Immer registriert: das Plugin greift nur bei Anfragen mit dem Kopf
+		// OC-LazyOps. Die Web-Oberfläche schickt ihn und hielte sonst die
+		// Verbindung für den ganzen Zusammenbau großer Dateien offen;
+		// dav.enable.async steuert weiterhin nur die Capability für Clients.
+		$this->server->addPlugin(new LazyOpsPlugin(
+			OC::$server->getUserSession(),
+			OC::$server->getURLGenerator(),
+			OC::$server->getShutdownHandler(),
+			OC::$server->query(JobStatusMapper::class),
+			OC::$server->getLogger()
+		));
 
 		// Backends
 		$authBackend = new Auth(

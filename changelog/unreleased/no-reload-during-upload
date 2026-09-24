@@ -7,3 +7,9 @@ lost with it; for a file of several gigabytes that meant hours of uploading.
 While an upload is in progress the page now stays: the upload resumes after
 its own failures, and the background requests retry by themselves. Lost
 sessions (401) and redirects still reload the page as before.
+
+The protection also covers the phase after the last chunk, while the server
+assembles the file ("Processing files"). Until now the upload no longer
+counted as running there, so the message "Problem loading page, reloading in
+5 seconds" appeared right at the end of a 17 GB upload and the page reload
+aborted the assembly: the file never appeared.

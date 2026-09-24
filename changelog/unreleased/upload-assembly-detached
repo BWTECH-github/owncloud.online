@@ -1,0 +1,17 @@
+Bugfix: The assembly of a large web upload no longer depends on the open connection
+
+After the last chunk the web interface sends one MOVE request that makes the
+server assemble the file. That request stayed open until the assembly was
+done - minutes for a few gigabytes, hours with a slow virus scanner - and
+every proxy timeout, PHP-FPM reload or page reload in between killed the
+assembly and left a stale .part file behind.
+
+The asynchronous MOVE (OC-LazyOps) is now always available for requests that
+ask for it; `dav.enable.async` still only controls the capability announced
+to sync clients. The server answers with 202 at once (Content-Length 0, and
+`fastcgi_finish_request()` under PHP-FPM so nginx releases the connection),
+assembles the file after the response and records the job status, which the
+web interface polls until it is finished. The poll accepts the initial status
+`init`, and a PHP error during the assembly is recorded as job error instead
+of leaving the status at `started`. The assembly stream no longer triggers
+the PHP 8.4 deprecation for `fopen()` with a null third argument.
