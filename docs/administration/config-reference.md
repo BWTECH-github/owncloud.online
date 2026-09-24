@@ -58,7 +58,7 @@ Anmelde-Bremse gegen Passwort-Raten. Siehe
 | --- | --- |
 | `loglevel` | `2` (Warnungen) im Betrieb, `0` nur kurzzeitig zur Fehlersuche |
 | `logfile` | Abweichender Pfad, sonst `<datadirectory>/owncloud.log` |
-| `log_rotate_size` | Rotationsgröße in Bytes, z. B. `104857600` (100 MB) |
+| `log_rotate_size` | Rotationsgröße in Bytes, Standard `104857600` (100 MB); `0` schaltet die Rotation ab |
 
 Details unter [Serverprotokoll und Fehlermeldungen](logging.md).
 

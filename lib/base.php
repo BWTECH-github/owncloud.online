@@ -840,7 +840,10 @@ class OC {
 	 */
 	public static function registerLogRotate() {
 		$systemConfig = \OC::$server->getSystemConfig();
-		if ($systemConfig->getValue('installed', false) && $systemConfig->getValue('log_rotate_size', false) && !self::checkUpgrade(false)) {
+		$rotateSize = \OC\Log\Rotate::maxSize(
+			$systemConfig->getValue('log_rotate_size', \OC\Log\Rotate::DEFAULT_MAX_SIZE)
+		);
+		if ($systemConfig->getValue('installed', false) && $rotateSize > 0 && !self::checkUpgrade(false)) {
 			//don't try to do this before we are properly setup
 			//use custom logfile path if defined, otherwise use default of owncloud.log in data directory
 			self::$server->getJobList()->add('OC\Log\Rotate', $systemConfig->getValue('logfile', $systemConfig->getValue('datadirectory', OC::$SERVERROOT . '/data') . '/owncloud.log'));

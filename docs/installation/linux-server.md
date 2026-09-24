@@ -660,17 +660,18 @@ Zusätzlich prüfen:
 - **Mailversand** einrichten und testen. Ohne SMTP fallen Passwort-Reset,
   Freigabe-Einladungen und Kontoanlage still aus, siehe
   [E-Mail-Versand](../administration/email.md).
-- **Protokollrotation**: `log_rotate_size` steht ohne Zutun auf `false`,
-  `owncloud.log` wächst dann unbegrenzt. Entweder die eingebaute Rotation
-  aktivieren …
+- **Protokollrotation**: `log_rotate_size` steht ohne Zutun auf `104857600`
+  (100 MB). `owncloud.log` wird also bereits rotiert, sobald der Cron-Lauf
+  eingerichtet ist — zusammen mit `owncloud.log.1` belegen die Protokolle
+  damit höchstens 200 MB. Eine abweichende Größe:
 
 ```bash
 sudo -u www-data php8.4 occ config:system:set log_rotate_size \
-  --value 104857600 --type integer
+  --value 524288000 --type integer
 ```
 
-  … womit bei 100 MB nach `owncloud.log.1` rotiert wird, oder die Datei über
-  das `logrotate` des Systems behandeln. Siehe
+  Wer die Dateien lieber über das `logrotate` des Systems behandelt, schaltet
+  die eingebaute Rotation mit `--value 0 --type integer` ab. Siehe
   [Serverprotokoll und Fehlermeldungen](../administration/logging.md).
 
 - **Sicherung** einrichten, bevor die Instanz produktiv genutzt wird.

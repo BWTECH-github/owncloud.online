@@ -1,0 +1,20 @@
+Change: Rotate owncloud.log at 100 MB by default
+
+`log_rotate_size` came with the value `false`, so an installation that was never
+explicitly configured for log rotation wrote a single owncloud.log that only the
+disk could stop. In the field that produced log files well past 40 GB, on
+machines where the first sign of trouble was a full partition.
+
+The default is now 104857600 (100 MB). Rotation still happens in the cron job as
+before: owncloud.log becomes owncloud.log.1 and an older owncloud.log.1 is
+overwritten, so the log files together take at most twice that value.
+
+Setting `log_rotate_size` to `false` or `0` still switches rotation off
+completely - installations that hand their log files to logrotate or a
+comparable tool keep working unchanged, and nothing about an existing explicit
+setting is touched on upgrade.
+
+Two values that used to behave oddly were tidied up on the way: `true` now means
+"rotate at the default size" rather than "rotate on every single cron run", and a
+size written as text in a hand-edited config.php ('100 MB') is parsed instead of
+being compared as a string.

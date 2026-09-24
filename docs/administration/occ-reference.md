@@ -328,7 +328,7 @@ sudo -u www-data php8.4 occ log:owncloud --enable --rotate-size 100M
 `log:manage` schreibt die Systemwerte `log_type` (`owncloud`, `syslog` oder
 `errorlog`), `loglevel` (`debug`, `info`, `warning`, `error`, `fatal`) und
 `logtimezone`. `log:owncloud` schreibt `logfile` und `log_rotate_size`
-(`0` schaltet die Rotation ab). Zum Lesen und Auswerten siehe
+(Standard `104857600`, `0` schaltet die Rotation ab). Zum Lesen und Auswerten siehe
 [Serverprotokoll und Fehlermeldungen](logging.md).
 
 ## Apps

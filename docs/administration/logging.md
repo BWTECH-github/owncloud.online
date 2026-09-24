@@ -61,9 +61,16 @@ occ log:manage --level 1
 # aktuelle Einstellungen anzeigen
 occ log:manage
 
-# Log-Rotation, damit die Datei nicht unbegrenzt wächst (Bytes, hier 100 MB)
-occ config:system:set log_rotate_size --value 104857600 --type integer
+# Log-Rotation: Standard sind 104857600 Bytes (100 MB), hier auf 500 MB
+occ config:system:set log_rotate_size --value 524288000 --type integer
+
+# Rotation abschalten, wenn das logrotate des Systems die Datei behandelt
+occ config:system:set log_rotate_size --value 0 --type integer
 ```
+
+Rotiert wird beim Cron-Lauf: `owncloud.log` wird zu `owncloud.log.1`, eine
+ältere `owncloud.log.1` wird dabei überschrieben. Die Protokolle belegen
+zusammen also höchstens das Doppelte der eingestellten Größe.
 
 `--level 0` (Debug) nur vorübergehend zur Fehlersuche einschalten: Es erzeugt sehr
 viele Einträge und kann Details enthalten, die nicht dauerhaft gespeichert werden

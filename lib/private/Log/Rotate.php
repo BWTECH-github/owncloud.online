@@ -30,10 +30,52 @@ namespace OC\Log;
  * location and manage that with your own tools.
  */
 class Rotate extends \OC\BackgroundJob\Job {
+	/**
+	 * 100 MiB. Ohne einen Vorgabewert waechst owncloud.log unbegrenzt: auf
+	 * Instanzen, die nie eine Rotation eingerichtet bekommen haben, sind so
+	 * schon Logdateien jenseits von 40 GB entstanden und haben die Platte
+	 * gefuellt. Wer die Dateien mit logrotate o.ae. selbst verwaltet, setzt
+	 * 'log_rotate_size' ausdruecklich auf false und schaltet sie damit ab.
+	 */
+	public const DEFAULT_MAX_SIZE = 104857600;
+
 	private $max_log_size;
+
+	/**
+	 * Die wirksame Obergrenze in Byte. 0 heisst: keine Rotation.
+	 *
+	 * Entscheidend ist, dass ein ausdrueckliches Abschalten weiterhin
+	 * abschaltet - nur das Fehlen des Eintrags bekommt den Vorgabewert.
+	 *
+	 * @param mixed $configured Wert aus der config.php
+	 */
+	public static function maxSize($configured): int {
+		// 'log_rotate_size' => true hiess frueher "rotiere bei jedem Lauf",
+		// gemeint war aber immer "schalte die Rotation ein".
+		if ($configured === true) {
+			return self::DEFAULT_MAX_SIZE;
+		}
+
+		// Eine handgeschriebene config.php darf '100 MB' enthalten.
+		if (\is_string($configured) && $configured !== '' && !\is_numeric($configured)) {
+			$parsed = \OCP\Util::computerFileSize($configured);
+			$configured = $parsed === false ? 0 : $parsed;
+		}
+
+		if (!\is_numeric($configured)) {
+			return 0;
+		}
+
+		$size = (int)$configured;
+
+		return $size > 0 ? $size : 0;
+	}
+
 	public function run($logFile) {
-		$this->max_log_size = \OC::$server->getConfig()->getSystemValue('log_rotate_size', false);
-		if ($this->max_log_size) {
+		$this->max_log_size = self::maxSize(
+			\OC::$server->getConfig()->getSystemValue('log_rotate_size', self::DEFAULT_MAX_SIZE)
+		);
+		if ($this->max_log_size > 0) {
 			$filesize = @\filesize($logFile);
 			if ($filesize >= $this->max_log_size) {
 				$this->rotate($logFile);

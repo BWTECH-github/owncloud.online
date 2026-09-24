@@ -107,7 +107,7 @@ class OwnCloudTest extends TestCase {
 				['log_type', 'owncloud', 'log_type_value'],
 				['datadirectory', \OC::$SERVERROOT.'/data', '/data/directory/'],
 				['logfile', '/data/directory/owncloud.log', '/var/log/owncloud.log'],
-				['log_rotate_size', 0, 5 * 1024 * 1024],
+				['log_rotate_size', \OC\Log\Rotate::DEFAULT_MAX_SIZE, 5 * 1024 * 1024],
 			]));
 
 		$this->consoleOutput

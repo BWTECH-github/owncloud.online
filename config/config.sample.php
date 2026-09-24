@@ -949,14 +949,18 @@ $CONFIG = [
 /**
  * Define the maximum log rotation file size
  * Enables log rotation and limits the total size of the logfiles.
- * The default is 0 or false which disables log rotation.
- * Specify a size in bytes, for example 104857600
- * (100 megabytes = 100 * 1024 * 1024 bytes).
+ * The default is 104857600 (100 megabytes = 100 * 1024 * 1024 bytes), so an
+ * installation that was never configured for log rotation cannot fill its
+ * disk with a single owncloud.log any more.
+ * Specify a size in bytes. Set this to false or 0 to disable log rotation,
+ * for example when the log files are managed by logrotate or a comparable
+ * tool outside of owncloud.online.
  * A new logfile is created with a new name when the old logfile reaches the defined limit.
  * If a rotated log file is already present, it will be overwritten.
- * If enabled, only the active log file and one rotated file are stored.
+ * If enabled, only the active log file and one rotated file are stored, so
+ * the log files together use at most twice the configured size.
  */
-'log_rotate_size' => false,
+'log_rotate_size' => 104857600,
 
 /**
  * Alternate Code Locations

@@ -101,8 +101,10 @@ class OwnCloud extends Command {
 		$defaultLogFile = \rtrim((string)$dataDir, '/').'/owncloud.log';
 		$output->writeln('Log file: '.$this->config->getSystemValue('logfile', $defaultLogFile));
 
-		$rotateSize = $this->config->getSystemValue('log_rotate_size', 0);
-		if ($rotateSize) {
+		$rotateSize = \OC\Log\Rotate::maxSize(
+			$this->config->getSystemValue('log_rotate_size', \OC\Log\Rotate::DEFAULT_MAX_SIZE)
+		);
+		if ($rotateSize > 0) {
 			$rotateString = \OCP\Util::humanFileSize($rotateSize);
 		} else {
 			$rotateString = 'disabled';
