@@ -1,0 +1,6 @@
+Bugfix: No PHP 8.2+ deprecation for every write of a user with a quota
+
+The quota and close stream wrappers did not declare the $context property
+that PHP sets when a wrapper is opened. PHP created it dynamically, which is
+deprecated since PHP 8.2 and put an entry into the log for every write of a
+user with a quota (and for object store writes through the close wrapper).

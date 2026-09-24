@@ -34,6 +34,14 @@ namespace OC\Files\Stream;
  * stream wrapper that provides a callback on stream close
  */
 class Close {
+	/**
+	 * Von PHP gesetzt, wenn der Wrapper geöffnet wird. Ohne Deklaration
+	 * legt PHP die Eigenschaft dynamisch an (Deprecation seit PHP 8.2).
+	 *
+	 * @var resource|null
+	 */
+	public $context;
+
 	private static $callBacks = [];
 	private $path = '';
 	private $source;

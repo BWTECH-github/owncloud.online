@@ -1,0 +1,12 @@
+Bugfix: The web interface reports when the server stops assembling an upload
+
+The detached assembly of a large web upload (asynchronous MOVE) now writes
+its progress and a timestamp into the job status every ten seconds. The web
+interface shows the percentage while "Processing files" and, when the server
+has not reported anything for five minutes - for example because a PHP-FPM
+reload killed the worker - says so instead of waiting silently. It keeps
+checking, removes the notice when the server reports again and gives up with
+a clear message after an hour without any report. An error of the assembly
+is shown once, with the reason reported by the server and its status code
+(507 still cancels the remaining uploads), instead of a second, generic
+"status code 202" message.

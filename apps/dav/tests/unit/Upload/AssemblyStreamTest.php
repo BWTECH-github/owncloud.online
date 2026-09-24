@@ -49,6 +49,30 @@ class AssemblyStreamTest extends \Test\TestCase {
 		$this->assertEquals($expected, $content);
 	}
 
+	public function testReportsTheReadPositionToTheProgressListener() {
+		$positions = [];
+		\OCA\DAV\Upload\AssemblyStream::setProgressListener(function ($position, $size) use (&$positions) {
+			$positions[] = [$position, $size];
+		});
+		try {
+			$stream = \OCA\DAV\Upload\AssemblyStream::wrap([$this->buildNode('0', 'abcd'), $this->buildNode('4', 'ef')]);
+			while (!\feof($stream)) {
+				\fread($stream, 3);
+			}
+		} finally {
+			\OCA\DAV\Upload\AssemblyStream::setProgressListener(null);
+		}
+
+		$this->assertNotEmpty($positions);
+		$this->assertSame([6, 6], \end($positions));
+		$previous = 0;
+		foreach ($positions as [$position, $size]) {
+			$this->assertSame(6, $size);
+			$this->assertGreaterThan($previous, $position);
+			$previous = $position;
+		}
+	}
+
 	public function providesNodes() {
 		$data8k = $this->makeData(8192);
 		$dataLess8k = $this->makeData(8191);

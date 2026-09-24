@@ -41,6 +41,15 @@ class Quota {
 	private static $streams = [];
 
 	/**
+	 * Von PHP gesetzt, wenn der Wrapper geöffnet wird. Ohne Deklaration
+	 * legt PHP die Eigenschaft dynamisch an; seit PHP 8.2 steht dann bei
+	 * jedem Schreibvorgang eines Nutzers mit Quota eine Deprecation im Log.
+	 *
+	 * @var resource|null
+	 */
+	public $context;
+
+	/**
 	 * @var resource $source
 	 */
 	private $source;

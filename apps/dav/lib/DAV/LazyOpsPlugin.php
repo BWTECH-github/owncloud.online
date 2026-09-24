@@ -23,6 +23,7 @@ namespace OCA\DAV\DAV;
 
 use OCA\DAV\JobStatus\Entity\JobStatus;
 use OCA\DAV\JobStatus\Entity\JobStatusMapper;
+use OCA\DAV\Upload\AssemblyStream;
 use OCP\ILogger;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -41,6 +42,16 @@ use Sabre\HTTP\ResponseInterface;
  * @package OCA\DAV\DAV
  */
 class LazyOpsPlugin extends ServerPlugin {
+	/**
+	 * Mindestabstand in Sekunden zwischen zwei Fortschrittsmeldungen im
+	 * Auftragsstatus. Die Web-Oberfläche erkennt an ausbleibenden Meldungen,
+	 * dass ein Zusammenbau abgebrochen ist (etwa durch einen PHP-FPM-Neustart).
+	 */
+	public const PROGRESS_INTERVAL = 10;
+
+	/** @var int Abstand der Fortschrittsmeldungen in Sekunden (Tests setzen 0) */
+	private $progressInterval = self::PROGRESS_INTERVAL;
+
 	/** @var Server */
 	private $server;
 	/** @var string */
@@ -126,9 +137,29 @@ class LazyOpsPlugin extends ServerPlugin {
 		}
 		$request->removeHeader('OC-LazyOps');
 		$responseDummy = new Response();
+		$lastReport = \time();
+		AssemblyStream::setProgressListener(function ($position, $size) use (&$lastReport) {
+			$now = \time();
+			if ($now - $lastReport < $this->progressInterval) {
+				return;
+			}
+			$lastReport = $now;
+			try {
+				$this->setJobStatus([
+					'status' => 'started',
+					'progress' => $position,
+					'total' => $size,
+					'heartbeat' => $now
+				]);
+			} catch (\Throwable $e) {
+				// eine verlorene Zwischenmeldung darf den Zusammenbau nicht abbrechen
+				$this->logger->logException($e, ['app' => 'dav']);
+			}
+		});
 		try {
 			$this->setJobStatus([
-				'status' => 'started'
+				'status' => 'started',
+				'heartbeat' => $lastReport
 			]);
 			$this->server->emit('method:MOVE', [$request, $responseDummy]);
 
@@ -145,6 +176,8 @@ class LazyOpsPlugin extends ServerPlugin {
 				'errorCode' => $ex instanceof Exception ? $ex->getHTTPCode() : 500,
 				'errorMessage' => $ex->getMessage()
 			]);
+		} finally {
+			AssemblyStream::setProgressListener(null);
 		}
 		return false;
 	}

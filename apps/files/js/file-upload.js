@@ -380,6 +380,21 @@ OC.FileUpload.prototype = {
 			if (status === 202) {
 				var pollRetries = 0;
 				var maxPollRetries = 5;
+				var uploader = self.uploader;
+				// Der Server meldet beim Zusammenbau regelmäßig Stand und
+				// Zeitstempel. Bleiben die Meldungen aus, ist der Vorgang
+				// vermutlich abgebrochen (etwa durch einen PHP-FPM-Neustart):
+				// das sagen, aber weiter nachfragen - ein sehr langsamer
+				// Server kann trotzdem noch fertig werden.
+				var lastMarker = null;
+				var lastChange = Date.now();
+				var stallNotice = null;
+				var clearStallNotice = function() {
+					if (stallNotice) {
+						OC.Notification.hide(stallNotice);
+						stallNotice = null;
+					}
+				};
 				var poll = function() {
 					$.ajax(response.xhr.getResponseHeader('oc-jobstatus-location')).then(function(data) {
 						// je nach Content-Type liefert jQuery String oder
@@ -394,17 +409,43 @@ OC.FileUpload.prototype = {
 							}
 						}
 						if (obj && obj.status === 'finished') {
+							clearStallNotice();
 							doneDeferred.resolve(status, response);
 						} else if (obj && obj.status === 'error') {
-							if (obj.errorMessage) {
-								OC.Notification.show(obj.errorMessage);
-							}
-							doneDeferred.reject(status, response);
+							clearStallNotice();
+							// eine Meldung mit dem Grund; der Fehlercode des
+							// Servers (507, 409 ...) wählt die passende Behandlung
+							doneDeferred.reject(obj.errorCode || 500, {
+								message: obj.errorMessage
+									? t('files', 'Could not assemble "{file}": {error}', {file: self.getFileName(), error: obj.errorMessage}, undefined, {escape: false})
+									: undefined
+							});
 						} else if (obj && (obj.status === 'started' || obj.status === 'init' || obj.status === 'initial')) {
 							// LazyOpsPlugin schreibt vor dem Start "init", nicht "initial"
 							pollRetries = 0;
+							var now = Date.now();
+							var marker = obj.heartbeat + ':' + obj.progress;
+							if (marker !== lastMarker) {
+								lastMarker = marker;
+								lastChange = now;
+								clearStallNotice();
+							}
+							if (obj.total > 0 && obj.progress >= 0) {
+								uploader._assemblyPercent = Math.min(100, Math.floor(obj.progress * 100 / obj.total));
+							}
+							var silentFor = now - lastChange;
+							if (silentFor >= uploader._assemblyGiveUpTimeout) {
+								clearStallNotice();
+								doneDeferred.reject(status, {
+									message: t('files', 'The server did not report whether "{file}" was assembled. Reload the folder later to check whether the file is there.', {file: self.getFileName()}, undefined, {escape: false})
+								});
+								return;
+							}
+							if (!stallNotice && silentFor >= uploader._assemblyStallTimeout) {
+								stallNotice = OC.Notification.show(t('files', 'The server has not reported any progress on "{file}" for {minutes} minutes. It may have stopped assembling the file; this page keeps checking.', {file: self.getFileName(), minutes: Math.round(silentFor / 60000)}, undefined, {escape: false}), {type: 'error'});
+							}
 							// call it again after some short delay
-							setTimeout(poll, 1000);
+							setTimeout(poll, stallNotice ? 10000 : 1000);
 						} else {
 							// unbekannter Status oder kaputte Antwort:
 							// wie transienten Fehler behandeln
@@ -422,6 +463,7 @@ OC.FileUpload.prototype = {
 					if (pollRetries > maxPollRetries) {
 						// Der Server meldet sich nicht mehr: das sagen, statt
 						// "status code 202" zu zeigen
+						clearStallNotice();
 						doneDeferred.reject(status, {
 							message: t('files', 'The server did not report whether "{file}" was assembled. Reload the folder later to check whether the file is there.', {file: self.getFileName()}, undefined, {escape: false})
 						});
@@ -842,6 +884,30 @@ OC.Uploader.prototype = _.extend({
 	_finalizing: 0,
 
 	/**
+	 * Millisekunden ohne Fortschrittsmeldung des Servers beim Zusammenbau,
+	 * nach denen die Seite einen möglichen Abbruch meldet (weiter prüft sie
+	 * trotzdem). Der Server meldet sich alle 10 Sekunden.
+	 *
+	 * @type {int}
+	 */
+	_assemblyStallTimeout: 5 * 60 * 1000,
+
+	/**
+	 * Millisekunden ohne Fortschrittsmeldung, nach denen die Seite aufgibt
+	 *
+	 * @type {int}
+	 */
+	_assemblyGiveUpTimeout: 60 * 60 * 1000,
+
+	/**
+	 * Zuletzt gemeldeter Fortschritt des Zusammenbaus in Prozent, null ohne
+	 * Meldung
+	 *
+	 * @type {int|null}
+	 */
+	_assemblyPercent: null,
+
+	/**
 	 * Vorübergehender Fehler, nach dem ein Chunk-Upload fortgesetzt werden darf
 	 *
 	 * @param {int} status HTTP-Status (0 = keine Antwort)
@@ -1023,6 +1089,7 @@ OC.Uploader.prototype = _.extend({
 
 	_hideProgressBar: function() {
 		var self = this;
+		this._assemblyPercent = null;
 		window.clearInterval(this._progressBarInterval);
 		$('#uploadprogresswrapper .stop').fadeOut();
 		this.$uploadprogressbar.fadeOut(function() {
@@ -1038,6 +1105,7 @@ OC.Uploader.prototype = _.extend({
 		}
 		this._progressBarInterval = window.setInterval(_.bind(this._updateProgressBar, this), 1000);
 		this._lastProgress = 0;
+		this._assemblyPercent = null;
 	},
 
 	_updateProgressBar: function() {
@@ -1049,7 +1117,9 @@ OC.Uploader.prototype = _.extend({
 		} else {
 			if (progress >= total) {
 				// change message if we stalled at 100%
-				this.$uploadprogressbar.find('.label .desktop').text(t('files', 'Processing files...'));
+				this.$uploadprogressbar.find('.label .desktop').text(this._assemblyPercent === null
+					? t('files', 'Processing files...')
+					: t('files', 'Processing files ({percent} %)...', {percent: this._assemblyPercent}));
 			}
 			if (new Date().getTime() - this._lastProgressTime >= this._uploadStallTimeout * 1000 ) {
 				if (progress >= total) {

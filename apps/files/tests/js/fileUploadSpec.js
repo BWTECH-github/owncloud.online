@@ -550,6 +550,96 @@ describe('OC.Upload tests', function() {
 			doneStub.restore();
 		});
 
+		describe('assembly job status', function() {
+			var clock;
+			var showStub;
+			var hideStub;
+			var ajaxStub;
+			var moveStub;
+			var upload;
+			var jobStatus;
+
+			beforeEach(function() {
+				var result = addFiles(uploader, [testFile]);
+				upload = uploader.getUpload(result[0]);
+				upload.data.isChunked = true;
+				upload.data.isLegacyChunk = false;
+				uploader._assemblyStallTimeout = 3000;
+				uploader._assemblyGiveUpTimeout = 20000;
+
+				clock = sinon.useFakeTimers();
+				showStub = sinon.stub(OC.Notification, 'show').returns($('<div></div>'));
+				hideStub = sinon.stub(OC.Notification, 'hide');
+				jobStatus = {status: 'started', heartbeat: 1, progress: 0, total: 10};
+				ajaxStub = sinon.stub($, 'ajax').callsFake(function() {
+					return $.Deferred().resolve(jobStatus).promise();
+				});
+				moveStub = sinon.stub(uploader.davClient, 'move').returns($.Deferred().resolve(202, {
+					xhr: {getResponseHeader: sinon.stub().returns('/remote.php/dav/job-status/current@user/1')}
+				}).promise());
+			});
+			afterEach(function() {
+				moveStub.restore();
+				ajaxStub.restore();
+				hideStub.restore();
+				showStub.restore();
+				clock.restore();
+			});
+
+			it('warns when the server stops reporting, keeps checking and clears the warning', function() {
+				var done = sinon.stub();
+				var failed = sinon.stub();
+				upload.done().then(done, failed);
+
+				clock.tick(2500);
+				expect(showStub.notCalled).toEqual(true);
+
+				// länger als 3 s dieselbe Meldung: möglicher Abbruch
+				clock.tick(1500);
+				expect(showStub.calledOnce).toEqual(true);
+				expect(showStub.getCall(0).args[0]).toContain('test.txt');
+				var calls = ajaxStub.callCount;
+				clock.tick(10000);
+				expect(ajaxStub.callCount).toBeGreaterThan(calls);
+
+				// der Server meldet sich wieder: Hinweis weg, Fortschritt übernommen
+				jobStatus = {status: 'started', heartbeat: 2, progress: 5, total: 10};
+				clock.tick(10000);
+				expect(hideStub.calledOnce).toEqual(true);
+				expect(uploader._assemblyPercent).toEqual(50);
+
+				jobStatus = {status: 'finished'};
+				clock.tick(2000);
+				expect(done.calledOnce).toEqual(true);
+				expect(failed.notCalled).toEqual(true);
+				expect(showStub.calledOnce).toEqual(true);
+			});
+
+			it('passes the error code and message of the server on once', function() {
+				var failed = sinon.stub();
+				jobStatus = {status: 'error', errorCode: 507, errorMessage: 'Kein Platz mehr'};
+				upload.done().fail(failed);
+				clock.tick(1000);
+
+				expect(failed.calledOnce).toEqual(true);
+				expect(failed.getCall(0).args[0]).toEqual(507);
+				expect(failed.getCall(0).args[1].message).toContain('Kein Platz mehr');
+				expect(failed.getCall(0).args[1].message).toContain('test.txt');
+				expect(showStub.notCalled).toEqual(true);
+			});
+
+			it('gives up when the server stays silent for too long', function() {
+				var failed = sinon.stub();
+				upload.done().fail(failed);
+				clock.tick(40000);
+
+				expect(failed.calledOnce).toEqual(true);
+				expect(failed.getCall(0).args[1].message).toContain('did not report');
+				expect(showStub.calledOnce).toEqual(true);
+				expect(hideStub.calledOnce).toEqual(true);
+			});
+		});
+
 		it('stalled progress will set stalled flag after a while', function() {
 			var clock = sinon.useFakeTimers();
 

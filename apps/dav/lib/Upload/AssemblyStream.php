@@ -65,6 +65,22 @@ class AssemblyStream implements \Icewind\Streams\File {
 	protected $currentNode;
 
 	/**
+	 * Wird nach jedem Lesen mit Position und Gesamtgröße aufgerufen, damit
+	 * ein langer Zusammenbau seinen Fortschritt melden kann (Auftragsstatus
+	 * des asynchronen MOVE). Darf keine Ausnahme werfen.
+	 *
+	 * @var callable|null
+	 */
+	private static $progressListener = null;
+
+	/**
+	 * @param callable|null $listener fn(int $position, int $size): void
+	 */
+	public static function setProgressListener(?callable $listener): void {
+		self::$progressListener = $listener;
+	}
+
+	/**
 	 * @param string $path
 	 * @param string $mode
 	 * @param int $options
@@ -157,6 +173,9 @@ class AssemblyStream implements \Icewind\Streams\File {
 		} while ($read === 0);
 		// update position
 		$this->pos += $read;
+		if (self::$progressListener !== null) {
+			(self::$progressListener)($this->pos, (int)$this->size);
+		}
 		return $data;
 	}
 
