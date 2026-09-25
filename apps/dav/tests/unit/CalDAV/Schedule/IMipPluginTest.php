@@ -45,6 +45,7 @@ class IMipPluginTest extends TestCase {
 		/** @var Mailer | \PHPUnit\Framework\MockObject\MockObject $mailer */
 		$mailer = $this->createMock(Mailer::class);
 		$mailer->method('createMessage')->willReturn($mailMessage);
+		$mailer->method('validateMailAddress')->willReturn(true);
 		$mailer->expects($this->once())->method('send');
 		/** @var ILogger | \PHPUnit\Framework\MockObject\MockObject $logger */
 		$logger = $this->createMock(Log::class);
@@ -78,6 +79,7 @@ class IMipPluginTest extends TestCase {
 		/** @var Mailer | \PHPUnit\Framework\MockObject\MockObject $mailer */
 		$mailer = $this->createMock(Mailer::class);
 		$mailer->method('createMessage')->willReturn($mailMessage);
+		$mailer->method('validateMailAddress')->willReturn(true);
 		$mailer->method('send')->willThrowException(new \Exception());
 		/** @var ILogger | \PHPUnit\Framework\MockObject\MockObject $logger */
 		$logger = $this->createMock(Log::class);
@@ -111,6 +113,7 @@ class IMipPluginTest extends TestCase {
 		/** @var Mailer | \PHPUnit\Framework\MockObject\MockObject $mailer */
 		$mailer = $this->createMock(Mailer::class);
 		$mailer->method('createMessage')->willReturn($mailMessage);
+		$mailer->method('validateMailAddress')->willReturn(true);
 		$mailer->method('send')->willReturn(['foo@example.net']);
 		/** @var ILogger | \PHPUnit\Framework\MockObject\MockObject $logger */
 		$logger = $this->createMock(Log::class);
@@ -145,6 +148,7 @@ class IMipPluginTest extends TestCase {
 		/** @var Mailer | \PHPUnit\Framework\MockObject\MockObject $mailer */
 		$mailer = $this->createMock(Mailer::class);
 		$mailer->method('createMessage')->willReturn($mailMessage);
+		$mailer->method('validateMailAddress')->willReturn(true);
 		$mailer->expects($this->once())->method('send');
 		/** @var ILogger | \PHPUnit\Framework\MockObject\MockObject $logger */
 		$logger = $this->createMock(Log::class);
@@ -172,5 +176,78 @@ class IMipPluginTest extends TestCase {
 		$this->assertSame('text/calendar', $contentType->getValue());
 		$this->assertSame('CANCEL', $contentType->getParameter('method'));
 		$this->assertEquals('CANCELLED', $message->message->VEVENT->STATUS->getValue());
+	}
+
+	/**
+	 * Builds a REQUEST from $sender to $recipient.
+	 *
+	 * @param string $sender
+	 * @param string $recipient
+	 * @return Message
+	 */
+	private function buildRequest($sender, $recipient) {
+		$message = new Message();
+		$message->method = 'REQUEST';
+		$message->message = new VCalendar();
+		$message->message->add('VEVENT', [
+			'UID' => $message->uid,
+			'SEQUENCE' => $message->sequence,
+			'SUMMARY' => 'Fellowship meeting',
+		]);
+		$message->sender = $sender;
+		$message->recipient = $recipient;
+		return $message;
+	}
+
+	/**
+	 * An attendee address no mail can go to ('MAILTO:hausmeister') used to
+	 * throw out of schedule() and fail the whole CalDAV PUT with HTTP 500.
+	 * Only the invitation may be left out, with SCHEDULE-STATUS 3.7.
+	 */
+	public function testInvalidRecipientSkipsOnlyTheInvitation() {
+		$mailMessage = new \OC\Mail\Message(new \Symfony\Component\Mime\Email());
+		/** @var Mailer | \PHPUnit\Framework\MockObject\MockObject $mailer */
+		$mailer = $this->createMock(Mailer::class);
+		$mailer->method('createMessage')->willReturn($mailMessage);
+		$mailer->method('validateMailAddress')->willReturnMap([
+			['gandalf@wiz.ard', true],
+			['hausmeister', false],
+		]);
+		$mailer->expects($this->never())->method('send');
+		/** @var ILogger | \PHPUnit\Framework\MockObject\MockObject $logger */
+		$logger = $this->createMock(Log::class);
+		$logger->expects($this->never())->method('logException');
+		$logger->expects($this->never())->method('error');
+		/** @var IRequest| \PHPUnit\Framework\MockObject\MockObject $request */
+		$request = $this->createMock(IRequest::class);
+
+		$plugin = new IMipPlugin($mailer, $logger, $request);
+		$message = $this->buildRequest('mailto:gandalf@wiz.ard', 'mailto:hausmeister');
+
+		$plugin->schedule($message);
+		$this->assertEquals('3.7', $message->getScheduleStatus());
+	}
+
+	/**
+	 * A sender (organizer) address the mail layer rejects must not fail the
+	 * PUT either: the mail is not sent and the status says so.
+	 */
+	public function testInvalidSenderFailsOnlyTheInvitation() {
+		$mailMessage = new \OC\Mail\Message(new \Symfony\Component\Mime\Email());
+		/** @var Mailer | \PHPUnit\Framework\MockObject\MockObject $mailer */
+		$mailer = $this->createMock(Mailer::class);
+		$mailer->method('createMessage')->willReturn($mailMessage);
+		$mailer->method('validateMailAddress')->willReturn(true);
+		$mailer->expects($this->never())->method('send');
+		/** @var ILogger | \PHPUnit\Framework\MockObject\MockObject $logger */
+		$logger = $this->createMock(Log::class);
+		/** @var IRequest| \PHPUnit\Framework\MockObject\MockObject $request */
+		$request = $this->createMock(IRequest::class);
+
+		$plugin = new IMipPlugin($mailer, $logger, $request);
+		$message = $this->buildRequest('mailto:gandalf', 'mailto:frodo@hobb.it');
+
+		$plugin->schedule($message);
+		$this->assertEquals('5.0', $message->getScheduleStatus());
 	}
 }

@@ -1,0 +1,20 @@
+Bugfix: Save calendar events with an attendee address mail cannot go to
+
+Saving an event over CalDAV whose ATTENDEE carries an address without a
+domain - `MAILTO:hausmeister`, or `MAILTO:undefined` as the calendar app writes
+for an attendee added with an empty field - failed the whole PUT with HTTP 500.
+The event was not stored, and the invitations to the valid attendees were not
+sent either. This hit every CalDAV client, not only the calendar app.
+
+Two things went wrong. OC\Mail\Message split every address at the '@' and fed
+the missing domain to idn_to_ascii(), which under PHP 8 throws a ValueError on
+an empty string - an Error that none of the callers' `catch (\Exception)`
+blocks sees. And the iMIP plugin of the dav app built the invitation outside
+its try block, so any exception from the mail layer aborted the request.
+
+An address without a usable domain part is now handed on unchanged, and the
+mail layer rejects it with its regular exception. The iMIP plugin checks the
+recipient before building the invitation: for an address no mail can go to it
+leaves out just that invitation, marks the attendee with SCHEDULE-STATUS 3.7
+(invalid calendar user) and saves the event. A sender address the mail layer
+rejects now also ends in SCHEDULE-STATUS 5.0 instead of an aborted save.

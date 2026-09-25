@@ -104,6 +104,14 @@ class IMipPlugin extends SabreIMipPlugin {
 		$sender = \substr($iTipMessage->sender, 7);
 		$recipient = \substr($iTipMessage->recipient, 7);
 
+		// An attendee address no mail can go to ('MAILTO:hausmeister') must
+		// only cost the invitation, not the whole PUT of the event.
+		if (!$this->mailer->validateMailAddress($recipient)) {
+			$this->logger->info('Not sending an invitation to the invalid address {recipient}', ['app' => 'dav', 'recipient' => $recipient]);
+			$iTipMessage->scheduleStatus = '3.7;Invalid calendar user address';
+			return;
+		}
+
 		$senderName = $iTipMessage->senderName ?: null;
 		$recipientName = $iTipMessage->recipientName ?: null;
 
@@ -123,14 +131,17 @@ class IMipPlugin extends SabreIMipPlugin {
 
 		$contentType = 'text/calendar; charset=UTF-8; method=' . $iTipMessage->method;
 
-		$message = $this->mailer->createMessage();
-
-		$message->setReplyTo([$sender => $senderName])
-			->setFrom([$sender => $senderName])
-			->setTo([$recipient => $recipientName])
-			->setSubject($subject)
-			->setBody($iTipMessage->message->serialize(), $contentType);
 		try {
+			// Inside the try: the mail layer rejects an address it cannot use
+			// (e.g. the organizer's) with an exception, which must not abort
+			// saving the event either.
+			$message = $this->mailer->createMessage();
+			$message->setReplyTo([$sender => $senderName])
+				->setFrom([$sender => $senderName])
+				->setTo([$recipient => $recipientName])
+				->setSubject($subject)
+				->setBody($iTipMessage->message->serialize(), $contentType);
+
 			$failed = $this->mailer->send($message);
 			$iTipMessage->scheduleStatus = '1.1; Scheduling message is sent via iMip';
 			if ($failed) {
