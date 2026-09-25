@@ -1,0 +1,9 @@
+Bugfix: Föderiertes Adressbuch bleibt beim vertrauenswürdigen Server
+
+Der Abgleich des föderierten System-Adressbuchs hat Verweise eines
+vertrauenswürdigen Servers abgerufen, ohne zu prüfen, ob sie zu diesem Server
+gehören, und ist Umleitungen auf fremde Server gefolgt. Anfragen, die den
+vertrauenswürdigen Server verlassen würden, werden jetzt abgelehnt; fremde
+Verweise werden übersprungen und protokolliert.
+
+Upstream: 794511f74b3
