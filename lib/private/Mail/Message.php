@@ -78,25 +78,39 @@ class Message {
 
 		foreach ($addresses as $email => $readableName) {
 			if (!\is_numeric($email)) {
-				list($name, $domain) = \explode('@', $email, 2);
-				if (\defined('INTL_IDNA_VARIANT_UTS46')) {
-					$domain = \idn_to_ascii($domain, 0, INTL_IDNA_VARIANT_UTS46);
-				} else {
-					$domain = \idn_to_ascii($domain);
-				}
-				$convertedAddresses[$name.'@'.$domain] = $readableName;
+				$convertedAddresses[$this->convertDomain($email)] = $readableName;
 			} else {
-				list($name, $domain) = \explode('@', $readableName, 2);
-				if (\defined('INTL_IDNA_VARIANT_UTS46')) {
-					$domain = \idn_to_ascii($domain, 0, INTL_IDNA_VARIANT_UTS46);
-				} else {
-					$domain = \idn_to_ascii($domain);
-				}
-				$convertedAddresses[$email] = $name.'@'.$domain;
+				$convertedAddresses[$email] = $this->convertDomain($readableName);
 			}
 		}
 
 		return $asAddressObjects ? Address::createArray(array_map($converter, array_keys($convertedAddresses), array_values($convertedAddresses))) : $convertedAddresses;
+	}
+
+	/**
+	 * Convert the domain part of a single address to ASCII (punycode).
+	 *
+	 * An address without a domain part ('hausmeister', 'foo@') or with a domain
+	 * idn_to_ascii() rejects is returned unchanged: converting it used to raise
+	 * 'Undefined array key 1' and a ValueError from idn_to_ascii('') - an Error
+	 * no caller's catch (\Exception) sees. Symfony's Address rejects such an
+	 * address afterwards with a regular RfcComplianceException.
+	 *
+	 * @param string $address
+	 * @return string
+	 */
+	private function convertDomain($address) {
+		$parts = \explode('@', (string)$address, 2);
+		if (\count($parts) !== 2 || $parts[1] === '') {
+			return (string)$address;
+		}
+		list($name, $domain) = $parts;
+		if (\defined('INTL_IDNA_VARIANT_UTS46')) {
+			$converted = \idn_to_ascii($domain, 0, INTL_IDNA_VARIANT_UTS46);
+		} else {
+			$converted = \idn_to_ascii($domain);
+		}
+		return $name . '@' . ($converted === false ? $domain : $converted);
 	}
 
 	/**

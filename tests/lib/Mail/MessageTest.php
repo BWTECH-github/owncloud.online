@@ -60,6 +60,49 @@ class MessageTest extends TestCase {
 		$this->assertSame($expected, self::invokePrivate($this->message, 'convertAddresses', [$unconverted]));
 	}
 
+	/**
+	 * Addresses without a usable domain part must reach Symfony's Address
+	 * untouched instead of breaking the conversion: 'Undefined array key 1'
+	 * plus a ValueError from idn_to_ascii('') under PHP 8, which is an Error
+	 * and escaped every catch (\Exception) of the callers.
+	 *
+	 * @return array
+	 */
+	public function addressWithoutUsableDomainProvider() {
+		return [
+			'no @ at all' => [['hausmeister' => 'Hausmeister'], ['hausmeister' => 'Hausmeister']],
+			'no @, numeric key' => [['hausmeister'], ['hausmeister']],
+			'empty domain' => [['foo@' => null], ['foo@' => null]],
+			'empty domain, numeric key' => [['foo@'], ['foo@']],
+			'domain idn_to_ascii rejects' => [['foo@-bar.org'], ['foo@-bar.org']],
+			'valid next to invalid' => [
+				['hausmeister', 'lukas@öwnclöüd.com' => 'Lukas'],
+				['hausmeister', 'lukas@xn--wncld-iuae2c.com' => 'Lukas'],
+			],
+		];
+	}
+
+	/**
+	 * @requires function idn_to_ascii
+	 * @dataProvider addressWithoutUsableDomainProvider
+	 *
+	 * @param array $unconverted
+	 * @param array $expected
+	 */
+	public function testConvertAddressesLeavesAddressesWithoutUsableDomainAlone($unconverted, $expected) {
+		$this->assertSame($expected, self::invokePrivate($this->message, 'convertAddresses', [$unconverted]));
+	}
+
+	/**
+	 * An address without '@' is rejected with Symfony's RfcComplianceException
+	 * (an \Exception callers can catch), not with a ValueError.
+	 */
+	public function testSetToWithAddressWithoutDomainThrowsCatchableException() {
+		$this->email->expects($this->never())->method('to');
+		$this->expectException(\Symfony\Component\Mime\Exception\RfcComplianceException::class);
+		$this->message->setTo(['hausmeister']);
+	}
+
 	public function testSetFrom() {
 		$this->email
 			->expects($this->once())
