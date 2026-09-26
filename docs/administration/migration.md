@@ -503,6 +503,33 @@ Serverprotokoll (`owncloud.log`, App `core`, Zeile beginnt mit „Upgrade:
 disabled app"), auch wenn `occ upgrade --no-warnings` die Konsolenwarnung
 unterdrückt.
 
+#### Nachfolger einschalten statt nachinstallieren
+
+Manche Apps der alten Instanz gibt es hier nur noch als Nachfolger unter
+anderem Namen. Ihre Einstellungen bleiben in der Datenbank liegen; der
+Nachfolger übernimmt sie, wenn er **nach** dem Upgrade zum ersten Mal
+eingeschaltet wird. Die Nachfolger sind nicht standardmäßig eingeschaltet,
+`occ upgrade` installiert sie also nicht — ohne den Schritt unten gelten nach
+dem Umzug weder die alten Sperrwerte (nur die eingebaute Drosselung des Kerns)
+noch die alten Kennwortregeln.
+
+| Alte App | Nachfolger | Übernommen wird |
+| --- | --- | --- |
+| `security` (ownCloud 10.0.3 bis 10.0.8) | `brute_force_protection` | Fehlversuche, Zeitfenster, Sperrdauer |
+| `security` | `password_policy` | Mindestlänge, Groß- und Kleinbuchstaben, Ziffern, Sonderzeichen |
+
+```bash
+sudo -u www-data php8.4 occ app:enable brute_force_protection
+sudo -u www-data php8.4 occ app:enable password_policy
+```
+
+Steht `security` in der Warnung oben, ist das genau dieser Fall: nicht über
+den Markt suchen, sondern die Nachfolger einschalten. Was übernommen wurde,
+steht im Serverprotokoll (App `brute_force_protection` bzw.
+`password_policy`). Beide wenden die Werte auch auf Kennwörter öffentlicher
+Links an, `security` nur auf Konten; Einzelheiten stehen in den READMEs der
+beiden Apps.
+
 Der genaue Grund steht immer im Serverprotokoll, siehe
 [Serverprotokoll und Fehlermeldungen](logging.md). Der vollständige Ablauf für
 Sicherung und Rückweg ist unter [Backups und Updates](backups-updates.md)
