@@ -537,23 +537,40 @@ Warnung in `owncloud.log`.
 
 | Alt | Neu | Hinweis |
 | --- | --- | --- |
-| `header_color` | `header_color` und `primary_color` | die Akzentfarbe (Knöpfe) folgt damit der alten Kopffarbe |
-| `name`, `slogan`, `base_url` | gleichnamige Schlüssel | alte Standardwerte der Plattform werden übersprungen |
-| `img/header-logo.svg`, ersatzweise `img/login-logo.svg` | `logo_url` | SVG wird vorher bereinigt, siehe unten |
-| `img/login-background.jpg` | `login_background_url` | |
+| `header_color` | `header_color` und `primary_color` | die Akzentfarbe (Knöpfe) folgt damit der alten Kopffarbe, ebenso der Kopf der Mails |
+| `name`, `slogan`, `base_url` | gleichnamige Schlüssel | alte Standardwerte der Plattform werden übersprungen; Name und Slogan nur als reiner Text (ohne `<`, `>` und Steuerzeichen), sonst Warnung |
+| `img/header-logo.svg`, ersatzweise `img/login-logo.svg` | `logo_url` | SVG wird vorher bereinigt, siehe unten; ist das Kopflogo fast nur weiß, gewinnt das Anmeldelogo |
+| `img/login-background.jpg` | `login_background_url` | höchstens 5 MB |
 | `core/legal.imprint_url` mit dem alten Standardwert `https://owncloud.com/imprint` | wird entfernt | es gilt das Impressum des Themes; eigene Werte und `legal.privacy_policy_url` bleiben unverändert |
 
 Nicht übernommen werden die Kopf-Textfarbe (die Theme-App berechnet den
-Kontrast selbst), die Farbe des Mail-Kopfs, eigenes CSS (`branding.css`) sowie
-`entity` und `title`. Werte einer Zwischengeneration der Theme-App (1.2.13 bis
-1.2.29), die schon im neuen Bereich stehen, bleiben erhalten.
+Kontrast selbst), der eigene Schlüssel `mail_header_color`, eigenes CSS
+(`branding.css`) sowie `entity` und `title`. Der Kopf der Mails folgt der
+übernommenen Kopffarbe; das Logo im Mail-Kopf bleibt aber das
+owncloud.online-Logo (`logo-mail.gif`), und die Fußzeile der Mails nennt
+weiter BW-Tech mit Anschrift und Registerangaben. Trägt die Instanz einen
+eigenen Namen, steht dort „owncloud.online – A trademark of BW-TECH GMBH“.
+
+Das neue Theme hat nur ein Logo, und es erscheint in der Kopfleiste **und** auf
+der weißen Anmeldekarte. Das alte Kopflogo war für die farbige Kopfleiste
+gebaut und oft weiß. Ist es fast nur weiß (kaum Kontrast zu Weiß), übernimmt
+die Übernahme stattdessen das Anmeldelogo und schreibt das in die Ausgabe;
+gibt es keines, kommt das weiße Kopflogo mit einer Warnung.
+
+Kommt die Theme-App aus der Zwischengeneration (1.2.13 bis 1.2.29), bleiben
+deren Werte erhalten, und aus dem Selfservice kommen nur Name, Slogan und
+Website-Link hinzu. Farben und Bilder las schon diese Generation nur aus dem
+eigenen Bereich; die alten Selfservice-Werte waren dort nie zu sehen und
+werden deshalb nicht nachgefüllt – auch nicht, wenn jemand auf 1.2.x
+„Zurücksetzen“ gewählt hatte.
 
 SVG-Logos werden vor der Übernahme bereinigt: Skripte, `foreignObject`,
 Ereignis-Attribute, externe Verweise und eingebettete Entitäten fliegen
 heraus, interne Verweise (`url(#…)`, `<use href="#…">`) und `<style>` ohne
 externe Quellen bleiben. Bleibt ein Logo danach unsicher, wird es nicht
 übernommen; die Ausgabe sagt dann „Logo bitte neu hochladen", und bis dahin
-gilt das Standardlogo.
+gilt das Standardlogo. Dasselbe gilt für Dateien in UTF-16/32 oder UTF-7 und
+für Bilder über 5 MB.
 
 !!! warning "Theme-App ist nicht Teil dieses Pakets"
     Das Paket dieser Fassung enthält weder die Theme-App noch den Selfservice,
@@ -593,9 +610,16 @@ SELECT appid, configkey, configvalue FROM oc_appconfig
    Warnungen wie „Logo bitte neu hochladen" abarbeiten.
 2. **Logo:** Anmeldeseite und Kopfzeile nach der Anmeldung zeigen das
    Kundenlogo, nicht das Standardlogo. Das Bild muss mit HTTP 200 kommen — ein
-   404 deutet auf eine geänderte `instanceid`.
+   404 deutet auf eine geänderte `instanceid`. Auf der weißen Anmeldekarte
+   muss es sichtbar sein; meldet die Ausgabe ein „fast nur weißes“ Logo, ein
+   dunkleres in den Theme-Einstellungen hochladen.
 3. **Farben:** Kopfzeile und Knöpfe in der Kundenfarbe.
 4. **Name und Slogan:** Browser-Titel und Fußzeile tragen den Kundennamen.
+   Name, Slogan und Website-Link lassen sich in den Theme-Einstellungen der
+   Administration weder ändern noch zurücksetzen („Zurücksetzen“ lässt sie
+   stehen). Ändern mit `occ config:app:set theme-owncloudonline
+   <name|slogan|base_url> --value=…`, zurück zum Standard mit
+   `occ config:app:delete theme-owncloudonline <name|slogan|base_url>`.
 5. **Anmelde-Hintergrund:** wie auf dem alten Server.
 6. **Impressum und Datenschutz:** Fußzeile anklicken.
    `occ config:app:get core legal.imprint_url` darf nicht auf die Domain
@@ -608,7 +632,8 @@ SELECT appid, configkey, configvalue FROM oc_appconfig
    mit der Bestandsaufnahme vergleichen. Jede Zeile nennt den bisherigen
    `enabled`-Wert (bei Gruppenfreigaben die Gruppenliste) und den Weg zurück.
 8. **Mail:** eine Benachrichtigung auslösen (etwa „Passwort zurücksetzen") und
-   den Kopf ansehen — seine alte Farbe wird nicht übernommen.
+   ansehen: Der Kopf trägt die übernommene Kopffarbe, das Logo darin bleibt
+   das owncloud.online-Logo, die Fußzeile nennt BW-Tech.
 
 ## Fehlersuche
 
@@ -627,6 +652,8 @@ SELECT appid, configkey, configvalue FROM oc_appconfig
 | Logo und Anmelde-Hintergrund fehlen, Bildaufruf liefert HTTP 404 | `instanceid` geändert — die Bilder liegen unter `appdata_<alte instanceid>/` | Alte `instanceid` eintragen |
 | Standard-Aussehen statt Kunden-Branding | Theme-App fehlt, ist abgeschaltet oder kam ohne Übernahme (vor 3.0.2) | siehe [Branding und App-Daten übernehmen](#branding) |
 | Fußzeile verlinkt auf ein fremdes Impressum | alter Standardwert in `core/legal.imprint_url` | `occ config:app:set core legal.imprint_url --value=…` oder `config:app:delete` |
+| Kundenname fehlt, Warnung „name enthält spitze Klammern oder Steuerzeichen“ | alter Name enthält `<`, `>`, einen Zeilenumbruch oder kaputtes UTF-8 | Namen als reinen Text setzen: `occ config:app:set theme-owncloudonline name --value=…` |
+| Anmeldekarte zeigt kein Logo, in der Kopfleiste ist es da | weißes Logo auf weißer Karte; die Ausgabe meldet „fast nur weiß“ | dunkleres Logo in den Theme-Einstellungen hochladen |
 | `occ app:enable <app>` scheitert nach dem Import | Tabellen einer Probeinstallation liegen neben dem Dump | Dump erneut in eine leere Datenbank einspielen (Schritt 3) |
 | Links in Mails zeigen auf den alten Server | `overwrite.cli.url` nicht angepasst | Wert setzen; die Links werden beim nächsten Cron-Lauf neu erzeugt |
 | Papierkorb wächst, keine Benachrichtigungen | Cron-Eintrag wurde nicht übernommen | Cron auf dem neuen Server einrichten, `occ config:app:get core lastcron` prüfen |
