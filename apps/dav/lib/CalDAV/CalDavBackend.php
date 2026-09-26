@@ -51,6 +51,7 @@ use Sabre\DAV\PropPatch;
 use Sabre\VObject\DateTimeParser;
 use Sabre\VObject\Reader;
 use Sabre\VObject\Recur\EventIterator;
+use Sabre\VObject\Recur\MaxInstancesExceededException;
 
 /**
  * Class CalDavBackend
@@ -1026,15 +1027,43 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
 
 		$result = [];
 		while ($row = $stmt->fetchAssociative()) {
-			if ($requirePostFilter) {
-				if (!$this->validateFilterForObject($row, $filters)) {
-					continue;
-				}
+			if ($requirePostFilter && !$this->matchesFilter($calendarId, $row, $filters)) {
+				continue;
 			}
 			$result[] = $row['uri'];
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Wendet die Nachfilter einer Kalenderabfrage auf ein einzelnes Objekt an.
+	 *
+	 * Ein Termin, dessen Wiederholungen im abgefragten Zeitraum die Obergrenze
+	 * von Sabre überschreiten (etwa FREQ=MINUTELY seit Jahren), wirft
+	 * MaxInstancesExceededException. Ungefangen brach das die Abfrage des
+	 * GANZEN Kalenders mit HTTP 500 ab: kein einziger Termin war mehr
+	 * abrufbar, und in einem schreibbar geteilten Kalender konnte jedes Mitglied
+	 * ihn so für alle unbenutzbar machen. Das Objekt wird stattdessen
+	 * aufgenommen - die Datenbankabfrage hat es schon auf den Zeitraum
+	 * eingegrenzt (firstoccurence/lastoccurence), und die Clients lösen die
+	 * Wiederholungen selbst auf.
+	 *
+	 * @param mixed $calendarId
+	 * @param array $row Zeile mit uri und calendardata
+	 * @param array $filters
+	 * @return bool
+	 */
+	private function matchesFilter($calendarId, array $row, array $filters) {
+		try {
+			return $this->validateFilterForObject($row, $filters);
+		} catch (MaxInstancesExceededException $e) {
+			\OC::$server->getLogger()->warning(
+				'Calendar object {uri} in calendar {calendar} has too many recurrences to filter, returning it unfiltered',
+				['app' => 'dav', 'uri' => $row['uri'], 'calendar' => $calendarId]
+			);
+			return true;
+		}
 	}
 
 	/**

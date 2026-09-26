@@ -1,0 +1,11 @@
+Security: One event with endless recurrences no longer breaks the whole calendar
+
+A single event whose recurrences exceed what Sabre expands while filtering
+(for example FREQ=MINUTELY since 2000) made every time-range query of its
+calendar fail with HTTP 500 (MaxInstancesExceededException). No event of that
+calendar could be loaded any more, and in a calendar shared with write access
+any member could make it unusable for everybody.
+
+Such an object is now returned unfiltered - the database query has already
+limited it to the requested time range - and a warning is logged. The other
+events of the calendar are returned as before.

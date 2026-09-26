@@ -403,6 +403,53 @@ EOD;
 		$this->assertNotNull($co);
 	}
 
+	/**
+	 * Ein Termin mit mehr Wiederholungen, als Sabre beim Filtern auflöst, darf
+	 * die Zeitraumabfrage des ganzen Kalenders nicht mit einer Ausnahme
+	 * abbrechen; die übrigen Termine bleiben abrufbar.
+	 */
+	public function testCalendarQueryWithTooManyRecurrences() {
+		$calendarId = $this->createTestCalendar();
+		$normal = $this->createEvent($calendarId, '20260912T130000Z', '20260912T140000Z');
+		$calData = <<<EOD
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:ownCloud Calendar
+BEGIN:VEVENT
+UID:minutely-since-2000
+DTSTAMP:20260101T000000Z
+DTSTART:20000101T000000Z
+DTEND:20000101T000100Z
+RRULE:FREQ=MINUTELY
+SUMMARY:Jede Minute
+END:VEVENT
+END:VCALENDAR
+EOD;
+		$minutely = static::getUniqueID('event');
+		$this->backend->createCalendarObject($calendarId, $minutely, $calData);
+
+		// Wie ein echter REPORT calendar-query: oberster Filter VCALENDAR,
+		// darunter VEVENT mit Beginn UND Ende - nur dann laeuft der Nachfilter.
+		$result = $this->backend->calendarQuery($calendarId, [
+			'name' => 'VCALENDAR',
+			'is-not-defined' => false,
+			'time-range' => false,
+			'prop-filters' => [],
+			'comp-filters' => [[
+				'name' => 'VEVENT',
+				'is-not-defined' => false,
+				'comp-filters' => [],
+				'time-range' => [
+					'start' => new DateTime('2026-09-01 00:00:00', new DateTimeZone('UTC')),
+					'end' => new DateTime('2026-10-01 00:00:00', new DateTimeZone('UTC')),
+				],
+				'prop-filters' => [],
+			]],
+		]);
+
+		$this->assertEqualsCanonicalizing([$normal, $minutely], $result);
+	}
+
 	public function providesCalendarQueryParameters() {
 		return [
 			'all' => [[0, 1, 2, 3], [], []],
