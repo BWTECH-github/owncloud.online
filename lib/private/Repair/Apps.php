@@ -257,7 +257,7 @@ class Apps implements IRepairStep {
 		 * Eine App ohne Code kann aber ohnehin nichts tun; der Eintrag
 		 * "enabled" ist das Einzige, was von ihr uebrig ist, und er blockiert
 		 * nur. Er wird deshalb hier gesetzt, jede App wird genannt, und das
-		 * Upgrade laeuft weiter. Wie die App zurückkommt, hängt davon ab, was
+		 * Upgrade läuft weiter. Wie die App zurückkommt, hängt davon ab, was
 		 * der Markt zu ihr gesagt hat (describeMissingApp()): Nur wenn er sie
 		 * führt, verweist der Hinweis auf ihn. Eigene Apps wie das Theme stehen
 		 * in keinem Markt – dort hieße der Rat „aus dem Markt installieren“ eine
