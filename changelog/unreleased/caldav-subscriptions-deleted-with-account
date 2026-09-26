@@ -1,0 +1,9 @@
+Security: Delete calendar subscriptions together with the account
+
+Deleting an account removed its own calendars, address books and shares, but
+not its calendar subscriptions in oc_calendarsubscriptions. An account created
+later with the same user id inherited them, including the source URL - which
+for many feeds contains a private access token.
+
+The DAV hook manager now collects the account's subscriptions before the
+account is deleted and removes them afterwards, like the calendars.

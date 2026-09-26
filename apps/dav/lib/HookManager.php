@@ -60,6 +60,9 @@ class HookManager {
 	/** @var array */
 	private $addressBooksToDelete;
 
+	/** @var array */
+	private $subscriptionsToDelete = [];
+
 	public function __construct(
 		IUserManager $userManager,
 		SyncService $syncService,
@@ -111,6 +114,10 @@ class HookManager {
 		$this->usersToDelete[$uid] = $this->userManager->get($uid);
 		$this->calendarsToDelete = $this->calDav->getUsersOwnCalendars('principals/users/' . $uid);
 		$this->addressBooksToDelete = $this->cardDav->getUsersOwnAddressBooks('principals/users/' . $uid);
+		// Abonnements gehören wie die eigenen Kalender zum Konto. Blieben sie
+		// stehen, erbte ein später angelegtes Konto gleicher Kennung sie samt
+		// Quelladresse, die oft ein privates Feed-Token enthält.
+		$this->subscriptionsToDelete = $this->calDav->getSubscriptionsForUser('principals/users/' . $uid);
 	}
 
 	public function postDeleteUser($params) {
@@ -127,6 +134,10 @@ class HookManager {
 			$this->calDav->deleteCalendar($calendar['id']);
 		}
 		$this->calDav->deleteAllSharesForUser('principals/users/' . $uid);
+
+		foreach ($this->subscriptionsToDelete as $subscription) {
+			$this->calDav->deleteSubscription($subscription['id']);
+		}
 
 		foreach ($this->addressBooksToDelete as $addressBook) {
 			$this->cardDav->deleteAddressBook($addressBook['id']);

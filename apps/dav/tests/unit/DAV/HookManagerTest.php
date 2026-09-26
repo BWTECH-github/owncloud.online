@@ -207,6 +207,7 @@ class HookManagerTest extends TestCase {
 		]);
 		$cal->expects($this->once())->method('deleteCalendar');
 		$cal->expects($this->once())->method('deleteAllSharesForUser');
+		$cal->method('getSubscriptionsForUser')->willReturn([]);
 
 		/** @var CardDavBackend | \PHPUnit\Framework\MockObject\MockObject $card */
 		$card = $this->getMockBuilder(CardDavBackend::class)
@@ -216,6 +217,40 @@ class HookManagerTest extends TestCase {
 			['id' => 'personal']
 		]);
 		$card->expects($this->once())->method('deleteAddressBook')->with('personal');
+
+		$hm = new HookManager($userManager, $syncService, $cal, $card, $this->l10n);
+		$hm->preDeleteUser(['uid' => 'newUser']);
+		$hm->postDeleteUser(['uid' => 'newUser']);
+	}
+
+	/**
+	 * Calendar subscriptions have to go with the account. They used to stay
+	 * behind in oc_calendarsubscriptions, and an account created later with
+	 * the same user id inherited them - source URL (often with a private feed
+	 * token) included.
+	 */
+	public function testDeleteUserRemovesSubscriptions() {
+		$user = $this->createMock(IUser::class);
+
+		/** @var IUserManager | \PHPUnit\Framework\MockObject\MockObject $userManager */
+		$userManager = $this->createMock(IUserManager::class);
+		$userManager->method('get')->willReturn($user);
+
+		/** @var SyncService | \PHPUnit\Framework\MockObject\MockObject $syncService */
+		$syncService = $this->createMock(SyncService::class);
+
+		/** @var CalDavBackend | \PHPUnit\Framework\MockObject\MockObject $cal */
+		$cal = $this->createMock(CalDavBackend::class);
+		$cal->method('getUsersOwnCalendars')->willReturn([]);
+		$cal->expects($this->once())->method('getSubscriptionsForUser')
+			->with('principals/users/newUser')
+			->willReturn([['id' => 7], ['id' => 9]]);
+		$cal->expects($this->exactly(2))->method('deleteSubscription')
+			->withConsecutive([7], [9]);
+
+		/** @var CardDavBackend | \PHPUnit\Framework\MockObject\MockObject $card */
+		$card = $this->createMock(CardDavBackend::class);
+		$card->method('getUsersOwnAddressBooks')->willReturn([]);
 
 		$hm = new HookManager($userManager, $syncService, $cal, $card, $this->l10n);
 		$hm->preDeleteUser(['uid' => 'newUser']);
