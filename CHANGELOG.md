@@ -43,6 +43,7 @@
 ## Summary
 
 * Bugfix - Upgrade verweist bei abgeschalteten Apps nur noch auf den Markt, wenn er sie führt
+* Security - Frei einstellbarer Instanzname wird in body-Klasse und HTML-Mails maskiert
 
 ## Details
 
@@ -58,6 +59,18 @@
    bleibt nur, wenn er die App kennt. Jede Meldung sagt außerdem, dass die
    Daten der App in der Datenbank bleiben. Der Web-Updater zeigt dieselben
    Texte.
+
+* Security - Frei einstellbarer Instanzname wird in body-Klasse und HTML-Mails maskiert
+
+   Der Name der Instanz ist frei einstellbar (Theme-App, `occ`, Übernahme
+   beim Umzug). `layout.base.php`, `layout.guest.php` und `layout.user.php`
+   gaben ihn unmaskiert in das `class`-Attribut von `<body>` aus – auf jeder
+   Seite, auch auf der öffentlichen Anmeldeseite –, die HTML-Fußzeile der
+   Mails und die Mail für neue Konten setzten ihn unmaskiert in den Text.
+   Ein Name mit Anführungszeichen zerbrach das Markup, einer mit Markup
+   landete als HTML auf der Seite bzw. in der Mail. Alle diese Stellen
+   maskieren den Namen jetzt. Trägt die Instanz einen eigenen Namen, bezieht
+   sich der Marken-Satz der Mail-Fußzeile ausdrücklich auf owncloud.online.
 
 # Changelog for ownCloud.online [11.0.20] (2026-09-24)
 

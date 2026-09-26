@@ -11,13 +11,19 @@
  * Changes:
  *   - use BW-TECH brand red #e6374b in the signature footer
  *   - unified BW-TECH signature footer, drop casual Cheers sign-off
+ *   - Name im Gruß maskieren (t() setzt Parameter unmaskiert ein)
+ *   - trägt die Instanz einen eigenen Namen, bezieht sich der Marken-Satz
+ *     ausdrücklich auf owncloud.online statt auf diesen Namen
  */
 ?>
 <?php p($l->t('Best regards,')); ?><br>
-<?php print_unescaped($l->t('your %s Team', [$theme->getName()])); ?>
+<?php print_unescaped($l->t('your %s Team', [\OCP\Util::sanitizeHTML($theme->getName())])); ?>
 <br><br>
 <strong><?php p($theme->getName()); ?></strong> &ndash; <?php p($theme->getSlogan()); ?>
 <br><br>
+<?php if (\strcasecmp($theme->getName(), 'owncloud.online') !== 0) { ?>
+<strong>owncloud.online</strong><br>
+<?php } ?>
 <?php p($l->t('A trademark of')); ?><br>
 <span style="color:#e6374b;font-weight:bold;">BW-TECH GMBH</span><br>
 IT Service für Systemintegration und Datensicherheit<br>

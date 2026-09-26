@@ -9,6 +9,8 @@
  * Modified by BW-Tech GmbH on 2026-06-25.
  * Changes:
  *   - unified BW-TECH signature footer, drop casual Cheers sign-off
+ *   - trägt die Instanz einen eigenen Namen, bezieht sich der Marken-Satz
+ *     ausdrücklich auf owncloud.online statt auf diesen Namen
  */
 p($l->t('Best regards,'));
 p("\n");
@@ -16,6 +18,9 @@ p($l->t('your %s Team', [$theme->getName()]));
 p("\n\n");
 p($theme->getName() . ' - ' . $theme->getSlogan());
 p("\n\n");
+if (\strcasecmp($theme->getName(), 'owncloud.online') !== 0) {
+	p("owncloud.online\n");
+}
 p($l->t('A trademark of'));
 p("\nBW-TECH GMBH");
 p("\nIT Service für Systemintegration und Datensicherheit");

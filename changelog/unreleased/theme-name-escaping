@@ -1,0 +1,12 @@
+Security: A custom instance name is escaped in the page body and in HTML mails
+
+The name of the instance can be set freely (theme app, occ, or imported
+from the previous generation during a migration). The page layouts printed it
+unescaped into the class attribute of the body element on every page,
+including the public login page, and the HTML mail footer as well as the new
+user mail inserted it unescaped into the text. A name with quotes broke the
+markup, a name with markup ended up as HTML. All these places escape the name
+now.
+
+If an instance carries its own name, the trademark sentence of the mail
+footer names owncloud.online explicitly instead of the customer's name.

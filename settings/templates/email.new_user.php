@@ -14,7 +14,8 @@
 					<td width="20px">&nbsp;</td>
 					<td style="font-weight:normal; font-size:0.8em; line-height:1.2em; font-family:verdana,'arial',sans;">
 						<?php
-						print_unescaped($l->t('Hey there,<br><br>just letting you know that you now have an %s account.<br><br>Your username: %s<br>Please set the password by accessing it: <a href="%s">Here</a><br><br>', [$theme->getName(), $_['username'], $_['url']]));
+						// t() setzt Parameter unmaskiert ein; der Name ist frei einstellbar.
+						print_unescaped($l->t('Hey there,<br><br>just letting you know that you now have an %s account.<br><br>Your username: %s<br>Please set the password by accessing it: <a href="%s">Here</a><br><br>', [\OCP\Util::sanitizeHTML($theme->getName()), $_['username'], $_['url']]));
 						?>
 					</td>
 				</tr>

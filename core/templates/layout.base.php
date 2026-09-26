@@ -26,7 +26,8 @@
 	</head>
 	<body id="body-public" <?php
 	if ($theme->getName() !== 'ownCloud') {
-		print_unescaped('class="theme-' . \str_replace(' ', '-', $theme->getName()) . ' has-theme"');
+		// Der Name ist frei einstellbar (Theme, occ) – im Attribut maskieren.
+		print_unescaped('class="theme-' . \OCP\Util::sanitizeHTML(\str_replace(' ', '-', $theme->getName())) . ' has-theme"');
 	} ?> >
 		<?php include('layout.noscript.warning.php'); ?>
 		<?php print_unescaped($_['content']); ?>
