@@ -49,6 +49,21 @@ class Apps implements IRepairStep {
 	public const KEY_INCOMPATIBLE = 'incompatible';
 	public const KEY_MISSING = 'missing';
 
+	/** Der Markt hat geantwortet: Diese App führt er nicht. */
+	private const MARKET_UNKNOWN = 'unknown';
+	/** Der Markt führt die App, hat aber keine Fassung für diesen Server. */
+	private const MARKET_NO_VERSION = 'no-version';
+
+	/**
+	 * Was der Markt in getAppsFromMarket() zu einer App gesagt hat, je App-ID:
+	 * ['verdict' => self::MARKET_*, 'reason' => Meldung des Markts]. Fehlt eine
+	 * App, wurde der Markt nicht gefragt oder der Versuch scheiterte aus einem
+	 * anderen Grund – dann ist offen, ob er sie führt.
+	 *
+	 * @var array<string, array{verdict: string, reason: string}>
+	 */
+	private $marketVerdicts = [];
+
 	/** @var  IAppManager */
 	private $appManager;
 
@@ -155,6 +170,7 @@ class Apps implements IRepairStep {
 	 * @throws RepairException
 	 */
 	public function run(IOutput $output) {
+		$this->marketVerdicts = [];
 		if ($this->config->getSystemValue('has_internet_connection', true) !== true) {
 			$link = $this->defaults->buildDocLinkToKey('admin-marketplace-apps');
 			$output->info('No internet connection available - no app updates will be taken from the marketplace.');
@@ -241,9 +257,11 @@ class Apps implements IRepairStep {
 		 * Eine App ohne Code kann aber ohnehin nichts tun; der Eintrag
 		 * "enabled" ist das Einzige, was von ihr uebrig ist, und er blockiert
 		 * nur. Er wird deshalb hier gesetzt, jede App wird genannt, und das
-		 * Upgrade laeuft weiter. Wer die App wieder braucht, installiert sie
-		 * ueber den Markt und schaltet sie ein - so, wie er es nach dem
-		 * Abbruch auch haette tun muessen.
+		 * Upgrade laeuft weiter. Wie die App zurückkommt, hängt davon ab, was
+		 * der Markt zu ihr gesagt hat (describeMissingApp()): Nur wenn er sie
+		 * führt, verweist der Hinweis auf ihn. Eigene Apps wie das Theme stehen
+		 * in keinem Markt – dort hieße der Rat „aus dem Markt installieren“ eine
+		 * Suche, die nichts findet.
 		 *
 		 * Apps MIT Code, die nur nicht zur Version passen ("incompatible"),
 		 * bleiben ein Abbruchgrund: dort gibt es etwas zu reparieren, und ein
@@ -295,7 +313,7 @@ class Apps implements IRepairStep {
 						$disabledMissingApps[] = $app;
 						$this->getLogger()->warning(
 							"Upgrade: disabled app $app - it is enabled in the database (enabled=$previous) but has no code in any app directory"
-							. ' and could not be fetched from the marketplace. Install it from the marketplace and enable it again if you still need it.',
+							. $this->describeMissingApp($app),
 							['app' => 'core']
 						);
 					} catch (\Exception $e) {
@@ -308,10 +326,13 @@ class Apps implements IRepairStep {
 		}
 		if ($disabledMissingApps !== []) {
 			$output->warning(
-				'The following apps were enabled but have no code on this server and could not be fetched from the marketplace. '
-				. 'They have been disabled so the upgrade can continue; install them from the marketplace if you still need them: '
+				'The following apps were enabled but have no code on this server. '
+				. 'They have been disabled so the upgrade can continue; their data stays in the database: '
 				. \implode(', ', $disabledMissingApps)
 			);
+			foreach ($this->describeMissingAppGroups($disabledMissingApps) as $hint) {
+				$output->warning($hint);
+			}
 			$failedMissingApps = \array_values(\array_diff($failedMissingApps, $disabledMissingApps));
 		}
 
@@ -368,9 +389,11 @@ class Apps implements IRepairStep {
 			} catch (AppNotFoundException $e) {
 				$output->info($e->getMessage());
 				$failedApps[] = $app;
+				$this->marketVerdicts[$app] = ['verdict' => self::MARKET_UNKNOWN, 'reason' => $e->getMessage()];
 			} catch (AppUpdateNotFoundException $e) {
 				$output->info($e->getMessage());
 				$failedApps[] = $app;
+				$this->marketVerdicts[$app] = ['verdict' => self::MARKET_NO_VERSION, 'reason' => $e->getMessage()];
 			} catch (AppManagerException $e) {
 				// No connection to market. Abort.
 				throw $e;
@@ -409,6 +432,64 @@ class Apps implements IRepairStep {
 			$appsToUpgrade[$key][] = $appId;
 		}
 		return $appsToUpgrade;
+	}
+
+	/**
+	 * Rest der Protokollzeile zu einer abgeschalteten App ohne Code: was der
+	 * Markt zu ihr gesagt hat und wie sie zurückkommt. „Install it from the
+	 * marketplace“ steht nur da, wenn der Markt die App tatsächlich führt.
+	 *
+	 * Zurück kommt eine App ohne Markt über ihren Code: Code in ein App-
+	 * Verzeichnis, app:enable, dann occ upgrade – installed_version steht noch
+	 * auf der alten Fassung, bis dahin meldet der Server „Upgrade nötig“.
+	 *
+	 * @param string $app
+	 * @return string
+	 */
+	private function describeMissingApp($app) {
+		$verdict = $this->marketVerdicts[$app]['verdict'] ?? null;
+		$reason = $this->marketVerdicts[$app]['reason'] ?? '';
+		$reasonText = $reason !== '' ? " ($reason)" : '';
+		$restore = "To use it again, put its code into an app directory, then run occ app:enable $app and occ upgrade.";
+
+		if ($verdict === self::MARKET_UNKNOWN) {
+			return ", and the marketplace does not offer it. Its data stays in the database. $restore";
+		}
+		if ($verdict === self::MARKET_NO_VERSION) {
+			return ", and the marketplace has no version of it for this server$reasonText. Its data stays in the database."
+				. ' Install it from the marketplace once a suitable version is available, then run occ upgrade.';
+		}
+		return "; the marketplace was not consulted or could not provide it. Its data stays in the database. $restore";
+	}
+
+	/**
+	 * Hinweise für die Konsole und den Web-Updater, gruppiert nach der Antwort
+	 * des Markts – gleiche Aussage wie describeMissingApp(), nur je Gruppe.
+	 *
+	 * @param string[] $apps abgeschaltete Apps ohne Code
+	 * @return string[]
+	 */
+	private function describeMissingAppGroups(array $apps) {
+		$groups = [self::MARKET_UNKNOWN => [], self::MARKET_NO_VERSION => [], 'open' => []];
+		foreach ($apps as $app) {
+			$verdict = $this->marketVerdicts[$app]['verdict'] ?? 'open';
+			$groups[$verdict][] = $app;
+		}
+
+		$restore = 'To use one of them again, put its code into an app directory, then run occ app:enable <app> and occ upgrade.';
+		$hints = [];
+		if ($groups[self::MARKET_UNKNOWN] !== []) {
+			$hints[] = 'Not offered by the marketplace: ' . \implode(', ', $groups[self::MARKET_UNKNOWN]) . ". $restore";
+		}
+		if ($groups[self::MARKET_NO_VERSION] !== []) {
+			$hints[] = 'Offered by the marketplace, but without a version for this server: '
+				. \implode(', ', $groups[self::MARKET_NO_VERSION])
+				. '. Install them from the marketplace once a suitable version is available, then run occ upgrade.';
+		}
+		if ($groups['open'] !== []) {
+			$hints[] = 'The marketplace was not consulted for, or could not provide: ' . \implode(', ', $groups['open']) . ". $restore";
+		}
+		return $hints;
 	}
 
 	protected function getOccDisableMessage($appList) {

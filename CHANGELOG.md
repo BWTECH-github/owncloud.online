@@ -1,5 +1,6 @@
 # Table of Contents
 
+* [Changelog for owncloud.online Unreleased](#changelog-for-owncloudonline-unreleased)
 * [Changelog for ownCloud.online 11.0.20](#changelog-for-owncloudonline-11020-2026-09-24)
 * [Changelog for ownCloud.online 11.0.19](#changelog-for-owncloudonline-11019-2026-09-16)
 * [Changelog for ownCloud.online 11.0.14](#changelog-for-owncloudonline-11014-2026-08-20)
@@ -37,6 +38,27 @@
 * [Changelog for 10.4.1](#changelog-for-owncloud-core-1041-2020-03-30)
 * [Changelog for 10.4.0](#changelog-for-owncloud-core-1040-2020-02-10)
 * [Changelog for 10.3.2](#changelog-for-owncloud-core-1032-2019-12-04)
+# Changelog for owncloud.online [Unreleased]
+
+## Summary
+
+* Bugfix - Upgrade verweist bei abgeschalteten Apps nur noch auf den Markt, wenn er sie führt
+
+## Details
+
+* Bugfix - Upgrade verweist bei abgeschalteten Apps nur noch auf den Markt, wenn er sie führt
+
+   Schaltet `occ upgrade` eine eingeschaltete App ohne Code ab, stand im
+   Serverprotokoll und in der Ausgabe immer „Install it from the
+   marketplace“ – auch für Apps, die kein Markt anbietet (etwa das Theme,
+   der Selfservice oder Enterprise-Apps wie `admin_audit`). Jetzt richtet
+   sich der Hinweis nach der Antwort des Markts: Führt er die App nicht oder
+   wurde er nicht gefragt, heißt es „Code in ein App-Verzeichnis legen, dann
+   `occ app:enable <app>` und `occ upgrade`“; der Verweis auf den Markt
+   bleibt nur, wenn er die App kennt. Jede Meldung sagt außerdem, dass die
+   Daten der App in der Datenbank bleiben. Der Web-Updater zeigt dieselben
+   Texte.
+
 # Changelog for ownCloud.online [11.0.20] (2026-09-24)
 
 The following sections list the changes in ownCloud.online 11.0.20 relevant to
