@@ -517,10 +517,12 @@ noch die alten Kennwortregeln.
 | --- | --- | --- |
 | `security` (ownCloud 10.0.3 bis 10.0.8) | `brute_force_protection` | Fehlversuche, Zeitfenster, Sperrdauer |
 | `security` | `password_policy` | Mindestlänge, Groß- und Kleinbuchstaben, Ziffern, Sonderzeichen |
+| `windows_network_drive` | `wnd` | Einhängungen mit ihren Anmeldearten, auch SFTP, WebDAV und SMB mit gespeicherten oder globalen Zugangsdaten (siehe [Externe Speicher aus Zusatz-Apps](#externe-speicher-aus-zusatz-apps)) |
 
 ```bash
 sudo -u www-data php8.4 occ app:enable brute_force_protection
 sudo -u www-data php8.4 occ app:enable password_policy
+sudo -u www-data php8.4 occ app:enable wnd
 ```
 
 Steht `security` in der Warnung oben, ist das genau dieser Fall: nicht über
@@ -528,7 +530,144 @@ den Markt suchen, sondern die Nachfolger einschalten. Was übernommen wurde,
 steht im Serverprotokoll (App `brute_force_protection` bzw.
 `password_policy`). Beide wenden die Werte auch auf Kennwörter öffentlicher
 Links an, `security` nur auf Konten; Einzelheiten stehen in den READMEs der
-beiden Apps.
+beiden Apps. Für `windows_network_drive` gilt dasselbe: Die Einhängungen
+bleiben in der Datenbank und greifen wieder, sobald `wnd` eingeschaltet ist.
+
+#### Datenverzeichnis unter neuem Pfad
+
+Der Pfad des Datenverzeichnisses steht an zwei Stellen in der Datenbank: in
+`accounts.home` jedes Kontos und in den Kennungen pfadbasierter Speicher in
+`storages` (`local::<pfad>/`). Liegen die Dateien auf dem Zielserver schon
+unter dem neuen Pfad – der Regelfall, wenn der Zielserver eine eigene
+Verzeichnisstruktur hat –, zeigen die Home-Pfade ins Leere: Die Konten melden
+sich an, sehen aber keine Dateien, und unter dem alten Pfad entstehen leere
+Home-Verzeichnisse. `user:move-home` hilft dann nicht mehr (siehe Schritt 6).
+
+Stattdessen die Einträge **vor** `occ upgrade` umschreiben. Beispiel für
+MariaDB mit altem Pfad `/var/www/owncloud/data`, neuem Pfad
+`/var/owncloud-online-data` und Präfix `oc_`:
+
+```sql
+-- Home-Pfade: nur echte Präfixtreffer umschreiben, kein REPLACE() über die ganze Zeichenkette
+UPDATE oc_accounts
+   SET home = CONCAT('/var/owncloud-online-data', SUBSTR(home, CHAR_LENGTH('/var/www/owncloud/data') + 1))
+ WHERE SUBSTR(home, 1, CHAR_LENGTH('/var/www/owncloud/data') + 1) = '/var/www/owncloud/data/';
+```
+
+Speicherkennungen, die länger als 64 Zeichen wären, legt der Server als
+MD5-Wert ab. Ein `REPLACE()` auf `storages.id` findet solche Zeilen nicht und
+erzeugt bei einem langen neuen Pfad eine Kennung, nach der der Server nie
+sucht. Die Kennungen deshalb vorher so berechnen, wie der Server es tut:
+
+```bash
+sid() { php -r '$i = $argv[1]; echo strlen($i) > 64 ? md5($i) : $i, "\n";' "$1"; }
+sid 'local::/var/www/owncloud/data/'       # bisherige Kennung der Wurzel
+sid 'local::/var/owncloud-online-data/'    # neue Kennung der Wurzel
+```
+
+```sql
+-- Wurzel des Datenverzeichnisses; entfällt dieser Schritt, liest der Server sie neu ein
+UPDATE oc_storages SET id = '<neue Kennung>' WHERE id = '<bisherige Kennung>';
+```
+
+Nur umschreiben, solange es die neue Kennung noch nicht gibt; sonst lief der
+Server schon mit dem neuen Pfad. Nicht angefasst werden müssen die
+Home-Speicher (`home::<konto>`, unabhängig vom Pfad) und die
+Upload-Zwischenablagen (`local::<pfad>/<konto>/uploads/`, nach dem Umzug
+entstehen neue).
+
+**Lokale Einhängungen:** Ändert sich der Pfad einer Einhängung vom Typ
+`local` (Tabelle `external_config`, Schlüssel `datadir`), gehört ihre Kennung
+in `storages` im selben Zug umgeschrieben – `local::<alter pfad>/` zu
+`local::<neuer pfad>/`, ebenfalls nach der MD5-Regel. Sonst liest der Server die
+Einhängung als neuen Speicher ein. Ist sie verschlüsselt, geht dabei die
+Versionsangabe jeder Datei verloren, und Dateien, die öfter als einmal
+geschrieben wurden, scheitern mit „Bad Signature“. Nachträglich hilft
+`occ encryption:fix-encrypted-version <konto> -p <pfad>` (App encryption ab
+2.0.9). Lokale Einhängungen werden außerdem nur eingehängt, wenn
+`files_external_allow_create_new_local` auf `true` steht.
+
+#### Externe Speicher aus Zusatz-Apps
+
+Jede Einhängung steht mit ihrer Backend- und Anmeldekennung in
+`external_mounts`. Einige Kennungen, die Instanzen der Version 10.x verwenden,
+stellt der Kern nicht selbst bereit:
+
+| Kennung | Spalte | stammte aus | hier |
+| --- | --- | --- | --- |
+| `password::logincredentials`, `password::global`, `password::userprovided`, `password::hardcodedconfigcredentials`, `kerberos::kerberos` | `auth_backend` | `windows_network_drive` | App `wnd`; sie übernimmt die Kennungen auch für SFTP, WebDAV und SMB |
+| `windows_network_drive`, `windows_network_drive2` | `storage_backend` | `windows_network_drive` | App `wnd` |
+| `ftp` | `storage_backend` | `files_external_ftp` | kein Nachfolger |
+| `files_external_dropbox` | `storage_backend` | `files_external_dropbox` | kein Nachfolger |
+
+Solange eine Kennung fehlt, bleibt die Zeile unverändert in der Datenbank, die
+Einhängung ist aber unbrauchbar. `occ files_external:list` zeigt „Unknown auth
+mechanism backend …“ oder „Unknown storage backend …“; Einhängungen mit
+fehlender Anmeldeart erscheinen bei den Nutzern gar nicht, solche mit
+fehlendem Backend als leerer Ordner, in den sich nicht schreiben lässt
+(HTTP 503). Nach `occ app:enable wnd`
+werden die Anmeldekennungen wieder aufgelöst. Welche Einhängungen betroffen
+sind, schon vor dem Umzug in der alten Datenbank abfragen:
+
+```sql
+SELECT mount_id, mount_point, storage_backend, auth_backend
+  FROM oc_external_mounts
+ WHERE auth_backend IN ('password::logincredentials', 'password::global', 'password::userprovided',
+                        'password::hardcodedconfigcredentials', 'kerberos::kerberos')
+    OR storage_backend IN ('windows_network_drive', 'windows_network_drive2', 'ftp', 'files_external_dropbox');
+```
+
+Die SharePoint-Einbindung der Version 10.x legte ihre Einhängungen in eigenen
+Tabellen ab (`sp_*`); auch dafür gibt es keinen Nachfolger.
+
+#### Kein Rückweg auf die Version 10.x
+
+Nach dem Upgrade schreibt der Server Daten in Formaten, die die Version 10.x
+nicht lesen kann:
+
+- Gespeicherte Geheimnisse – Kennwörter externer Speicher, Tabelle
+  `credentials`, App-Kennwörter in `authtoken` – verschlüsselt der Kern im
+  Format `v3`; 10.x kennt nur `v2` und das ältere dreiteilige Format.
+- Mit der App encryption bekommt jede neu geschriebene oder neu geteilte Datei
+  einen Schlüsselumschlag im Format v2 und eine Signatur des letzten Blocks ohne
+  den Zusatz „end“. Beides lehnt die Verschlüsselungs-App der Version 10.x ab.
+
+Zurück geht es deshalb nur über die Sicherung von Datenbank,
+Datenverzeichnis und `config.php` von **vor** dem Umzug (Schritt 2); was danach
+geschrieben wurde, fehlt dort. Für einen Probebetrieb die Altinstanz
+unverändert weiterlaufen lassen und den Umzug an einer Kopie üben.
+
+#### Neue Adresse: Fremdfreigaben und vertrauenswürdige Server
+
+Partnerserver speichern die Adresse, unter der diese Instanz beim Anlegen
+einer Fremdfreigabe erreichbar war; vertrauenswürdige Server speichern sie
+ebenso. Ändert sich die Adresse beim Umzug, laufen die Rückmeldungen der
+Partner (Freigabe annehmen, ablehnen, aufheben), deren Zugriff auf von hier
+geteilte Ordner und der Adressbuchabgleich zwischen vertrauenswürdigen Servern
+ins Leere. Am sichersten bleibt die alte Adresse: in `trusted_domains` und
+`overwrite.cli.url` eintragen und den Namen auf den neuen Server zeigen
+lassen. Muss sich die Adresse ändern, die Partner vorher informieren und
+Fremdfreigaben neu anlegen. Ob Partnerserver einer Weiterleitung von der alten
+Adresse folgen, ist nicht geprüft.
+
+#### Marktzugang der Altinstanz
+
+`upgrade.automatic-app-update` steht ohne Eintrag in `config.php` auf `true`.
+Dann fragt der Reparaturschritt „Upgrade app code from the marketplace“
+während `occ upgrade` den Markt unter `appstoreurl` ab und schickt den
+übernommenen Marktschlüssel mit (App-Wert `market`/`key` oder
+`marketplace.key` aus `config.php`, als Kopfzeile `Authorization: apikey: …`).
+Steht in der alten `config.php` noch die Adresse des früheren Markts, geht die
+Anfrage samt Schlüssel dorthin, ohne `appstoreurl` an
+marketplace.owncloud.online. Den alten Schlüssel deshalb vor dem Upgrade
+entfernen und `appstoreurl` prüfen – die Befehle stehen auch im
+Upgrade-Zustand zur Verfügung:
+
+```bash
+sudo -u www-data php8.4 occ config:app:delete market key
+sudo -u www-data php8.4 occ config:system:delete marketplace.key
+sudo -u www-data php8.4 occ config:system:get appstoreurl
+```
 
 Der genaue Grund steht immer im Serverprotokoll, siehe
 [Serverprotokoll und Fehlermeldungen](logging.md). Der vollständige Ablauf für
