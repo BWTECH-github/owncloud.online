@@ -32,6 +32,9 @@ use Test\TestCase;
  * deutschen Sprache deutsch sein. Die L10N-Factory laedt nur die Datei der
  * genauen Sprache, ein Konto mit de_AT oder de_CH faellt nicht auf de zurueck:
  * fehlen die Eintraege dort, endet eine sonst deutsche Mail englisch.
+ *
+ * Die Signatur folgt der Anrede der Mailtexte derselben Datei: de, de_AT und
+ * de_CH duzen ('mit dir/Dir geteilt', 'dein Passwort'), de_DE siezt.
  */
 class MailSignatureTranslationTest extends TestCase {
 	/**
@@ -49,10 +52,10 @@ class MailSignatureTranslationTest extends TestCase {
 
 	public function providesGermanLanguages() {
 		return [
-			'de (Du-Form)' => ['de', 'Viele Grüße,', 'dein owncloud.online-Team'],
-			'de_DE' => ['de_DE', 'Mit freundlichen Grüßen,', 'Ihr owncloud.online-Team'],
-			'de_AT' => ['de_AT', 'Mit freundlichen Grüßen,', 'Ihr owncloud.online-Team'],
-			'de_CH (ohne ß)' => ['de_CH', 'Mit freundlichen Grüssen,', 'Ihr owncloud.online-Team'],
+			'de (Du-Form)' => ['de', 'Viele Grüße,', 'dein owncloud.online-Team', 'mit dir geteilt'],
+			'de_DE (Sie-Form)' => ['de_DE', 'Mit freundlichen Grüßen,', 'Ihr owncloud.online-Team', 'mit Ihnen geteilt'],
+			'de_AT (Du-Form)' => ['de_AT', 'Viele Grüße,', 'dein owncloud.online-Team', 'mit Dir geteilt'],
+			'de_CH (Du-Form, ohne ß)' => ['de_CH', 'Viele Grüsse,', 'dein owncloud.online-Team', 'mit Dir geteilt'],
 		];
 	}
 
@@ -62,13 +65,20 @@ class MailSignatureTranslationTest extends TestCase {
 	 * @param string $lang
 	 * @param string $greeting
 	 * @param string $team
+	 * @param string $sharedWithYou Anrede im Text der Freigabe-Mail
 	 */
-	public function testMailSignatureIsTranslated($lang, $greeting, $team) {
+	public function testMailSignatureIsTranslated($lang, $greeting, $team, $sharedWithYou) {
 		$l = new L10N($this->getFactory(), 'core', $lang, [\OC::$SERVERROOT . "/core/l10n/$lang.json"]);
 
 		$this->assertSame($greeting, (string)$l->t('Best regards,'));
 		$this->assertSame($team, (string)$l->t('your %s Team', ['owncloud.online']));
 		$this->assertSame('Eine Marke der', (string)$l->t('A trademark of'));
+		// Text und Signatur derselben Mail (core/templates/altmail.php)
+		// sprechen den Empfaenger gleich an.
+		$this->assertStringContainsString(
+			$sharedWithYou,
+			(string)$l->t("Hey there,\n\njust letting you know that %s shared %s with you.\nView it: %s\n\n", ['Frau Lehmann', 'Plan.pdf', 'http://x/s/abc'])
+		);
 	}
 
 	/**
