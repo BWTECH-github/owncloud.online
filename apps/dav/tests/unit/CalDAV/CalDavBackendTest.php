@@ -450,6 +450,100 @@ EOD;
 		$this->assertEqualsCanonicalizing([$normal, $minutely], $result);
 	}
 
+	/**
+	 * Fuer eine Serie mit zu vielen Wiederholungen gilt nur der Zeitraum als
+	 * erfuellt; text-match, is-not-defined und comp-filter werden weiter
+	 * ausgewertet. Vorher kam die Serie bei jedem dieser Filter zurueck.
+	 *
+	 * @dataProvider providesFiltersBesidesTheTimeRange
+	 * @param array $vEventFilters comp-filter unter VCALENDAR; der erste bekommt den Zeitraum
+	 * @param string[] $expected 'normal' und/oder 'minutely'
+	 */
+	public function testCalendarQueryWithTooManyRecurrencesAppliesTheOtherFilters(array $vEventFilters, array $expected) {
+		$calendarId = $this->createTestCalendar();
+		$uris = [
+			// SUMMARY:Test Event, ohne RRULE und VALARM
+			'normal' => $this->createEvent($calendarId, '20260912T130000Z', '20260912T140000Z'),
+			'minutely' => static::getUniqueID('event'),
+		];
+		$calData = <<<EOD
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:ownCloud Calendar
+BEGIN:VEVENT
+UID:minutely-since-2000
+DTSTAMP:20260101T000000Z
+DTSTART:20000101T000000Z
+DTEND:20000101T000100Z
+RRULE:FREQ=MINUTELY
+SUMMARY:Jede Minute
+END:VEVENT
+END:VCALENDAR
+EOD;
+		$this->backend->createCalendarObject($calendarId, $uris['minutely'], $calData);
+
+		$vEventFilters[0]['time-range'] = [
+			'start' => new DateTime('2026-09-01 00:00:00', new DateTimeZone('UTC')),
+			'end' => new DateTime('2026-10-01 00:00:00', new DateTimeZone('UTC')),
+		];
+		$result = $this->backend->calendarQuery($calendarId, [
+			'name' => 'VCALENDAR',
+			'is-not-defined' => false,
+			'time-range' => false,
+			'prop-filters' => [],
+			'comp-filters' => $vEventFilters,
+		]);
+
+		$this->assertEqualsCanonicalizing(\array_map(function ($name) use ($uris) {
+			return $uris[$name];
+		}, $expected), $result);
+	}
+
+	public function providesFiltersBesidesTheTimeRange() {
+		$vEvent = function (array $propFilters = [], array $compFilters = []) {
+			return [
+				'name' => 'VEVENT',
+				'is-not-defined' => false,
+				'comp-filters' => $compFilters,
+				'time-range' => false,
+				'prop-filters' => $propFilters,
+			];
+		};
+		$summaryContains = function ($text) {
+			return [
+				'name' => 'SUMMARY',
+				'is-not-defined' => false,
+				'param-filters' => [],
+				'text-match' => ['negate-condition' => false, 'collation' => 'i;ascii-casemap', 'value' => $text],
+				'time-range' => false,
+			];
+		};
+		$rruleNotDefined = [
+			'name' => 'RRULE',
+			'is-not-defined' => true,
+			'param-filters' => [],
+			'text-match' => null,
+			'time-range' => false,
+		];
+		$vAlarm = [
+			'name' => 'VALARM',
+			'is-not-defined' => false,
+			'comp-filters' => [],
+			'time-range' => false,
+			'prop-filters' => [],
+		];
+		return [
+			// Sabre selbst wertet Unterfilter neben einer erfuellten time-range
+			// nicht aus; fuer 'normal' ist das hier egal, es passt ohnehin.
+			'text-match next to the time range' => [[$vEvent([$summaryContains('Test')])], ['normal']],
+			'text-match in its own comp-filter' => [[$vEvent(), $vEvent([$summaryContains('Test')])], ['normal']],
+			'text-match the series matches' => [[$vEvent(), $vEvent([$summaryContains('Minute')])], ['minutely']],
+			'RRULE is-not-defined' => [[$vEvent([$rruleNotDefined])], ['normal']],
+			'VALARM comp-filter without time range' => [[$vEvent(), $vEvent([], [$vAlarm])], []],
+			'only the time range' => [[$vEvent()], ['normal', 'minutely']],
+		];
+	}
+
 	public function providesCalendarQueryParameters() {
 		return [
 			'all' => [[0, 1, 2, 3], [], []],

@@ -41,6 +41,7 @@ use Sabre\CalDAV\Backend\AbstractBackend;
 use Sabre\CalDAV\Backend\SchedulingSupport;
 use Sabre\CalDAV\Backend\SubscriptionSupport;
 use Sabre\CalDAV\Backend\SyncSupport;
+use Sabre\CalDAV\CalendarQueryValidator;
 use Sabre\CalDAV\Plugin;
 use Sabre\CalDAV\Xml\Property\ScheduleCalendarTransp;
 use Sabre\CalDAV\Xml\Property\SupportedCalendarComponentSet;
@@ -1039,14 +1040,19 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
 	/**
 	 * Wendet die Nachfilter einer Kalenderabfrage auf ein einzelnes Objekt an.
 	 *
-	 * Ein Termin, dessen Wiederholungen im abgefragten Zeitraum die Obergrenze
-	 * von Sabre überschreiten (etwa FREQ=MINUTELY seit Jahren), wirft
-	 * MaxInstancesExceededException. Ungefangen brach das die Abfrage des
-	 * GANZEN Kalenders mit HTTP 500 ab: kein einziger Termin war mehr
-	 * abrufbar, und in einem schreibbar geteilten Kalender konnte jedes Mitglied
-	 * ihn so für alle unbenutzbar machen. Das Objekt wird stattdessen
-	 * aufgenommen - die Datenbankabfrage hat es schon auf den Zeitraum
-	 * eingegrenzt (firstoccurence/lastoccurence), und die Clients lösen die
+	 * Ein Termin, dessen Wiederholungen die Obergrenze von Sabre überschreiten,
+	 * wirft beim Prüfen eines Zeitraums MaxInstancesExceededException. Sabre
+	 * zählt dabei ab DTSTART: das trifft nicht nur FREQ=MINUTELY, sondern auch
+	 * eine tägliche Serie, die älter als etwa zehn Jahre ist. Ungefangen brach
+	 * das die Abfrage des GANZEN Kalenders mit HTTP 500 ab: kein einziger
+	 * Termin war mehr abrufbar, und in einem schreibbar geteilten Kalender
+	 * konnte jedes Mitglied ihn so für alle unbenutzbar machen.
+	 *
+	 * Für ein solches Objekt gilt nur die Zeitraum-Bedingung als erfüllt: die
+	 * übrigen Filter (prop-filter, text-match, is-not-defined, comp-filter)
+	 * werden auf einer Kopie ohne die time-range der comp-filter weiter
+	 * ausgewertet. Den Zeitraum grenzt, soweit möglich, schon die
+	 * Datenbankabfrage ein (firstoccurence/lastoccurence), die Clients lösen die
 	 * Wiederholungen selbst auf.
 	 *
 	 * @param mixed $calendarId
@@ -1055,15 +1061,40 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
 	 * @return bool
 	 */
 	private function matchesFilter($calendarId, array $row, array $filters) {
+		// Einmal lesen und für beide Prüfungen verwenden: unter PostgreSQL ist
+		// calendardata ein Stream, der sich nur einmal lesen lässt.
+		$vObject = Reader::read($row['calendardata']);
+		$validator = new CalendarQueryValidator();
 		try {
-			return $this->validateFilterForObject($row, $filters);
+			return $validator->validate($vObject, $filters);
 		} catch (MaxInstancesExceededException $e) {
-			\OC::$server->getLogger()->warning(
-				'Calendar object {uri} in calendar {calendar} has too many recurrences to filter, returning it unfiltered',
+			\OC::$server->getLogger()->debug(
+				'Calendar object {uri} in calendar {calendar} has too many recurrences to check the time range, assuming it matches',
 				['app' => 'dav', 'uri' => $row['uri'], 'calendar' => $calendarId]
 			);
-			return true;
+			return $validator->validate($vObject, $this->withoutComponentTimeRanges($filters));
+		} finally {
+			// Kreisbezüge auflösen, damit PHP das Objekt freigeben kann - wie in
+			// AbstractBackend::validateFilterForObject(), auch im Ausnahmefall.
+			$vObject->destroy();
 		}
+	}
+
+	/**
+	 * Kopie eines (comp-)Filters ohne die time-range seiner comp-filter,
+	 * rekursiv. Nur dort lösen Wiederholungen die Ausnahme aus; eine
+	 * time-range in einem prop-filter (etwa auf DTSTART) vergleicht einen
+	 * einzelnen Wert und bleibt erhalten.
+	 *
+	 * @param array $filter
+	 * @return array
+	 */
+	private function withoutComponentTimeRanges(array $filter) {
+		$filter['time-range'] = false;
+		foreach ($filter['comp-filters'] ?? [] as $i => $compFilter) {
+			$filter['comp-filters'][$i] = $this->withoutComponentTimeRanges($compFilter);
+		}
+		return $filter;
 	}
 
 	/**

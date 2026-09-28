@@ -1,11 +1,26 @@
 Security: One event with endless recurrences no longer breaks the whole calendar
 
 A single event whose recurrences exceed what Sabre expands while filtering
-(for example FREQ=MINUTELY since 2000) made every time-range query of its
-calendar fail with HTTP 500 (MaxInstancesExceededException). No event of that
+made every time-range query of its calendar fail with HTTP 500
+(MaxInstancesExceededException). Sabre counts the recurrences from DTSTART,
+so this hit not only FREQ=MINUTELY but also every daily series older than
+about ten years or weekly series older than about 67 years. No event of that
 calendar could be loaded any more, and in a calendar shared with write access
 any member could make it unusable for everybody.
 
-Such an object is now returned unfiltered - the database query has already
-limited it to the requested time range - and a warning is logged. The other
-events of the calendar are returned as before.
+For such an object only the time-range condition is now taken as met: the
+other filters of the query (prop-filter with text-match, is-not-defined,
+comp-filter) are still applied, so a search for a summary or for events
+without RRULE leaves it out when it does not match. Where possible the
+database query has already limited it to the requested time range; a series
+that merely lies in the range but has no instance in it (a Monday series
+queried for a Tuesday) is still returned, and clients such as the calendar app
+expand the recurrences themselves. This is logged on level debug only, as it
+happens on every view change of such a calendar. The other events of the
+calendar are returned as before.
+
+Known limitation: a calendar-query or calendar-multiget that asks the server
+to expand the recurrences (`<C:expand>` in `<C:calendar-data>`) and a
+free-busy-query REPORT over such an event still fail with HTTP 500. Sabre
+expands the event there after the query; handling it would mean replacing
+Sabre's report handlers. The calendar app uses none of these requests.
