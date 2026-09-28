@@ -3,6 +3,13 @@ Bugfix: Translate the mail signature into German
 The unified mail signature introduced for owncloud.online ("Best regards,",
 "your %s Team", "A trademark of") had no translations, so every German mail -
 password reset, share notifications, the calendar's "send link by email" -
-ended in English. The three strings are now translated for de (informal) and
-de_DE (formal). Apps that include the footer with `['app' => 'core']` already
-get the core translations in the language of the mail.
+ended in English. The three strings are now translated for de (informal),
+de_DE, de_AT and de_CH (formal; de_CH without ß: "Mit freundlichen Grüssen,").
+A language file is only used for its exact language, there is no fallback
+from de_AT or de_CH to de. Apps that include the footer with
+`['app' => 'core']` already get the core translations in the language of the
+mail.
+
+The core/l10n files are maintained in this repository: the fork has no
+Transifex sync. Pulling translations from the upstream project would drop
+these strings again.
