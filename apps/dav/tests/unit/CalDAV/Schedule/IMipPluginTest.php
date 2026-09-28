@@ -32,6 +32,7 @@ namespace OCA\DAV\Tests\unit\CalDAV\Schedule;
 
 use OC\Mail\Mailer;
 use OCA\DAV\CalDAV\Schedule\IMipPlugin;
+use OCP\IConfig;
 use OCP\ILogger;
 use OCP\IRequest;
 use Sabre\VObject\Component\VCalendar;
@@ -45,7 +46,6 @@ class IMipPluginTest extends TestCase {
 		/** @var Mailer | \PHPUnit\Framework\MockObject\MockObject $mailer */
 		$mailer = $this->createMock(Mailer::class);
 		$mailer->method('createMessage')->willReturn($mailMessage);
-		$mailer->method('validateMailAddress')->willReturn(true);
 		$mailer->expects($this->once())->method('send');
 		/** @var ILogger | \PHPUnit\Framework\MockObject\MockObject $logger */
 		$logger = $this->createMock(Log::class);
@@ -79,7 +79,6 @@ class IMipPluginTest extends TestCase {
 		/** @var Mailer | \PHPUnit\Framework\MockObject\MockObject $mailer */
 		$mailer = $this->createMock(Mailer::class);
 		$mailer->method('createMessage')->willReturn($mailMessage);
-		$mailer->method('validateMailAddress')->willReturn(true);
 		$mailer->method('send')->willThrowException(new \Exception());
 		/** @var ILogger | \PHPUnit\Framework\MockObject\MockObject $logger */
 		$logger = $this->createMock(Log::class);
@@ -113,7 +112,6 @@ class IMipPluginTest extends TestCase {
 		/** @var Mailer | \PHPUnit\Framework\MockObject\MockObject $mailer */
 		$mailer = $this->createMock(Mailer::class);
 		$mailer->method('createMessage')->willReturn($mailMessage);
-		$mailer->method('validateMailAddress')->willReturn(true);
 		$mailer->method('send')->willReturn(['foo@example.net']);
 		/** @var ILogger | \PHPUnit\Framework\MockObject\MockObject $logger */
 		$logger = $this->createMock(Log::class);
@@ -148,7 +146,6 @@ class IMipPluginTest extends TestCase {
 		/** @var Mailer | \PHPUnit\Framework\MockObject\MockObject $mailer */
 		$mailer = $this->createMock(Mailer::class);
 		$mailer->method('createMessage')->willReturn($mailMessage);
-		$mailer->method('validateMailAddress')->willReturn(true);
 		$mailer->expects($this->once())->method('send');
 		/** @var ILogger | \PHPUnit\Framework\MockObject\MockObject $logger */
 		$logger = $this->createMock(Log::class);
@@ -200,32 +197,100 @@ class IMipPluginTest extends TestCase {
 	}
 
 	/**
+	 * A mailer that hands out $mailMessage and does not send, but keeps its
+	 * real validateMailAddress(): a check stricter than the mail layer would
+	 * show up in the tests below.
+	 *
+	 * @param \OC\Mail\Message $mailMessage
+	 * @return Mailer | \PHPUnit\Framework\MockObject\MockObject
+	 */
+	private function buildMailerWithRealValidation($mailMessage) {
+		$mailer = $this->getMockBuilder(Mailer::class)
+			->setConstructorArgs([
+				$this->createMock(IConfig::class),
+				$this->createMock(ILogger::class),
+				$this->createMock(\OC_Defaults::class),
+			])
+			->onlyMethods(['createMessage', 'send'])
+			->getMock();
+		$mailer->method('createMessage')->willReturn($mailMessage);
+		return $mailer;
+	}
+
+	/**
 	 * An attendee address no mail can go to ('MAILTO:hausmeister') used to
 	 * throw out of schedule() and fail the whole CalDAV PUT with HTTP 500.
-	 * Only the invitation may be left out, with SCHEDULE-STATUS 3.7.
+	 * Only the invitation may be left out, with SCHEDULE-STATUS 3.7, and a
+	 * warning an admin sees with the default log level.
+	 *
+	 * @dataProvider providesUnusableRecipients
+	 * @param string $recipient
 	 */
-	public function testInvalidRecipientSkipsOnlyTheInvitation() {
+	public function testInvalidRecipientSkipsOnlyTheInvitation($recipient) {
 		$mailMessage = new \OC\Mail\Message(new \Symfony\Component\Mime\Email());
-		/** @var Mailer | \PHPUnit\Framework\MockObject\MockObject $mailer */
-		$mailer = $this->createMock(Mailer::class);
-		$mailer->method('createMessage')->willReturn($mailMessage);
-		$mailer->method('validateMailAddress')->willReturnMap([
-			['gandalf@wiz.ard', true],
-			['hausmeister', false],
-		]);
+		$mailer = $this->buildMailerWithRealValidation($mailMessage);
 		$mailer->expects($this->never())->method('send');
 		/** @var ILogger | \PHPUnit\Framework\MockObject\MockObject $logger */
 		$logger = $this->createMock(Log::class);
 		$logger->expects($this->never())->method('logException');
 		$logger->expects($this->never())->method('error');
+		$logger->expects($this->once())->method('warning')
+			->with($this->stringContains('invitation'), ['app' => 'dav', 'recipient' => $recipient]);
 		/** @var IRequest| \PHPUnit\Framework\MockObject\MockObject $request */
 		$request = $this->createMock(IRequest::class);
 
 		$plugin = new IMipPlugin($mailer, $logger, $request);
-		$message = $this->buildRequest('mailto:gandalf@wiz.ard', 'mailto:hausmeister');
+		$message = $this->buildRequest('mailto:gandalf@wiz.ard', 'mailto:' . $recipient);
 
 		$plugin->schedule($message);
 		$this->assertEquals('3.7', $message->getScheduleStatus());
+	}
+
+	public function providesUnusableRecipients() {
+		return [
+			'no domain' => ['hausmeister'],
+			'user name only' => ['lehrer1'],
+			'empty domain' => ['frodo@'],
+			'empty' => [''],
+		];
+	}
+
+	/**
+	 * The check for an unusable attendee address must not be stricter than
+	 * the mail layer: addresses it sends to (a domain with an underscore, a
+	 * blank the mail layer trims) still get their invitation, as they did
+	 * before the check existed.
+	 *
+	 * @dataProvider providesRecipientsTheMailLayerAccepts
+	 * @param string $recipient
+	 * @param string $expectedTo
+	 */
+	public function testRecipientTheMailLayerAcceptsGetsTheInvitation($recipient, $expectedTo) {
+		$mailMessage = new \OC\Mail\Message(new \Symfony\Component\Mime\Email());
+		$mailer = $this->buildMailerWithRealValidation($mailMessage);
+		$mailer->expects($this->once())->method('send')->willReturn([]);
+		/** @var ILogger | \PHPUnit\Framework\MockObject\MockObject $logger */
+		$logger = $this->createMock(Log::class);
+		$logger->expects($this->never())->method('logException');
+		$logger->expects($this->never())->method('warning');
+		/** @var IRequest| \PHPUnit\Framework\MockObject\MockObject $request */
+		$request = $this->createMock(IRequest::class);
+
+		$plugin = new IMipPlugin($mailer, $logger, $request);
+		$message = $this->buildRequest('mailto:gandalf@wiz.ard', 'mailto:' . $recipient);
+
+		$plugin->schedule($message);
+		$this->assertEquals('1.1', $message->getScheduleStatus());
+		$this->assertEquals($expectedTo, $mailMessage->getTo()[0]->getAddress());
+	}
+
+	public function providesRecipientsTheMailLayerAccepts() {
+		return [
+			'underscore in domain' => ['user@foo_bar.example', 'user@foo_bar.example'],
+			'leading blank' => [' foo@example.com', 'foo@example.com'],
+			'trailing blank' => ['foo@example.com ', 'foo@example.com'],
+			'idn domain' => ["frodo@hobb\u{00ED}t.example", 'frodo@xn--hobbt-2sa.example'],
+		];
 	}
 
 	/**
@@ -237,7 +302,6 @@ class IMipPluginTest extends TestCase {
 		/** @var Mailer | \PHPUnit\Framework\MockObject\MockObject $mailer */
 		$mailer = $this->createMock(Mailer::class);
 		$mailer->method('createMessage')->willReturn($mailMessage);
-		$mailer->method('validateMailAddress')->willReturn(true);
 		$mailer->expects($this->never())->method('send');
 		/** @var ILogger | \PHPUnit\Framework\MockObject\MockObject $logger */
 		$logger = $this->createMock(Log::class);

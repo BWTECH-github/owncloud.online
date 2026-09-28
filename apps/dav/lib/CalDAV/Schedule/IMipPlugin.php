@@ -104,14 +104,6 @@ class IMipPlugin extends SabreIMipPlugin {
 		$sender = \substr($iTipMessage->sender, 7);
 		$recipient = \substr($iTipMessage->recipient, 7);
 
-		// An attendee address no mail can go to ('MAILTO:hausmeister') must
-		// only cost the invitation, not the whole PUT of the event.
-		if (!$this->mailer->validateMailAddress($recipient)) {
-			$this->logger->info('Not sending an invitation to the invalid address {recipient}', ['app' => 'dav', 'recipient' => $recipient]);
-			$iTipMessage->scheduleStatus = '3.7;Invalid calendar user address';
-			return;
-		}
-
 		$senderName = $iTipMessage->senderName ?: null;
 		$recipientName = $iTipMessage->recipientName ?: null;
 
@@ -136,9 +128,21 @@ class IMipPlugin extends SabreIMipPlugin {
 			// (e.g. the organizer's) with an exception, which must not abort
 			// saving the event either.
 			$message = $this->mailer->createMessage();
+			try {
+				// An attendee address no mail can go to ('MAILTO:hausmeister')
+				// must only cost this invitation, not the whole PUT of the
+				// event. setTo() applies the very check the mail layer uses
+				// when sending, so no address it accepts is left out here.
+				$message->setTo([$recipient => $recipientName]);
+			} catch (\InvalidArgumentException $ex) {
+				// Symfony's RfcComplianceException (and its rejection of
+				// control characters) both extend \InvalidArgumentException.
+				$this->logger->warning('Not sending an invitation to the invalid attendee address {recipient}', ['app' => 'dav', 'recipient' => $recipient]);
+				$iTipMessage->scheduleStatus = '3.7;Invalid calendar user address';
+				return;
+			}
 			$message->setReplyTo([$sender => $senderName])
 				->setFrom([$sender => $senderName])
-				->setTo([$recipient => $recipientName])
 				->setSubject($subject)
 				->setBody($iTipMessage->message->serialize(), $contentType);
 

@@ -13,8 +13,12 @@ blocks sees. And the iMIP plugin of the dav app built the invitation outside
 its try block, so any exception from the mail layer aborted the request.
 
 An address without a usable domain part is now handed on unchanged, and the
-mail layer rejects it with its regular exception. The iMIP plugin checks the
-recipient before building the invitation: for an address no mail can go to it
-leaves out just that invitation, marks the attendee with SCHEDULE-STATUS 3.7
-(invalid calendar user) and saves the event. A sender address the mail layer
-rejects now also ends in SCHEDULE-STATUS 5.0 instead of an aborted save.
+mail layer rejects it with its regular exception. The iMIP plugin sets the
+recipient first and catches that rejection: for an address no mail can go to
+it leaves out just that invitation, marks the attendee with SCHEDULE-STATUS 3.7
+(invalid calendar user), logs a warning naming the address and saves the
+event. The check is exactly the one the mail layer applies when sending, so
+every address that got an invitation before still gets one - including a
+domain with an underscore or a blank before or after the address, which a
+first version of this fix left out. A sender address the mail layer rejects
+now also ends in SCHEDULE-STATUS 5.0 instead of an aborted save.
