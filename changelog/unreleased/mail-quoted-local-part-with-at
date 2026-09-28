@@ -1,0 +1,8 @@
+Bugfix: Keep a quoted local part with an '@' intact in mail addresses
+
+Before sending, the mail layer converts the domain of every address to ASCII
+(punycode). It split the address at the first '@', so a quoted local part
+that itself contains one broke the address: `"a@b"@exämple.com` became
+`"a@xn--b"@exmple-z2a.com`. The domain is now taken after the last '@', and
+the example becomes `"a@b"@xn--exmple-cua.com`. Every other address is
+converted exactly as before.

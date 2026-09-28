@@ -96,15 +96,20 @@ class Message {
 	 * no caller's catch (\Exception) sees. Symfony's Address rejects such an
 	 * address afterwards with a regular RfcComplianceException.
 	 *
+	 * The domain starts after the last '@': a quoted local part may contain
+	 * one itself ('"a@b"@example.com').
+	 *
 	 * @param string $address
 	 * @return string
 	 */
 	private function convertDomain($address) {
-		$parts = \explode('@', (string)$address, 2);
-		if (\count($parts) !== 2 || $parts[1] === '') {
-			return (string)$address;
+		$address = (string)$address;
+		$at = \strrpos($address, '@');
+		if ($at === false || $at === \strlen($address) - 1) {
+			return $address;
 		}
-		list($name, $domain) = $parts;
+		$name = \substr($address, 0, $at);
+		$domain = \substr($address, $at + 1);
 		if (\defined('INTL_IDNA_VARIANT_UTS46')) {
 			$converted = \idn_to_ascii($domain, 0, INTL_IDNA_VARIANT_UTS46);
 		} else {

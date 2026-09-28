@@ -36,7 +36,10 @@ class MessageTest extends TestCase {
 			[['lukas@owncloud.com' => 'Lukas Reschke'], ['lukas@owncloud.com' => 'Lukas Reschke']],
 			[['lukas@owncloud.com' => 'Lukas Reschke', 'lukas@öwnclöüd.com', 'lukäs@owncloud.örg' => 'Lükäs Réschke'],
 				['lukas@owncloud.com' => 'Lukas Reschke', 'lukas@xn--wncld-iuae2c.com', 'lukäs@owncloud.xn--rg-eka' => 'Lükäs Réschke']],
-			[['lukas@öwnclöüd.com'], ['lukas@xn--wncld-iuae2c.com']]
+			[['lukas@öwnclöüd.com'], ['lukas@xn--wncld-iuae2c.com']],
+			// the domain starts after the last '@', a quoted local part may hold one
+			[['"a@b"@exämple.com' => 'A B'], ['"a@b"@xn--exmple-cua.com' => 'A B']],
+			[['"a@b"@exämple.com'], ['"a@b"@xn--exmple-cua.com']],
 		];
 	}
 
