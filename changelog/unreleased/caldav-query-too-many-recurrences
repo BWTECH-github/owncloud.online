@@ -20,7 +20,10 @@ happens on every view change of such a calendar. The other events of the
 calendar are returned as before.
 
 Known limitation: a calendar-query or calendar-multiget that asks the server
-to expand the recurrences (`<C:expand>` in `<C:calendar-data>`) and a
-free-busy-query REPORT over such an event still fail with HTTP 500. Sabre
-expands the event there after the query; handling it would mean replacing
-Sabre's report handlers. The calendar app uses none of these requests.
+to expand the recurrences (`<C:expand>` in `<C:calendar-data>`), a
+free-busy-query REPORT and the ICS export with a time range and expansion
+(`?export&start=...&end=...&expand=1`, also on a public calendar) over such an
+event still fail with HTTP 500. Sabre expands the event there after the query;
+handling it would mean replacing Sabre's report handlers and its ICS export
+plugin. The ICS export with a time range but without `expand=1` works. The
+calendar app uses none of the failing requests.
