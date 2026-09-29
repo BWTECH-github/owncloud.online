@@ -44,6 +44,7 @@
 
 * Bugfix - Upgrade verweist bei abgeschalteten Apps nur noch auf den Markt, wenn er sie führt
 * Security - Frei einstellbarer Instanzname wird in body-Klasse und HTML-Mails maskiert
+* Bugfix - Gast-Dateisystem beendet den Cron-Lauf nicht mehr am Zertifikatsbündel
 
 ## Details
 
@@ -71,6 +72,35 @@
    landete als HTML auf der Seite bzw. in der Mail. Alle diese Stellen
    maskieren den Namen jetzt. Trägt die Instanz einen eigenen Namen, bezieht
    sich der Marken-Satz der Mail-Fußzeile ausdrücklich auf owncloud.online.
+
+* Bugfix - Gast-Dateisystem beendet den Cron-Lauf nicht mehr am Zertifikatsbündel
+
+   War im selben PHP-Prozess vorher das Dateisystem eines Gasts oder eines
+   Mitglieds einer Nur-Lese-Gruppe eingerichtet, lag dessen Nur-Lese-Hülle
+   auch auf der Wurzel des Datenverzeichnisses. Ihr Präfixvergleich auf
+   „files“ traf `files_external/`, wo das Systembündel der Zertifikate liegt.
+   Musste das Bündel neu gebaut werden – es fehlte oder war älter als
+   `resources/config/ca-bundle.crt`, also nach jedem Update und Umzug –,
+   lieferte `fopen()` false, und das folgende `fwrite()` beendete unter PHP 8
+   den ganzen Lauf von `occ system:cron` mit einem TypeError. Die Jobs danach
+   liefen nicht, der Job blieb 12 Stunden reserviert, Ajax-Cron eines Gasts
+   endete mit HTTP 500. Betroffen war jeder Job mit dem HTTP-Client des
+   Kerns, etwa Update-Hinweis, Markt-Prüfung, EditorsCheck von ONLYOFFICE
+   und die Federation-Jobs.
+
+   Die Nur-Lese-Hülle gilt jetzt nur für das Home ihres Nutzers, und
+   `OC_Util::tearDownFS()` entfernt sie wieder – sie wirkt weder in die
+   nächste Einrichtung im selben Prozess, noch verhindert sie die Hülle des
+   nächsten Gasts. Das Zertifikatsbündel entsteht in einer Nachbardatei und
+   wird erst dann umbenannt; scheitert das Schreiben, bleibt das bisherige
+   Bündel stehen. Lässt es sich nicht neu bauen, nimmt der HTTP-Client das
+   vorhandene Bündel, bei Nutzerbündeln danach das Systembündel, sonst das
+   mitgelieferte CA-Bündel, und protokolliert eine Warnung – die TLS-Prüfung
+   bleibt immer an. Das Systembündel hängt sich nicht mehr selbst an und
+   enthält die mitgelieferten Zertifikate nicht mehr doppelt. Ein Job, der
+   einen Error (nicht nur eine Exception) wirft, wird protokolliert und
+   beendet den Cron-Lauf nicht mehr; die Reservierung wird freigegeben, der
+   nächste Job läuft.
 
 # Changelog for ownCloud.online [11.0.20] (2026-09-24)
 

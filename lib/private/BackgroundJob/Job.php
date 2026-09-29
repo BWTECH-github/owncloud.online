@@ -102,7 +102,9 @@ abstract class Job implements IJob {
 			}
 
 			$jobList->setExecutionTime($this, $timeTaken);
-		} catch (\Exception $e) {
+		} catch (\Throwable $e) {
+			// auch \Error (TypeError u. a. unter PHP 8): ein fehlerhafter Job darf
+			// den Cron-Lauf bzw. die Web-Anfrage nicht beenden
 			if ($logger) {
 				$logger->logException($e, [
 					'app' => 'core',

@@ -285,7 +285,11 @@ class OC_Util {
 			\OC\Files\Filesystem::addStorageWrapper(
 				'oc_readonly',
 				function ($mountPoint, $storage) use ($user) {
-					if ($mountPoint === '/' || $mountPoint === "/$user/") {
+					// Nur das Home des Nutzers. Auf der Wurzel "/" (Datenverzeichnis)
+					// traf der Präfixvergleich der Hülle "files" auch files_external/
+					// (Systembündel der Zertifikate) und Nutzer, deren Kennung mit
+					// "files" beginnt – das eigene Home des Gasts liegt dort nie.
+					if ($mountPoint === "/$user/") {
 						return new \OC\Files\Storage\Wrapper\ReadOnlyJail(
 							[
 								'storage' => $storage,
@@ -459,6 +463,14 @@ class OC_Util {
 	 */
 	public static function tearDownFS() {
 		\OC\Files\Filesystem::tearDown();
+		// Die Nur-Lese-Hülle aus setupFS() gehört zu dem Nutzer, für den sie
+		// angelegt wurde. Bliebe sie registriert, griffe sie in die nächste
+		// Einrichtung im selben Prozess (Cron, occ) und verhinderte die Hülle
+		// des nächsten Gasts, weil ein Wrapper-Name nur einmal vergeben wird.
+		$loader = \OC\Files\Filesystem::getLoader();
+		if ($loader instanceof \OC\Files\Storage\StorageFactory) {
+			$loader->removeStorageWrapper('oc_readonly');
+		}
 		self::$fsSetup = false;
 		self::$rootMounted = false;
 	}

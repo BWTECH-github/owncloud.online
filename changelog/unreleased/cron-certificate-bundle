@@ -1,0 +1,32 @@
+Bugfix: A guest's filesystem no longer ends the cron run at the certificate bundle
+
+When the filesystem of a guest or of a member of a read-only group had been set
+up earlier in the same PHP process, the read-only wrapper of that user was also
+applied to the root of the data directory. Its prefix check on "files" matched
+files_external/, where the certificate manager keeps the system certificate
+bundle. Whenever the bundle had to be rebuilt - missing, or older than
+resources/config/ca-bundle.crt as after every update or migration - fopen()
+returned false and the following fwrite() ended the whole `occ system:cron` run
+with a TypeError under PHP 8. The jobs after it did not run, the failing job
+stayed reserved for 12 hours, and an ajax cron request of a guest failed with
+HTTP 500. Every job using the core HTTP client was affected, e.g. the update
+notification, the market update check, ONLYOFFICE's EditorsCheck and the
+federation jobs.
+
+The read-only wrapper now only covers the home mount of its user, and
+`OC_Util::tearDownFS()` removes it again. It neither leaks into the next
+filesystem setup in the same process nor keeps the next guest in that process
+from getting its own read-only home.
+
+The certificate manager writes the bundle to a temporary file and renames it
+into place, so a failed write leaves the previous bundle untouched and is
+reported as an exception instead of a TypeError. If the bundle cannot be
+rebuilt, the HTTP client uses the existing bundle, for a user bundle then the
+system bundle, and otherwise the shipped CA bundle, and logs a warning - TLS
+verification always stays on. The system bundle no longer appends itself and
+therefore no longer contains the shipped CA certificates twice.
+
+A background job that throws an Error (not only an Exception) is logged and no
+longer ends the cron run; `occ system:cron` also continues after errors thrown
+by jobs that override execute(). The reservation of the job is released and the
+next job runs.

@@ -132,4 +132,32 @@ class CronTest extends TestCase {
 			$output
 		);
 	}
+
+	public function testFailingJobDoesNotEndTheCronRun() {
+		$this->config->method('getSystemValue')
+			->willReturnMap([
+				['maintenance', false, false],
+				['singleuser', false, false],
+				['cron_log', true, true],
+			]);
+		$this->config->method('getAppValue')->with('core', 'backgroundjobs_mode', 'ajax')->willReturn('cron');
+
+		$failingJob = $this->createMock(IJob::class);
+		$failingJob->method('getId')->willReturn(1);
+		$failingJob->method('execute')->willThrowException(new \Error('job broke outside of run()'));
+		$nextJob = $this->createMock(IJob::class);
+		$nextJob->method('getId')->willReturn(2);
+		$nextJob->expects(self::once())->method('execute')->with($this->jobList, $this->logger);
+		$this->jobList->method('getNext')->willReturnOnConsecutiveCalls($failingJob, $nextJob, null);
+
+		// die Reservierung beider Jobs wird freigegeben, der Lauf wird als erfolgreich vermerkt
+		$this->jobList->expects(self::exactly(2))->method('setLastJob')
+			->withConsecutive([$failingJob], [$nextJob]);
+		$this->logger->expects(self::once())->method('logException')
+			->with($this->isInstanceOf(\Error::class));
+		$this->config->expects(self::once())->method('setAppValue')
+			->with('core', 'lastcron', $this->anything());
+
+		$this->assertSame(0, $this->commandTester->execute([]));
+	}
 }

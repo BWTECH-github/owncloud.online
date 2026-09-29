@@ -587,7 +587,7 @@ class Server extends ServerContainer implements IServerContainer, IServiceLoader
 			$uid = $user ? $user : null;
 			return new ClientService(
 				$c->getConfig(),
-				new \OC\Security\CertificateManager($uid, new View(), $c->getConfig())
+				new \OC\Security\CertificateManager($uid, new View(), $c->getConfig(), $c->getLogger())
 			);
 		});
 		$this->registerService('WebDavClientService', function (Server $c) {
@@ -595,7 +595,7 @@ class Server extends ServerContainer implements IServerContainer, IServiceLoader
 			$uid = $user ? $user : null;
 			return new WebDavClientService(
 				$c->getConfig(),
-				new \OC\Security\CertificateManager($uid, new View(), $c->getConfig())
+				new \OC\Security\CertificateManager($uid, new View(), $c->getConfig(), $c->getLogger())
 			);
 		});
 		$this->registerService('EventLogger', function (Server $c) {
@@ -1423,7 +1423,7 @@ class Server extends ServerContainer implements IServerContainer, IServiceLoader
 			}
 			$userId = $user->getUID();
 		}
-		return new CertificateManager($userId, new View(), $this->getConfig());
+		return new CertificateManager($userId, new View(), $this->getConfig(), $this->getLogger());
 	}
 
 	/**

@@ -8,7 +8,11 @@
 
 namespace Test\Security;
 
+use OC\Files\View;
 use OC\Security\CertificateManager;
+use OCP\IConfig;
+use OCP\ILogger;
+use OCP\Util;
 
 /**
  * Class CertificateManagerTest
@@ -18,6 +22,8 @@ use OC\Security\CertificateManager;
 class CertificateManagerTest extends \Test\TestCase {
 	use \Test\Traits\UserTrait;
 	use \Test\Traits\MountProviderTrait;
+
+	private const SYSTEM_BUNDLE = '/files_external/rootcerts.crt';
 
 	/** @var CertificateManager */
 	private $certificateManager;
@@ -114,5 +120,96 @@ class CertificateManagerTest extends \Test\TestCase {
 
 	public function testGetCertificateBundle() {
 		$this->assertSame('/' . $this->username . '/files_external/rootcerts.crt', $this->certificateManager->getCertificateBundle());
+	}
+
+	/**
+	 * View, in der nichts existiert außer den übergebenen Pfaden und in die nichts
+	 * geschrieben werden kann (fopen liefert false, wie hinter einer Nur-Lese-Hülle)
+	 *
+	 * @param string[] $existing
+	 * @return View|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private function createUnwritableView(array $existing = []) {
+		$view = $this->createMock(View::class);
+		$view->method('file_exists')->willReturnCallback(function ($path) use ($existing) {
+			return \in_array($path, $existing, true);
+		});
+		$view->method('filemtime')->willReturn(1);
+		$view->method('fopen')->willReturn(false);
+		return $view;
+	}
+
+	public function testCreateCertificateBundleThrowsWhenTheBundleCannotBeOpened() {
+		$manager = new CertificateManager(null, $this->createUnwritableView(), $this->createMock(IConfig::class));
+
+		$this->expectException(\RuntimeException::class);
+		$manager->createCertificateBundle();
+	}
+
+	public function testCreateCertificateBundleRemovesTheTemporaryFileWhenItCannotBeMovedIntoPlace() {
+		$view = $this->createMock(View::class);
+		$view->method('file_exists')->willReturn(true);
+		$view->method('fopen')->willReturn(\fopen('php://memory', 'w+'));
+		$view->method('rename')->willReturn(false);
+		$view->expects($this->once())->method('unlink')
+			->with($this->matchesRegularExpression('#^/files_external/rootcerts\.crt\.[0-9a-f]+\.part$#'));
+		$manager = new CertificateManager(null, $view, $this->createMock(IConfig::class));
+
+		$this->expectException(\RuntimeException::class);
+		$manager->createCertificateBundle();
+	}
+
+	public function testGetAbsoluteBundlePathFallsBackToTheShippedBundleWhenNoBundleCanBeWritten() {
+		$logger = $this->createMock(ILogger::class);
+		$logger->expects($this->once())->method('logException')
+			->with(
+				$this->isInstanceOf(\RuntimeException::class),
+				$this->callback(function (array $context) {
+					return $context['level'] === Util::WARN;
+				})
+			);
+		$manager = new CertificateManager(null, $this->createUnwritableView(), $this->createMock(IConfig::class), $logger);
+
+		$this->assertSame(
+			\OC::$SERVERROOT . '/resources/config/ca-bundle.crt',
+			$manager->getAbsoluteBundlePath(null)
+		);
+	}
+
+	public function testGetAbsoluteBundlePathKeepsTheOutdatedBundleWhenItCannotBeRebuilt() {
+		// vorhandenes, aber älteres Bündel als ca-bundle.crt (wie nach einem Update)
+		$view = $this->createUnwritableView(['/files_external/', self::SYSTEM_BUNDLE]);
+		$existingBundle = \OC::$SERVERROOT . '/tests/data/certificates/goodCertificate.crt';
+		$view->method('getLocalFile')->with(self::SYSTEM_BUNDLE)->willReturn($existingBundle);
+		$manager = new CertificateManager(null, $view, $this->createMock(IConfig::class), $this->createMock(ILogger::class));
+
+		$this->assertSame($existingBundle, $manager->getAbsoluteBundlePath(null));
+	}
+
+	public function testGetAbsoluteBundlePathFallsBackToTheSystemBundleWhenTheUserBundleCannotBeWritten() {
+		$view = $this->createUnwritableView([self::SYSTEM_BUNDLE]);
+		$systemBundle = \OC::$SERVERROOT . '/tests/data/certificates/goodCertificate.crt';
+		$view->method('getLocalFile')->with(self::SYSTEM_BUNDLE)->willReturn($systemBundle);
+		$manager = new CertificateManager('alice', $view, $this->createMock(IConfig::class), $this->createMock(ILogger::class));
+
+		$this->assertSame($systemBundle, $manager->getAbsoluteBundlePath());
+	}
+
+	public function testSystemBundleContainsTheDefaultCertificatesOnlyOnce() {
+		$config = $this->createMock(IConfig::class);
+		$config->method('getSystemValue')->with('installed', false)->willReturn(true);
+		$view = new View();
+		$manager = new CertificateManager(null, $view, $config);
+
+		// zweimal: das Systembündel darf sich beim Neubau nicht selbst anhängen
+		$manager->createCertificateBundle();
+		$manager->createCertificateBundle();
+
+		$defaultCertificates = \file_get_contents(\OC::$SERVERROOT . '/resources/config/ca-bundle.crt');
+		$this->assertSame(1, \substr_count($view->file_get_contents(self::SYSTEM_BUNDLE), $defaultCertificates));
+		$leftovers = \array_filter($view->getDirectoryContent('/files_external'), function ($info) {
+			return \substr($info->getName(), -5) === '.part';
+		});
+		$this->assertSame([], \array_values($leftovers));
 	}
 }

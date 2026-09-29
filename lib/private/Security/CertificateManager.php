@@ -30,6 +30,8 @@ namespace OC\Security;
 use OC\Files\Filesystem;
 use OCP\ICertificateManager;
 use OCP\IConfig;
+use OCP\ILogger;
+use OCP\Util;
 
 /**
  * Manage trusted certificates for users
@@ -51,14 +53,21 @@ class CertificateManager implements ICertificateManager {
 	protected $config;
 
 	/**
+	 * @var ILogger|null
+	 */
+	protected $logger;
+
+	/**
 	 * @param string $uid
 	 * @param \OC\Files\View $view relative to data/
 	 * @param IConfig $config
+	 * @param ILogger|null $logger
 	 */
-	public function __construct($uid, \OC\Files\View $view, IConfig $config) {
+	public function __construct($uid, \OC\Files\View $view, IConfig $config, ?ILogger $logger = null) {
 		$this->uid = $uid;
 		$this->view = $view;
 		$this->config = $config;
+		$this->logger = $logger;
 	}
 
 	/**
@@ -94,6 +103,8 @@ class CertificateManager implements ICertificateManager {
 
 	/**
 	 * create the certificate bundle of all trusted certificated
+	 *
+	 * @throws \RuntimeException if the bundle could not be written
 	 */
 	public function createCertificateBundle() {
 		$path = $this->getPathToCertificates();
@@ -103,30 +114,54 @@ class CertificateManager implements ICertificateManager {
 			$this->view->mkdir($path);
 		}
 
-		$fhCerts = $this->view->fopen($path . '/rootcerts.crt', 'w');
+		$bundle = '';
 
 		// Write user certificates
 		foreach ($certs as $cert) {
-			$file = $path . '/uploads/' . $cert->getName();
+			$file = $path . 'uploads/' . $cert->getName();
 			$data = $this->view->file_get_contents($file);
 			if (\strpos($data, 'BEGIN CERTIFICATE')) {
-				\fwrite($fhCerts, $data);
-				\fwrite($fhCerts, "\r\n");
+				$bundle .= $data . "\r\n";
 			}
 		}
 
 		// Append the default certificates
-		$defaultCertificates = \file_get_contents(\OC::$SERVERROOT . '/resources/config/ca-bundle.crt');
-		\fwrite($fhCerts, $defaultCertificates);
+		$bundle .= \file_get_contents($this->getDefaultCertificatesBundlePath());
 
 		// Append the system certificate bundle
-		$systemBundle = $this->getCertificateBundle(null);
-		if ($this->view->file_exists($systemBundle)) {
-			$systemCertificates = $this->view->file_get_contents($systemBundle);
-			\fwrite($fhCerts, $systemCertificates);
+		// Nur in Nutzerbündel: das Systembündel hängte sich sonst selbst an und
+		// enthielt die mitgelieferten Zertifikate doppelt
+		if ($this->uid !== null) {
+			$systemBundle = $this->getCertificateBundle(null);
+			if ($this->view->file_exists($systemBundle)) {
+				$bundle .= $this->view->file_get_contents($systemBundle);
+			}
 		}
 
-		\fclose($fhCerts);
+		$this->writeBundle($this->getCertificateBundle(), $bundle);
+	}
+
+	/**
+	 * Schreibt das Bündel erst vollständig in eine Nachbardatei und benennt sie
+	 * dann um: Scheitert das Schreiben (Nur-Lese-Speicher, voller Datenträger),
+	 * bleibt das bisherige Bündel unverändert, und niemand liest ein halbes Bündel.
+	 *
+	 * @param string $target
+	 * @param string $content
+	 * @throws \RuntimeException
+	 */
+	private function writeBundle(string $target, string $content): void {
+		$temporary = $target . '.' . \bin2hex(\random_bytes(8)) . '.part';
+		$handle = $this->view->fopen($temporary, 'w');
+		if (!\is_resource($handle)) {
+			throw new \RuntimeException("Could not open $temporary to write the certificate bundle");
+		}
+		$written = \fwrite($handle, $content);
+		$closed = \fclose($handle);
+		if ($written !== \strlen($content) || !$closed || !$this->view->rename($temporary, $target)) {
+			$this->view->unlink($temporary);
+			throw new \RuntimeException("Could not write the certificate bundle $target");
+		}
 	}
 
 	/**
@@ -202,14 +237,68 @@ class CertificateManager implements ICertificateManager {
 			$uid = $this->uid;
 		}
 		if ($this->needsRebundling($uid)) {
-			if ($uid === null) {
-				$manager = new CertificateManager(null, $this->view, $this->config);
-				$manager->createCertificateBundle();
-			} else {
-				$this->createCertificateBundle();
+			try {
+				if ($uid === null) {
+					$manager = new CertificateManager(null, $this->view, $this->config, $this->logger);
+					$manager->createCertificateBundle();
+				} else {
+					$this->createCertificateBundle();
+				}
+			} catch (\Exception $e) {
+				return $this->getFallbackBundlePath($uid, $e);
 			}
 		}
 		return $this->view->getLocalFile($this->getCertificateBundle($uid));
+	}
+
+	/**
+	 * Bündel, wenn das eigentliche nicht neu gebaut werden konnte. Die TLS-Prüfung
+	 * bleibt immer an: zuerst das vorhandene (evtl. veraltete) Bündel, das die
+	 * hochgeladenen Zertifikate enthält, bei einem Nutzerbündel dann das
+	 * Systembündel, zuletzt das mitgelieferte CA-Bündel.
+	 *
+	 * @param string|null $uid
+	 * @param \Exception $reason
+	 * @return string
+	 */
+	private function getFallbackBundlePath($uid, \Exception $reason) {
+		$candidates = [$this->getCertificateBundle($uid)];
+		if ($uid !== null) {
+			$candidates[] = $this->getCertificateBundle(null);
+		}
+
+		$fallback = $this->getDefaultCertificatesBundlePath();
+		foreach ($candidates as $candidate) {
+			if (!$this->view->file_exists($candidate)) {
+				continue;
+			}
+			$localFile = $this->view->getLocalFile($candidate);
+			if (\is_string($localFile) && \is_file($localFile)) {
+				$fallback = $localFile;
+				break;
+			}
+		}
+
+		$this->getLogger()->logException($reason, [
+			'app' => 'core',
+			'level' => Util::WARN,
+			'message' => "Could not rebuild the certificate bundle, using $fallback instead",
+		]);
+		return $fallback;
+	}
+
+	/**
+	 * @return string
+	 */
+	private function getDefaultCertificatesBundlePath() {
+		return \OC::$SERVERROOT . '/resources/config/ca-bundle.crt';
+	}
+
+	/**
+	 * @return ILogger
+	 */
+	private function getLogger() {
+		return $this->logger ?? \OC::$server->getLogger();
 	}
 
 	/**
@@ -235,7 +324,7 @@ class CertificateManager implements ICertificateManager {
 		if ($uid === '') {
 			$uid = $this->uid;
 		}
-		$sourceMTimes = [\filemtime(\OC::$SERVERROOT . '/resources/config/ca-bundle.crt')];
+		$sourceMTimes = [\filemtime($this->getDefaultCertificatesBundlePath())];
 		$targetBundle = $this->getCertificateBundle($uid);
 		if (!$this->view->file_exists($targetBundle)) {
 			return true;

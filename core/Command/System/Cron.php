@@ -21,6 +21,7 @@
 
 namespace OC\Core\Command\System;
 
+use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\IJobList;
 use OCP\IConfig;
 use OCP\ILogger;
@@ -123,7 +124,7 @@ class Cron extends Command {
 				$progress->setMessage("Executing: {$job->getId()} - {$jobName}");
 			}
 
-			$job->execute($this->jobList, $this->logger);
+			$this->runJob($job);
 
 			// clean up after unclean jobs
 			\OC_Util::tearDownFS();
@@ -146,5 +147,24 @@ class Cron extends Command {
 		}
 
 		return 0;
+	}
+
+	/**
+	 * Fehler aus run() fängt Job::execute() selbst ab; hier landen nur solche aus
+	 * überschriebenen execute()-Methoden. Ein fehlerhafter Job darf den Lauf nicht
+	 * beenden: Die Reservierung gibt setLastJob() danach frei, der Lauf geht mit
+	 * dem nächsten Job weiter.
+	 *
+	 * @param IJob $job
+	 */
+	private function runJob(IJob $job): void {
+		try {
+			$job->execute($this->jobList, $this->logger);
+		} catch (\Throwable $e) {
+			$this->logger->logException($e, [
+				'app' => 'cron',
+				'message' => 'Error while running background job (id: ' . $job->getId() . ', class: ' . \get_class($job) . ')'
+			]);
+		}
 	}
 }
