@@ -265,6 +265,9 @@ OC.Settings.Apps = OC.Settings.Apps || {
 
 	enableApp:function(appId, active, element, groups) {
 		var self = this;
+		// Vor der Anfrage festhalten: ein Wechsel der Kategorie ersetzt State.apps,
+		// bevor die Antwort da ist
+		var isTheme = OC.Settings.Apps.isType(OC.Settings.Apps.State.apps[appId], 'theme');
 		OC.Settings.Apps.hideErrorMessage(appId);
 		groups = groups || [];
 		var appItem = $('div#app-'+appId+'');
@@ -282,6 +285,9 @@ OC.Settings.Apps = OC.Settings.Apps || {
 					element.val(t('settings','Disable'));
 					appItem.addClass('appwarning');
 				} else {
+					if (isTheme) {
+						OC.Settings.Apps.reloadAfterThemeChange();
+					}
 					OC.Settings.Apps.rebuildNavigation();
 					appItem.data('active',false);
 					appItem.data('groups', '');
@@ -315,6 +321,10 @@ OC.Settings.Apps = OC.Settings.Apps || {
 							setTimeout(function() {
 								location.reload();
 							}, 5000);
+						} else if (isTheme) {
+							// Nur ohne ausstehende Aktualisierung: die Weiterleitung
+							// oben lädt die Seite ohnehin neu
+							OC.Settings.Apps.reloadAfterThemeChange();
 						}
 
 						OC.Settings.Apps.rebuildNavigation();
@@ -485,6 +495,35 @@ OC.Settings.Apps = OC.Settings.Apps || {
 			t('settings','App update'),
 			function () {
 				window.location.reload();
+			},
+			true
+		);
+	},
+
+	/**
+	 * Wartezeit in Millisekunden bis zum Neuladen nach einem Theme-Wechsel
+	 */
+	_themeReloadDelay: 1500,
+
+	/**
+	 * Kündigt das neue Aussehen an und lädt die Seite kurz danach neu.
+	 *
+	 * Ein Theme wirkt erst beim nächsten Seitenaufruf, denn Kopfleiste, Logo
+	 * und Farben kommen mit der Seite vom Server. Ohne Neuladen sähe der Admin
+	 * nach dem Aktivieren oder Deaktivieren weiter das alte Aussehen.
+	 */
+	reloadAfterThemeChange: function() {
+		var timer = setTimeout(function() {
+			OC.reload();
+		}, OC.Settings.Apps._themeReloadDelay);
+
+		OC.dialogs.info(
+			t('settings', 'Updating the appearance …'),
+			t('settings', 'Appearance'),
+			function () {
+				// OK lädt sofort; der Zeitgeber darf nicht ein zweites Mal laden
+				clearTimeout(timer);
+				OC.reload();
 			},
 			true
 		);

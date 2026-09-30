@@ -92,6 +92,8 @@ OC.L10N.register(
     "Uninstall" : "Deinstallieren",
     "The app has been enabled but needs to be updated. You will be redirected to the update page in 5 seconds." : "Die App wurde aktiviert, muss aber aktualisiert werden. Du wirst in 5 Sekunden zu Aktualisierungsseite weitergeleitet",
     "App update" : "App aktualisiert",
+    "Updating the appearance …" : "Das Aussehen wird aktualisiert …",
+    "Appearance" : "Aussehen",
     "Experimental" : "Experimentell",
     "No apps found for {query}" : "Keine Applikationen für {query} gefunden",
     "Migration in progress. Please wait until the migration is finished" : "Migration in Arbeit. Bitte warte, bis die Migration beendet ist",

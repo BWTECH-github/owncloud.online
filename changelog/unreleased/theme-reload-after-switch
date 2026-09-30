@@ -1,0 +1,11 @@
+Enhancement: Reload the page after a theme app is enabled or disabled
+
+A theme only takes effect with the next page load: the header, the logo and
+the colours come with the page from the server. After enabling or disabling a
+theme app on the Apps page of the admin settings, the admin kept seeing the
+old appearance until reloading the page by hand. The page now announces
+"Updating the appearance …" and reloads after one and a half seconds, or right
+away when the message is confirmed.
+
+Other apps are not affected. A theme that still needs an update keeps the
+existing redirect to the update page, so the page reloads only once.
