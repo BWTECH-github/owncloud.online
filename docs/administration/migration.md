@@ -466,7 +466,7 @@ Seit 11.0.19 gilt: **Eine App ohne Code kann nichts tun** — der Eintrag
 „eingeschaltet" ist alles, was von ihr übrig ist, und er blockiert nur. Der
 Reparaturschritt setzt ihn auf „aus", nennt jede so behandelte App in der
 Ausgabe und läuft weiter. Ihre Daten (Einstellungen, Tabellen, `installed_version`)
-bleiben in der Datenbank. Seit der Fassung nach 11.0.20 richtet sich der
+bleiben in der Datenbank. Seit 11.0.21 richtet sich der
 Hinweis danach, was der Markt zu der App gesagt hat:
 
 ```

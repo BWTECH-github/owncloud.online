@@ -10,7 +10,7 @@ Updates, die eigenen Plugins, das Market-Backend und die Clients.
 
 | Bereich | Stand |
 | --- | --- |
-| Server-Version | `11.0.20` |
+| Server-Version | `11.0.21` |
 | PHP-Zielversion | PHP 8.4 |
 | Repository | <https://github.com/BWTECH-github/owncloud.online> |
 | Stand | 13. August 2026 |

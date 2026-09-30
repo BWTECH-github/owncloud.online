@@ -1,6 +1,6 @@
 # Table of Contents
 
-* [Changelog for owncloud.online Unreleased](#changelog-for-owncloudonline-unreleased)
+* [Changelog for owncloud.online 11.0.21](#changelog-for-owncloudonline-11021-2026-09-30)
 * [Changelog for ownCloud.online 11.0.20](#changelog-for-owncloudonline-11020-2026-09-24)
 * [Changelog for ownCloud.online 11.0.19](#changelog-for-owncloudonline-11019-2026-09-16)
 * [Changelog for ownCloud.online 11.0.14](#changelog-for-owncloudonline-11014-2026-08-20)
@@ -38,28 +38,32 @@
 * [Changelog for 10.4.1](#changelog-for-owncloud-core-1041-2020-03-30)
 * [Changelog for 10.4.0](#changelog-for-owncloud-core-1040-2020-02-10)
 * [Changelog for 10.3.2](#changelog-for-owncloud-core-1032-2019-12-04)
-# Changelog for owncloud.online [Unreleased]
+# Changelog for owncloud.online [11.0.21] (2026-09-30)
+
+The following sections list the changes in owncloud.online 11.0.21 relevant to
+admins and users.
+
+[11.0.21]: https://github.com/BWTECH-github/owncloud.online
 
 ## Summary
 
-* Bugfix - Upgrade verweist bei abgeschalteten Apps nur noch auf den Markt, wenn er sie führt
-* Security - Frei einstellbarer Instanzname wird in body-Klasse und HTML-Mails maskiert
-* Bugfix - Gast-Dateisystem beendet den Cron-Lauf nicht mehr am Zertifikatsbündel
+* Security - phpseclib 3.0.57 (CVE-2026-84308): [#5bf2f24](https://github.com/BWTECH-github/owncloud.online/commit/5bf2f24)
+* Security - Frei einstellbarer Instanzname wird in body-Klasse und HTML-Mails maskiert: [#61f3016](https://github.com/BWTECH-github/owncloud.online/commit/61f3016)
+* Bugfix - Gast-Dateisystem beendet den Cron-Lauf nicht mehr am Zertifikatsbündel: [#694d583](https://github.com/BWTECH-github/owncloud.online/commit/694d583)
+* Bugfix - Upgrade verweist bei abgeschalteten Apps nur noch auf den Markt, wenn er sie führt: [#43bbfd3](https://github.com/BWTECH-github/owncloud.online/commit/43bbfd3)
+* Bugfix - Die Oberfläche meldet, wenn der Server den Zusammenbau eines Uploads nicht mehr fortsetzt: [#2a94d40](https://github.com/BWTECH-github/owncloud.online/commit/2a94d40)
+* Bugfix - Keine PHP-Deprecation mehr bei jedem Schreibvorgang eines Nutzers mit Quota: [#2a94d40](https://github.com/BWTECH-github/owncloud.online/commit/2a94d40)
+* Bugfix - Neue Web-Übertragung startet nach einer Pause nicht mehr sofort neu: [#cfbb742](https://github.com/BWTECH-github/owncloud.online/commit/cfbb742)
+* Enhancement - Seite lädt nach dem Aktivieren oder Deaktivieren eines Themes neu: [#1893878](https://github.com/BWTECH-github/owncloud.online/commit/1893878)
+* Enhancement - Umzugsanleitung für die Vorgängergeneration samt Branding: [#13b4fd2](https://github.com/BWTECH-github/owncloud.online/commit/13b4fd2)
 
 ## Details
 
-* Bugfix - Upgrade verweist bei abgeschalteten Apps nur noch auf den Markt, wenn er sie führt
+* Security - phpseclib 3.0.57 (CVE-2026-84308)
 
-   Schaltet `occ upgrade` eine eingeschaltete App ohne Code ab, stand im
-   Serverprotokoll und in der Ausgabe immer „Install it from the
-   marketplace“ – auch für Apps, die kein Markt anbietet (etwa das Theme,
-   der Selfservice oder Enterprise-Apps wie `admin_audit`). Jetzt richtet
-   sich der Hinweis nach der Antwort des Markts: Führt er die App nicht oder
-   wurde er nicht gefragt, heißt es „Code in ein App-Verzeichnis legen, dann
-   `occ app:enable <app>` und `occ upgrade`“; der Verweis auf den Markt
-   bleibt nur, wenn er die App kennt. Jede Meldung sagt außerdem, dass die
-   Daten der App in der Datenbank bleiben. Der Web-Updater zeigt dieselben
-   Texte.
+   `composer audit` meldet für phpseclib 3.0.56 CVE-2026-84308 (mittel:
+   X25519 nicht in konstanter Zeit, betroffen sind Fassungen vor 3.0.57).
+   Angehoben ist nur phpseclib, keine weiteren Pakete.
 
 * Security - Frei einstellbarer Instanzname wird in body-Klasse und HTML-Mails maskiert
 
@@ -101,6 +105,73 @@
    einen Error (nicht nur eine Exception) wirft, wird protokolliert und
    beendet den Cron-Lauf nicht mehr; die Reservierung wird freigegeben, der
    nächste Job läuft.
+
+* Bugfix - Upgrade verweist bei abgeschalteten Apps nur noch auf den Markt, wenn er sie führt
+
+   Schaltet `occ upgrade` eine eingeschaltete App ohne Code ab, stand im
+   Serverprotokoll und in der Ausgabe immer „Install it from the
+   marketplace“ – auch für Apps, die kein Markt anbietet (etwa das Theme,
+   der Selfservice oder Enterprise-Apps wie `admin_audit`). Jetzt richtet
+   sich der Hinweis nach der Antwort des Markts: Führt er die App nicht oder
+   wurde er nicht gefragt, heißt es „Code in ein App-Verzeichnis legen, dann
+   `occ app:enable <app>` und `occ upgrade`“; der Verweis auf den Markt
+   bleibt nur, wenn er die App kennt. Jede Meldung sagt außerdem, dass die
+   Daten der App in der Datenbank bleiben. Der Web-Updater zeigt dieselben
+   Texte.
+
+* Bugfix - Die Oberfläche meldet, wenn der Server den Zusammenbau eines Uploads nicht mehr fortsetzt
+
+   Der losgelöste Zusammenbau großer Web-Uploads (asynchroner MOVE) schreibt
+   jetzt alle zehn Sekunden Fortschritt und Zeitstempel in den
+   Auftragsstatus. Die Oberfläche zeigt den Prozentwert bei „Verarbeite
+   Dateien“ und sagt nach fünf Minuten ohne Meldung des Servers – etwa weil
+   ein Neustart von PHP-FPM den Worker beendet hat –, dass der Zusammenbau
+   möglicherweise abgebrochen ist, statt stumm weiterzuwarten. Sie prüft
+   weiter, nimmt den Hinweis zurück, sobald der Server sich wieder meldet,
+   und gibt nach einer Stunde ohne Meldung mit einer klaren Meldung auf. Ein
+   Fehler des Zusammenbaus erscheint einmal, mit Grund und Status des
+   Servers (507 bricht weiterhin die übrigen Uploads ab), statt zusätzlich
+   „status code 202“.
+
+* Bugfix - Keine PHP-Deprecation mehr bei jedem Schreibvorgang eines Nutzers mit Quota
+
+   Die Stream-Wrapper für Quota und Close deklarierten die Eigenschaft
+   `$context` nicht, die PHP beim Öffnen setzt. PHP legte sie dynamisch an,
+   was seit PHP 8.2 veraltet ist; jeder Schreibvorgang eines Nutzers mit
+   Quota (und Schreibvorgänge in einen Object Storage über den
+   Close-Wrapper) schrieb dadurch einen Eintrag ins Protokoll.
+
+* Bugfix - Neue Web-Übertragung startet nach einer Pause nicht mehr sofort neu
+
+   Der Stillstands-Wächter des Web-Uploads verglich mit der Zeit des letzten
+   Fortschritts der vorigen Übertragung. Begann eine neue Übertragung mehr
+   als eine Minute nach der vorigen und meldete beim ersten Takt 0 Bytes,
+   hielt er sie für hängend, brach sie ab und startete sie sofort neu. Die
+   Zeit wird jetzt bei jedem Start zurückgesetzt.
+
+* Enhancement - Seite lädt nach dem Aktivieren oder Deaktivieren eines Themes neu
+
+   Ein Theme wirkt erst mit dem nächsten Seitenaufruf: Kopfleiste, Logo und
+   Farben kommen mit der Seite vom Server. Nach dem Aktivieren oder
+   Deaktivieren einer Theme-App unter Administration → Apps sah der Admin
+   bisher weiter das alte Aussehen, bis er die Seite selbst neu lud. Jetzt
+   erscheint „Das Aussehen wird aktualisiert …“, und die Seite lädt nach
+   anderthalb Sekunden neu, mit OK sofort. Andere Apps sind nicht
+   betroffen; braucht das Theme eine Aktualisierung, bleibt es bei der
+   Weiterleitung zur Aktualisierungsseite. Wer ein Theme über die Seite der
+   Market-App installiert, bekommt den Hinweis nicht und lädt die Seite
+   selbst neu.
+
+* Enhancement - Umzugsanleitung für die Vorgängergeneration samt Branding
+
+   `docs/administration/migration.md` beschreibt den Umzug einer Instanz der
+   Vorgängergeneration (Datenbank-Dump und Datenverzeichnis) Schritt für
+   Schritt: Import nur in eine leere Datenbank, `instanceid`, `passwordsalt`,
+   `secret` und `version` aus der alten `config.php` behalten, Pfadwechsel,
+   `occ upgrade` vor den Reparaturschritten, Rückweg. Dazu kommt der
+   Abschnitt „Branding und App-Daten übernehmen“: wo das alte Branding
+   liegt, was die Theme-App automatisch übernimmt und wie die Übernahme
+   nachgeholt wird.
 
 # Changelog for ownCloud.online [11.0.20] (2026-09-24)
 
