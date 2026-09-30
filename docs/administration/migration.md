@@ -682,8 +682,8 @@ Fassung:
 
 | | Vorgängergeneration (Theme-App bis 1.2.12 und 1.3.0 bis unter 3.0.0, etwa 2.0.x; Selfservice etwa 1.5/1.6 oder 2.0.x) | Diese Fassung (Theme-App ab 3.0.0) |
 | --- | --- | --- |
-| Werte | `oc_appconfig`, `appid = 'oco_selfservice'` (`name`, `slogan`, `base_url`, `header_color`, `header_text_color`, `mail_header_color` …) | `oc_appconfig`, `appid = 'theme-owncloudonline'` (`name`, `slogan`, `base_url`, `header_color`, `primary_color`, `logo_url`, `login_background_url`) |
-| Bilder | `<datadir>/oco_selfservice/img/` (`header-logo.svg`, `login-logo.svg`, `login-background.jpg`) | `<datadir>/appdata_<instanceid>/theme-owncloudonline/assets/` |
+| Werte | `oc_appconfig`, `appid = 'oco_selfservice'` (`name`, `slogan`, `base_url`, `header_color`, `header_text_color`, `mail_header_color` …) | `oc_appconfig`, `appid = 'theme-owncloudonline'` (`name`, `slogan`, `base_url`, `header_color`, `primary_color`, `header_text_color`, `logo_url`, `login_logo_url`, `login_background_url`) |
+| Bilder | `<datadir>/oco_selfservice/img/` (`header-logo.svg`, `login-logo.svg`, `login-background.jpg`), dazu die ausgelieferten Bilder im App-Ordner der Theme-App | `<datadir>/appdata_<instanceid>/theme-owncloudonline/assets/` |
 | Impressum, Datenschutz | `core/legal.imprint_url`, `core/legal.privacy_policy_url` | unverändert dieselben Schlüssel |
 
 Die Theme-App ab 3.0.0 liest Farben und Bilder nur aus dem neuen Bereich. Ohne
@@ -693,11 +693,16 @@ Impressum und Datenschutz kommen an.
 ### Was automatisch übernommen wird
 
 Ab Theme-App 3.0.2 (Linie 3.0) bzw. 3.1.1 übernimmt `occ upgrade` das alte
-Branding, wenn die Theme-App von einer Fassung vor 3.0.0 kommt. Die
+Branding, wenn die Theme-App von einer Fassung vor 3.0.0 kommt. Theme-App
+3.0.3 bzw. 3.1.2 bringt dazu die Sekundärfarbe, ein eigenes Anmeldelogo, eine
+zweite Bildquelle (den [mitgenommenen Theme-Ordner](#mitgenommener-theme-ordner)),
+einen Hinweis bei fehlenden Bildern und einen
+[Befehl zum Nachholen](#branding-nachholen). Die
 Übernahme füllt nur leere Felder, überschreibt nichts, was schon gesetzt ist,
 und ein zweiter Lauf ändert nichts. Sie liest die alten Werte direkt aus der
-Datenbank — auch wenn der Selfservice abgeschaltet ist — und die Bilder über
-die Datei-Schicht des Servers, also auch aus einem Object Storage. Jede
+Datenbank — auch wenn der Selfservice abgeschaltet ist — und die Bilder direkt
+am Speicher des Datenverzeichnisses, also auch aus einem Object Storage, ohne
+den Datei-Cache zu verändern. Jede
 übernommene und jede ausgelassene Angabe steht als Zeile in der Ausgabe von
 `occ upgrade` (beginnend mit „Branding-Übernahme:"), Probleme zusätzlich als
 Warnung in `owncloud.log`.
@@ -712,41 +717,56 @@ kommt (`installed_version` in der [Bestandsaufnahme](#was-vorher-gesichert-werde
 | 1.3.0 bis unter 3.0.0, etwa 2.0.x der alten Plattform | Vorgängergeneration | alles wie in der ersten Zeile |
 | ab 3.0.0 | diese Generation | nichts, die Übernahme läuft nicht |
 
-Die Übernahme läuft nur bei dem Upgrade, das die Theme-App von einer Fassung
-unter 3.0.0 hebt. Danach steht `installed_version` auf 3.0.x, und jeder weitere
-Lauf meldet nur „Already on the 3.0.0 generation, nothing to import.". Der
-Ordner `oco_selfservice/` muss deshalb **vor** diesem Upgrade in dem
-Datenverzeichnis liegen, auf das `datadirectory` beim Upgrade zeigt. Fehlt
-er, kommen Texte und Farbe zwar an, Logo und Hintergrund aber nicht — und
-zwar ohne Zeile in der Ausgabe, denn fehlende Bilder gelten nicht als
-Problem. Nachholen lässt sich das dann nur von Hand: Logo, Hintergrund und
-Farben in den Theme-Einstellungen der Administration, Name, Slogan und
-Website-Link mit `occ config:app:set theme-owncloudonline
+Der Schritt `ImportLegacyBranding` läuft nur bei dem Upgrade, das die
+Theme-App von einer Fassung unter 3.0.0 hebt. Danach steht
+`installed_version` auf 3.0.x oder 3.1.x, und jeder weitere Lauf meldet nur
+„Already on the 3.0.0 generation, nothing to import.". Auch einen Sprung nur
+an der dritten Stelle (etwa 3.0.2 → 3.0.3) schreibt der Kern ohne
+Reparaturschritte fort. Der Ordner `oco_selfservice/` gehört deshalb **vor**
+diesem Upgrade in das Datenverzeichnis, auf das `datadirectory` beim Upgrade
+zeigt. Fehlt er, kommen Texte und Farben an, Logo und Hintergrund aber nicht.
+Ab 3.0.3 bzw. 3.1.2 steht dann eine Zeile „Hinweis:“ in der Ausgabe, mit den
+erwarteten Orten und dem Befehl zum Nachholen; das ist bewusst keine Warnung,
+denn nicht jeder Kunde hatte eigene Bilder, und nach „Zurücksetzen“ im alten
+Selfservice ist der Bildordner gewollt leer (der Schlüssel `cssFileHash`
+bleibt dabei stehen und zählt deshalb nicht als eigenes Branding). 3.0.2 und
+3.1.1 schwiegen dazu. Nachgeholt wird mit
+[`occ theme-owncloudonline:import-legacy`](#branding-nachholen), sobald die
+Bilder am erwarteten Ort liegen; mit 3.0.2 oder 3.1.1 nur von Hand: Logo,
+Hintergrund und Farben in den Theme-Einstellungen der Administration, Name,
+Slogan und Website-Link mit `occ config:app:set theme-owncloudonline
 <name|slogan|base_url> --value=…`.
 
 Bei voller Übernahme gilt im Einzelnen:
 
 | Alt | Neu | Hinweis |
 | --- | --- | --- |
-| `header_color` | `header_color` und `primary_color` | die Akzentfarbe (Knöpfe) folgt damit der alten Kopffarbe, ebenso der Kopf der Mails |
+| `header_color` (Primärfarbe) | `header_color` und `primary_color` | Kopfleiste, Knöpfe und der Farbstreifen im Kopf der Mails folgen damit der alten Kopffarbe |
+| `header_text_color` (Sekundärfarbe), ersatzweise das Feld `hex` von `header_text_color_obj` | `header_text_color` | ab 3.0.3 bzw. 3.1.2, 1:1, siehe [Primär- und Sekundärfarbe](#primar-und-sekundarfarbe) |
 | `name`, `slogan`, `base_url` | gleichnamige Schlüssel | alte Standardwerte der Plattform werden übersprungen; Name und Slogan nur als reiner Text (ohne `<`, `>` und Steuerzeichen), sonst Warnung |
-| `img/header-logo.svg`, ersatzweise `img/login-logo.svg` | `logo_url` | SVG wird vorher bereinigt, siehe unten; ist das Kopflogo fast nur weiß, gewinnt das Anmeldelogo |
+| `img/header-logo.svg` (Kopflogo) | `logo_url` | Kopfleiste; gibt es kein eigenes Anmeldelogo, auch die Anmeldeseite. SVG wird vorher bereinigt, siehe unten |
+| `img/login-logo.svg` (Anmeldelogo), wenn es vom Kopflogo abweicht | `login_logo_url` | ab 3.0.3 bzw. 3.1.2, nur die Anmeldeseite; gibt es nur dieses Logo, steht es als `logo_url` an beiden Stellen |
 | `img/login-background.jpg` | `login_background_url` | höchstens 5 MB |
 | `core/legal.imprint_url` mit dem alten Standardwert `https://owncloud.com/imprint` | wird entfernt | es gilt das Impressum des Themes; eigene Werte und `legal.privacy_policy_url` bleiben unverändert |
 
-Nicht übernommen werden die Kopf-Textfarbe (die Theme-App berechnet den
-Kontrast selbst), der eigene Schlüssel `mail_header_color`, eigenes CSS
-(`branding.css`) sowie `entity` und `title`. Der Kopf der Mails folgt der
-übernommenen Kopffarbe; das Logo im Mail-Kopf bleibt aber das
+Nicht übernommen werden der eigene Schlüssel `mail_header_color`, eigenes CSS
+(`branding.css`), `entity` und `title` sowie Favicon und weitere Bilder des
+alten Themes (dafür hat die Theme-App kein Ziel). Der Kopf der Mails zeigt die
+übernommene Kopffarbe als Streifen; das Logo im Mail-Kopf bleibt aber das
 owncloud.online-Logo (`logo-mail.gif`), und die Fußzeile der Mails nennt
 weiter BW-Tech mit Anschrift und Registerangaben. Trägt die Instanz einen
 eigenen Namen, steht dort „owncloud.online – A trademark of BW-TECH GMBH“.
 
-Das neue Theme hat nur ein Logo, und es erscheint in der Kopfleiste **und** auf
-der weißen Anmeldekarte. Das alte Kopflogo war für die farbige Kopfleiste
-gebaut und oft weiß. Ist es fast nur weiß (kaum Kontrast zu Weiß), übernimmt
-die Übernahme stattdessen das Anmeldelogo und schreibt das in die Ausgabe;
-gibt es keines, kommt das weiße Kopflogo mit einer Warnung.
+Das alte System hatte ein Logo für die farbige Kopfleiste (oft weiß) und eines
+für die weiße Anmeldekarte. Ab 3.0.3 bzw. 3.1.2 kommen beide an ihre Stelle.
+Gibt es nur eines der beiden oder sind beide gleich, gilt es an beiden Stellen
+— anders als im alten System, das an der anderen Stelle das Logo der Plattform
+zeigte. Ist das Logo auf der Anmeldekarte dann fast nur weiß, steht eine
+Warnung in der Ausgabe; ein dunkleres Logo lädt ein Admin in den
+Theme-Einstellungen hoch. Wer dort ein neues Logo setzt oder es entfernt,
+entfernt damit auch das übernommene Anmeldelogo. 3.0.2 und 3.1.1 kannten nur
+ein Logo: War das Kopflogo fast nur weiß, nahmen sie stattdessen das
+Anmeldelogo.
 
 Kommt die Theme-App aus der Zwischengeneration (1.2.13 bis 1.2.29), bleiben
 deren Werte erhalten, und aus dem Selfservice kommen nur Name, Slogan und
@@ -773,22 +793,268 @@ für Bilder über 5 MB.
     in der Datenbank, die Bilder im Datenverzeichnis. Die Übernahme lässt sich
     nachholen, solange `installed_version` der Theme-App noch unter 3.0.0
     steht (etwa 1.2.x oder 2.0.x):
-    Code der Theme-App (ab 3.0.2 bzw. 3.1.1) nach `apps-external/` legen,
-    `occ app:enable theme-owncloudonline`, dann `occ upgrade`. Den Selfservice
-    in einer Fassung vor 3.0.1 dabei **nicht** einschalten — dessen Upgrade
-    löscht die alten Branding-Werte, bevor die Theme-App sie lesen kann (Apps
-    werden beim Upgrade alphabetisch abgearbeitet, `oco_selfservice` vor
-    `theme-owncloudonline`).
+    Code der Theme-App (ab 3.0.2 bzw. 3.1.1, besser 3.0.3 bzw. 3.1.2) nach
+    `apps-external/` legen, `occ app:enable theme-owncloudonline`, dann
+    `occ upgrade`. Den Selfservice in einer Fassung vor 3.0.1 dabei **nicht**
+    einschalten — dessen Upgrade löscht die alten Branding-Werte, bevor die
+    Theme-App sie lesen kann (Apps werden beim Upgrade alphabetisch
+    abgearbeitet, `oco_selfservice` vor `theme-owncloudonline`). Steht
+    `installed_version` schon auf 3.0.x oder 3.1.x, holt der
+    [Befehl zum Nachholen](#branding-nachholen) die Übernahme nach, solange
+    die alten Werte unter `oco_selfservice` noch in der Datenbank stehen.
+
+### Primär- und Sekundärfarbe {#primar-und-sekundarfarbe}
+
+Das alte System kannte zwei Farben. Ab Theme-App 3.0.3 bzw. 3.1.2 kommen beide
+1:1 mit (3.0.2 und 3.1.1 übernahmen nur die Primärfarbe und verwarfen die
+Sekundärfarbe mit einer Hinweiszeile):
+
+| Farbe | alt (`oco_selfservice`) | neu (`theme-owncloudonline`) | gilt für |
+| --- | --- | --- | --- |
+| Primärfarbe | `header_color` | `header_color` und `primary_color` | Hintergrund der Kopfleiste, auch auf Link-Freigaben; Knöpfe; Farbstreifen der Mails |
+| Sekundärfarbe | `header_text_color` | `header_text_color` | Schrift und gezeichnete Symbole **auf** der Primärfarbe |
+
+Die Sekundärfarbe färbt dieselben Stellen wie im alten System: Name der App,
+Benutzername, Burger-Symbol und Dreieck am Benutzermenü in der Kopfleiste,
+dazu die Glocke der Benachrichtigungen; die Schrift auf Hauptknöpfen, auf dem
+Anmeldeknopf (auch unter dem Zeiger) und auf den Knöpfen alternativer
+Anmeldungen; die Punkte der Ladeanzeige im Anmeldeknopf; die Meldungen der
+Anmeldeseite (etwa „Falsches Passwort“) auf der Primärfarbe. Eingebundene
+Bilder (mitgeliefertes Logo, Symbole der Menüs, Profilbild), das offene
+Suchfeld und die Mails färbt sie nicht. Die Lupe der Suche wird weiß, wenn die
+Symbole der Kopfleiste hell sind; auf der Linie 3.1 bleibt sie im
+Redesign-Rahmen dunkel, weil das Suchfeld dort weiß unter der Kopfleiste
+liegt.
+
+Regeln der Übernahme:
+
+- Leer heißt Automatik: Die Schrift wird dunkel oder weiß, je nach Farbe
+  darunter — so wie bisher.
+- Gesetzt gilt die Farbe 1:1, auch bei schwachem Kontrast. Liegt der Kontrast
+  zur Primärfarbe unter 4,5:1, steht er als Zeile „Hinweis:“ in der Ausgabe
+  (etwa „nur einen Kontrast von 3,1:1“). Das ist keine Warnung und keine
+  Blockade: Übernommen wird trotzdem, korrigiert wird nichts.
+- Der alte Standardwert `#FFF` kommt nur mit, wenn er auf einer hellen
+  Primärfarbe stand, auf der die Automatik dunkle Schrift nähme; dann wird
+  `#ffffff` übernommen, und die Zeile sagt das. Auf dunklen Farben wählt die
+  Automatik ohnehin Weiß, der Wert bleibt leer.
+- Ein ungültiger Wert wird nicht übernommen und steht als Warnung da.
+- Zwischengeneration 1.2.13 bis 1.2.29: nichts aus dem Altbestand. Liegt dort
+  noch ein Wert aus 1.2.13 bis 1.2.18 im Bereich der Theme-App, wirkt er ab
+  3.0.3 bzw. 3.1.2 wieder; die Ausgabe nennt ihn und den Befehl zum Entfernen.
+
+In den Theme-Einstellungen der Administration steht die Farbe als
+„Sekundärfarbe (Text auf der Primärfarbe)“, der Kontrast neben dem Feld. Der
+Schalter „Automatisch“ leert den Wert. Von Hand:
+
+```bash
+sudo -u www-data php8.4 /var/www/owncloud.online/occ config:app:set theme-owncloudonline header_text_color --value=#ffffff
+sudo -u www-data php8.4 /var/www/owncloud.online/occ config:app:delete theme-owncloudonline header_text_color
+```
+
+Erlaubt ist nur `#rrggbb`; alles andere gilt als nicht gesetzt.
+
+Noch offen und bewusst nicht nachgebildet sind einige Stellen der alten
+`branding.css`: Feldbeschriftungen der Anmeldung und Schrift im Suchfeld in
+der Primärfarbe, die Fußzeile der Anmeldeseite, das Anmeldelogo als
+Wasserzeichen hinter der Dateiliste sowie Kundenlogo und farbiger Knopf in den
+Mails. Die Gegenüberstellung aller Stellen steht im README der Theme-App
+(`README.md` im App-Ordner `theme-owncloudonline`, Abschnitt „Altsystem und
+neues System im Vergleich“).
+
+### Mitgenommener Theme-Ordner {#mitgenommener-theme-ordner}
+
+Ab Theme-App 3.0.3 bzw. 3.1.2 darf der alte App-Ordner `theme-owncloudonline`
+mit umziehen, als zweite Bildquelle neben `oco_selfservice/img/`. Er gehört
+kopiert und umbenannt ins Datenverzeichnis, **nie** nach `apps/` oder
+`apps-external/`: Ein zweiter Ordner mit derselben App-Kennung bringt die
+App-Verwaltung durcheinander, und die alten Vorlagen passen nicht zu 11.0.x.
+
+```bash
+rsync -a <alter-app-ordner>/theme-owncloudonline/ <datadir>/theme-owncloudonline_alt/
+chown -R www-data:www-data <datadir>/theme-owncloudonline_alt
+```
+
+`<alter-app-ordner>` ist das App-Verzeichnis der alten Instanz (`apps/` oder
+`apps-external/`), `<datadir>` das neue Datenverzeichnis
+(`occ config:system:get datadirectory`). Der Schrägstrich hinter der Quelle
+kopiert den Inhalt; mit `cp -a` darf das Ziel vorher nicht existieren, sonst
+liegt der Stand eine Ebene zu tief.
+
+| Quelle | Ort auf dem neuen System | Dateien |
+| --- | --- | --- |
+| Uploads des Kunden (Regelfall) | `<datadir>/oco_selfservice/img/` | `header-logo.svg`, `login-logo.svg`, `login-background.jpg` |
+| mitgenommener Theme-Ordner | `<datadir>/theme-owncloudonline_alt/core/img/` | `header-logo.svg` (Kopflogo), `logo.svg` (Anmeldelogo), `background.jpg` (Anmelde-Hintergrund) |
+
+- **Nur Abweichendes:** Ein Bild aus dem Ordner wird nur übernommen, wenn sein
+  Inhalt vom ausgelieferten Stand der Theme-App abweicht (Vergleich der
+  Prüfsumme); sonst steht in der Ausgabe „identisch mit dem Standard, nichts zu
+  übernehmen“. Ein unveränderter Ordner bringt also kein Branding mit — die
+  eigenen Bilder des Kunden liegen in aller Regel unter
+  `oco_selfservice/img/`, denn der alte Selfservice speicherte Uploads im
+  Datenverzeichnis, nicht im App-Ordner.
+- **Rangfolge:** Die Uploads unter `oco_selfservice/img/` gewinnen, der Ordner
+  füllt nur, was danach noch leer ist. Liefern die Uploads ein Logo, kommt aus
+  dem Ordner keines dazu. Ist ein Upload unbrauchbar (kein Bild, zu groß, nicht
+  lesbar), steht eine Warnung da, und das Bild aus dem Ordner springt ein. Das
+  alte System kannte keine Rangfolge: Dort entschied die Stil-Datei
+  `oco_selfservice/css/branding.css`, die erst beim „Speichern“ im Selfservice
+  entstand und mit „Zurücksetzen“ verschwand, ob die Uploads oder die Bilder
+  des Theme-Ordners sichtbar waren. Die Übernahme bildet das nicht nach; das
+  macht nur einen Unterschied, wenn jemand Bilder hochgeladen, aber nie
+  gespeichert, oder im Theme-Ordner Dateien ausgetauscht hat.
+- **Weitere Dateien** — `defaults.php`, `core/css/styles.css`,
+  `core/css/header.css`, Favicon und App-Symbole, `logo.png`, `logo-icon.*`,
+  `logo-mail.gif` — werden nur mit den ausgelieferten Fassungen verglichen,
+  nie ausgewertet. Weicht eine ab, steht ein Hinweis da, was von Hand zu
+  prüfen ist (bei `defaults.php` Name, Slogan und Links).
+- **Sicherheit:** Aus dem Ordner wird nichts eingebunden oder ausgeführt,
+  gelesen werden nur die genannten Dateien, symbolischen Verknüpfungen wird
+  nicht gefolgt. Der Ordner wird weder verändert noch in den Datei-Cache
+  aufgenommen. Das Datenverzeichnis muss wie immer gegen Zugriff aus dem Web
+  gesperrt sein; der Ordner enthält PHP-Dateien der alten Plattform.
+- **Aufräumen:** Am Ende sagt die Ausgabe, ob der Ordner gelöscht werden kann
+  („kann gelöscht werden“) oder ob erst die genannten Zeilen zu klären sind
+  („bitte noch nicht löschen“).
+- **Falsch abgelegt:** Enthält der Ordner keines der Bilder und keine
+  `defaults.php`, liegt der Stand eine Ebene zu tief
+  (`theme-owncloudonline_alt/theme-owncloudonline/`) oder liegt der Ordner
+  unter seinem alten Namen `<datadir>/theme-owncloudonline`, steht eine
+  Warnung da; gelesen wird dann nichts.
+- **Object Storage als Hauptspeicher:** `oco_selfservice/img/` liegt dann im
+  Bucket. Bilder, die nur als Dateien vorliegen, in den Theme-Ordner legen
+  (Namen wie in der Tabelle); er wird immer von der Platte gelesen.
+- **Benutzerkennung `theme-owncloudonline_alt`:** Gäbe es ein Konto mit genau
+  dieser Kennung, wäre der Ordner dessen Benutzerordner. Dann den Ordner
+  nicht ablegen und die Bilder unter `oco_selfservice/img/` bereitstellen.
+
+Unmittelbar vor dem Upgrade prüfen, ob der Webserver die Bilder lesen kann;
+jede vorhandene Datei muss „lesbar“ zeigen:
+
+```bash
+cd <datadir>
+for f in oco_selfservice/img/header-logo.svg oco_selfservice/img/login-logo.svg oco_selfservice/img/login-background.jpg \
+         theme-owncloudonline_alt/core/img/header-logo.svg theme-owncloudonline_alt/core/img/logo.svg theme-owncloudonline_alt/core/img/background.jpg; do
+  [ -e "$f" ] && { sudo -u www-data test -r "$f" && echo "lesbar: $f" || echo "NICHT lesbar: $f"; }
+done
+```
+
+### Befehl zum Nachholen {#branding-nachholen}
+
+Ab Theme-App 3.0.3 bzw. 3.1.2 führt ein Befehl dieselbe Übernahme wie das
+Upgrade aus, jederzeit und auch dann, wenn `installed_version` längst auf 3.0.x
+oder 3.1.x steht — etwa wenn die Bilder erst nach dem Upgrade ins
+Datenverzeichnis kamen oder die Theme-App nur an der dritten Stelle der
+Version sprang:
+
+```bash
+sudo -u www-data php8.4 /var/www/owncloud.online/occ theme-owncloudonline:import-legacy --dry-run
+sudo -u www-data php8.4 /var/www/owncloud.online/occ theme-owncloudonline:import-legacy
+```
+
+| Option | Wirkung |
+| --- | --- |
+| `--dry-run` | zeigt Zeile für Zeile, was übernommen würde; ändert weder Werte noch Bilder noch den Datei-Cache und schreibt nichts ins Log |
+| `--force-images` | übernimmt Logos und Hintergrund aus den Altquellen auch dann, wenn schon welche gesetzt sind; sonst überschreibt es nichts. Liefern die Altquellen kein eigenes Anmeldelogo, wird `login_logo_url` geleert. Das bisherige Bild bleibt als Datei liegen, sein alter Wert steht in der Ausgabe |
+
+Rückgabewert `0`, auch wenn Altwerte abgelehnt wurden (das steht als Warnung
+in der Ausgabe); `1` nur bei technischen Fehlern — Datei nicht lesbar, Bild
+nicht ablegbar, Datenbank nicht erreichbar. Nach dem Beheben den Befehl
+erneut ausführen.
+
+Für die Zwischengeneration 1.2.13 bis 1.2.29 vermerkt der Schritt beim
+Upgrade die Vorversion (`legacy_previous_version`), damit der Befehl später
+ebenfalls nur Name, Slogan und Website-Link übernimmt. Ohne Vermerk — das
+Upgrade lief mit Theme-App 3.0.0 bis 3.0.2 bzw. 3.1.1 — gilt die volle
+Übernahme in leere Felder.
+
+!!! warning "Geleerte Werte kommen wieder"
+    Der Befehl füllt jedes leere Feld, auch eines, das nach der Übernahme
+    bewusst geleert wurde (Logo entfernt, Sekundärfarbe auf „Automatisch“).
+    Vorher `--dry-run` ausführen.
+
+Hat Selfservice 3.0.0 beim Upgrade die alten Werte gelöscht (so im SaaS-Paket
+11.0.19 und 11.0.20), meldet der Befehl „Hinweis: Unter oco_selfservice steht
+kein Branding-Wert, die App steht aber schon auf 3.0.… “. Die Bilder unter
+`oco_selfservice/img/` sind noch da. Nachholen mit dem Dump der alten
+Plattform:
+
+```bash
+# 1. Dump in eine Hilfsdatenbank laden
+mysql -e 'CREATE DATABASE branding_hilfe'
+mysql branding_hilfe < dump.sql
+# 2. Nur die Branding-Zeilen des alten Selfservice übertragen
+mysqldump --no-create-info --replace --skip-extended-insert branding_hilfe oc_appconfig \
+  --where="appid='oco_selfservice' AND (configkey IN ('name','slogan','base_url','entity','title','mail_header_color','cssFileHash') OR configkey LIKE 'header\_%')" \
+  | mysql <neue-datenbank>
+# 3. Hilfsdatenbank wieder löschen
+mysql -e 'DROP DATABASE branding_hilfe'
+# 4. Probelauf, dann echt
+sudo -u www-data php8.4 /var/www/owncloud.online/occ theme-owncloudonline:import-legacy --dry-run
+sudo -u www-data php8.4 /var/www/owncloud.online/occ theme-owncloudonline:import-legacy
+```
+
+Übertragen werden nur Zeilen der App `oco_selfservice`; `installed_version`
+und die übrigen Schlüssel der neuen Generation bleiben, wie sie sind. Der
+Präfix `oc_` muss in beiden Datenbanken gleich sein.
+
+### Ausweg: Bilder von der laufenden Altinstanz holen {#branding-bilder-per-http}
+
+Fehlen `oco_selfservice/img/` und der alte Theme-Ordner, läuft die alte
+Instanz aber noch, liefert der alte Selfservice die Bilder ohne Anmeldung aus
+(`/index.php/apps/oco_selfservice/img/<datei>`). Das muss **vor** dem
+Wartungsmodus auf dem alten Server geschehen (Schritt 1); danach antwortet er
+mit 503.
+
+```bash
+mkdir -p <datadir>/oco_selfservice/img
+cd <datadir>/oco_selfservice/img
+for f in header-logo.svg login-logo.svg login-background.jpg; do
+  curl -fsS -o "$f" "https://<alte-adresse>/index.php/apps/oco_selfservice/img/$f"
+done
+sha256sum header-logo.svg login-logo.svg login-background.jpg
+```
+
+!!! warning "Die Route liefert Standardbilder statt 404"
+    Für ein Bild, das der Kunde nie hochgeladen hat, antwortet die Route nicht
+    mit 404, sondern mit HTTP 200 und dem Standardbild des alten Selfservice
+    (gleich dem Plattformbild der Theme-App). Ein Download klappt deshalb
+    immer. Jede Datei mit einer dieser Prüfsummen ist **kein** Kundenbild und
+    wird gelöscht, bevor die Übernahme läuft — sonst käme das Plattformbild
+    als „eigenes“ Bild an und belegte das Feld:
+
+    | Datei | Prüfsumme des Standardbilds (SHA-256) |
+    | --- | --- |
+    | `header-logo.svg` | `fc9970e7e1e9701b3b8c627a9ee19eb0e421d407bda58a2f601e4b43c3689a57` |
+    | `login-logo.svg` | `6d22e6c98e8e56455da51b8b1f596a1b39f453f11c49ca96598197d4209b0df0` |
+    | `login-background.jpg` | `bff004a62e18e0ada1a0b22bf36dfe8ef12cccefbc329d914990e6a88d368adc` |
+
+    Nach „Zurücksetzen“ im alten Selfservice ist der Weg nutzlos: Das
+    Zurücksetzen löscht den ganzen Ordner `oco_selfservice/` samt den Bildern,
+    die Route liefert danach nur noch die Standardbilder.
+
+Danach Besitzer setzen und die Übernahme nachholen:
+
+```bash
+chown -R www-data:www-data <datadir>/oco_selfservice
+sudo -u www-data php8.4 /var/www/owncloud.online/occ theme-owncloudonline:import-legacy --dry-run
+sudo -u www-data php8.4 /var/www/owncloud.online/occ theme-owncloudonline:import-legacy
+```
 
 ### Was vorher gesichert werden muss
 
 - **`<datadir>/oco_selfservice/`** — dort liegen die einzigen Kopien der alten
   Logos und des Anmelde-Hintergrunds. Mit dem Datenverzeichnis zieht der
   Ordner automatisch um; bei einem Wechsel des Datenpfads muss er von Hand mit
-  (Schritt 7). In jedem Fall muss er schon beim `occ upgrade` (Schritt 6) in
-  dem Datenverzeichnis liegen, auf das `datadirectory` in diesem Moment zeigt,
-  denn die Übernahme läuft nur einmal (siehe oben). Bei Object Storage als
+  (Schritt 7). Er sollte schon beim `occ upgrade` (Schritt 6) in dem
+  Datenverzeichnis liegen, auf das `datadirectory` in diesem Moment zeigt,
+  denn beim Upgrade läuft die Übernahme nur einmal (siehe oben); danach holt
+  sie ab Theme-App 3.0.3 bzw. 3.1.2 nur noch der
+  [Befehl zum Nachholen](#branding-nachholen) nach. Bei Object Storage als
   Hauptspeicher liegen die Bilder im Bucket, nicht im Datenverzeichnis.
+- **Der alte App-Ordner `theme-owncloudonline`** (optional) — nur nötig, wenn
+  dort Bilder ausgetauscht wurden; er zieht als
+  [mitgenommener Theme-Ordner](#mitgenommener-theme-ordner) um.
 - **Der alte Datenbankdump** — bis die Prüfliste unten abgehakt ist. Er ist
   die einzige Quelle, falls eine Fassung ohne Übernahme die Werte löscht.
 - **Eine Bestandsaufnahme** auf dem alten Server, um nachher vergleichen zu
@@ -804,13 +1070,17 @@ SELECT appid, configkey, configvalue FROM oc_appconfig
 ### Prüfliste nach dem Umzug {#branding-pruefliste}
 
 1. **Ausgabe von `occ upgrade`:** Zeilen „Branding-Übernahme:" durchsehen;
-   Warnungen wie „Logo bitte neu hochladen" abarbeiten.
+   Warnungen wie „Logo bitte neu hochladen" abarbeiten. Steht dort ein
+   „Hinweis:“ zu fehlenden Bildern, die Bilder an den genannten Ort legen und
+   den [Befehl zum Nachholen](#branding-nachholen) ausführen.
 2. **Logo:** Anmeldeseite und Kopfzeile nach der Anmeldung zeigen das
-   Kundenlogo, nicht das Standardlogo. Das Bild muss mit HTTP 200 kommen — ein
+   Kundenlogo, nicht das Standardlogo; gab es im alten System zwei Logos,
+   jedes an seiner Stelle. Das Bild muss mit HTTP 200 kommen — ein
    404 deutet auf eine geänderte `instanceid`. Auf der weißen Anmeldekarte
    muss es sichtbar sein; meldet die Ausgabe ein „fast nur weißes“ Logo, ein
    dunkleres in den Theme-Einstellungen hochladen.
-3. **Farben:** Kopfzeile und Knöpfe in der Kundenfarbe.
+3. **Farben:** Kopfzeile und Knöpfe in der Primärfarbe des Kunden, Schrift
+   darauf in seiner Sekundärfarbe (ohne Sekundärfarbe dunkel oder weiß).
 4. **Name und Slogan:** Browser-Titel und Fußzeile tragen den Kundennamen.
    Name, Slogan und Website-Link lassen sich in den Theme-Einstellungen der
    Administration weder ändern noch zurücksetzen („Zurücksetzen“ lässt sie
@@ -848,7 +1118,8 @@ SELECT appid, configkey, configvalue FROM oc_appconfig
 | Externer Speicher meldet Anmeldefehler | `secret` weicht ab, weil `config.php` neu erzeugt wurde | Ursprüngliche `config.php` einspielen; sonst Zugangsdaten neu hinterlegen |
 | Logo und Anmelde-Hintergrund fehlen, Bildaufruf liefert HTTP 404 | `instanceid` geändert — die Bilder liegen unter `appdata_<alte instanceid>/` | Alte `instanceid` eintragen |
 | Standard-Aussehen statt Kunden-Branding | Theme-App fehlt, ist abgeschaltet oder kam ohne Übernahme (vor 3.0.2) | siehe [Branding und App-Daten übernehmen](#branding) |
-| Name und Farbe übernommen, Logo und Anmelde-Hintergrund fehlen, die Upgrade-Ausgabe sagt dazu nichts | `oco_selfservice/img/` lag beim Upgrade nicht im Datenverzeichnis | Bilder aus der Sicherung in den Theme-Einstellungen hochladen; ein weiteres `occ upgrade` holt sie nicht nach |
+| Name und Farbe übernommen, Logo und Anmelde-Hintergrund fehlen; die Upgrade-Ausgabe sagt dazu nichts (Theme-App 3.0.2 bzw. 3.1.1) oder nennt als „Hinweis:“ die erwarteten Orte (ab 3.0.3 bzw. 3.1.2) | `oco_selfservice/img/` lag beim Upgrade nicht im Datenverzeichnis | ab Theme-App 3.0.3 bzw. 3.1.2: Bilder an den erwarteten Ort legen, Besitzer setzen, dann [`occ theme-owncloudonline:import-legacy`](#branding-nachholen); sonst die Bilder aus der Sicherung in den Theme-Einstellungen hochladen. Ein weiteres `occ upgrade` holt sie nicht nach |
+| `import-legacy` meldet „Unter oco_selfservice steht kein Branding-Wert, die App steht aber schon auf 3.0.…“ | Selfservice 3.0.0 hat die alten Werte beim Upgrade gelöscht | Branding-Zeilen aus dem alten Dump nachtragen, siehe [Befehl zum Nachholen](#branding-nachholen) |
 | Name und Slogan übernommen, Farben und Bilder der alten Selfservice-Seite nicht | Theme-App kam aus der Zwischengeneration 1.2.13 bis 1.2.29, die diese Werte nie angezeigt hat | so gewollt, siehe [Was automatisch übernommen wird](#was-automatisch-ubernommen-wird) |
 | Fußzeile verlinkt auf ein fremdes Impressum | alter Standardwert in `core/legal.imprint_url` | `occ config:app:set core legal.imprint_url --value=…` oder `config:app:delete` |
 | Kundenname fehlt, Warnung „name enthält spitze Klammern oder Steuerzeichen“ | alter Name enthält `<`, `>`, einen Zeilenumbruch oder kaputtes UTF-8 | Namen als reinen Text setzen: `occ config:app:set theme-owncloudonline name --value=…` |
