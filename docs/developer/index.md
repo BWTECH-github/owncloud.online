@@ -249,7 +249,18 @@ Das Skript übernimmt alle versionierten Dateien des Market-Repositorys außer
 `.github/`, `.gitignore` und `tests/`. Der Job `market-copy` in `.github/workflows/lint-and-codestyle.yml`
 vergleicht bei jedem Push auf `main` die Kopie mit dem festgehaltenen Stand
 (`build/sync-market.sh --check`) und wird rot, wenn jemand die Kopie direkt
-bearbeitet hat. Zusätzlich baut `.github/workflows/market-bundle.yml`
+bearbeitet hat. `build/market.ref` übernimmt das Skript dabei nicht blind:
+`repo=` muss `https://github.com/BWTECH-github/market.git` sein, `commit=` eine
+volle Commit-ID (40 Hex-Zeichen) und ein `<ref>`-Argument ein Commit, Tag oder
+Branch ohne führendes `-`; sonst endet es mit 2, ohne etwas abzurufen oder zu
+ändern. `--check` verlangt außerdem, dass der Commit im Market-Repository von
+`main` oder einem Tag aus erreichbar ist – ein Stand, der nur in einem Pull
+Request oder auf einem anderen Branch liegt, endet ebenfalls mit 2. Den Stand
+also erst im Market-Repository mergen, dann übernehmen.
+`MARKET_REPO=<URL oder Pfad>` holt den Stand beim Übernehmen aus einer
+anderen Quelle, etwa einem lokalen Klon; für `--check` gilt es nicht, geprüft
+wird immer gegen GitHub. `bash tests/build/sync_market_test.sh` prüft diese
+Regeln ohne Netz und läuft im selben Job vor dem Vergleich. Zusätzlich baut `.github/workflows/market-bundle.yml`
 `js/market.bundle.js` aus `src/` nach und lässt den Job scheitern, wenn das
 eingecheckte Bündel davon abweicht.
 

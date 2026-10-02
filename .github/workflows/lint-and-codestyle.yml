@@ -155,6 +155,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
+      - name: Prüfregeln von sync-market.sh testen
+        # Erst den Wächter prüfen, dann ihm glauben: Fork, fremde URL,
+        # eingeschleuste Optionen und ein nur per Pull Request erreichbarer
+        # Stand müssen abgewiesen werden. Läuft ohne Netz, wenige Sekunden.
+        run: bash tests/build/sync_market_test.sh
+
       - name: Kopie mit dem festgehaltenen Stand vergleichen
         # apps-external/market ist eine Kopie von BWTECH-github/market in dem
         # Stand aus build/market.ref. Das Repository ist öffentlich, der Abruf

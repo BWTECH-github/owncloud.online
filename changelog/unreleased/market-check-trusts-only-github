@@ -1,0 +1,27 @@
+Security: The market copy check no longer trusts build/market.ref blindly
+
+`build/sync-market.sh --check` - the push check that compares the bundled copy
+under apps-external/market with its repository - took `repo=` and `commit=`
+from build/market.ref unchecked. With `repo=` pointing to a fork or a local
+path holding a modified copy, the check passed and still reported a match with
+BWTECH-github/market. And since `commit=` went straight to `git fetch`, a value
+such as `--upload-pack=<command>` together with a local path was executed as an
+option, in CI as well as on a developer machine that re-synced after a pull.
+
+`repo=` must now be https://github.com/BWTECH-github/market.git and `commit=` a
+full commit id (40 hex characters); a `<ref>` argument must be a commit, tag or
+branch name without a leading `-`, and `git fetch` gets `--` before its
+positional arguments. Anything else ends with exit code 2 before anything is
+fetched or changed. `MARKET_REPO` still fetches from another source when taking
+over a new state, but no longer applies to `--check`, and the result names the
+repository actually used.
+
+A full commit id from the right repository was still not enough: GitHub serves
+every commit reachable from any ref, including refs/pull/<n>/head, which any
+GitHub user can create by opening a pull request from a fork, even one that is
+never merged. `--check` now also fetches the history of `main` and the tags of
+BWTECH-github/market (commits only) and ends with exit code 2 unless the commit
+is reachable from one of them. A state has to be merged (or tagged) in the
+market repository before the check accepts it. tests/build/sync_market_test.sh
+covers all of this without network access and now runs in the `market-copy`
+job of lint-and-codestyle.yml before the comparison.
