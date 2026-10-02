@@ -7,4 +7,7 @@ the control, and it was barely visible.
 
 The border now reaches 4.05:1, the same value the other input fields use.
 
+The rule was a shared utility for apps; no bundled app rendered it at the
+time of the fix.
+
 WCAG 2.1 AA, SC 1.4.11
