@@ -23,8 +23,9 @@
  *
  * @copyright Copyright (c) 2026, BW-Tech GmbH
  *
- * Modified by BW-Tech GmbH on 2026-09-30.
+ * Modified by BW-Tech GmbH on 2026-10-02.
  * Changes:
+ *   - prepare 11.0.22
  *   - prepare 11.0.21
  *   - prepare 11.0.20
  *   - prepare 11.0.13
@@ -36,10 +37,10 @@
 // We only can count up. The 4. digit is only for the internal patch-level to trigger DB upgrades
 // between betas, final and RCs. This is _not_ the public version number. Reset minor/patch-level
 // when updating major/minor version number.
-$OC_Version = [11, 0, 21, 0];
+$OC_Version = [11, 0, 22, 0];
 
 // The human-readable string
-$OC_VersionString = '11.0.21';
+$OC_VersionString = '11.0.22';
 
 $OC_VersionCanBeUpgradedFrom = [[8, 2, 11],[9, 0, 9],[9, 1]];
 

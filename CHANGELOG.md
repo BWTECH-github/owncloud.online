@@ -1,5 +1,6 @@
 # Table of Contents
 
+* [Changelog for owncloud.online 11.0.22](#changelog-for-owncloudonline-11022-2026-10-02)
 * [Changelog for owncloud.online 11.0.21](#changelog-for-owncloudonline-11021-2026-09-30)
 * [Changelog for ownCloud.online 11.0.20](#changelog-for-owncloudonline-11020-2026-09-24)
 * [Changelog for ownCloud.online 11.0.19](#changelog-for-owncloudonline-11019-2026-09-16)
@@ -38,6 +39,159 @@
 * [Changelog for 10.4.1](#changelog-for-owncloud-core-1041-2020-03-30)
 * [Changelog for 10.4.0](#changelog-for-owncloud-core-1040-2020-02-10)
 * [Changelog for 10.3.2](#changelog-for-owncloud-core-1032-2019-12-04)
+# Changelog for owncloud.online [11.0.22] (2026-10-02)
+
+The following sections list the changes in owncloud.online 11.0.22 relevant to
+admins and users.
+
+[11.0.22]: https://github.com/BWTECH-github/owncloud.online
+
+## Summary
+
+* Security - Ein Termin mit endlosen Wiederholungen legt nicht mehr den ganzen Kalender lahm: [#d493298](https://github.com/BWTECH-github/owncloud.online/commit/d493298)
+* Security - Kalender-Abonnements werden mit dem Konto gelöscht: [#d36142d](https://github.com/BWTECH-github/owncloud.online/commit/d36142d)
+* Security - Prüfung der Market-Kopie vertraut `build/market.ref` nicht mehr blind: [#5545333](https://github.com/BWTECH-github/owncloud.online/commit/5545333)
+* Bugfix - Termine mit einer Teilnehmeradresse ohne Domain lassen sich wieder speichern: [#1cf80c8](https://github.com/BWTECH-github/owncloud.online/commit/1cf80c8)
+* Bugfix - Gequoteter lokaler Teil mit „@“ bleibt in Mailadressen erhalten: [#0cf78ba](https://github.com/BWTECH-github/owncloud.online/commit/0cf78ba)
+* Bugfix - Mail-Signatur auf Deutsch: [#7d0a65b](https://github.com/BWTECH-github/owncloud.online/commit/7d0a65b)
+* Change - Primärknöpfe in der Markenfarbe: [#cd543ee](https://github.com/BWTECH-github/owncloud.online/commit/cd543ee)
+* Change - Nachtrag zu 11.0.20: Das Umbenennen-Feld der Navigation zeigt derzeit keine mitgelieferte App: [#a0a0b8d](https://github.com/BWTECH-github/owncloud.online/commit/a0a0b8d)
+
+## Details
+
+* Security - Ein Termin mit endlosen Wiederholungen legt nicht mehr den ganzen Kalender lahm
+
+   Ein einzelner Termin mit mehr Wiederholungen, als Sabre beim Filtern
+   ausrollt, ließ jede Zeitraumabfrage seines Kalenders mit HTTP 500
+   scheitern (MaxInstancesExceededException). Sabre zählt die Wiederholungen
+   ab DTSTART; betroffen war also nicht nur FREQ=MINUTELY, sondern auch jede
+   tägliche Serie, die älter als etwa zehn Jahre ist, und jede wöchentliche,
+   die älter als etwa 67 Jahre ist. Kein Termin des Kalenders ließ sich mehr
+   laden, und in einem mit Schreibrecht geteilten Kalender konnte jedes
+   Mitglied ihn so für alle unbrauchbar machen.
+
+   Für ein solches Objekt gilt jetzt nur die Zeitraumbedingung als erfüllt.
+   Die übrigen Filter der Abfrage (prop-filter mit text-match,
+   is-not-defined, comp-filter) greifen weiter, eine Suche nach einem Titel
+   oder nach Terminen ohne RRULE lässt es also weg, wenn es nicht passt. Wo
+   möglich, hat schon die Datenbankabfrage auf den angefragten Zeitraum
+   begrenzt; eine Serie, die nur im Zeitraum liegt, dort aber kein Vorkommen
+   hat (eine Montagsserie, abgefragt für einen Dienstag), kommt trotzdem
+   zurück, und Clients wie die Kalender-App rollen die Wiederholungen selbst
+   aus. Protokolliert wird das nur auf Stufe debug, weil es bei jedem
+   Ansichtswechsel eines solchen Kalenders vorkommt. Die übrigen Termine des
+   Kalenders kommen wie bisher.
+
+   Bekannte Einschränkung: calendar-query oder calendar-multiget mit
+   Ausrollen durch den Server (`<C:expand>` in `<C:calendar-data>`), ein
+   free-busy-query-REPORT und der ICS-Export mit Zeitraum und Ausrollen
+   (`?export&start=...&end=...&expand=1`, auch bei einem öffentlichen
+   Kalender) scheitern bei einem solchen Termin weiterhin mit HTTP 500, weil
+   Sabre ihn dort erst nach der Abfrage ausrollt. Der ICS-Export mit
+   Zeitraum, aber ohne `expand=1` funktioniert. Die Kalender-App nutzt keine
+   dieser Anfragen.
+
+* Security - Kalender-Abonnements werden mit dem Konto gelöscht
+
+   Das Löschen eines Kontos entfernte seine Kalender, Adressbücher und
+   Freigaben, aber nicht seine Kalender-Abonnements in
+   `oc_calendarsubscriptions`. Ein später mit derselben Benutzer-ID
+   angelegtes Konto erbte sie samt Quell-URL, die bei vielen Feeds ein
+   privates Zugriffstoken enthält. Der DAV-Hook-Manager sammelt die
+   Abonnements jetzt vor dem Löschen des Kontos ein und entfernt sie danach,
+   wie die Kalender.
+
+* Security - Prüfung der Market-Kopie vertraut `build/market.ref` nicht mehr blind
+
+   `build/sync-market.sh --check` – die Push-Prüfung, die die Kopie unter
+   `apps-external/market` mit ihrem Repository vergleicht – übernahm `repo=`
+   und `commit=` ungeprüft aus `build/market.ref`. Zeigte `repo=` auf einen
+   Fork oder einen lokalen Pfad mit veränderter Kopie, bestand die Prüfung
+   und meldete trotzdem Übereinstimmung mit BWTECH-github/market. Und weil
+   `commit=` direkt an `git fetch` ging, wurde ein Wert wie
+   `--upload-pack=<Befehl>` zusammen mit einem lokalen Pfad als Option
+   ausgeführt – in der CI ebenso wie auf einem Entwicklerrechner, der nach
+   einem Pull neu abglich.
+
+   `repo=` muss jetzt `https://github.com/BWTECH-github/market.git` sein,
+   `commit=` eine volle Commit-ID (40 Hex-Zeichen) und ein `<ref>`-Argument
+   ein Commit, Tag oder Branch ohne führendes `-`; `git fetch` bekommt `--`
+   vor seinen Positionsargumenten. Alles andere endet mit Exit-Code 2, bevor
+   etwas abgerufen oder geändert wird. `--check` verlangt außerdem, dass der
+   Commit von `main` oder einem Tag des Market-Repositorys aus erreichbar
+   ist; ein Stand, der nur über einen Pull Request erreichbar ist, wird
+   abgewiesen. `MARKET_REPO` gilt für `--check` nicht mehr.
+   `tests/build/sync_market_test.sh` prüft diese Regeln ohne Netz und läuft
+   im Job `market-copy` vor dem Vergleich.
+
+* Bugfix - Termine mit einer Teilnehmeradresse ohne Domain lassen sich wieder speichern
+
+   Ein Termin, dessen ATTENDEE eine Adresse ohne Domain trägt –
+   `MAILTO:hausmeister` oder `MAILTO:undefined`, wie es die Kalender-App für
+   einen mit leerem Feld hinzugefügten Teilnehmer schreibt –, ließ das ganze
+   CalDAV-PUT mit HTTP 500 scheitern. Der Termin wurde nicht gespeichert, und
+   auch die Einladungen an die gültigen Teilnehmer gingen nicht hinaus. Das
+   traf jeden CalDAV-Client, nicht nur die Kalender-App.
+
+   `OC\Mail\Message` reicht eine Adresse ohne verwendbaren Domain-Teil jetzt
+   unverändert weiter, statt die leere Domain an `idn_to_ascii()` zu geben
+   (unter PHP 8 ein ValueError, den kein `catch (\Exception)` fängt), und die
+   Mail-Schicht weist sie mit ihrer regulären Exception ab. Das iMIP-Plugin
+   fängt diese Abweisung: Es lässt nur die Einladung an diese Adresse aus,
+   setzt beim Teilnehmer SCHEDULE-STATUS 3.7, protokolliert eine Warnung mit
+   der Adresse und speichert den Termin. Die Prüfung ist genau die der
+   Mail-Schicht beim Versand, jede Adresse, die bisher eine Einladung bekam,
+   bekommt also weiter eine. Eine Absenderadresse, die die Mail-Schicht
+   abweist, endet jetzt in SCHEDULE-STATUS 5.0 statt in einem abgebrochenen
+   Speichern.
+
+* Bugfix - Gequoteter lokaler Teil mit „@“ bleibt in Mailadressen erhalten
+
+   Vor dem Versand wandelt die Mail-Schicht die Domain jeder Adresse in
+   ASCII (Punycode) um. Sie trennte die Adresse am ersten „@“, sodass ein
+   gequoteter lokaler Teil mit eigenem „@“ die Adresse zerstörte:
+   `"a@b"@exämple.com` wurde zu `"a@xn--b"@exmple-z2a.com`. Die Domain wird
+   jetzt nach dem letzten „@“ abgetrennt, aus dem Beispiel wird
+   `"a@b"@xn--exmple-cua.com`. Alle anderen Adressen werden genau wie bisher
+   umgewandelt.
+
+* Bugfix - Mail-Signatur auf Deutsch
+
+   Die einheitliche Mail-Signatur („Best regards,“, „your %s Team“, „A
+   trademark of“) hatte keine Übersetzungen, jede deutsche Mail –
+   Passwort-Zurücksetzen, Freigabe-Benachrichtigungen, „Link per E-Mail
+   senden“ der Kalender-App – endete deshalb auf Englisch. Die drei Texte
+   sind jetzt für de, de_DE, de_AT und de_CH übersetzt, in der Anrede der
+   jeweiligen Sprachdatei: informell für de, de_AT und de_CH („Viele Grüße,“
+   / „dein %s-Team“, de_CH ohne ß: „Viele Grüsse,“), formell für de_DE („Mit
+   freundlichen Grüßen,“ / „Ihr %s-Team“). Eine Sprachdatei gilt nur für ihre
+   genaue Sprache, de_AT und de_CH fallen nicht auf de zurück. Die Dateien
+   unter `core/l10n` werden in diesem Repository gepflegt; Übersetzungen aus
+   dem Ursprungsprojekt zu übernehmen, würde diese Texte wieder entfernen.
+
+* Change - Primärknöpfe in der Markenfarbe
+
+   Primärknöpfe waren dunkelblau mit hellgrauer Schrift und türkisem Rahmen.
+   Jetzt sind sie in der Markenfarbe Türkis #00E4BD gefüllt, Schrift und
+   Rahmen dunkelblau (#26384d, 7,31:1). Unter dem Zeiger und mit
+   Tastaturfokus sprang der Knopf bisher auf das alte Dunkelblau mit weißer
+   Schrift zurück. Beide Zustände bleiben jetzt in der Markenfarbe und
+   dunkeln nur die Füllung auf #00c9a7 ab; Schrift und Rahmen bleiben
+   #26384d und erreichen darauf 5,65:1. Der Tastaturfokus zeichnet zusätzlich
+   den globalen Umriss #262B45 (6,55:1 gegen die Füllung, 13,87:1 gegen die
+   Seite). WCAG 2.1 AA, SC 1.4.3 und SC 1.4.11.
+
+* Change - Nachtrag zu 11.0.20: Das Umbenennen-Feld der Navigation zeigt derzeit keine mitgelieferte App
+
+   Der Barrierefreiheits-Eintrag von 11.0.20 nennt den kontrastreicheren
+   Rahmen des Umbenennen-Felds der App-Navigation. Die Regel dahinter ist ein
+   gemeinsames Hilfsmittel, das `core/css/apps.css` den Apps seit 2014
+   anbietet; derzeit stellt keine mitgelieferte App das Feld dar. Der Eintrag
+   `changelog/unreleased/a11y-navigation-rename-field-border` sagt das jetzt,
+   damit niemand das Feld in der Oberfläche sucht. Der Rahmenwert bleibt,
+   damit eine App, die die Regel später nutzt, gleich ausreichenden Kontrast
+   bekommt.
+
 # Changelog for owncloud.online [11.0.21] (2026-09-30)
 
 The following sections list the changes in owncloud.online 11.0.21 relevant to
