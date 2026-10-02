@@ -1,0 +1,13 @@
+Change: Primary buttons use the brand colour
+
+Primary buttons were drawn in dark blue with light grey text and a turquoise
+border. They now carry the brand turquoise #00E4BD as their fill, with text
+and border in dark blue (#26384d) at 7.31:1.
+
+Under the pointer and with keyboard focus the button still switched back to
+the old dark blue with white text. Both states now keep the brand colour and
+only darken the fill to #00c9a7. Text and border stay #26384d and reach 5.65:1
+on it. Keyboard focus additionally draws the global outline #262B45, which
+reaches 6.55:1 against this fill and 13.87:1 against the page.
+
+WCAG 2.1 AA, SC 1.4.3 and SC 1.4.11

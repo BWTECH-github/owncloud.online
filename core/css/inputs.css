@@ -327,10 +327,18 @@ input:disabled+label, input:disabled:hover+label, input:disabled:focus+label {
 	background-color: #00E4BD;
 	color: #26384d;
 }
+/*
+ * Zeiger und Tastaturfokus: dieselbe Markenfläche eine Stufe dunkler, damit
+ * der Zustand sichtbar wechselt, ohne das Farbschema zu wechseln. Schrift und
+ * Rahmen bleiben #26384d (der Rahmen kommt aus der Basisregel) und erreichen
+ * auf #00c9a7 5,65:1, der Rahmen gegen die Seite 11,96:1. Beim Tastaturfokus
+ * kommt der globale Umriss #262B45 aus core/css/styles.css dazu: 6,55:1 gegen
+ * diese Füllung, 13,87:1 gegen die Seite. WCAG 2.1 AA, SC 1.4.3 und SC 1.4.11
+ */
 .primary:hover, input[type="submit"].primary:hover, input[type="button"].primary:hover, button.primary:hover, .button.primary:hover,
 .primary:focus, input[type="submit"].primary:focus, input[type="button"].primary:focus, button.primary:focus, .button.primary:focus {
-	background-color: #304d76;
-	color: #fff;
+	background-color: #00c9a7;
+	color: #26384d;
 }
 /*
  * Gedrueckter Zustand: die Fuellung ist der Markenton selbst, deshalb traegt
