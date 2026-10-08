@@ -167,7 +167,11 @@ class URLGenerator implements IURLGenerator {
 	 */
 	public function imagePath($app, $image) {
 		$cache = $this->cacheFactory->create('imagePath');
-		$cacheKey = $this->theme->getName().'-'.$app.'-'.$image;
+		// Der Pfad enthält den Webroot. Ist dieselbe Instanz unter zwei Webroots
+		// erreichbar (z. B. / und /oc-shib hinter Shibboleth), teilen sich beide
+		// den Cache – ohne Webroot im Schlüssel bekäme der eine Einstieg Bildpfade
+		// des anderen und lüde Bilder über den fremden Pfad.
+		$cacheKey = $this->environmentHelper->getWebRoot().'-'.$this->theme->getName().'-'.$app.'-'.$image;
 		if ($key = $cache->get($cacheKey)) {
 			return $key;
 		}
