@@ -62,9 +62,12 @@ class Movie implements IProvider2 {
 		if ($useFileDirectly) {
 			$absPath = $file->getStorage()->getLocalFile($file->getInternalPath());
 		} else {
-			$absPath = \OC::$server->getTempManager()->getTemporaryFile();
-
 			$handle = $file->fopen('rb');
+			if (!\is_resource($handle)) {
+				// Datei nicht lesbar (z. B. gerade gelöscht): keine Vorschau statt TypeError
+				return false;
+			}
+			$absPath = \OC::$server->getTempManager()->getTemporaryFile();
 
 			// we better use 5MB (1024 * 1024 * 5 = 5242880) instead of 1MB.
 			// in some cases 1MB was no enough to generate thumbnail

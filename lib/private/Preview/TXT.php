@@ -51,11 +51,16 @@ class TXT implements IProvider2 {
 	 */
 	public function getThumbnail(File $file, $maxX, $maxY, $scalingUp) {
 		$stream = $file->fopen('r');
+		if (!\is_resource($stream)) {
+			// Datei nicht lesbar, z. B. gerade gelöscht, während die Vorschau angefordert
+			// wurde: keine Vorschau statt TypeError in stream_get_contents()
+			return false;
+		}
 		$content = \stream_get_contents($stream, 2048);
 		\fclose($stream);
 
 		//don't create previews of empty text files
-		if (\trim($content) === '') {
+		if ($content === false || \trim($content) === '') {
 			return false;
 		}
 

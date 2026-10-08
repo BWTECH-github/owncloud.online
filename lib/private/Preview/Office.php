@@ -51,9 +51,12 @@ abstract class Office implements IProvider2 {
 		if ($useFileDirectly) {
 			$absPath = $file->getStorage()->getLocalFile($file->getInternalPath());
 		} else {
-			$absPath = \OC::$server->getTempManager()->getTemporaryFile();
-
 			$handle = $file->fopen('rb');
+			if (!\is_resource($handle)) {
+				// Datei nicht lesbar (z. B. gerade gelöscht): keine Vorschau statt TypeError
+				return false;
+			}
+			$absPath = \OC::$server->getTempManager()->getTemporaryFile();
 			\file_put_contents($absPath, $handle);
 			\fclose($handle);
 		}

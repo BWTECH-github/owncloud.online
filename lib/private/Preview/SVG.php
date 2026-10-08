@@ -52,6 +52,11 @@ class SVG implements IProvider2 {
 			$imagick->setBackgroundColor(new \ImagickPixel('transparent'));
 
 			$stream = $file->fopen('r');
+			if (!\is_resource($stream)) {
+				// Datei nicht lesbar (z. B. gerade gelöscht); der TypeError aus
+				// stream_get_contents() wäre ein \Error und liefe am catch vorbei
+				return false;
+			}
 			$content = \stream_get_contents($stream);
 			if (\strpos($content, '<?xml') !== 0) {
 				$content = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' . $content;
