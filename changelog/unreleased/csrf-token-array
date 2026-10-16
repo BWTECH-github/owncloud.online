@@ -1,0 +1,9 @@
+Bugfix: A request token sent as an array no longer causes HTTP 500
+
+`Request::passesCSRFCheck()` passed the `requesttoken` parameter unchecked to
+`CsrfToken`. Sent as an array (`POST /index.php/login?requesttoken[]=x`, or as
+a form field), it reached `explode()` in `CsrfToken::getDecryptedValue()` and
+raised a TypeError on PHP 8. Every CSRF protected guest POST was affected:
+login, both steps of the lost password form and the two-factor challenge. A
+token that is not a string is now treated as invalid and the CSRF check fails
+as it does for a wrong token.

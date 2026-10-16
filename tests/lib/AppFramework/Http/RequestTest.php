@@ -19,7 +19,9 @@ namespace Test\AppFramework\Http;
 
 use OC\AppFramework\Http\Request;
 use OC\Security\CSRF\CsrfToken;
+use OC\Security\CSRF\CsrfTokenGenerator;
 use OC\Security\CSRF\CsrfTokenManager;
+use OC\Security\CSRF\TokenStorage\SessionStorage;
 use OCP\IConfig;
 use OCP\IRequest;
 use OCP\Security\ISecureRandom;
@@ -1681,6 +1683,49 @@ class RequestTest extends TestCase {
 				$this->stream
 			])
 			->getMock();
+
+		$this->assertFalse($request->passesCSRFCheck());
+	}
+
+	/**
+	 * @return array
+	 */
+	public function nonStringTokenDataProvider() {
+		return [
+			'get array' => [['get' => ['requesttoken' => ['x']]]],
+			'post array' => [['post' => ['requesttoken' => ['x']]]],
+			'nested array' => [['get' => ['requesttoken' => ['a' => ['b' => 'c']]]]],
+			// GET wird zuerst gelesen, ein gültiges POST-Token rettet das Array nicht
+			'get array before valid post' => [[
+				'get' => ['requesttoken' => ['x']],
+				'post' => ['requesttoken' => 'AAAHGxsTCTc3BgMQESAcNR0OAR0=:MyTotalSecretShareds'],
+			]],
+		];
+	}
+
+	/**
+	 * Ein requesttoken als Array (etwa POST /index.php/login?requesttoken[]=x)
+	 * landete in CsrfToken::getDecryptedValue() und warf dort in explode()
+	 * einen TypeError. Echter Token-Manager, damit dieser Weg abgedeckt ist.
+	 *
+	 * @dataProvider nonStringTokenDataProvider
+	 * @param array $vars
+	 */
+	public function testPassesCSRFCheckWithNonStringToken(array $vars) {
+		$tokenStorage = $this->createMock(SessionStorage::class);
+		$tokenStorage->method('hasToken')->willReturn(true);
+		$tokenStorage->method('getToken')->willReturn('MyStoredSecret');
+		$csrfTokenManager = new CsrfTokenManager(
+			$this->createMock(CsrfTokenGenerator::class),
+			$tokenStorage
+		);
+		$request = new Request(
+			$vars,
+			$this->secureRandom,
+			$this->config,
+			$csrfTokenManager,
+			$this->stream
+		);
 
 		$this->assertFalse($request->passesCSRFCheck());
 	}

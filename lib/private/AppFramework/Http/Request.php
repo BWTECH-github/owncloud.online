@@ -474,6 +474,11 @@ class Request implements ArrayAccess, Countable, IRequest {
 			//no token found.
 			return false;
 		}
+		// Ein Token als Array (?requesttoken[]=x) ist ungültig; CsrfToken
+		// erwartet eine Zeichenkette, explode() warf sonst einen TypeError (HTTP 500).
+		if (!\is_string($token)) {
+			return false;
+		}
 		$token = new CsrfToken($token);
 
 		return $this->csrfTokenManager->isTokenValid($token);
