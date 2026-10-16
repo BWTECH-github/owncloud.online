@@ -67,7 +67,14 @@
 			/* Kontrastmodus (forced-colors): Dort setzt der Browser background-color auf Canvas, die
 			   Maske hätte die Farbe des Hintergrunds und der Infopunkt verschwände. CanvasText ist die
 			   Textfarbe des Systemschemas; forced-color-adjust:none lässt sie stehen. */
-			@media (forced-colors: active){#body-login .v-align .icon-info-white{forced-color-adjust:none;background-color:CanvasText;}}
+			@media (forced-colors: active){
+				#body-login .v-align .icon-info-white{forced-color-adjust:none;background-color:CanvasText;}
+				/* Die Knöpfe verlieren hier ihre Füllung, border:none ließ nur fetten Text übrig. Der Rahmen in
+				   ButtonText (deaktiviert GrayText) zeigt wieder den Knopf; Systemfarben bleiben stehen.
+				   input.updateButton überstimmt per Spezifität die spätere border:none-Regel. */
+				#body-login .v-align .login-button,#body-login .v-align input[type="submit"],#body-login .v-align button[type="submit"],#body-login .v-align .update input.updateButton{border:1px solid ButtonText !important;}
+				#body-login .v-align .login-button:disabled,#body-login .v-align input[type="submit"]:disabled,#body-login .v-align button[type="submit"]:disabled,#body-login .v-align .update input.updateButton:disabled{border-color:GrayText !important;}
+			}
 			#body-login footer{flex:0 0 auto;text-align:center;padding:10px 0 14px;margin:0;}
 			/* Update-/Wartungs-Screens nutzen dieselbe Gastkarte: breiter, EINE Karte, zentrierter Text.
 			   Nur div.update direkt in der Karte zählt – die Erfolgsmeldung von „Passwort vergessen“

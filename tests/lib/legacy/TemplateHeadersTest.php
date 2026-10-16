@@ -106,7 +106,8 @@ class TemplateHeadersTest extends TestCase {
 		$closed = '<data key="oauth2" client="Desktop Client"></data>';
 		$this->assertStringContainsString($closed, $html);
 		$this->assertDoesNotMatchRegularExpression('/<data\b[^>]*\/>/', $html);
-		// Das Element endet im Kopf und umschließt nicht die Karte.
+		// Im Quelltext steht das geschlossene Element vor </head> und umschließt die Karte nicht.
+		// Im DOM landet <data> dennoch im body: Der Parser beendet den Kopf an diesem Tag.
 		$this->assertLessThan(\strpos($html, '</head>'), \strpos($html, $closed));
 		$this->assertStringContainsString('<div class="v-align">', $html);
 	}

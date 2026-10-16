@@ -265,7 +265,8 @@ class OC_Template extends \OC\Template\Base {
 	 * Add a custom element to the header
 	 *
 	 * Hinweis: Diese Liste der Instanz gibt OC_Template derzeit nirgends aus. In
-	 * den Seitenkopf gelangt nur, was \OCP\Util::addHeader() sammelt.
+	 * den Seitenkopf schreibt fetchPage() nur \OC_Util::$headers, gefüllt über
+	 * \OCP\Util::addHeader() bzw. \OC_Util::addHeader().
 	 *
 	 * @param string $tag tag name of the element
 	 * @param array $attributes array of attributes for the element
