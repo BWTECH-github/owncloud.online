@@ -74,6 +74,19 @@ class TwoFactorChallengeController extends Controller {
 	}
 
 	/**
+	 * redirect_url kann als Array ankommen (?redirect_url[]=x). \urldecode()
+	 * brach daran nach bestandener Prüfung mit einem TypeError ab (HTTP 500),
+	 * und die Vorlagen der Anbieter gäben „Array“ aus. Ein Array gilt deshalb
+	 * wie ein fehlender Parameter - wie in LoginController.
+	 *
+	 * @param mixed $value
+	 * @return mixed null statt eines Arrays, sonst der Wert unverändert
+	 */
+	private static function arrayAsMissing($value) {
+		return \is_array($value) ? null : $value;
+	}
+
+	/**
 	 * @return string
 	 */
 	protected function getLogoutAttribute() {
@@ -95,6 +108,7 @@ class TwoFactorChallengeController extends Controller {
 	 * @return TemplateResponse
 	 */
 	public function selectChallenge($redirect_url) {
+		$redirect_url = self::arrayAsMissing($redirect_url);
 		$user = $this->userSession->getUser();
 		$providers = $this->twoFactorManager->getProviders($user);
 		if (\count($providers) === 1) {
@@ -129,6 +143,7 @@ class TwoFactorChallengeController extends Controller {
 	 * @return RedirectResponse|TemplateResponse
 	 */
 	public function showChallenge($challengeProviderId, $redirect_url) {
+		$redirect_url = self::arrayAsMissing($redirect_url);
 		$user = $this->userSession->getUser();
 		$provider = $this->twoFactorManager->getProvider($user, $challengeProviderId);
 		if ($provider === null) {
@@ -174,6 +189,12 @@ class TwoFactorChallengeController extends Controller {
 	 * @return RedirectResponse
 	 */
 	public function solveChallenge($challengeProviderId, $challenge, $redirect_url = null) {
+		$redirect_url = self::arrayAsMissing($redirect_url);
+		// Eine Antwort als Array kann nie stimmen. Als leere Antwort lehnt der
+		// Anbieter sie ab wie jede falsche, statt an dem Array zu scheitern.
+		if (\is_array($challenge)) {
+			$challenge = '';
+		}
 		$user = $this->userSession->getUser();
 		$provider = $this->twoFactorManager->getProvider($user, $challengeProviderId);
 		if ($provider === null) {

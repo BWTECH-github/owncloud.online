@@ -820,4 +820,184 @@ class LoginControllerTest extends TestCase {
 		$expected = new RedirectResponse('');
 		$this->assertEquals($expected, $this->loginController->tryLogin('john@doe.com', 'just wrong', null));
 	}
+
+	/**
+	 * Controller mit fester Standardseite - für die Fälle, in denen die
+	 * Anmeldung dorthin weiterleitet.
+	 *
+	 * @param string $defaultUrl
+	 * @return LoginController|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private function getLoginControllerWithDefaultUrl($defaultUrl) {
+		$loginController = $this->getMockBuilder(LoginController::class)
+			->setMethods(['getDefaultUrl'])
+			->setConstructorArgs([
+				'core',
+				$this->request,
+				$this->userManager,
+				$this->config,
+				$this->session,
+				$this->userSession,
+				$this->urlGenerator,
+				$this->twoFactorManager,
+				$this->licenseManager,
+				$this->throttler
+			])
+			->getMock();
+		// expects() statt method(): Controller hat selbst eine Methode method().
+		$loginController->expects($this->any())
+			->method('getDefaultUrl')
+			->willReturn($defaultUrl);
+		return $loginController;
+	}
+
+	public function rememberLoginStates() {
+		return [
+			'remember_login fehlt' => [null],
+			'remember_login=0' => ['0'],
+		];
+	}
+
+	/**
+	 * ?redirect_url[]=x kommt als Array an. \urldecode() brach daran mit einem
+	 * TypeError ab (HTTP 500, bevor jemand etwas eingeben konnte), mit
+	 * remember_login=0 landete das Array in der Vorlage. Ein Array gilt wie ein
+	 * fehlender Parameter.
+	 *
+	 * @dataProvider rememberLoginStates
+	 * @param string|null $rememberLogin
+	 */
+	public function testShowLoginFormTreatsRedirectUrlArrayAsMissing($rememberLogin) {
+		// Nicht angemeldet - nur dann prüft showLoginForm() den privaten Link.
+		$this->userSession->method('isLoggedIn')->willReturn(false);
+		$this->licenseManager->method('getLicenseMessageFor')
+			->willReturn(['license_state' => ILicenseManager::LICENSE_STATE_MISSING]);
+
+		$params = $this->loginController->showLoginForm(null, ['x'], $rememberLogin)->getParams();
+
+		$this->assertArrayNotHasKey('redirect_url', $params);
+		$this->assertArrayNotHasKey('accessLink', $params);
+	}
+
+	public function testShowLoginFormTreatsUserAndRememberLoginArraysAsMissing() {
+		$this->licenseManager->method('getLicenseMessageFor')
+			->willReturn(['license_state' => ILicenseManager::LICENSE_STATE_MISSING]);
+
+		$params = $this->loginController->showLoginForm(['x'], null, ['1'])->getParams();
+
+		$this->assertSame('', $params['loginName']);
+		$this->assertTrue($params['user_autofocus']);
+		$this->assertSame(0, $params['rememberLoginState']);
+	}
+
+	public function testLoginWithRedirectUrlArrayDropsItAfterWrongPassword() {
+		$this->userSession->method('login')->willReturn(false);
+		$this->userManager->method('getByEmail')->willReturn([]);
+		$this->urlGenerator->expects($this->once())
+			->method('linkToRoute')
+			->with('core.login.showLoginForm', ['user' => 'alice'])
+			->willReturn('login url');
+
+		$response = $this->loginController->tryLogin('alice', 'wrong', ['x']);
+
+		$this->assertEquals(new RedirectResponse('login url'), $response);
+	}
+
+	public function testLoginWithRedirectUrlArrayGoesToTheDefaultPage() {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('login')->with('alice', 'secret')->willReturn(true);
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->userSession->method('isLoggedIn')->willReturn(true);
+		$this->twoFactorManager->method('isTwoFactorAuthenticated')->willReturn(false);
+
+		$response = $this->getLoginControllerWithDefaultUrl('default url')
+			->tryLogin('alice', 'secret', ['x']);
+
+		$this->assertEquals(new RedirectResponse('default url'), $response);
+	}
+
+	public function testLoginWithRedirectUrlArrayAndTwoFactorLeavesItOut() {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('login')->willReturn(true);
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->twoFactorManager->method('isTwoFactorAuthenticated')->willReturn(true);
+		$this->urlGenerator->expects($this->once())
+			->method('linkToRoute')
+			->willReturnCallback(function ($route, $parameters = []) {
+				$this->assertSame('core.TwoFactorChallenge.selectChallenge', $route);
+				$this->assertSame([], $parameters);
+				return 'challenge url';
+			});
+
+		$response = $this->loginController->tryLogin('alice', 'secret', ['x']);
+
+		$this->assertEquals(new RedirectResponse('challenge url'), $response);
+	}
+
+	/**
+	 * Arrays für Benutzer und Passwort liefen bis in die Passwortprüfung und in
+	 * IUserManager::getByEmail(). Sie gelten wie fehlende Angaben.
+	 */
+	public function testLoginWithUserAndPasswordArraysIsTreatedAsMissing() {
+		$this->userSession->expects($this->once())
+			->method('login')
+			->with(null, null)
+			->willReturn(false);
+		$this->userManager->expects($this->never())->method('getByEmail');
+		$this->urlGenerator->expects($this->once())
+			->method('linkToRoute')
+			->with('core.login.showLoginForm', [])
+			->willReturn('login url');
+
+		$response = $this->loginController->tryLogin(['x'], ['y'], null);
+
+		$this->assertEquals(new RedirectResponse('login url'), $response);
+	}
+
+	public function emptyLoginNames() {
+		return [
+			'leer' => [''],
+			'nur Leerzeichen' => ['  '],
+		];
+	}
+
+	/**
+	 * IUserManager::getByEmail() wirft bei leerer Adresse eine
+	 * InvalidArgumentException - Absenden ohne Benutzernamen endete mit
+	 * HTTP 500 statt mit „Falsches Passwort“.
+	 *
+	 * @dataProvider emptyLoginNames
+	 * @param string $loginName
+	 */
+	public function testLoginWithEmptyUserFailsWithoutEmailLookup($loginName) {
+		$this->userSession->method('login')->willReturn(false);
+		$this->userManager->method('getByEmail')
+			->willThrowException(new \InvalidArgumentException('$email cannot be empty'));
+		$this->urlGenerator->expects($this->once())
+			->method('linkToRoute')
+			->with('core.login.showLoginForm', ['user' => $loginName])
+			->willReturn('login url');
+
+		$response = $this->loginController->tryLogin($loginName, 'secret', null);
+
+		$this->assertEquals(new RedirectResponse('login url'), $response);
+	}
+
+	public function testLoginIgnoresTimezoneAndRememberLoginArrays() {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('login')->willReturn(true);
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->userSession->expects($this->never())
+			->method('setNewRememberMeTokenForLoggedInUser');
+		$this->config->expects($this->never())->method('setUserValue');
+		$this->twoFactorManager->method('isTwoFactorAuthenticated')->willReturn(false);
+
+		$response = $this->getLoginControllerWithDefaultUrl('default url')
+			->tryLogin('alice', 'secret', null, ['Europe/Berlin'], ['1']);
+
+		$this->assertEquals(new RedirectResponse('default url'), $response);
+	}
 }

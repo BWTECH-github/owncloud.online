@@ -351,6 +351,21 @@ class LostControllerTest extends TestCase {
 		$this->assertSame($expectedResponse, $response);
 	}
 
+	/**
+	 * user[]=x kommt als Array an. IUserManager::getByEmail() scheitert daran
+	 * mit einem TypeError, den der catch für Exceptions nicht fängt (HTTP 500).
+	 * Die Antwort ist dieselbe wie für einen unbekannten Benutzer.
+	 */
+	public function testEmailWithUserArrayAnswersLikeForAnUnknownUser() {
+		$this->userManager->method('getByEmail')
+			->willThrowException(new \TypeError('trim(): Argument #1 ($string) must be of type string, array given'));
+		$this->mailer->expects($this->never())->method('send');
+
+		$response = $this->lostController->email(['ExistingUser']);
+
+		$this->assertSame(['status' => 'success'], $response);
+	}
+
 	public function testEmailUsedForLoginSuccessful() {
 		$this->config
 			->expects($this->once())
@@ -687,6 +702,30 @@ class LostControllerTest extends TestCase {
 		$response = $this->lostController->setPassword('TheOnlyAndOnlyOneTokenToResetThePassword', 'ValidTokenUser', 'NewPassword', true);
 		$expectedResponse = ['status' => 'success'];
 		$this->assertSame($expectedResponse, $response);
+	}
+
+	/**
+	 * password[]=x kommt als Array an und lief mit gültigem Token bis
+	 * password_hash() durch - TypeError, HTTP 500. Ein Array ist kein Passwort:
+	 * dieselbe Antwort wie bei jedem anderen abgelehnten Passwort, der Token
+	 * bleibt für einen richtigen Versuch gültig.
+	 */
+	public function testSetPasswordWithPasswordArrayFails() {
+		$this->config->method('getUserValue')
+			->with('ValidTokenUser', 'owncloud', 'lostpassword', null)
+			->willReturn('12345:TheOnlyAndOnlyOneTokenToResetThePassword');
+		$user = $this->createMock(IUser::class);
+		$user->method('getLastLogin')->willReturn(12344);
+		$user->method('setPassword')
+			->willThrowException(new \TypeError('password_hash(): Argument #1 ($password) must be of type string, array given'));
+		$this->userManager->method('get')->with('ValidTokenUser')->willReturn($user);
+		$this->timeFactory->method('getTime')->willReturn(12348);
+		$this->config->expects($this->never())->method('deleteUserValue');
+		$this->mailer->expects($this->never())->method('send');
+
+		$response = $this->lostController->setPassword('TheOnlyAndOnlyOneTokenToResetThePassword', 'ValidTokenUser', ['NewPassword'], true);
+
+		$this->assertSame(['status' => 'error', 'msg' => ''], $response);
 	}
 
 	public function testSetPasswordExpiredToken() {

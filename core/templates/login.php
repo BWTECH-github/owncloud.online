@@ -34,7 +34,9 @@ $formatThrottleTime = function ($seconds) use ($l) {
 			</p>
 		<?php
 } ?>
-	<?php if (!empty($_['redirect_url'])) {
+	<?php /* Nur eine Zeichenkette: Ein Array (?redirect_url[]=x) erschiene als
+		„Array“ im Feld, mit der Warnung „Array to string conversion“. */ ?>
+	<?php if (!empty($_['redirect_url']) && \is_string($_['redirect_url'])) {
 		print_unescaped('<input type="hidden" name="redirect_url" value="' . \OCP\Util::sanitizeHTML($_['redirect_url']) . '">');
 	} ?>
 		<?php if (isset($_['apacheauthfailed']) && ($_['apacheauthfailed'])): ?>

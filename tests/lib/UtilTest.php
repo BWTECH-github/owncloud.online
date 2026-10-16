@@ -378,6 +378,21 @@ class UtilTest extends \Test\TestCase {
 		$this->assertSame('http://localhost'.\OC::$WEBROOT.'/apps/files/', OC_Util::getDefaultPageUrl());
 	}
 
+	/**
+	 * ?redirect_url[]=x macht $_REQUEST['redirect_url'] zum Array. \strpos()
+	 * brach daran mit einem TypeError ab - wer angemeldet die Anmeldeseite mit
+	 * diesem Parameter aufrief oder sich damit anmeldete, bekam HTTP 500.
+	 */
+	public function testGetDefaultPageUrlIgnoresRedirectUrlArray() {
+		\putenv('front_controller_active=true');
+		$_REQUEST['redirect_url'] = ['myRedirectUrl.com'];
+		try {
+			$this->assertSame('http://localhost'.\OC::$WEBROOT.'/apps/files/', OC_Util::getDefaultPageUrl());
+		} finally {
+			unset($_REQUEST['redirect_url']);
+		}
+	}
+
 	public function testGetDefaultPageUrlWithUserConfig() {
 		$uid = self::getUniqueID();
 		$userDefaultApp = 'user_default_app';

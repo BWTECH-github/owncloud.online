@@ -280,4 +280,73 @@ class TwoFactorChallengeControllerTest extends TestCase {
 		$expected = new RedirectResponse('files/index/url');
 		$this->assertEquals($expected, $this->controller->solveChallenge('myprovider', 'token', '/url'));
 	}
+
+	/**
+	 * ?redirect_url[]=x kommt als Array an und gilt wie ein fehlender Parameter.
+	 * Nach bestandener Prüfung brach \urldecode() daran mit einem TypeError ab
+	 * (HTTP 500 statt Weiterleitung).
+	 */
+	public function testSolveChallengeWithRedirectUrlArrayGoesToTheDefaultPage() {
+		$user = $this->createMock(IUser::class);
+		$provider = $this->createMock(IProvider::class);
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->twoFactorManager->method('getProvider')->willReturn($provider);
+		$this->twoFactorManager->method('verifyChallenge')->willReturn(true);
+
+		$response = $this->controller->solveChallenge('myprovider', 'token', ['x']);
+
+		$this->assertEquals(new RedirectResponse('getDefaultPageUrl'), $response);
+	}
+
+	/**
+	 * Eine Antwort als Array kann nie stimmen. Sie geht als leere Antwort an den
+	 * Anbieter, der sie wie jede falsche ablehnt - statt dass seine
+	 * Zeichenkettenfunktionen an dem Array scheitern.
+	 */
+	public function testSolveChallengeWithChallengeArrayIsAWrongAnswer() {
+		$user = $this->createMock(IUser::class);
+		$provider = $this->createMock(IProvider::class);
+		$provider->method('getId')->willReturn('myprovider');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->twoFactorManager->method('getProvider')->willReturn($provider);
+		$this->twoFactorManager->expects($this->once())
+			->method('verifyChallenge')
+			->with('myprovider', $user, '')
+			->willReturn(false);
+		$this->session->expects($this->once())
+			->method('set')
+			->with('two_factor_auth_error', true);
+		$this->urlGenerator->method('linkToRoute')->willReturn('challenge/url');
+
+		$response = $this->controller->solveChallenge('myprovider', ['123456'], null);
+
+		$this->assertEquals(new RedirectResponse('challenge/url'), $response);
+	}
+
+	public function testShowChallengeHandsNoRedirectUrlArrayToTheProviderTemplate() {
+		$user = $this->createMock(IUser::class);
+		$provider = $this->createMock(IProvider::class);
+		$tmpl = $this->getMockBuilder(Template::class)
+			->disableOriginalConstructor()
+			->getMock();
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->twoFactorManager->method('getProvider')->willReturn($provider);
+		$provider->method('getTemplate')->willReturn($tmpl);
+		$tmpl->expects($this->once())
+			->method('assign')
+			->with('redirect_url', null);
+		$tmpl->method('fetchPage')->willReturn('<html/>');
+
+		$this->controller->showChallenge('myprovider', ['x']);
+	}
+
+	public function testSelectChallengeTreatsRedirectUrlArrayAsMissing() {
+		$user = $this->createMock(IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->twoFactorManager->method('getProviders')->willReturn(['prov1', 'prov2']);
+
+		$response = $this->controller->selectChallenge(['x']);
+
+		$this->assertNull($response->getParams()['redirect_url']);
+	}
 }

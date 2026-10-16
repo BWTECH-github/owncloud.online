@@ -1198,7 +1198,10 @@ class OC_Util {
 		$urlGenerator = \OC::$server->getURLGenerator();
 		// Deny the redirect if the URL contains a @
 		// This prevents unvalidated redirects like ?redirect_url=:user@domain.com
-		if (isset($_REQUEST['redirect_url']) && \strpos($_REQUEST['redirect_url'], '@') === false) {
+		// Nur eine Zeichenkette zählt: ?redirect_url[]=x liefert ein Array, an dem
+		// \strpos() mit einem TypeError abbrach (HTTP 500).
+		if (isset($_REQUEST['redirect_url']) && \is_string($_REQUEST['redirect_url'])
+			&& \strpos($_REQUEST['redirect_url'], '@') === false) {
 			$location = $urlGenerator->getAbsoluteURL(\urldecode($_REQUEST['redirect_url']));
 		} else {
 			$defaultPage = \OC::$server->getAppConfig()->getValue('core', 'defaultpage');

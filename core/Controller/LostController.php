@@ -213,6 +213,12 @@ class LostController extends Controller {
 	 * @return array
 	 */
 	public function email($user) {
+		// user[]=x kommt als Array an; getByEmail() bräche mit einem TypeError
+		// ab, den der catch unten nicht fängt (HTTP 500). Dieselbe Antwort wie
+		// für einen unbekannten Benutzer verrät nichts.
+		if (\is_array($user)) {
+			return $this->success();
+		}
 		try {
 			$userObject = $this->userManager->get($user);
 			if ($userObject === null) {
@@ -257,7 +263,10 @@ class LostController extends Controller {
 			$this->checkPasswordResetToken($token, $userId);
 			$user = $this->userManager->get($userId);
 
-			if (!$user->setPassword($password)) {
+			// Ein Array (password[]=x) ist kein Passwort und lief bis
+			// password_hash() durch - TypeError, HTTP 500. Abgelehnt wie jedes
+			// andere Passwort; der Token bleibt für einen richtigen Versuch gültig.
+			if (\is_array($password) || !$user->setPassword($password)) {
 				throw new \Exception();
 			}
 

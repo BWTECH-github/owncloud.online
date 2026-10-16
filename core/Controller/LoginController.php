@@ -169,6 +169,19 @@ class LoginController extends Controller {
 		return \in_array(\strtolower($schema), ['http', 'https', 'mailto'], true) ? $wert : '';
 	}
 
+	/**
+	 * Anfrageparameter, die als Zeichenkette gedacht sind, können als Array
+	 * ankommen: ?redirect_url[]=x oder user[]=x im Formular. \urldecode(),
+	 * \strpos() und \trim() brechen daran mit einem TypeError ab, die Seite
+	 * endete mit HTTP 500. Ein Array gilt deshalb wie ein fehlender Parameter.
+	 *
+	 * @param mixed $value
+	 * @return mixed null statt eines Arrays, sonst der Wert unverändert
+	 */
+	private static function arrayAsMissing($value) {
+		return \is_array($value) ? null : $value;
+	}
+
 	private function getLoginRetryAfter($loginName) {
 		$name = \is_scalar($loginName) ? (string)$loginName : '';
 
@@ -236,6 +249,10 @@ class LoginController extends Controller {
 	 * @return TemplateResponse|RedirectResponse
 	 */
 	public function showLoginForm($user, $redirect_url, $remember_login) {
+		$user = self::arrayAsMissing($user);
+		$redirect_url = self::arrayAsMissing($redirect_url);
+		$remember_login = self::arrayAsMissing($remember_login);
+
 		// check if there is apache auth backend available and try to obtain session,
 		// if apache backend not registered or failed to login, proceed with show login form
 		if ($this->handleApacheAuth()) {
@@ -378,6 +395,11 @@ class LoginController extends Controller {
 	 * @throws \OC\User\LoginException
 	 */
 	public function tryLogin($user, $password, $redirect_url, $timezone = null, $remember_login = null) {
+		$user = self::arrayAsMissing($user);
+		$password = self::arrayAsMissing($password);
+		$redirect_url = self::arrayAsMissing($redirect_url);
+		$timezone = self::arrayAsMissing($timezone);
+		$remember_login = self::arrayAsMissing($remember_login);
 		$originalUser = $user;
 
 		// Refuse while the brute-force cooldown is still running, BEFORE spending
@@ -404,7 +426,11 @@ class LoginController extends Controller {
 
 		// TODO: Add all the insane error handling
 		$loginResult = $this->userSession->login($user, $password);
-		if ($loginResult !== true && $this->config->getSystemValue('strict_login_enforced', false) !== true) {
+		// Ohne Namen gibt es keine Adresse zum Nachschlagen - getByEmail() wirft
+		// bei leerer Adresse eine InvalidArgumentException, das Absenden ohne
+		// Benutzernamen endete mit HTTP 500 statt mit „Falsches Passwort“.
+		if ($loginResult !== true && \is_string($user) && \trim($user) !== ''
+			&& $this->config->getSystemValue('strict_login_enforced', false) !== true) {
 			$users = $this->userManager->getByEmail($user);
 			// we only allow login by email if unique
 			if (\count($users) === 1) {
