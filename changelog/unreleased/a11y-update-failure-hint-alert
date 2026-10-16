@@ -1,0 +1,7 @@
+Bugfix: The update page announces its failure hint to screen readers
+
+When an update failed, the page showed the reason in its alert region, but the
+hint to check the server log or to contact the administrator was appended below
+the progress display, outside of any live region. Screen readers only announced
+the reason. The hint now follows the reason inside the alert region and is
+announced together with it.

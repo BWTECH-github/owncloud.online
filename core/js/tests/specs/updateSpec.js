@@ -206,7 +206,7 @@ describe('OC.Update start', function() {
 
 		expect($('.update-progress span.bold').text()).toEqual(failureHint);
 		expect($('.update-progress a[href^="http"]').length).toEqual(0);
-		expect($('#update-progress-message-error').text()).toEqual(reason);
+		expect($('#update-progress-message-error').text()).toContain(reason);
 	});
 
 	it('shows the same neutral hint for any other failure and stops guarding the page', function() {
@@ -217,5 +217,20 @@ describe('OC.Update start', function() {
 		expect($('.update-progress span.bold').text()).toEqual(failureHint);
 		expect($('.update-progress a[href^="http"]').length).toEqual(0);
 		expect(guardsLeaving()).toEqual(false);
+	});
+
+	/**
+	 * Der Hinweis hing bisher als eigener Span unten an der Fortschrittsanzeige,
+	 * außerhalb jeder Live-Region: Screenreader sagten nur den Grund an (SC 4.1.3).
+	 */
+	it('announces the failure hint together with the reason in the alert region', function() {
+		var reason = 'Exception: Database locked';
+		$('.updateButton').click();
+		source.listeners.failure(reason);
+
+		var $alert = $('#update-progress-message-error[role="alert"]');
+		expect($alert.find('span.bold').text()).toEqual(failureHint);
+		expect($alert.text()).toEqual(reason + failureHint);
+		expect($('.update-progress span.bold').length).toEqual(1);
 	});
 });

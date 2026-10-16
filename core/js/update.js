@@ -70,12 +70,15 @@
 
 				self.setErrorMessage(message);
 				// Ohne Verweis auf fremde Foren oder Fehlerlisten: Den Grund nennt die
-				// Fehlermeldung darüber, Einzelheiten stehen im Serverprotokoll. Als
-				// Text eingefügt - die Übersetzung enthält kein HTML mehr.
-				$('<span>')
-					.addClass('bold')
-					.text(t('core', 'The update was unsuccessful. Please check the server log or contact your administrator.'))
-					.appendTo($el);
+				// Fehlermeldung davor, Einzelheiten stehen im Serverprotokoll. Als
+				// Text eingefügt - die Übersetzung enthält kein HTML mehr. Der Hinweis
+				// steht in derselben Alert-Region wie der Grund; unten an die
+				// Fortschrittsanzeige gehängt sagte ihn kein Screenreader an (SC 4.1.3).
+				$('#update-progress-message-error')
+					.append($('<br>'))
+					.append($('<span>')
+						.addClass('bold')
+						.text(t('core', 'The update was unsuccessful. Please check the server log or contact your administrator.')));
 			});
 			updateEventSource.listen('done', function() {
 				$(window).off('beforeunload.inprogress');
