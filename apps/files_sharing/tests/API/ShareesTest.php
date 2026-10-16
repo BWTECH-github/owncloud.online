@@ -1595,6 +1595,36 @@ class ShareesTest extends TestCase {
 		$this->assertEquals($exactExpected, $result['exact']['remotes']);
 	}
 
+	public function providesTrustedDomainsForInstanceDomain() {
+		return [
+			'Liste' => [['cloud.example.com'], true],
+			'Liste ab Schlüssel 2' => [[2 => 'cloud.example.com'], true],
+			'andere Domain' => [['other.example.com'], false],
+			'Zeichenkette statt Liste' => ['cloud.example.com', false],
+		];
+	}
+
+	/**
+	 * trusted_domains als Zeichenkette statt Liste gilt wie in
+	 * TrustedDomainHelper als nicht gesetzt; in_array() warf sonst einen
+	 * TypeError.
+	 *
+	 * @dataProvider providesTrustedDomainsForInstanceDomain
+	 *
+	 * @param array|string $trustedDomains
+	 * @param bool $expected
+	 */
+	public function testIsInstanceDomain($trustedDomains, $expected) {
+		$this->config->method('getSystemValue')
+			->with('trusted_domains', [])
+			->willReturn($trustedDomains);
+
+		$this->assertSame(
+			$expected,
+			self::invokePrivate($this->sharees, 'isInstanceDomain', ['alice@cloud.example.com'])
+		);
+	}
+
 	public function dataSearch() {
 		$allTypes = [Share::SHARE_TYPE_USER, Share::SHARE_TYPE_GROUP, Share::SHARE_TYPE_REMOTE];
 

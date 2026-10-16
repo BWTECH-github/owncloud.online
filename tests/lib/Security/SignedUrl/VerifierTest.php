@@ -104,5 +104,41 @@ class VerifierTest extends TestCase {
 			'http://cloud.example.net/?OC-Credential=alice&OC-Date=2019-05-14T11%3A01%3A58.135Z&OC-Expires=1200&OC-Verb=GET&OC-Signature=f9e53a1ee23caef10f72ec392c1b537317491b687bfdd224c782be197d9ca2b6', false, [
 			'cloud.example.com'
 		]];
+
+		// Nach dem Entfernen von Einträgen aus config.php beginnt die Liste
+		// nicht mehr bei Schlüssel 0.
+		yield 'trusted domain not under key 0' => [true, true, 'get',
+			'http://cloud.example.net/?OC-Credential=alice&OC-Date=2019-05-14T11%3A01%3A58.135Z&OC-Expires=1200&OC-Verb=GET&OC-Signature=f9e53a1ee23caef10f72ec392c1b537317491b687bfdd224c782be197d9ca2b6', false, [
+			2 => 'cloud.example.net'
+		]];
+	}
+
+	/**
+	 * trusted_domains als Zeichenkette statt Liste gilt wie in
+	 * TrustedDomainHelper als nicht gesetzt: Die Signatur ist nicht prüfbar,
+	 * und foreach() über die Zeichenkette löst keine Warnung mehr aus.
+	 */
+	public function testTrustedDomainsNotAListIsTreatedAsNotSet(): void {
+		$url = 'http://cloud.example.net/?OC-Credential=alice&OC-Date=2019-05-14T11%3A01%3A58.135Z&OC-Expires=1200&OC-Verb=GET&OC-Signature=f9e53a1ee23caef10f72ec392c1b537317491b687bfdd224c782be197d9ca2b6';
+		$r = new Request('GET', $url);
+		$r->setAbsoluteUrl($url);
+		$config = $this->createMock(IConfig::class);
+		$config->method('getUserValue')->willReturn('1234567890');
+		$config->method('getSystemValue')->with('trusted_domains', [])->willReturn('cloud.example.net');
+		$v = new Verifier($r, $config, new \DateTime('2019-05-14T11:01:58.135Z', null));
+
+		$warnings = [];
+		\set_error_handler(function ($errno, $errstr) use (&$warnings) {
+			$warnings[] = $errstr;
+			return true;
+		}, E_WARNING);
+		try {
+			$isValid = $v->signedRequestIsValid();
+		} finally {
+			\restore_error_handler();
+		}
+
+		self::assertFalse($isValid);
+		self::assertSame([], $warnings);
 	}
 }

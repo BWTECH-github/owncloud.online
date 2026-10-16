@@ -767,6 +767,12 @@ class ShareesController extends OCSController {
 		}
 		$domainName = $parts[\count($parts) - 1];
 		$trustedDomains = $this->config->getSystemValue('trusted_domains', []);
+		if (!\is_array($trustedDomains)) {
+			// Wie in TrustedDomainHelper und Request::getServerHost(): Ein Wert,
+			// der keine Liste ist, gilt als nicht gesetzt. in_array() warf sonst
+			// einen TypeError, und die Suche nach Freigabe-Empfängern brach ab.
+			return false;
+		}
 
 		return \in_array($domainName, $trustedDomains, true);
 	}

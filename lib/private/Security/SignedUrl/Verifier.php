@@ -143,6 +143,12 @@ class Verifier {
 	 */
 	private function verifySignature(array $params, $urlCredential, $algo, $urlSignature): bool {
 		$trustedList = $this->config->getSystemValue('trusted_domains', []);
+		if (!\is_array($trustedList)) {
+			// Wie in TrustedDomainHelper und Request::getServerHost(): Ein Wert,
+			// der keine Liste ist, gilt als nicht gesetzt. foreach() über eine
+			// Zeichenkette warnte nur und prüfte keine einzige Domain.
+			$trustedList = [];
+		}
 		$signingKey = $this->config->getUserValue($urlCredential, 'core', 'signing-key');
 		// in case the signing key is not initialized, no signature can ever be verified
 		if ($signingKey === '') {

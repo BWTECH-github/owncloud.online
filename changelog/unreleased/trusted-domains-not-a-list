@@ -1,0 +1,7 @@
+Bugfix: Treat trusted_domains that is not a list as not set everywhere
+
+When `trusted_domains` in config.php was a string instead of a list, the
+sharee search failed with a type error as soon as the search term looked like
+an email address, and the check of pre-signed URLs raised a PHP warning. Both
+now treat such a value as not set, like the trusted domain check and the
+server host fallback already do.
