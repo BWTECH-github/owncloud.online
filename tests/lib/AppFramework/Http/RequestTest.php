@@ -1109,6 +1109,75 @@ class RequestTest extends TestCase {
 		$this->assertSame('my.trusted.host', $request->getServerHost());
 	}
 
+	/**
+	 * Nach dem Entfernen von Einträgen (z. B. `occ config:system:delete
+	 * trusted_domains 0`) beginnt die Liste nicht mehr bei Schlüssel 0.
+	 */
+	public function testGetServerHostWithUntrustedDomainAndNonSequentialKeys() {
+		$this->config
+			->expects($this->exactly(3))
+			->method('getSystemValue')
+			->withConsecutive(
+				['overwritehost'],
+				['trusted_domains'],
+				['trusted_domains'],
+			)
+			->willReturnOnConsecutiveCalls(
+				'',
+				[2 => 'my.trusted.host', 5 => 'my.other.host'],
+				[2 => 'my.trusted.host', 5 => 'my.other.host'],
+			);
+
+		$request = new Request(
+			[
+				'server' => [
+					'HTTP_X_FORWARDED_HOST' => 'my.untrusted.host',
+				],
+			],
+			$this->secureRandom,
+			$this->config,
+			$this->csrfTokenManager,
+			$this->stream
+		);
+
+		$this->assertSame('my.trusted.host', $request->getServerHost());
+	}
+
+	/**
+	 * Ein trusted_domains-Wert, der keine Liste ist, gilt wie bei der
+	 * Domainprüfung als nicht gesetzt – statt des ersten Zeichens der
+	 * Zeichenkette kommt ein leerer Host zurück.
+	 */
+	public function testGetServerHostWithUntrustedDomainAndTrustedDomainsNotAList() {
+		$this->config
+			->expects($this->exactly(3))
+			->method('getSystemValue')
+			->withConsecutive(
+				['overwritehost'],
+				['trusted_domains'],
+				['trusted_domains'],
+			)
+			->willReturnOnConsecutiveCalls(
+				'',
+				'my.trusted.host',
+				'my.trusted.host',
+			);
+
+		$request = new Request(
+			[
+				'server' => [
+					'HTTP_X_FORWARDED_HOST' => 'my.untrusted.host',
+				],
+			],
+			$this->secureRandom,
+			$this->config,
+			$this->csrfTokenManager,
+			$this->stream
+		);
+
+		$this->assertSame('', $request->getServerHost());
+	}
+
 	public function testGetServerHostWithNoTrustedDomain() {
 		$this->config
 			->expects($this->exactly(3))

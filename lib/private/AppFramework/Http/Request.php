@@ -793,8 +793,13 @@ class Request implements ArrayAccess, Countable, IRequest {
 		}
 
 		$trustedList = $this->config->getSystemValue('trusted_domains', []);
-		if (!empty($trustedList)) {
-			return $trustedList[0];
+		if (!empty($trustedList) && \is_array($trustedList)) {
+			// Erster konfigurierter Eintrag, egal unter welchem Schlüssel: Nach
+			// dem Entfernen von Einträgen aus config.php sieht die Liste z. B.
+			// so aus: [2 => 'host']; $trustedList[0] wäre dann null. Ein Wert,
+			// der keine Liste ist, gilt wie in TrustedDomainHelper als nicht
+			// gesetzt (sonst käme das erste Zeichen der Zeichenkette zurück).
+			return (string)\reset($trustedList);
 		}
 
 		return '';
