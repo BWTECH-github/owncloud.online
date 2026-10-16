@@ -80,7 +80,7 @@ class Loader implements IMimeTypeLoader {
 	public function getMimetypeById($id) {
 		// Mimetype-IDs stammen aus einer Autoincrement-Spalte und beginnen bei 1.
 		// Der Dateicache speichert einen unbekannten Mimetype als -1, mimepart
-		// bekommt beim Einfügen ohne Mimetype den Standardwert 0. Ohne diese
+		// dann ebenso (ältere Einträge: Standardwert 0). Ohne diese
 		// Abkürzung kostete jede solche ID bei jedem Aufruf einen Memcache-Zugriff
 		// und ein SELECT auf oc_mimetypes – im Verzeichnis-Listing zweimal je Zeile.
 		if ((int)$id <= 0) {

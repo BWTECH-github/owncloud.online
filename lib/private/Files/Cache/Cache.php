@@ -470,13 +470,28 @@ class Cache implements ICache {
 					// legt einen leeren Eintrag in oc_mimetypes an, und mimepart
 					// zeigt ebenfalls darauf (null zusätzlich mit Deprecations aus
 					// strpos()/substr()). update() macht unter Oracle aus '' null.
-					if ($value === false || $value === null || $value === '') {
+					// Ebenso unbekannt: nur Leerzeichen und alles, was keine
+					// Zeichenkette ist (getId(true) legte sonst '1' an).
+					$mimePartId = -1;
+					if (!\is_string($value) || \trim($value) === '') {
 						$value = -1;
 					} else {
-						$params[] = $this->mimetypeLoader->getId(\substr($value, 0, \strpos($value, '/')));
-						$queryParts[] = '`mimepart`';
+						// Hauptteil vor dem „/“ („image“ bei „image/png“). Ohne „/“
+						// ('foo', '0') oder mit „/“ ganz vorn gibt es keinen:
+						// substr() lieferte dann '' und getId('') legte einen leeren
+						// Eintrag in oc_mimetypes an.
+						$slashPos = \strpos($value, '/');
+						$mimePart = $slashPos ? \substr($value, 0, $slashPos) : '';
+						if (\trim($mimePart) !== '') {
+							$mimePartId = $this->mimetypeLoader->getId($mimePart);
+						}
 						$value = $this->mimetypeLoader->getId($value);
 					}
+					// mimepart immer mitschreiben: Wird ein Mimetype per update()
+					// unbekannt, bliebe sonst der alte Hauptteil stehen (z. B.
+					// „image“), und die Suche nach Bildern fände die Datei weiter.
+					$params[] = $mimePartId;
+					$queryParts[] = '`mimepart`';
 				} elseif ($name === 'storage_mtime') {
 					if (!$doNotCopyStorageMTime && !isset($data['mtime'])) {
 						$params[] = $value;

@@ -718,13 +718,75 @@ class CacheTest extends TestCase {
 		$this->assertSame(['memcache' => 0, 'database' => 0], $lookups);
 	}
 
+	public function providesMimetypesWithoutMainPart() {
+		return [
+			'ohne Schrägstrich' => ['foo'],
+			'Ziffer' => ['0'],
+			'Schrägstrich vorn' => ['/foo'],
+		];
+	}
+
 	/**
-	 * Liest die gespeicherte Mimetype-ID direkt aus der Datenbank; get()
-	 * übersetzt sie bereits in den Mimetype.
+	 * Ohne Hauptteil vor dem „/“ wird mimepart -1; vorher legte getId('')
+	 * einen leeren Eintrag in oc_mimetypes an. Der Mimetype selbst bleibt.
+	 *
+	 * @dataProvider providesMimetypesWithoutMainPart
 	 */
-	private function getStoredMimetypeId(int $fileId): int {
+	public function testMimetypeWithoutMainPartStoresMimepartAsUnknown(string $mimetype) {
+		$emptyMimetypesBefore = $this->countEmptyMimetypes();
+
+		$fileId = $this->cache->put('no-main-part.bin', ['size' => 1, 'mtime' => 1, 'mimetype' => $mimetype]);
+
+		$this->assertSame(-1, $this->getStoredMimetypeId($fileId, 'mimepart'));
+		$this->assertSame($mimetype, $this->cache->get($fileId)->getMimeType());
+		$this->assertSame($emptyMimetypesBefore, $this->countEmptyMimetypes());
+	}
+
+	public function providesMimetypesStoredAsUnknown() {
+		return [
+			'nur Leerzeichen' => [' '],
+			'true' => [true],
+			'Zahl' => [42],
+		];
+	}
+
+	/**
+	 * Nur Leerzeichen oder gar keine Zeichenkette gilt wie '' als unbekannt.
+	 *
+	 * @dataProvider providesMimetypesStoredAsUnknown
+	 *
+	 * @param mixed $mimetype
+	 */
+	public function testBlankOrNonStringMimetypeIsStoredAsUnknown($mimetype) {
+		$emptyMimetypesBefore = $this->countEmptyMimetypes();
+
+		$fileId = $this->cache->put('blank-mimetype.bin', ['size' => 1, 'mtime' => 1, 'mimetype' => $mimetype]);
+
+		$this->assertSame(-1, $this->getStoredMimetypeId($fileId));
+		$this->assertSame(-1, $this->getStoredMimetypeId($fileId, 'mimepart'));
+		$this->assertSame($emptyMimetypesBefore, $this->countEmptyMimetypes());
+	}
+
+	/**
+	 * Wird der Mimetype per update() unbekannt, darf der alte Hauptteil nicht
+	 * stehen bleiben; sonst fände die Suche nach Bildern die Datei weiter.
+	 */
+	public function testUpdateToUnknownMimetypeAlsoResetsMimepart() {
+		$fileId = $this->cache->put('picture.png', ['size' => 1, 'mtime' => 1, 'mimetype' => 'image/png']);
+
+		$this->cache->update($fileId, ['mimetype' => '']);
+
+		$this->assertSame(-1, $this->getStoredMimetypeId($fileId, 'mimepart'));
+		$this->assertSame([], $this->cache->searchByMime('image'));
+	}
+
+	/**
+	 * Liest die gespeicherte ID (mimetype oder mimepart) direkt aus der
+	 * Datenbank; get() übersetzt sie bereits in den Mimetype.
+	 */
+	private function getStoredMimetypeId(int $fileId, string $column = 'mimetype'): int {
 		$qb = \OC::$server->getDatabaseConnection()->getQueryBuilder();
-		$qb->select('mimetype')
+		$qb->select($column)
 			->from('filecache')
 			->where($qb->expr()->eq('fileid', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
 		$result = $qb->execute();
@@ -734,7 +796,8 @@ class CacheTest extends TestCase {
 	}
 
 	/**
-	 * Zählt in PHP statt per SQL, weil Oracle '' als NULL speichert.
+	 * Zählt leere und nur aus Leerzeichen bestehende Einträge in PHP statt
+	 * per SQL, weil Oracle '' als NULL speichert.
 	 */
 	private function countEmptyMimetypes(): int {
 		$qb = \OC::$server->getDatabaseConnection()->getQueryBuilder();
@@ -742,7 +805,7 @@ class CacheTest extends TestCase {
 		$result = $qb->execute();
 		$count = 0;
 		while (($mimetype = $result->fetchOne()) !== false) {
-			if ((string)$mimetype === '') {
+			if (\trim((string)$mimetype) === '') {
 				$count++;
 			}
 		}

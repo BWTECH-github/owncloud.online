@@ -1,8 +1,8 @@
 Bugfix: Resolve file cache entries without mimetype without a lookup
 
 The file cache stores an unknown mimetype as -1, and the mimetype part of such
-an entry is 0 when it is inserted. No mimetype has an id below 1, but the
-mimetype loader still asked the memory cache and the database for these ids on
-every call. A folder listing therefore cost two memory cache reads and two
-database queries per entry without mimetype. Ids below 1 now resolve to no
+an entry is -1 as well or, for older entries, 0. No mimetype has an id below 1,
+but the mimetype loader still asked the memory cache and the database for these
+ids on every call. A folder listing therefore cost two memory cache reads and
+two database queries per entry without mimetype. Ids below 1 now resolve to no
 mimetype right away.

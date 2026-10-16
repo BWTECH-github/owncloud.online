@@ -1,0 +1,9 @@
+Bugfix: Store the mimetype part of malformed file cache mimetypes as unknown
+
+A mimetype without a part before the slash, like `foo`, `0` or `/foo`, made the
+file cache register an empty string as a new mimetype and use it as the
+mimetype part of the file. Such files now get an unknown mimetype part (-1)
+while their mimetype is kept. A mimetype that consists of blanks only or is not
+a string at all is stored as unknown, like an empty one. When the mimetype of a
+file becomes unknown, its mimetype part is reset as well, so a search for
+images no longer finds a file whose type is not known anymore.
