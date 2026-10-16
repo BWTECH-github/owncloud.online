@@ -14,6 +14,6 @@ OC.L10N.register(
     "You can always update to a newer version / experimental channel. But you can never downgrade to a more stable channel." : "سىز ھەمىشە يېڭى نەشرى / تەجرىبە قانىلىغا يېڭىلىيالايسىز. ئەمما سىز ھەرگىزمۇ تېخىمۇ مۇقىم قانالغا چۈشۈرەلمەيسىز.",
     "Notify members of the following groups about available updates:" : "تۆۋەندىكى گۇرۇپپىلارنىڭ ئەزالىرىغا يېڭىلانمىلارنى ئۇقتۇرۇڭ:",
     "Only notification for app updates are available, because the selected update channel for the server itself does not allow notifications." : "پەقەت ئەپ يېڭىلاشقا مۇناسىۋەتلىك ئۇقتۇرۇشلارلا بار ، چۈنكى owncloud.online نىڭ ئۆزى تاللىغان يېڭىلاش قانىلى ئۇقتۇرۇشقا يول قويمايدۇ.",
-    "Online updater has been automatically disabled as you are currently running an Enterprise edition. Please update your instance manually." : "سىز ھازىر ئۆزىڭىزنىڭ Cloud كارخانا نەشرىنى ئىجرا قىلىۋاتقان بولغاچقا ، تور يېڭىلاش ماشىنىسى ئاپتوماتىك چەكلەنگەن. ئۆزىڭىزنىڭ Cloud ئۈلگىسىنى قولدا يېڭىلاڭ."
+    "Online updater has been automatically disabled as you are currently running an Enterprise edition. Please update your instance manually." : "سىز ھازىر ئۆزىڭىزنىڭ كارخانا نەشرىنى ئىجرا قىلىۋاتقان بولغاچقا ، تور يېڭىلاش ماشىنىسى ئاپتوماتىك چەكلەنگەن. ئۆزىڭىزنىڭ ئۈلگىسىنى قولدا يېڭىلاڭ."
 },
 "nplurals=2; plural=(n != 1);");

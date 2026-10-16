@@ -32,7 +32,7 @@ OC.L10N.register(
     "Error getting OAuth2 URL for " : "Error obteniendo la URL OAuth2 para",
     "Empty response from the server" : "Respuesta vacía desde el servidor",
     "Couldn't access. Please logout and login to activate this mount point" : "No se puede acceder. Por favor cierra sesión e iníciala de nuevo para activar este punto de montaje",
-    "Couldn't get the information from the remote server: {code} {type}" : "No se puede obtener información acerca del servidor de OwnCloud: {code} {type}",
+    "Couldn't get the information from the remote server: {code} {type}" : "No se puede obtener información acerca del servidor de owncloud.online: {code} {type}",
     "Couldn't get the list of external mount points: {type}" : "No se puede obtener la lista de los puntos de montaje externos: {type}",
     "There was an error with message: " : "Hubo un error con el mensaje:",
     "External mount error" : "Error de montaje externo",

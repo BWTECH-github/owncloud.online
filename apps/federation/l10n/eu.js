@@ -6,7 +6,7 @@ OC.L10N.register(
     "No server found" : "Ez da owncloud.online zerbitzaririk aurkitu",
     "Could not add server" : "Ezin izan da zerbitzaria sartu",
     "Federation" : "Federazioa",
-    "Federation allows you to connect with other trusted servers to exchange the user directory. For example this will be used to auto-complete external users for federated sharing." : "owncloud.online Federazioak beste onwCloud fidagarri batzuekin konektatzea posible egiten du erabiltzailearen karpeta trukatzeko. Hau kanpo erabiltzaileen partekatze federaturako auto-osatzeko gisa erabili daiteke.",
+    "Federation allows you to connect with other trusted servers to exchange the user directory. For example this will be used to auto-complete external users for federated sharing." : "owncloud.online Federazioak beste owncloud.online fidagarri batzuekin konektatzea posible egiten du erabiltzailearen karpeta trukatzeko. Hau kanpo erabiltzaileen partekatze federaturako auto-osatzeko gisa erabili daiteke.",
     "Add server automatically once a federated share was created successfully" : "Gehitu zerbitzaria automatikoki federatutako partekatzea ondo sortzen denean.",
     "Trusted Servers" : "owncloud.online zerbitzari fidagarriak",
     "+ Add server" : "+ Gehitu owncloud.online zerbitzaria",

@@ -20,7 +20,7 @@ OC.L10N.register(
     "Your Federated Cloud ID:" : "あなたのクラウド連携ID：",
     "Share it:" : "以下で共有:",
     "Add to your website" : "ウェブサイトに追加",
-    "Share with me via owncloud.online" : "OwnCloud経由で共有",
+    "Share with me via owncloud.online" : "owncloud.online経由で共有",
     "HTML Code:" : "HTMLコード:"
 },
 "nplurals=1; plural=0;");

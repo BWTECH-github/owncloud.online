@@ -1,0 +1,8 @@
+Bugfix: Translations name owncloud.online instead of the old product
+
+Several translations of the core and the bundled apps still showed the old
+product name, partly misspelt or transliterated, for example the German notice
+that the instance is in single user mode and the hints about trusted and
+federated servers. They now name owncloud.online, in the .json and in the .js
+file of each language. Example paths in the sharing hint and placeholders are
+unchanged.

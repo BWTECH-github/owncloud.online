@@ -1,7 +1,7 @@
 OC.L10N.register(
     "federation",
     {
-    "Server added to the list of trusted servers" : "Сервер добавлен в список доверенных серверов ownClowd ",
+    "Server added to the list of trusted servers" : "Сервер добавлен в список доверенных серверов owncloud.online ",
     "Server is already in the list of trusted servers." : "Сервер уже в списке доверенных серверов.",
     "No server found" : "Сервер owncloud.online не найден",
     "Could not add server" : "Не удалось добавить сервер",

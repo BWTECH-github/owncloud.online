@@ -371,7 +371,7 @@ OC.L10N.register(
     "Confirm password" : "Passwort bestätigen",
     "Reset password" : "Passwort zurücksetzen",
     "Personal note from the sender: <br> %s." : "Persönliche Notiz vom Absender: <br>%s.",
-    "This owncloud.online instance is currently in single user mode." : "Diese ownClound-Instanz befindet sich derzeit im Einzelbenutzermodus.",
+    "This owncloud.online instance is currently in single user mode." : "Diese owncloud.online-Instanz befindet sich derzeit im Einzelbenutzermodus.",
     "This means only administrators can use the instance." : "Dies bedeutet, dass diese Instanz nur von Administratoren genutzt werden kann.",
     "Contact your system administrator if this message persists or appeared unexpectedly." : "Kontaktiere deinen Systemadministrator, wenn diese Meldung dauerhaft oder unerwartet erscheint.",
     "Thank you for your patience." : "Vielen Dank für deine Geduld.",

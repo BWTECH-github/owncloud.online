@@ -13,6 +13,6 @@ OC.L10N.register(
     "Update channel:" : "Канал оновлення:",
     "You can always update to a newer version / experimental channel. But you can never downgrade to a more stable channel." : "Ви завжди зможете оновити owncloud.online до новішої версії або перейти на тестову версію. Але ви не зможете встановити старішу версію або перейти на стабільний канал.",
     "Notify members of the following groups about available updates:" : "Сповіщати учасників даної групи про доступні оновлення.",
-    "Only notification for app updates are available, because the selected update channel for the server itself does not allow notifications." : "Доступні тільки повідомлення для оновлення додатків, оскільки обраний канал поновлення не дозволяє повідомлень для самого OwnCloud."
+    "Only notification for app updates are available, because the selected update channel for the server itself does not allow notifications." : "Доступні тільки повідомлення для оновлення додатків, оскільки обраний канал поновлення не дозволяє повідомлень для самого owncloud.online."
 },
 "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);");

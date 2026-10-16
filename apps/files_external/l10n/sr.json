@@ -35,7 +35,7 @@
     "SFTP with secret key login" : "СФТП са пријавом помоћу тајног кључа",
     "Share" : "Дели",
     "Domain" : "Домен",
-    "SMB / CIFS using OC login" : "СМБ/ЦИФС користећи оунКлауд пријаву",
+    "SMB / CIFS using OC login" : "СМБ/ЦИФС користећи owncloud.online пријаву",
     "Username as share" : "Корисничко име као дељење",
     "<b>Note:</b> " : "<b>Напомена:</b> ",
     "<b>Note:</b> The cURL support in PHP is not enabled or installed. Mounting of %s is not possible. Please ask your system administrator to install it." : "<b>Напомена:</b> cURL подршка за ПХП није омогућена или инсталирана. Монтирање %s није могуће. Затражите од вашег администратора система да је инсталира.",

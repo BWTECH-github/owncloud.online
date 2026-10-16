@@ -32,7 +32,7 @@
     "Add to another cloud" : "Adicionar a outra nuvem ",
     "Enter the server address to add the content to" : "Insira o endereço do servidor para adicionar o conteúdo ",
     "Add" : "Adicionar",
-    "No compatible server installation found at {remote}" : "Não foi encontrada nenhuma instalação OwnCloud (7 ou superior) em {remote}",
+    "No compatible server installation found at {remote}" : "Não foi encontrada nenhuma instalação owncloud.online em {remote}",
     "Invalid server url" : "Url da owncloud.online inválido",
     "Share" : "Partilhar",
     "Create public link" : "Criar ligação pública",

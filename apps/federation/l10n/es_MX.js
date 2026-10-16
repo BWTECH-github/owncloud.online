@@ -6,7 +6,7 @@ OC.L10N.register(
     "No server found" : "No se encontró ningún servidor owncloud.online",
     "Could not add server" : "No se puedo añadir servidor",
     "Federation" : "Federación",
-    "Federation allows you to connect with other trusted servers to exchange the user directory. For example this will be used to auto-complete external users for federated sharing." : "OwnCloud Federation le permite conectarse con otros owncloud.onlines de confianza para intercambiar el directorio de usuarios. Por ejemplo, esto se utilizará para autocompletar usuarios externos para el uso compartido federado.",
+    "Federation allows you to connect with other trusted servers to exchange the user directory. For example this will be used to auto-complete external users for federated sharing." : "owncloud.online Federation le permite conectarse con otros owncloud.onlines de confianza para intercambiar el directorio de usuarios. Por ejemplo, esto se utilizará para autocompletar usuarios externos para el uso compartido federado.",
     "Add server automatically once a federated share was created successfully" : "Agregar servidor automáticamente una vez que se creó correctamente un recurso compartido federado",
     "Trusted Servers" : "Servidores owncloud.online de confianza",
     "+ Add server" : "+ Agregar servidor owncloud.online",

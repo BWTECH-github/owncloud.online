@@ -8,7 +8,7 @@ OC.L10N.register(
     "Federation" : "Associação",
     "Federation allows you to connect with other trusted servers to exchange the user directory. For example this will be used to auto-complete external users for federated sharing." : "A associação owncloud.online permite que você conecte com outros owncloud.online confiáveis para que haja troca de diretórios do usuário. Por exemplo, este será utilizado para usuários externos de complementação para compartilhamento associado.",
     "Add server automatically once a federated share was created successfully" : "Adicionar servidor automaticamente uma vez que um compartilhamento associado foi criado com êxito",
-    "Trusted Servers" : "Servidores OwnCloud Confiáveis",
+    "Trusted Servers" : "Servidores owncloud.online Confiáveis",
     "+ Add server" : "+ Adicionar servidor owncloud.online",
     "Server" : "Servidor owncloud.online",
     "Add" : "Adicionar"

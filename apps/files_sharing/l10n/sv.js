@@ -21,7 +21,7 @@ OC.L10N.register(
     "Cancel" : "Avbryt",
     "You can upload into this folder" : "Du kan ladda upp i denna map",
     "Add" : "Lägg till",
-    "No compatible server installation found at {remote}" : "Ingen OwnCloud Installation (7 eller senare) funnen på {remote}",
+    "No compatible server installation found at {remote}" : "Ingen owncloud.online-installation funnen på {remote}",
     "Invalid server url" : "Felaktig owncloud.online url",
     "Share" : "Dela",
     "Create public link" : "Skapa publik länk",

@@ -183,7 +183,7 @@ OC.L10N.register(
     "Group" : "Taldea",
     "User and Groups" : "Erabiltzaile eta Taldeak",
     "Public Links" : "Esteka Publikoak",
-    "Share with people on other servers using the syntax username@example.com/owncloud" : "Partekatu beste ownClud-en jendearekin sintaxi honekin erabiltzaleizena@adibidea.com/owncloud",
+    "Share with people on other servers using the syntax username@example.com/owncloud" : "Partekatu beste owncloud.online-en jendearekin sintaxi honekin erabiltzaleizena@adibidea.com/owncloud",
     "Rename" : "Berrizendatu",
     "Delete" : "Ezabatu",
     "Collaborative tags" : "Kolaboraziorako etiketak",

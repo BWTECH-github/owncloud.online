@@ -8,7 +8,7 @@ OC.L10N.register(
     "Uploading..." : "Subiendo...",
     "Cancel" : "Cancelar",
     "Add" : "Agregar",
-    "Invalid server url" : "La url de OwnCloud es inválida",
+    "Invalid server url" : "La url de owncloud.online es inválida",
     "Share" : "Compartir",
     "Declined" : "Denegado",
     "Pending" : "Pendientes",

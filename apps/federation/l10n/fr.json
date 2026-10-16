@@ -7,8 +7,8 @@
     "Federation allows you to connect with other trusted servers to exchange the user directory. For example this will be used to auto-complete external users for federated sharing." : "La Fédération owncloud.online permet la connexion à d'autres instances owncloud.online de confiance pour partager les annuaires d'utilisateurs. Cela peut par exemple être utilisé pour compléter automatiquement les noms des utilisateurs externes lors d'un partage vers une autre instance.",
     "Add server automatically once a federated share was created successfully" : "Ajouter un serveur automatiquement une fois que le partage a été créé avec succès",
     "Trusted Servers" : "Serveur owncloud.online de confiance ",
-    "+ Add server" : "Ajouter un serveur Owncloud",
-    "Server" : "Serveur OwnCloud",
+    "+ Add server" : "Ajouter un serveur owncloud.online",
+    "Server" : "Serveur owncloud.online",
     "Add" : "Ajouter"
 },"pluralForm" :"nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 }
