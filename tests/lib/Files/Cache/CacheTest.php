@@ -10,7 +10,11 @@ namespace Test\Files\Cache;
 
 use OC\Files\Cache\Cache;
 use OC\Files\Storage\Temporary;
+use OC\Files\Type\Loader;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\ICache as IMemcache;
+use OCP\ICacheFactory;
+use OCP\IDBConnection;
 use Test\TestCase;
 
 class LongId extends Temporary {
@@ -679,6 +683,39 @@ class CacheTest extends TestCase {
 
 		$this->assertSame(-1, $this->getStoredMimetypeId($fileId));
 		$this->assertSame($emptyMimetypesBefore, $this->countEmptyMimetypes());
+	}
+
+	/**
+	 * Das Verzeichnis-Listing löst je Zeile mimetype und mimepart auf. Für
+	 * Dateien ohne Mimetype darf das weder Memcache noch Datenbank kosten;
+	 * vorher waren es je Zeile zwei Memcache-Zugriffe und zwei SELECTs.
+	 */
+	public function testFolderContentsWithoutMimetypeNeedNoMimetypeLookups() {
+		$this->cache->put('folder', ['size' => 0, 'mtime' => 1, 'mimetype' => 'httpd/unix-directory']);
+		for ($i = 0; $i < 5; $i++) {
+			$this->cache->put("folder/unknown-$i.bin", ['size' => 1, 'mtime' => 1, 'mimetype' => '']);
+		}
+		$lookups = ['memcache' => 0, 'database' => 0];
+		$memcache = $this->createMock(IMemcache::class);
+		$memcache->method('get')
+			->willReturnCallback(function () use (&$lookups) {
+				$lookups['memcache']++;
+				return null;
+			});
+		$cacheFactory = $this->createMock(ICacheFactory::class);
+		$cacheFactory->method('create')->willReturn($memcache);
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getQueryBuilder')
+			->willReturnCallback(function () use (&$lookups) {
+				$lookups['database']++;
+				return \OC::$server->getDatabaseConnection()->getQueryBuilder();
+			});
+		self::invokePrivate($this->cache, 'mimetypeLoader', [new Loader($db, $cacheFactory)]);
+
+		$contents = $this->cache->getFolderContents('folder');
+
+		$this->assertCount(5, $contents);
+		$this->assertSame(['memcache' => 0, 'database' => 0], $lookups);
 	}
 
 	/**

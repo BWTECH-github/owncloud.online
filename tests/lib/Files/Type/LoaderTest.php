@@ -82,6 +82,50 @@ class LoaderTest extends \Test\TestCase {
 		$this->assertNull($this->loader->getMimetypeById(12345));
 	}
 
+	public function providesIdsWithoutMimetype() {
+		return [
+			'-1 (unbekannter Mimetype)' => [-1],
+			'0 (Standardwert von mimepart)' => [0],
+			'-1 als Zeichenkette aus der Datenbank' => ['-1'],
+			'0 als Zeichenkette aus der Datenbank' => ['0'],
+			'null' => [null],
+		];
+	}
+
+	/**
+	 * IDs unter 1 gibt es in oc_mimetypes nicht. Sie stehen im Dateicache für
+	 * „kein Mimetype“ und dürfen weder Memcache noch Datenbank kosten; das
+	 * Verzeichnis-Listing löst je Zeile mimetype und mimepart auf.
+	 *
+	 * @dataProvider providesIdsWithoutMimetype
+	 *
+	 * @param int|string|null $id
+	 */
+	public function testGetMimetypeByIdWithoutMimetypeNeedsNoLookup($id) {
+		$lookups = ['memcache' => 0, 'database' => 0];
+		$memcache = $this->createMock(ICache::class);
+		$memcache->method('get')
+			->willReturnCallback(function () use (&$lookups) {
+				$lookups['memcache']++;
+				return null;
+			});
+		$cacheFactory = $this->createMock(ICacheFactory::class);
+		$cacheFactory->method('create')->willReturn($memcache);
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getQueryBuilder')
+			->willReturnCallback(function () use (&$lookups) {
+				$lookups['database']++;
+				return $this->db->getQueryBuilder();
+			});
+		$loader = new Loader($db, $cacheFactory);
+
+		for ($i = 0; $i < 3; $i++) {
+			$this->assertNull($loader->getMimetypeById($id));
+		}
+
+		$this->assertSame(['memcache' => 0, 'database' => 0], $lookups);
+	}
+
 	public function testStore() {
 		$this->assertFalse($this->loader->exists('testing/mymimetype'));
 		$mimetypeId = $this->loader->getId('testing/mymimetype');
