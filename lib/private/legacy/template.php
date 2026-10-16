@@ -40,6 +40,7 @@
  * Changes:
  *   - load only the active moment locale instead of all ~160
  *   - Ship minified vendor JavaScript
+ *   - Kopfelemente ohne Inhalt (z. B. <data>) mit Endtag ausgeben (2026-10-16)
  */
 
 use OC\Log;
@@ -52,6 +53,11 @@ require_once __DIR__.'/template/functions.php';
  * This class provides the templates for ownCloud.
  */
 class OC_Template extends \OC\Template\Base {
+	/**
+	 * Leere HTML-Elemente (void elements): Sie haben nie ein Endtag.
+	 */
+	private const VOID_ELEMENTS = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr'];
+
 	/**
 	 * @var string
 	 */
@@ -271,6 +277,38 @@ class OC_Template extends \OC\Template\Base {
 	}
 
 	/**
+	 * Setzt die mit addHeader() gesammelten Kopfelemente zu HTML zusammen.
+	 *
+	 * Ohne Inhalt ($text === null) bekommen nur die leeren HTML-Elemente
+	 * (meta, link …) die Kurzform "/>". Alle anderen brauchen ihr Endtag: HTML
+	 * kennt kein selbstschließendes <data/>, der Parser übergeht den Schrägstrich,
+	 * und das offene Element umschließt dann den gesamten Rest der Seite. So
+	 * geschehen mit <data key="oauth2"> der oauth2-App – die Anmeldekarte hing
+	 * dadurch nicht mehr am Flex-Layout von body und rutschte nach links oben.
+	 *
+	 * @param array $headers Einträge mit 'tag', 'attributes' und 'text'
+	 * @return string
+	 */
+	public static function renderHeaders(array $headers): string {
+		$html = '';
+		foreach ($headers as $header) {
+			$tag = \OCP\Util::sanitizeHTML($header['tag']);
+			$html .= '<'.$tag;
+			foreach ($header['attributes'] as $name=>$value) {
+				$html .= ' '.\OCP\Util::sanitizeHTML($name).'="'.\OCP\Util::sanitizeHTML($value).'"';
+			}
+			if ($header['text'] !== null) {
+				$html .= '>'.\OCP\Util::sanitizeHTML($header['text']).'</'.$tag.'>';
+			} elseif (\in_array(\strtolower((string)$header['tag']), self::VOID_ELEMENTS, true)) {
+				$html .= '/>';
+			} else {
+				$html .= '></'.$tag.'>';
+			}
+		}
+		return $html;
+	}
+
+	/**
 	 * Process the template
 	 *
 	 * @param array|null $additionalParams
@@ -286,20 +324,7 @@ class OC_Template extends \OC\Template\Base {
 			$page = new TemplateLayout($this->renderAs, $this->app);
 
 			// Add custom headers
-			$headers = '';
-			foreach (OC_Util::$headers as $header) {
-				$headers .= '<'.\OCP\Util::sanitizeHTML($header['tag']);
-				foreach ($header['attributes'] as $name=>$value) {
-					$headers .= ' '.\OCP\Util::sanitizeHTML($name).'="'.\OCP\Util::sanitizeHTML($value).'"';
-				}
-				if ($header['text'] !== null) {
-					$headers .= '>'.\OCP\Util::sanitizeHTML($header['text']).'</'.\OCP\Util::sanitizeHTML($header['tag']).'>';
-				} else {
-					$headers .= '/>';
-				}
-			}
-
-			$page->assign('headers', $headers);
+			$page->assign('headers', self::renderHeaders(OC_Util::$headers));
 
 			$page->assign('content', $data);
 			return $page->fetchPage();

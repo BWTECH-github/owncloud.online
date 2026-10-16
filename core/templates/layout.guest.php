@@ -32,7 +32,10 @@
 			/* owncloud.online: Login-Kachel zentriert ueberm Hintergrundbild, ohne Scroll */
 			html{height:auto;overflow:auto;}
 			#body-login{display:flex;flex-direction:column;min-height:100vh;overflow:visible;background-color:#e9edf2;background-image:url('<?php print_unescaped(image_path('', 'background.jpg')); ?>');background-repeat:no-repeat;background-position:center center;background-size:cover;}
-			#body-login .wrapper{flex:1 1 auto;min-height:0 !important;height:auto !important;margin:0 !important;display:flex !important;align-items:center;justify-content:center;width:100%;box-sizing:border-box;padding:24px;background:transparent !important;}
+			/* Die Karte zentriert der Wrapper selbst (justify-content) über die volle Breite.
+			   styles.css begrenzt ihn ab 600 px auf 764 px und zentriert ihn per align-self – das
+			   hängt am Flex-Layout von body und ragte bei 600 bis 764 px Fensterbreite seitlich hinaus. */
+			#body-login .wrapper{flex:1 1 auto;min-height:0 !important;height:auto !important;margin:0 !important;display:flex !important;align-items:center;justify-content:center;width:100%;min-width:0;max-width:none;box-sizing:border-box;padding:24px;background:transparent !important;}
 			#body-login .v-align{display:block !important;width:100%;max-width:320px;margin:0 auto;padding:32px 30px 26px;background:#fff !important;border-radius:16px;box-shadow:0 18px 50px rgba(4,30,66,.22);box-sizing:border-box;text-align:left;}
 			#body-login .v-align #header{margin:0 0 18px;text-align:center;}
 			#body-login .v-align #header .logo{margin:0 auto;float:none;}
@@ -43,6 +46,12 @@
 			#body-login .v-align form,#body-login .v-align .grouptop,#body-login .v-align .groupbottom,#body-login .v-align .submit-wrap,#body-login .v-align input,#body-login .v-align button,#body-login .v-align .login-button{width:100% !important;max-width:100% !important;box-sizing:border-box !important;}
 			#body-login .v-align input[type="text"],#body-login .v-align input[type="password"],#body-login .v-align input[type="email"]{display:block;box-sizing:border-box;height:44px;width:100%;margin:0 0 12px;padding:9px 12px;border:1px solid #767f8c !important;border-radius:8px !important;background:#fff !important;color:#26384d;font-size:14px;box-shadow:none !important;text-align:left;}
 			#body-login .v-align input:focus{border-color:#262B45 !important;}
+			/* Fokus im Eingabefeld: genau EIN Rahmen. Dunkler Rand plus 1 px Schatten direkt daran
+			   ergibt einen 2 px starken Ring ohne Lücke. Die globale :focus-visible-Kontur aus
+			   styles.css (2 px mit 2 px Abstand) käme sonst als zweiter Rahmen dazu; sie bleibt
+			   transparent stehen, damit der Kontrastmodus von Windows (dort fallen Schatten weg)
+			   den Fokus weiter zeigt. #262B45 auf Weiß 13,9:1, gegen den Ruhe-Rand #767f8c 3,4:1. */
+			#body-login .v-align input[type="text"]:focus,#body-login .v-align input[type="password"]:focus,#body-login .v-align input[type="email"]:focus{box-shadow:0 0 0 1px #262B45 !important;outline:2px solid transparent !important;outline-offset:0 !important;}
 			#body-login *:focus:not(:focus-visible){outline:none !important;box-shadow:none !important;}
 			#body-login .v-align .login-button,#body-login .v-align input[type="submit"],#body-login .v-align button[type="submit"]{display:block;height:46px;width:100%;margin:6px 0 0;background:#00e4bd !important;color:#26384d !important;border:none !important;border-radius:8px !important;font-weight:600;font-size:15px;cursor:pointer;box-shadow:none !important;}
 			#body-login .v-align .login-button:hover,#body-login .v-align button[type="submit"]:hover{background:#00c9a7 !important;}
@@ -50,13 +59,20 @@
 			   !important-Fuellung oben wuerde das styles.css-Disabled-Muster ueberstimmen, deshalb
 			   hier mit gleicher Wichtigkeit NACH Grund- und Hover-Regel. #4a5568 auf #e6eaef = 6.1:1. */
 			#body-login .v-align .login-button:disabled,#body-login .v-align button[type="submit"]:disabled,#body-login .v-align input[type="submit"]:disabled,#body-login .v-align .login-button:disabled:hover,#body-login .v-align button[type="submit"]:disabled:hover,#body-login .v-align input[type="submit"]:disabled:hover{background:#e6eaef !important;color:#4a5568 !important;cursor:not-allowed;}
+			/* Der Infopunkt im Hinweis der oauth2-App (und bei „Hilfe nötig?“ in der Einrichtung) ist ein
+			   weißes Bild – auf den weißen Hinweiskästen der Karte unsichtbar, vor dem Text blieb nur eine
+			   Lücke. Als Maske nimmt er die Textfarbe des Hinweises an und passt damit auch zu Kästen,
+			   die das Theming einfärbt (dort bleibt er hell wie bisher). */
+			#body-login .v-align .icon-info-white{display:inline-block;width:16px;height:16px;padding:0;margin:0 6px 0 0;vertical-align:-3px;background-image:none;background-color:currentColor;-webkit-mask:url('<?php print_unescaped(image_path('core', 'actions/info-white.svg')); ?>') center/16px 16px no-repeat;mask:url('<?php print_unescaped(image_path('core', 'actions/info-white.svg')); ?>') center/16px 16px no-repeat;}
 			#body-login footer{flex:0 0 auto;text-align:center;padding:10px 0 14px;margin:0;}
-			/* Update-/Wartungs-Screens nutzen dieselbe Gastkarte: breiter, EINE Karte, zentrierter Text */
-			#body-login .v-align:has(.update),#body-login .v-align:has(.update-progress),#body-login .v-align:has(.error-wide){max-width:460px;text-align:center;}
+			/* Update-/Wartungs-Screens nutzen dieselbe Gastkarte: breiter, EINE Karte, zentrierter Text.
+			   Nur div.update direkt in der Karte zählt – die Erfolgsmeldung von „Passwort vergessen“
+			   (p.update im Anmeldeformular) ließ die Anmeldekarte sonst auf 460 px springen. */
+			#body-login .v-align:has(> .update),#body-login .v-align:has(.update-progress),#body-login .v-align:has(.error-wide){max-width:460px;text-align:center;}
 			#body-login .v-align .error-wide{list-style:none;margin:0 !important;padding:0 !important;background:transparent !important;text-align:center;}
 			#body-login .v-align .error-wide li.error,#body-login .v-align .error-wide li{background:transparent !important;border:none !important;color:#26384d;margin:0 0 12px;padding:0;font-size:15px;line-height:1.5;}
 			#body-login .v-align .error-wide .hint{font-size:13px;color:#5b6675;margin:6px 0 0;}
-			#body-login .v-align .update,#body-login .v-align .updateProgress{background:transparent !important;box-shadow:none !important;border:none !important;border-radius:0 !important;padding:0 !important;margin:0 !important;width:100% !important;color:#26384d;text-align:center;}
+			#body-login .v-align > .update,#body-login .v-align li.update,#body-login .v-align .updateProgress{background:transparent !important;box-shadow:none !important;border:none !important;border-radius:0 !important;padding:0 !important;margin:0 !important;width:100% !important;color:#26384d;text-align:center;}
 			#body-login .v-align .update .updateOverview{text-align:center;}
 			#body-login .v-align .update h2.title,#body-login .v-align .update .title{font-size:20px;line-height:1.3;font-weight:600;margin:0 0 14px;color:#26384d;}
 			#body-login .v-align .update .infogroup{margin:0 0 16px;font-size:14px;line-height:1.55;color:#5b6675;text-align:center;}
