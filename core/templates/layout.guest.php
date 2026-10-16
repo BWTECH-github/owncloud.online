@@ -55,6 +55,12 @@
 			#body-login *:focus:not(:focus-visible){outline:none !important;box-shadow:none !important;}
 			#body-login .v-align .login-button,#body-login .v-align input[type="submit"],#body-login .v-align button[type="submit"]{display:block;height:46px;width:100%;margin:6px 0 0;background:#00e4bd !important;color:#26384d !important;border:none !important;border-radius:8px !important;font-weight:600;font-size:15px;cursor:pointer;box-shadow:none !important;}
 			#body-login .v-align .login-button:hover,#body-login .v-align button[type="submit"]:hover{background:#00c9a7 !important;}
+			/* „Erneut anfordern“ (js/lostpassword.js) nach einer fehlgeschlagenen Anforderung von
+			   „Passwort vergessen“: Zweitknopf im Stil der Eingabefelder, damit er neben „Anmelden“
+			   nicht als zweite Hauptaktion wirkt. Rand #767f8c gegen Weiß 4,05:1 (SC 1.4.11), Text
+			   #26384d 12:1; 40 px hoch statt der knapp 30 px des Standardknopfs. */
+			#body-login .v-align #lost-password-retry{display:block;height:40px;margin:0 0 4px;padding:0 12px;background:#fff !important;color:#26384d !important;border:1px solid #767f8c !important;border-radius:8px !important;font-weight:600;font-size:14px;cursor:pointer;box-shadow:none !important;}
+			#body-login .v-align #lost-password-retry:hover{background:#f5f7fa !important;}
 			/* Waehrend der Bruteforce-Wartezeit (js/login.js) ist der Knopf deaktiviert. Die
 			   !important-Fuellung oben wuerde das styles.css-Disabled-Muster ueberstimmen, deshalb
 			   hier mit gleicher Wichtigkeit NACH Grund- und Hover-Regel. #4a5568 auf #e6eaef = 6.1:1. */

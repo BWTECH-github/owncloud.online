@@ -12,21 +12,22 @@ OC.Lostpassword = {
 	resetErrorMsg : t('core', 'Password can not be changed. Please contact your administrator.'),
 
 	init : function() {
-		// '#login-throttle-reset' ist der Zuruecksetzen-Link im Sperrhinweis. Er
-		// haengt am selben Handler, weil der beide Faelle schon abdeckt: ist
+		// '#login-throttle-reset' ist der Zurücksetzen-Link im Sperrhinweis. Er
+		// hängt am selben Handler, weil der beide Fälle schon abdeckt: ist
 		// lost_password_link gesetzt, wird dorthin navigiert, sonst geht die
 		// Anforderung per POST an /lostpassword/email.
 		//
-		// sendLinkError ruft init() erneut auf, damit die Fehlermeldung (das neue
-		// '#lost-password') wieder anklickbar ist. Ohne das off() hing danach jeder
-		// Handler doppelt: am Link im Sperrhinweis schickte der nächste Klick die
-		// Anforderung zweimal, nach jedem weiteren Fehler einmal mehr.
+		// off() vor on(): init() darf mehrfach laufen, ohne Handler zu stapeln -
+		// sonst schickte ein Klick die Anforderung einmal pro Aufruf.
 		$('#lost-password, #login-throttle-reset')
 			.off('click', OC.Lostpassword.resetLink)
 			.on('click', OC.Lostpassword.resetLink);
 		$('#reset-password #submit')
 			.off('click', OC.Lostpassword.resetPassword)
 			.on('click', OC.Lostpassword.resetPassword);
+		$('#password')
+			.off('keypress', OC.Lostpassword.onPasswordKeypress)
+			.on('keypress', OC.Lostpassword.onPasswordKeypress);
 	},
 
 	resetLink : function(event){
@@ -89,7 +90,30 @@ OC.Lostpassword = {
 		var node = OC.Lostpassword.getSendStatusNode();
 		node.addClass('warning');
 		OC.Lostpassword.showSendStatus(node, 'alert', msg);
-		OC.Lostpassword.init();
+		// Neu laden hilft nicht weiter: '#lost-password' rendert der Server nur
+		// direkt nach dem Fehlversuch (showLoginForm entfernt loginMessages).
+		// Ohne Sperrhinweis gibt es also keinen zweiten Weg - der neue Versuch
+		// muss hier angeboten werden.
+		node.after(OC.Lostpassword.getRetryButton());
+	},
+
+	/**
+	 * Knopf „Erneut anfordern“ nach einer fehlgeschlagenen Anforderung.
+	 *
+	 * Bisher war die Fehlermeldung selbst der einzige Auslöser für einen neuen
+	 * Versuch - nur per Klick, Eingabe- und Leertaste taten nichts (SC 2.1.1).
+	 * Ein echter Knopf ist per Tab erreichbar, löst auf beide Tasten aus und wird
+	 * als Schaltfläche gemeldet; die Meldung bleibt reine Meldung (role="alert").
+	 * type="button", weil er im Anmeldeformular vor „Anmelden“ steht und sonst
+	 * dessen Standardknopf wäre: Die Eingabetaste im Passwortfeld schickte dann
+	 * die Anforderung, statt anzumelden.
+	 *
+	 * @return {jQuery}
+	 */
+	getRetryButton : function(){
+		return $('<button type="button" id="lost-password-retry"></button>')
+			.text(t('core', 'Request again'))
+			.on('click', OC.Lostpassword.resetLink);
 	},
 
 	/**
@@ -118,11 +142,20 @@ OC.Lostpassword = {
 	getSendStatusNode : function(){
 		// tabindex="-1": per Skript fokussierbar, aber kein zusätzlicher Tab-Halt.
 		var node = $('<p id="lost-password" tabindex="-1"></p>');
+		// Der Knopf „Erneut anfordern“ gehört zur vorigen Meldung. Hatte er den
+		// Fokus, fällt der jetzt auf body - showSendStatus holt ihn zur Meldung.
+		$('#lost-password-retry').remove();
 		if ($('#lost-password').length){
+			// Der Link „Falsches Passwort. Zurücksetzen?“ oder eine frühere Meldung.
+			// Auch im Sperrzustand: Der Fehlversuch, der die Sperre auslöst, wird
+			// noch geprüft und als falsches Passwort gemeldet, die Seite danach
+			// zeigt beide Links. Dann ersetzt auch die Meldung des Links im
+			// Sperrhinweis diesen Link.
 			$('#lost-password').replaceWith(node);
 		} else {
-			// Hierher kommt nur der Link im Sperrhinweis: '#lost-password' gibt es
-			// im Sperrzustand nicht. Die Meldung steht dann dort, wo sonst
+			// Kein '#lost-password': Die Anforderung kam vom Link im Sperrhinweis,
+			// und die Seite meldet keinen frischen Fehlversuch (etwa nach dem Neuladen
+			// während der Sperre). Die Meldung steht dann dort, wo sonst
 			// '#lost-password' steht - im Knopfbereich vor „Anmelden“. Bisher hing
 			// sie an '#remember_login'; ist „Angemeldet bleiben“ abgeschaltet, fehlt
 			// das Feld, und die Meldung erschien nie.
@@ -136,6 +169,9 @@ OC.Lostpassword = {
 
 		event.preventDefault();
 		if ($('#password').val() === $('#retypepassword').val()){
+			// Eine Abweichung vom vorigen Versuch ist erledigt, auch wenn beide
+			// Felder ohne Tastendruck (Einfügen, Passwortmanager) gefüllt wurden.
+			OC.Lostpassword.clearMismatch();
 			$('#reset-password #submit').addClass('icon-loading-small');
 			$.post(
 					$('#password').parents('form').attr('action'),
@@ -146,10 +182,17 @@ OC.Lostpassword = {
 					OC.Lostpassword.resetDone
 			);
 		} else {
-			//Password mismatch happened
+			// Die Passwörter weichen ab. Beide Felder werden geleert, die Eingabe
+			// beginnt von vorn - deshalb springt der Fokus ins erste Feld. Den Grund
+			// erfahren Hilfsmittel jetzt dort: Beide Felder sind als ungültig
+			// markiert und per aria-describedby (Vorlage) mit der Meldung verbunden
+			// (SC 3.3.1). Die Meldung selbst ist eine Live-Region (role="alert") und
+			// wird auch vorgelesen, wenn der Fokus schon im ersten Feld stand und
+			// sich darum nichts Neues ankündigt (SC 4.1.3).
 			$('#password').val('');
 			$('#retypepassword').val('');
 			$('#password').parent().addClass('shake');
+			$('#password, #retypepassword').attr('aria-invalid', 'true');
 			$('#message').addClass('warning');
 			$('#message').text(t('core', 'Passwords do not match'));
 			$('#message').show();
@@ -210,22 +253,27 @@ OC.Lostpassword = {
 			$('#lost-password').replaceWith($('<p id="lost-password"></p>'));
 		}
 		return $('#lost-password');
+	},
+
+	/**
+	 * Nimmt „Passwörter stimmen nicht überein“ samt aria-invalid zurück.
+	 */
+	clearMismatch : function(){
+		$('#message').removeClass('warning').text('');
+		$('#password, #retypepassword').removeAttr('aria-invalid');
+	},
+
+	onPasswordKeypress : function(){
+		// The warning message should be shown only during password mismatch.
+		// Else it should not. Auf der Anmeldeseite gibt es kein
+		// '#retypepassword', dort bleibt alles, wie es ist.
+		if ($('#retypepassword').length && $('#retypepassword').val().length === 0) {
+			OC.Lostpassword.clearMismatch();
+		}
 	}
 
 };
 
 $(document).ready(function () {
 	OC.Lostpassword.init();
-	$('#password').keypress(function () {
-		/*
-		 The warning message should be shown only during password mismatch.
-		 Else it should not.
-		 */
-		if (($('#password').val().length >= 0)
-			&& ($('#retypepassword').length)
-			&& ($('#retypepassword').val().length === 0)) {
-			$('#message').removeClass('warning');
-			$('#message').text('');
-		}
-	});
 });

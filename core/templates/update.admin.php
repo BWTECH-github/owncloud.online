@@ -44,11 +44,17 @@
 	</div>
 
 	<div class="update-progress hidden">
-		<h2 id="update-progress-title"></h2>
+		<?php /* „Aktualisierung starten“ blendet sich beim Aktivieren selbst aus. Damit
+			der Fokus nicht auf body fällt (SC 2.4.3), setzt js/update.js ihn auf die
+			Überschrift - tabindex="-1" macht sie dafür fokussierbar, ohne einen
+			Tab-Halt hinzuzufügen. Schritte und Ergebnis stehen in
+			#update-progress-message, einer Live-Region; Fehler meldet
+			#update-progress-message-error als alert (SC 4.1.3). */ ?>
+		<h2 id="update-progress-title" tabindex="-1"></h2>
 		<div id="update-progress-icon" class="icon-loading-dark"></div>
-		<p id="update-progress-message-error" class="warning hidden"></p>
+		<p id="update-progress-message-error" class="warning hidden" role="alert"></p>
 		<ul id="update-progress-message-warnings" class="warning hidden"></ul>
-		<p id="update-progress-message"></p>
+		<p id="update-progress-message" role="status"></p>
 		<?php /* Ohne href war der Anker per Tastatur nicht erreichbar (SC 2.1.1). Er
 			bleibt ein Anker mit role="button", weil update.css ihn als
 			a.update-show-detailed gestaltet; Leertaste und aria-expanded kommen aus

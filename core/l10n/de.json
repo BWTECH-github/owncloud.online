@@ -17,6 +17,7 @@
     "%s password changed successfully" : "%s Passwort erfolgreich geändert",
     "%s password reset" : "%s-Passwort zurücksetzen",
     "Couldn't send reset email. Please contact your administrator." : "Die E-Mail zum Zurücksetzen konnte nicht versendet werden. Bitte kontaktiere deinen Administrator.",
+    "Request again" : "Erneut anfordern",
     "Download / View" : "Herunterladen / Ansehen",
     "Recipients can view or download contents." : "Empfänger können Inhalte sehen und herunterladen.",
     "Download / View / Upload" : "Herunterladen / Ansehen / Hochladen",

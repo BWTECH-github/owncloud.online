@@ -83,30 +83,38 @@
 			updateEventSource.listen('done', function() {
 				$(window).off('beforeunload.inprogress');
 
-				$('#update-progress-message').hide();
-
 				$('#update-progress-icon')
 					.addClass('icon-checkmark-white')
 					.removeClass('icon-loading-dark');
 
+				// Das Ergebnis ersetzt den letzten Schritt in #update-progress-message.
+				// Bisher wurde die Meldung ausgeblendet und das Ergebnis als neuer Span
+				// angehängt - der war keine Live-Region, Screenreader erfuhren vom
+				// Ende der Aktualisierung nichts (SC 4.1.3).
 				if (hasWarnings) {
-					$el.find('.update-show-detailed').before(
-						$('<span>')
-							.append('<br />')
-							.append(t('core', 'The update was successful. There were warnings.'))
+					self.setResult(
+						t('core', 'The update was successful. There were warnings.') +
+						'<br>' + t('core', 'Please reload the page.')
 					);
-					var message = t('core', 'Please reload the page.');
-					$('<span>').append(message).append('<br />').appendTo($el);
 				} else {
 					// FIXME: use product name
-					$('<span>')
-						.append(t('core', 'The update was successful. Redirecting you to owncloud.online now.'))
-						.appendTo($el);
+					self.setResult(t('core', 'The update was successful. Redirecting you to owncloud.online now.'));
 					setTimeout(function () {
 						OC.redirect(OC.webroot + '/');
 					}, 3000);
 				}
 			});
+		},
+
+		/**
+		 * Ergebnis der Aktualisierung anzeigen. #update-progress-message ist eine
+		 * Live-Region (role="status" in der Vorlage), das Ergebnis wird also
+		 * vorgelesen wie zuvor jeder Schritt.
+		 *
+		 * @param {string} html Ergebnis, darf <br> enthalten
+		 */
+		setResult: function(html) {
+			$('#update-progress-message').html(html);
 		},
 
 		setMessage: function(message) {
@@ -152,7 +160,13 @@
 })();
 
 $(document).ready(function() {
-	$('.updateButton').on('click', function() {
+	function isSpace(event) {
+		return event.key === ' ' || event.key === 'Spacebar';
+	}
+
+	// Delegiert wie „Detaillierte Protokolle“ unten: Die Specs fügen die Vorlage
+	// erst nach dem Laden ein.
+	$(document).on('click', '.updateButton', function() {
 		var $updateEl = $('.update');
 		var $progressEl = $('.update-progress');
 		$progressEl.removeClass('hidden');
@@ -163,6 +177,10 @@ $(document).ready(function() {
 			productName: $updateEl.attr('data-productname'),
 			version: $updateEl.attr('data-version')
 		});
+		// Der Knopf hat sich eben selbst ausgeblendet, der Fokus fiele auf body
+		// (SC 2.4.3). Die Überschrift der Fortschrittsanzeige übernimmt ihn
+		// (tabindex="-1" in der Vorlage), Screenreader lesen sie sofort vor.
+		$('#update-progress-title').trigger('focus');
 		return false;
 	});
 	// „Detaillierte Protokolle“ ist ein Anker mit role="button": href="#" macht
@@ -175,11 +193,23 @@ $(document).ready(function() {
 		$(this).attr('aria-expanded', $details.hasClass('hidden') ? 'false' : 'true');
 		return false;
 	});
+	// Leertaste wie beim nativen Knopf: keydown nur abfangen (sonst scrollt die
+	// Seite), ausgelöst wird beim Loslassen - einmal, auch wenn die Taste
+	// gedrückt bleibt und keydown sich wiederholt. Es zählt nur, wenn die Taste
+	// auf dem Anker gedrückt wurde und der Fokus bis zum Loslassen dort blieb.
 	$(document).on('keydown', '.update-show-detailed', function(event) {
-		if (event.key === ' ' || event.key === 'Spacebar') {
-			// sonst scrollt die Seite
+		if (isSpace(event)) {
 			event.preventDefault();
-			$(this).trigger('click');
+			$(this).data('spacePressed', true);
 		}
+	});
+	$(document).on('keyup', '.update-show-detailed', function(event) {
+		if (isSpace(event) && $(this).data('spacePressed')) {
+			event.preventDefault();
+			$(this).removeData('spacePressed').trigger('click');
+		}
+	});
+	$(document).on('focusout', '.update-show-detailed', function() {
+		$(this).removeData('spacePressed');
 	});
 });
