@@ -1,6 +1,8 @@
 OC.L10N.register(
     "core",
     {
+    "Request again" : "Solicitar de nuevo",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "La actualización ha fracasado. Por favor, revise el registro del servidor o contacte a su administrador.",
     "Login paused for a moment" : "Inicio de sesión pausado por un momento",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Hubo varios intentos fallidos desde su conexión, por lo que estamos ralentizando brevemente el inicio de sesión para proteger su cuenta.",
     "You can try again in %s." : "Puede volver a intentarlo en %s.",

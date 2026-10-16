@@ -1,6 +1,7 @@
 OC.L10N.register(
     "core",
     {
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "Ažuriranje nije uspjelo. Molimo provjerite zapisnik poslužitelja ili kontaktirajte svog administratora.",
     "Login paused for a moment" : "Prijava je nakratko pauzirana",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "S vaše veze bilo je više neuspjelih pokušaja pa nakratko usporavamo prijavu kako bismo zaštitili vaš račun.",
     "You can try again in %s." : "Do sljedećeg pokušaja preostalo je: %s.",
@@ -15,6 +16,7 @@ OC.L10N.register(
     "No crop data provided" : "Nema podataka o obrezivanju",
     "%s password reset" : "%s lozinka resetirana",
     "Couldn't send reset email. Please contact your administrator." : "Nije mogće poslati resetiranu poštu. MOlimo kontaktirajte svog administratora.",
+    "Request again" : "Zatraži ponovno",
     "Turned on maintenance mode" : "Način rada za održavanje uključen",
     "Turned off maintenance mode" : "Način rada za održavanje isključen",
     "Updated database" : " Baza podataka ažurirana",

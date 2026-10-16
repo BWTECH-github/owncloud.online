@@ -1,4 +1,5 @@
 { "translations": {
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "Ažuriranje nije uspjelo. Molim provjerite zapisnik servera ili kontaktirajte svog administratora.",
     "Login paused for a moment" : "Prijava je nakratko pauzirana",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "S vaše veze bilo je više neuspjelih pokušaja, pa nakratko usporavamo prijavu kako bismo zaštitili vaš račun.",
     "You can try again in %s." : "Do sljedećeg pokušaja preostalo je: %s.",
@@ -12,6 +13,7 @@
     "No temporary profile picture available, try again" : "Trenutna slika profila nije dostupna, pokušajte ponovo",
     "%s password reset" : "%s lozinka resetovana",
     "Couldn't send reset email. Please contact your administrator." : "Slanje emaila resetovanja nije moguće. Molim kontaktirajte administratora.",
+    "Request again" : "Zatraži ponovo",
     "Turned on maintenance mode" : "Upaljen modus održavanja",
     "Turned off maintenance mode" : "Ugašen modus održavanja",
     "Updated database" : "Aktualizirana baza podataka",

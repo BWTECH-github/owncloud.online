@@ -132,6 +132,10 @@ describe('OC.Update start', function() {
 		OC.redirect.restore();
 		OC.EventSource.restore();
 		OC.Update._started = false;
+		// start() bindet die Rückfrage beim Verlassen der Seite; nur Abschluss
+		// und Abbruch nehmen sie wieder weg. Sonst bliebe sie für alle
+		// folgenden Specs hängen.
+		$(window).off('beforeunload.inprogress');
 	});
 
 	function message() {
@@ -174,5 +178,44 @@ describe('OC.Update start', function() {
 		expect(message().text()).toContain('The update was successful. There were warnings.');
 		expect(message().text()).toContain('Please reload the page.');
 		expect(OC.redirect.called).toEqual(false);
+	});
+
+	/**
+	 * Bisher verwies der Abbruch auf ein Forum bzw. die Fehlerliste eines
+	 * fremden Projekts. Jetzt ein neutraler Hinweis ohne Link; den Grund nennt
+	 * weiter die Fehlermeldung.
+	 */
+	var failureHint = 'The update was unsuccessful. Please check the server log or contact your administrator.';
+
+	/**
+	 * Ob die Rückfrage beim Verlassen der Seite gebunden ist. Ein beforeunload
+	 * auslösen geht hier nicht: jQuery riefe dabei auch window.onbeforeunload von
+	 * Karma auf, und das meldet einen Neuladevorgang der Testseite.
+	 */
+	function guardsLeaving() {
+		var events = $._data(window, 'events') || {};
+		return (events.beforeunload || []).some(function(handler) {
+			return handler.namespace === 'inprogress';
+		});
+	}
+
+	it('reports a refused major update without links to outside projects', function() {
+		var reason = 'Exception: Updates between multiple major versions and downgrades are unsupported.';
+		$('.updateButton').click();
+		source.listeners.failure(reason);
+
+		expect($('.update-progress span.bold').text()).toEqual(failureHint);
+		expect($('.update-progress a[href^="http"]').length).toEqual(0);
+		expect($('#update-progress-message-error').text()).toEqual(reason);
+	});
+
+	it('shows the same neutral hint for any other failure and stops guarding the page', function() {
+		$('.updateButton').click();
+		expect(guardsLeaving()).toEqual(true);
+		source.listeners.failure('Exception: Database locked');
+
+		expect($('.update-progress span.bold').text()).toEqual(failureHint);
+		expect($('.update-progress a[href^="http"]').length).toEqual(0);
+		expect(guardsLeaving()).toEqual(false);
 	});
 });

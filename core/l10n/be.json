@@ -1,4 +1,6 @@
 { "translations": {
+    "Request again" : "Запытаць зноў",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "Абнаўленне не ўдалося. Калі ласка, праверце журнал сервера або звярніцеся да адміністратара.",
     "Login paused for a moment" : "Уваход ненадоўга прыпынены",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "З вашага злучэння было некалькі няўдалых спроб, таму ўваход ненадоўга запаволены, каб абараніць ваш уліковы запіс.",
     "You can try again in %s." : "Да наступнай спробы засталося: %s.",

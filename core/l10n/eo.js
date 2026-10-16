@@ -1,6 +1,7 @@
 OC.L10N.register(
     "core",
     {
+    "Request again" : "Peti denove",
     "Login paused for a moment" : "Ensaluto paŭzita por momento",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Estis pluraj malsukcesaj provoj el via konekto, do ni mallonge malrapidigas la ensaluton por protekti vian konton.",
     "You can try again in %s." : "Vi povos reprovi post %s.",
@@ -141,7 +142,7 @@ OC.L10N.register(
     "_download %n file_::_download %n files_" : ["elŝuti %n dosieron","elŝuti %n dosierojn"],
     "An error occurred." : "Eraro okazis.",
     "Please reload the page." : "Bonvolu reŝargi la paĝon.",
-    "The update was unsuccessful. Please report this issue to the <a href=\"https://github.com/BWTECH-github/owncloud.online/issues\" target=\"_blank\">owncloud.online issue tracker</a>." : "La ĝisdatigo estis malsukcese. Bonvolu raporti tiun problemon al la <a href=\"https://github.com/BWTECH-github/owncloud.online/issues\" target=\"_blank\">owncloud.onlinea komunumo</a>.",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "La ĝisdatigo malsukcesis. Bonvolu kontroli la protokolon de la servilo aŭ kontakti vian administranton.",
     "The update was successful. There were warnings." : "La ĝisdatigo sukcesis. Estis avertoj.",
     "The update was successful. Redirecting you to owncloud.online now." : "La ĝisdatigo estis sukcesa. Alidirektante nun al owncloud.online.",
     "Searching other places" : "Serĉante en aliaj lokoj",

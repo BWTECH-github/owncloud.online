@@ -264,9 +264,9 @@ OC.Lostpassword = {
 	},
 
 	onPasswordKeypress : function(){
-		// The warning message should be shown only during password mismatch.
-		// Else it should not. Auf der Anmeldeseite gibt es kein
-		// '#retypepassword', dort bleibt alles, wie es ist.
+		// Die Warnung gilt nur, solange die Passwörter voneinander abweichen:
+		// Wer nach dem Leeren der Felder neu tippt, beginnt von vorn. Auf der
+		// Anmeldeseite gibt es kein '#retypepassword', dort bleibt alles, wie es ist.
 		if ($('#retypepassword').length && $('#retypepassword').val().length === 0) {
 			OC.Lostpassword.clearMismatch();
 		}

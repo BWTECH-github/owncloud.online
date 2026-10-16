@@ -1,6 +1,8 @@
 OC.L10N.register(
     "core",
     {
+    "Request again" : "Minta lagi",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "Pembaruan gagal. Mohon periksa log server atau hubungi administrator Anda.",
     "Login paused for a moment" : "Masuk dijeda sejenak",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Ada beberapa percobaan gagal dari koneksi Anda, jadi kami memperlambat proses masuk sebentar untuk melindungi akun Anda.",
     "You can try again in %s." : "Anda dapat mencoba lagi dalam %s.",

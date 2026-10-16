@@ -1,4 +1,6 @@
 { "translations": {
+    "Request again" : "ထပ်မံတောင်းဆိုရန်",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "အပ်ဒိတ်လုပ်ခြင်း မအောင်မြင်ပါ။ ဆာဗာမှတ်တမ်းကို စစ်ဆေးပါ သို့မဟုတ် သင့်စီမံခန့်ခွဲသူထံ ဆက်သွယ်ပါ။",
     "Login paused for a moment" : "လော့ဂ်အင်ကို ခဏရပ်ထားသည်",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "သင့်ချိတ်ဆက်မှုမှ မအောင်မြင်သော ကြိုးပမ်းမှုများစွာရှိခဲ့သောကြောင့် သင့်အကောင့်ကို ကာကွယ်ရန် လော့ဂ်အင်ကို ခဏနှေးစေထားပါသည်။",
     "You can try again in %s." : "%s အကြာတွင် ထပ်စမ်းနိုင်ပါသည်။",

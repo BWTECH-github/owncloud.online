@@ -1,6 +1,8 @@
 OC.L10N.register(
     "core",
     {
+    "Request again" : "ਮੁੜ ਬੇਨਤੀ ਕਰੋ",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "ਅੱਪਡੇਟ ਅਸਫਲ ਰਿਹਾ। ਕਿਰਪਾ ਕਰਕੇ ਸਰਵਰ ਲੌਗ ਦੀ ਜਾਂਚ ਕਰੋ ਜਾਂ ਆਪਣੇ ਪ੍ਰਬੰਧਕ ਨਾਲ ਸੰਪਰਕ ਕਰੋ।",
     "Login paused for a moment" : "ਲਾਗਇਨ ਕੁਝ ਪਲਾਂ ਲਈ ਰੋਕਿਆ ਗਿਆ ਹੈ",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "ਤੁਹਾਡੇ ਕਨੈਕਸ਼ਨ ਤੋਂ ਕਈ ਅਸਫਲ ਕੋਸ਼ਿਸ਼ਾਂ ਹੋਈਆਂ ਹਨ, ਇਸ ਲਈ ਤੁਹਾਡੇ ਖਾਤੇ ਦੀ ਸੁਰੱਖਿਆ ਲਈ ਅਸੀਂ ਲਾਗਇਨ ਨੂੰ ਥੋੜ੍ਹੇ ਸਮੇਂ ਲਈ ਹੌਲੀ ਕਰ ਰਹੇ ਹਾਂ।",
     "You can try again in %s." : "ਤੁਸੀਂ %s ਬਾਅਦ ਮੁੜ ਕੋਸ਼ਿਸ਼ ਕਰ ਸਕਦੇ ਹੋ।",

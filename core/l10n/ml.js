@@ -1,6 +1,8 @@
 OC.L10N.register(
     "core",
     {
+    "Request again" : "വീണ്ടും അഭ്യർത്ഥിക്കുക",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "അപ്ഡേറ്റ് പരാജയപ്പെട്ടു. ദയവായി സെർവർ ലോഗ് പരിശോധിക്കുക അല്ലെങ്കിൽ നിങ്ങളുടെ അഡ്മിനിസ്ട്രേറ്ററെ ബന്ധപ്പെടുക.",
     "Login paused for a moment" : "ലോഗിൻ അൽപനേരത്തേക്ക് താൽക്കാലികമായി നിർത്തി",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "നിങ്ങളുടെ കണക്ഷനിൽ നിന്ന് നിരവധി പരാജയപ്പെട്ട ശ്രമങ്ങൾ ഉണ്ടായി, അതിനാൽ നിങ്ങളുടെ അക്കൗണ്ട് സംരക്ഷിക്കാൻ ലോഗിൻ അൽപനേരത്തേക്ക് മന്ദഗതിയിലാക്കുന്നു.",
     "You can try again in %s." : "%s കഴിഞ്ഞ് വീണ്ടും ശ്രമിക്കാം.",

@@ -1,4 +1,6 @@
 { "translations": {
+    "Request again" : "Humiling muli",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "Hindi nagtagumpay ang pag-update. Pakisuri ang log ng server o makipag-ugnayan sa iyong administrator.",
     "Login paused for a moment" : "Pansamantalang itinigil ang pag-login",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Nagkaroon ng ilang bigong pagtatangka mula sa iyong koneksyon, kaya pansamantala naming pinapabagal ang pag-login para protektahan ang iyong account.",
     "You can try again in %s." : "Maaari kang sumubok muli pagkatapos ng %s.",

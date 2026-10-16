@@ -1,4 +1,5 @@
 { "translations": {
+    "Request again" : "Gofyn eto",
     "Sunday" : "Sul",
     "Monday" : "Llun",
     "Tuesday" : "Mawrth",
@@ -68,7 +69,7 @@
     "Delete" : "Dileu",
     "The object type is not specified." : "Nid yw'r math o wrthrych wedi cael ei nodi.",
     "Add" : "Ychwanegu",
-    "The update was unsuccessful. Please report this issue to the <a href=\"https://github.com/BWTECH-github/owncloud.online/issues\" target=\"_blank\">owncloud.online issue tracker</a>." : "Methodd y diweddariad. Adroddwch y mater hwn i <a href=\"https://github.com/BWTECH-github/owncloud.online/issues\" target=\"_blank\">gymuned owncloud.online</a>.",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "Methodd y diweddariad. Gwiriwch log y gweinydd neu cysylltwch â'ch gweinyddwr.",
     "The update was successful. Redirecting you to owncloud.online now." : "Roedd y diweddariad yn llwyddiannus. Cewch eich ailgyfeirio i owncloud.online nawr.",
     "Personal" : "Personol",
     "Users" : "Defnyddwyr",

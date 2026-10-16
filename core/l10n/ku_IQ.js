@@ -1,6 +1,8 @@
 OC.L10N.register(
     "core",
     {
+    "Request again" : "دووبارە داوا بکەرەوە",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "نوێکردنەوە سەرکەوتوو نەبوو. تکایە تۆماری ڕاژەکار بپشکنە یان پەیوەندی بە بەڕێوەبەرەکەتەوە بکە.",
     "Settings" : "ده‌ستكاری",
     "Saving..." : "پاشکه‌وتده‌کات...",
     "No" : "نەخێر",

@@ -1,4 +1,5 @@
 { "translations": {
+    "Request again" : "دوبارہ درخواست کریں",
     "Login paused for a moment" : "لاگ ان کچھ دیر کے لیے روک دیا گیا ہے",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "آپ کے کنکشن سے متعدد ناکام کوششیں ہوئیں، اس لیے آپ کے اکاؤنٹ کے تحفظ کے لیے ہم لاگ ان کو تھوڑی دیر کے لیے سست کر رہے ہیں۔",
     "You can try again in %s." : "آپ %s بعد دوبارہ کوشش کر سکتے ہیں۔",
@@ -80,7 +81,7 @@
     "Add" : "شامل کریں",
     "Edit tags" : "ترمیم ٹیگز",
     "Please reload the page." : "براہ مہربانی صفحہ دوبارہ لوڈ کریں.",
-    "The update was unsuccessful. Please report this issue to the <a href=\"https://github.com/BWTECH-github/owncloud.online/issues\" target=\"_blank\">owncloud.online issue tracker</a>." : "اپ ڈیٹ نا کامیاب تھی۔ براہ مہربانی اس مسلے کو رپورٹ کریں اس پے  <a href=\"https://github.com/BWTECH-github/owncloud.online/issues\" target=\"_blank\">owncloud.online community</a>. ",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "اپ ڈیٹ ناکام رہی۔ براہ مہربانی سرور لاگ چیک کریں یا اپنے منتظم سے رابطہ کریں۔",
     "The update was successful. Redirecting you to owncloud.online now." : "اپ ڈیٹ کامیاب تھی۔ اپ کو اون کلوڈ سے منسلک کیا جا رہا ہے",
     "Personal" : "شخصی",
     "Users" : "صارفین",

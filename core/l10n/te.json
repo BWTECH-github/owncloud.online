@@ -1,4 +1,6 @@
 { "translations": {
+    "Request again" : "మళ్లీ అభ్యర్థించండి",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "నవీకరణ విఫలమైంది. దయచేసి సర్వర్ లాగ్‌ను తనిఖీ చేయండి లేదా మీ నిర్వాహకుడిని సంప్రదించండి.",
     "Login paused for a moment" : "లాగిన్ కాసేపు నిలిపివేయబడింది",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "మీ కనెక్షన్ నుండి అనేక విఫల ప్రయత్నాలు జరిగాయి, కాబట్టి మీ ఖాతాను రక్షించడానికి లాగిన్‌ను కాసేపు నెమ్మది చేస్తున్నాము.",
     "You can try again in %s." : "మీరు %s తర్వాత మళ్లీ ప్రయత్నించవచ్చు.",

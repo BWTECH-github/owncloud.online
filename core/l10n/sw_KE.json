@@ -1,4 +1,6 @@
 { "translations": {
+    "Request again" : "Omba tena",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "Usasishaji haukufaulu. Tafadhali kagua kumbukumbu za seva au wasiliana na msimamizi wako.",
     "Login paused for a moment" : "Kuingia kumesitishwa kwa muda mfupi",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Kulikuwa na majaribio kadhaa yaliyoshindwa kutoka kwenye muunganisho wako, hivyo tunapunguza kasi ya kuingia kwa muda ili kulinda akaunti yako.",
     "You can try again in %s." : "Unaweza kujaribu tena baada ya %s.",

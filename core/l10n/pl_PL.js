@@ -1,6 +1,8 @@
 OC.L10N.register(
     "core",
     {
+    "Request again" : "Poproś ponownie",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "Aktualizacja zakończyła się niepowodzeniem. Sprawdź logi serwera lub skontaktuj się z administratorem.",
     "Login paused for a moment" : "Logowanie na chwilę wstrzymane",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Z Twojego połączenia było kilka nieudanych prób, dlatego na krótko spowalniamy logowanie, aby chronić Twoje konto.",
     "You can try again in %s." : "Do następnej próby pozostało: %s.",

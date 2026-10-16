@@ -1,6 +1,8 @@
 OC.L10N.register(
     "core",
     {
+    "Request again" : "ߊ߬ ߢߌߣߌ߲߫ ߕߎ߲߯",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "ߞߎߘߊߦߊߟߌ ߡߊ߫ ߢߊ߬. ߘߌ߬ߢߍ߬ ߞߊ߬ ߛߍߙߛߍ߬ ߟߊ߫ ߛߓߍߟߌ ߟߎ߬ ߝߟߍ߫ ߥߟߊ߫ ߞߊ߬ ߌ ߟߊ߫ ߞߎ߲߬ߠߊ߬ߛߌ߰ߟߊ ߥߟߌ߫.",
     "_{count} file conflict_::_{count} file conflicts_" : [""],
     "_download %n file_::_download %n files_" : [""],
     "_{count} search result in other places_::_{count} search results in other places_" : [""]

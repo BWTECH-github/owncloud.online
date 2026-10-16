@@ -1,6 +1,8 @@
 OC.L10N.register(
     "core",
     {
+    "Request again" : "Qayta so'rash",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "Yangilash muvaffaqiyatsiz tugadi. Iltimos, server jurnalini tekshiring yoki administratoringizga murojaat qiling.",
     "Login paused for a moment" : "Kirish bir lahzaga to'xtatildi",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Ulanishingizdan bir nechta muvaffaqiyatsiz urinish bo'ldi, shuning uchun hisobingizni himoya qilish uchun kirishni qisqa muddatga sekinlashtiramiz.",
     "You can try again in %s." : "%s dan keyin qayta urinib ko'rishingiz mumkin.",

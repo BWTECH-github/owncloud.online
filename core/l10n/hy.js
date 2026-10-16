@@ -1,6 +1,8 @@
 OC.L10N.register(
     "core",
     {
+    "Request again" : "Կրկին հայցել",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "Թարմացումը ձախողվեց։ Խնդրում ենք ստուգել սերվերի մատյանը կամ կապվել ձեր ադմինիստրատորի հետ։",
     "Login paused for a moment" : "Մուտքը կարճ ժամանակով դադարեցված է",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Ձեր կապից եղել են մի քանի ձախողված փորձեր, ուստի ձեր հաշիվը պաշտպանելու համար կարճ ժամանակով դանդաղեցնում ենք մուտքը:",
     "You can try again in %s." : "Կարող եք կրկին փորձել %s հետո:",

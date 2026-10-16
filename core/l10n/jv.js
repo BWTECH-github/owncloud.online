@@ -1,6 +1,7 @@
 OC.L10N.register(
     "core",
     {
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "Pembaruan gagal. Mangga priksa log server utawa hubungi administrator panjenengan.",
     "Please select a file." : "Tulung milih berkas.",
     "File is too big" : "Berkas kegedhen",
     "Invalid file provided" : "Kesalahan berkas diwenehno",
@@ -14,6 +15,7 @@ OC.L10N.register(
     "Crop is not square" : "Potongan ora kotak",
     "%s password reset" : "%s sandi direset",
     "Couldn't send reset email. Please contact your administrator." : "Ora iso ngirim reset email. Tulung celuk administratormu.",
+    "Request again" : "Njaluk maneh",
     "Preparing update" : "Nyiapne penganyaran",
     "[%d / %d]: %s" : "[%d / %d]: %s",
     "Repair error: " : "Kesalahan ndandhani:",

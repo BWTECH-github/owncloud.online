@@ -69,16 +69,13 @@
 					.removeClass('icon-loading-dark');
 
 				self.setErrorMessage(message);
-				var span = $('<span>')
-					.addClass('bold');
-				if(message === 'Exception: Updates between multiple major versions and downgrades are unsupported.') {
-					span.append(t('core', 'The update was unsuccessful. For more information <a href="{url}">check our forum post</a> covering this issue.', {'url': 'https://central.owncloud.org/t/updates-between-multiple-major-versions-are-unsupported/815'}));
-				} else {
-					span.append(t('core', 'The update was unsuccessful. ' +
-						'Please report this issue to the ' +
-						'<a href="https://github.com/owncloud/core/issues" target="_blank">ownCloud community</a>.'));
-				}
-				span.appendTo($el);
+				// Ohne Verweis auf fremde Foren oder Fehlerlisten: Den Grund nennt die
+				// Fehlermeldung darüber, Einzelheiten stehen im Serverprotokoll. Als
+				// Text eingefügt - die Übersetzung enthält kein HTML mehr.
+				$('<span>')
+					.addClass('bold')
+					.text(t('core', 'The update was unsuccessful. Please check the server log or contact your administrator.'))
+					.appendTo($el);
 			});
 			updateEventSource.listen('done', function() {
 				$(window).off('beforeunload.inprogress');

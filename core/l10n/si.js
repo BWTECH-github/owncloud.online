@@ -1,6 +1,8 @@
 OC.L10N.register(
     "core",
     {
+    "Request again" : "නැවත ඉල්ලන්න",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "යාවත්කාලීන කිරීම අසාර්ථක විය. කරුණාකර සේවාදායක ලොගය පරීක්ෂා කරන්න හෝ ඔබේ පරිපාලක අමතන්න.",
     "Login paused for a moment" : "පිවිසීම මොහොතකට නවතා ඇත",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "ඔබගේ සම්බන්ධතාවයෙන් අසාර්ථක උත්සාහ කිහිපයක් සිදු වූ බැවින්, ඔබගේ ගිණුම ආරක්ෂා කිරීමට පිවිසීම කෙටි කාලයකට මන්දගාමී කරමු.",
     "You can try again in %s." : "ඔබට %s කින් නැවත උත්සාහ කළ හැක.",

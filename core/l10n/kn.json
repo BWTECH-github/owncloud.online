@@ -1,4 +1,5 @@
 { "translations": {
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "ನವೀಕರಣ ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಸರ್ವರ್ ಲಾಗ್ ಪರಿಶೀಲಿಸಿ ಅಥವಾ ನಿಮ್ಮ ನಿರ್ವಾಹಕರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
     "Login paused for a moment" : "ಲಾಗಿನ್ ಸ್ವಲ್ಪ ಹೊತ್ತು ತಡೆಹಿಡಿಯಲಾಗಿದೆ",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "ನಿಮ್ಮ ಸಂಪರ್ಕದಿಂದ ಹಲವು ವಿಫಲ ಪ್ರಯತ್ನಗಳಾಗಿವೆ, ಆದ್ದರಿಂದ ನಿಮ್ಮ ಖಾತೆಯ ರಕ್ಷಣೆಗಾಗಿ ಲಾಗಿನ್ ಅನ್ನು ಸ್ವಲ್ಪ ಹೊತ್ತು ನಿಧಾನಗೊಳಿಸುತ್ತಿದ್ದೇವೆ.",
     "You can try again in %s." : "ನೀವು %s ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಬಹುದು.",
@@ -13,6 +14,7 @@
     "No crop data provided" : "﻿ಸುಕ್ಕು  ಒದಗಿಸಿದ ಮಾಹಿತಿ ",
     "%s password reset" : "%s ಗುಪ್ತ ಪದವನ್ನು ಮರುಹೊಂದಿಸಿ",
     "Couldn't send reset email. Please contact your administrator." : "﻿ರೀಸೆಟ್ ಇಮೇಲ್ ಕಳುಹಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ನಿಮ್ಮ ನಿರ್ವಾಹಕರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+    "Request again" : "ಮತ್ತೆ ವಿನಂತಿಸಿ",
     "Turned on maintenance mode" : "ನಿರ್ವಹಣೆಯ ಸ್ತಿತಿಯನ್ನು ಆರಂಭಿಸಲಾಗಿದೆ",
     "Turned off maintenance mode" : "ನಿರ್ವಹಣೆಯ ಸ್ತಿತಿಯನ್ನು ಮುಕ್ತಗೊಳಿಸಲಾಗಿದೆ",
     "Updated database" : "ದತ್ತಸಂಚಯ ",
@@ -142,7 +144,7 @@
     "Use the following link to reset your password: {link}" : "ನಿಮ್ಮ ಗುಪ್ತಪದ ಮರುಹೊಂದಿಸಲು ಕೆಳಗಿನ ಅಂತ್ರಜಾಲ ಕೊಂಡಿಯನ್ನು ಬಳಸಿ : {link}",
     "New password" : "﻿ಹೊಸ ಗುಪ್ತಪದ",
     "Reset password" : "ಗುಪ್ತ ಪದವನ್ನು ಮರುಹೊಂದಿಸಿ",
-    "This owncloud.online instance is currently in single user mode." : "ಪ್ರಸ್ತುತ ಕ್ರಮದಲ್ಲಿ, ಈ OwnCloud ನ್ನು ಕೇವಲ ಒಬ್ಬನೇ ಬಳಕೆದಾರ ಮಾತ್ರ ಬಳಸಬಹುದಾಗಿದೆ.",
+    "This owncloud.online instance is currently in single user mode." : "ಪ್ರಸ್ತುತ ಕ್ರಮದಲ್ಲಿ, ಈ owncloud.online ನ್ನು ಕೇವಲ ಒಬ್ಬನೇ ಬಳಕೆದಾರ ಮಾತ್ರ ಬಳಸಬಹುದಾಗಿದೆ.",
     "This means only administrators can use the instance." : "ಇದರ ಅರ್ಥ, ಸದ್ಯದ ನಿದರ್ಶನದಲ್ಲಿ ನಿರ್ವಾಹಕರು ಮಾತ್ರ ಬಳಸಬಹುದಾಗಿದೆ.",
     "Thank you for your patience." : "﻿ನಿಮ್ಮ ತಾಳ್ಮೆಗೆ ಧನ್ಯವಾದಗಳು.",
     "Start update" : "ನವೀಕರಿಣವನ್ನು ಆರಂಭಿಸಿ"

@@ -1,4 +1,6 @@
 { "translations": {
+    "Request again" : "ស្នើសុំម្ដងទៀត",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "ការធ្វើបច្ចុប្បន្នភាពមិនបានជោគជ័យទេ។ សូមពិនិត្យកំណត់ហេតុម៉ាស៊ីនមេ ឬទាក់ទងអ្នកគ្រប់គ្រងរបស់អ្នក។",
     "Login paused for a moment" : "ការចូលត្រូវបានផ្អាកមួយភ្លែត",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "មានការព្យាយាមចូលបរាជ័យច្រើនដងពីការតភ្ជាប់របស់អ្នក ដូច្នេះយើងបន្ថយល្បឿនការចូលមួយរយៈ ដើម្បីការពារគណនីរបស់អ្នក។",
     "You can try again in %s." : "អ្នកអាចព្យាយាមម្ដងទៀតក្នុងរយៈពេល %s។",

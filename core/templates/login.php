@@ -103,13 +103,15 @@ $formatThrottleTime = function ($seconds) use ($l) {
 								. '</strong>']
 						)); ?>
 					</span>
-					<?php /* Der Hinweis nannte einen Zuruecksetzen-Link, den genau diese
-						Seite nicht enthaelt: '#lost-password' wird nur bei falschem Passwort
-						gerendert, und im Sperrzustand werden die Zugangsdaten nie geprueft -
-						der Nutzer las also eine Anweisung, der er nicht folgen konnte
-						(SC 3.3.2). Derselbe href und derselbe Handler wie dort, siehe
-						lostpassword.js:init. Ist das Zuruecksetzen abgeschaltet, entfaellt
-						der Hinweis ganz, statt ins Leere zu zeigen. */ ?>
+					<?php /* Der Hinweis nennt den Zurücksetzen-Link und bringt ihn deshalb
+						selbst mit. '#lost-password' („Falsches Passwort. Zurücksetzen?“)
+						steht nur direkt nach einem geprüften Fehlversuch auf der Seite -
+						etwa nach dem, der die Sperre auslöst. Weitere Versuche während der
+						Sperre werden nicht geprüft, und nach dem Neuladen fehlt der Link
+						ebenso; ohne eigenen Link läse der Nutzer dann eine Anweisung, der er
+						nicht folgen kann (SC 3.3.2). Derselbe href und derselbe Handler wie
+						dort, siehe lostpassword.js:init. Ist das Zurücksetzen abgeschaltet,
+						entfällt der Hinweis ganz, statt ins Leere zu zeigen. */ ?>
 					<?php if (!empty($_['canResetPassword'])) { ?>
 						<span class="login-throttle-text login-throttle-hint">
 							<a id="login-throttle-reset" href="<?php p($_['resetPasswordLink']); ?>">

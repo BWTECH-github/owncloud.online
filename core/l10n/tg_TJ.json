@@ -1,4 +1,6 @@
 { "translations": {
+    "Request again" : "Дубора дархост кардан",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "Навсозӣ бомуваффақият анҷом наёфт. Лутфан, журнали серверро тафтиш кунед ё ба маъмури худ муроҷиат намоед.",
     "Login paused for a moment" : "Воридшавӣ барои лаҳзае боздошта шуд",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Аз пайвасти шумо якчанд кӯшиши ноком буд, барои ҳамин мо воридшавиро барои муддати кӯтоҳ суст мекунем, то ҳисоби шуморо муҳофизат кунем.",
     "You can try again in %s." : "Шумо метавонед пас аз %s дубора кӯшиш кунед.",

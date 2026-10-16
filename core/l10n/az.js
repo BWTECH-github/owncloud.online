@@ -1,6 +1,8 @@
 OC.L10N.register(
     "core",
     {
+    "Request again" : "Yenidən tələb et",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "Yeniləmə uğursuz oldu. Zəhmət olmasa, server jurnalını yoxlayın və ya administratorunuzla əlaqə saxlayın.",
     "Login paused for a moment" : "Giriş bir anlıq dayandırılıb",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Bağlantınızdan bir neçə uğursuz cəhd oldu, buna görə hesabınızı qorumaq üçün girişi qısa müddətə yavaşladırıq.",
     "You can try again in %s." : "%s sonra yenidən cəhd edə bilərsiniz.",

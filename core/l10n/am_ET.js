@@ -1,6 +1,8 @@
 OC.L10N.register(
     "core",
     {
+    "Request again" : "እንደገና ይጠይቁ",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "ማዘመኑ አልተሳካም። እባክዎ የአገልጋዩን ምዝግብ ማስታወሻ ይመልከቱ ወይም አስተዳዳሪዎን ያነጋግሩ።",
     "Login paused for a moment" : "መግቢያ ለአፍታ ቆሟል",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "ከግንኙነትዎ በርካታ ያልተሳኩ ሙከራዎች ስለነበሩ፣ መለያዎን ለመጠበቅ መግባትን ለአጭር ጊዜ እናዘገያለን።",
     "You can try again in %s." : "%s በኋላ እንደገና መሞከር ይችላሉ።",

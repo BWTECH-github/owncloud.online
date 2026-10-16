@@ -1,4 +1,5 @@
 { "translations": {
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "Dat Update hett nich klappt. Kiek bitte in't Serverprotokoll oder wend di an dien Administrator.",
     "File is too big" : "Datei ist zu groß",
     "Invalid file provided" : "Ungültige Datei geliefert",
     "No image or file provided" : "Kein Bild oder keine Datei geliefert",
@@ -9,6 +10,7 @@
     "No valid crop data provided" : "Keine gültigen Angaben zum Zuschnitt geliefert",
     "Crop is not square" : "Zuschnitt ist nicht quadratisch",
     "Couldn't send reset email. Please contact your administrator." : "E-Mail zum Zurücksetzen konnte nicht gesendet werden. Bitte wende Dich an Deinem Administrator.",
+    "Request again" : "Noch eens anfordern",
     "Preparing update" : "Bereite Aktualisierung vor",
     "Repair warning: " : "Reparaturwarnung",
     "Repair error: " : "Reparaturfehler",

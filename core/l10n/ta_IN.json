@@ -1,4 +1,6 @@
 { "translations": {
+    "Request again" : "மீண்டும் கோரவும்",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "புதுப்பிப்பு தோல்வியடைந்தது. சேவையக பதிவைச் சரிபார்க்கவும் அல்லது உங்கள் நிர்வாகியைத் தொடர்புகொள்ளவும்.",
     "Login paused for a moment" : "உள்நுழைவு சிறிது நேரம் இடைநிறுத்தப்பட்டுள்ளது",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "உங்கள் இணைப்பிலிருந்து பல தோல்வியுற்ற முயற்சிகள் இருந்தன, எனவே உங்கள் கணக்கைப் பாதுகாக்க உள்நுழைவை சிறிது நேரம் மெதுவாக்குகிறோம்.",
     "You can try again in %s." : "நீங்கள் %s கழித்து மீண்டும் முயற்சிக்கலாம்.",

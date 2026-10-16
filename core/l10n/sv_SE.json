@@ -1,4 +1,6 @@
 { "translations": {
+    "Request again" : "Begär igen",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "Uppdateringen misslyckades. Vänligen kontrollera serverloggen eller kontakta din administratör.",
     "Login paused for a moment" : "Inloggningen är pausad en stund",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Det kom flera misslyckade försök från din anslutning, så vi saktar tillfälligt ner inloggningen för att skydda ditt konto.",
     "You can try again in %s." : "Du kan försöka igen om %s.",

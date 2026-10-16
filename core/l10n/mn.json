@@ -1,4 +1,6 @@
 { "translations": {
+    "Request again" : "Дахин хүсэлт илгээх",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "Шинэчлэл амжилтгүй боллоо. Серверийн бүртгэлийг шалгах эсвэл администратортайгаа холбогдоно уу.",
     "Login paused for a moment" : "Нэвтрэлтийг түр зогсоолоо",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "Таны холболтоос хэд хэдэн амжилтгүй оролдлого гарсан тул таны бүртгэлийг хамгаалахын тулд нэвтрэлтийг түр удаашруулж байна.",
     "You can try again in %s." : "Та %s дараа дахин оролдож болно.",

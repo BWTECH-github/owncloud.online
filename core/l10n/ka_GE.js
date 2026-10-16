@@ -1,6 +1,7 @@
 OC.L10N.register(
     "core",
     {
+    "Request again" : "ხელახლა მოთხოვნა",
     "Login paused for a moment" : "შესვლა დროებით შეჩერებულია",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "თქვენი კავშირიდან რამდენიმე წარუმატებელი მცდელობა იყო, ამიტომ თქვენი ანგარიშის დასაცავად შესვლას მცირე ხნით ვანელებთ.",
     "You can try again in %s." : "შეგიძლიათ კვლავ სცადოთ %s-ში.",
@@ -90,7 +91,7 @@ OC.L10N.register(
     "Edit tags" : "თეგების რედაქტირება",
     "Error loading dialog template: {error}" : "შეცდომა დიალოგის შაბლონის ჩატვირთვისას: {შეცდომა}",
     "No tags selected for deletion." : " წასაშლელად თეგები არ არის არჩეული.",
-    "The update was unsuccessful. Please report this issue to the <a href=\"https://github.com/BWTECH-github/owncloud.online/issues\" target=\"_blank\">owncloud.online issue tracker</a>." : "განახლება ვერ განხორციელდა. გთხოვთ შეგვატყობინოთ ამ პრობლემის შესახებ აქ: <a href=\"https://github.com/BWTECH-github/owncloud.online/issues\" target=\"_blank\">owncloud.online community</a>.",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "განახლება ვერ განხორციელდა. გთხოვთ, შეამოწმოთ სერვერის ჟურნალი ან დაუკავშირდეთ თქვენს ადმინისტრატორს.",
     "The update was successful. Redirecting you to owncloud.online now." : "განახლება ვერ განხორციელდა. გადამისამართება თქვენს owncloud.online–ზე.",
     "Personal" : "პირადი",
     "Users" : "მომხმარებელი",

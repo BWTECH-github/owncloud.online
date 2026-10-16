@@ -1,4 +1,6 @@
 { "translations": {
+    "Request again" : "पुन्हा विनंती करा",
+    "The update was unsuccessful. Please check the server log or contact your administrator." : "अपडेट अयशस्वी झाले. कृपया सर्व्हर लॉग तपासा किंवा तुमच्या प्रशासकाशी संपर्क साधा.",
     "Login paused for a moment" : "लॉगिन काही क्षणांसाठी थांबवले आहे",
     "There were several failed attempts from your connection, so we are briefly slowing sign-in down to protect your account." : "तुमच्या कनेक्शनवरून अनेक अयशस्वी प्रयत्न झाले आहेत, म्हणून तुमच्या खात्याच्या सुरक्षेसाठी आम्ही लॉगिन थोड्या वेळासाठी मंद करत आहोत.",
     "You can try again in %s." : "तुम्ही %s नंतर पुन्हा प्रयत्न करू शकता.",
