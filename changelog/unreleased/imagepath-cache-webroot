@@ -1,0 +1,10 @@
+Bugfix: Image paths stay correct when one instance is reachable under two web roots
+
+The cache for image paths did not include the web root, although every cached
+path starts with it. When the same instance was served under two web roots -
+typically "/" without single sign-on and an Apache alias such as "/oc-shib"
+protected by Shibboleth - whichever entry point was used first decided the
+image paths for both. Pages on the other entry point then loaded images
+through the wrong path, e.g. the login background via the SSO alias, which
+redirected to the identity provider and was blocked by the Content Security
+Policy. The web root is now part of the cache key.

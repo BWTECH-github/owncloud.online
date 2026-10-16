@@ -9,6 +9,7 @@
 namespace Test;
 use OC\Helper\EnvironmentHelper;
 use OC\URLGenerator;
+use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IConfig;
 use OCP\IURLGenerator;
@@ -140,5 +141,45 @@ class UrlGeneratorTest extends TestCase {
 			["/apps/index.php", "http://localhost/owncloud/apps/index.php"],
 			["apps/index.php", "http://localhost/owncloud/apps/index.php"],
 		];
+	}
+
+	/**
+	 * Eine Instanz unter zwei Webroots (z. B. / und /oc-shib) teilt sich den
+	 * Cache; jeder Einstieg muss trotzdem seine eigenen Bildpfade bekommen.
+	 */
+	public function testImagePathCacheIsSeparatedPerWebRoot() {
+		$store = [];
+		$cache = $this->createMock(ICache::class);
+		$cache->method('get')->willReturnCallback(static function ($key) use (&$store) {
+			return $store[$key] ?? null;
+		});
+		$cache->method('set')->willReturnCallback(static function ($key, $value) use (&$store) {
+			$store[$key] = $value;
+			return true;
+		});
+		$cacheFactory = $this->createMock(ICacheFactory::class);
+		$cacheFactory->method('create')->willReturn($cache);
+
+		$webRoot = '';
+		$environmentHelper = $this->createMock(EnvironmentHelper::class);
+		$environmentHelper->method('getWebRoot')->willReturnCallback(static function () use (&$webRoot) {
+			return $webRoot;
+		});
+		$environmentHelper->method('getServerRoot')->willReturn(\OC::$SERVERROOT);
+
+		$urlGenerator = new URLGenerator(
+			$this->createMock(IConfig::class),
+			$cacheFactory,
+			$this->router,
+			$environmentHelper
+		);
+
+		$this->assertSame('/core/img/actions/delete.svg', $urlGenerator->imagePath('', 'actions/delete.svg'));
+
+		$webRoot = '/oc-shib';
+		$this->assertSame('/oc-shib/core/img/actions/delete.svg', $urlGenerator->imagePath('', 'actions/delete.svg'));
+
+		$webRoot = '';
+		$this->assertSame('/core/img/actions/delete.svg', $urlGenerator->imagePath('', 'actions/delete.svg'));
 	}
 }
