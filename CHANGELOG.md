@@ -58,7 +58,7 @@ admins and users.
 * Bugfix - Anmeldeseite lädt ihre Bilder bei zwei Webroots über den eigenen Pfad: [#ccb77d2](https://github.com/BWTECH-github/owncloud.online/commit/ccb77d2), [#5794f07](https://github.com/BWTECH-github/owncloud.online/commit/5794f07)
 * Bugfix - Kein Fehler im Protokoll, wenn eine Datei während ihrer Vorschau gelöscht wird: [#1594919](https://github.com/BWTECH-github/owncloud.online/commit/1594919)
 * Bugfix - Unvollständige trusted_domains stören Host-Ermittlung und Empfängersuche nicht mehr: [#06f7683](https://github.com/BWTECH-github/owncloud.online/commit/06f7683), [#5a89ddc](https://github.com/BWTECH-github/owncloud.online/commit/5a89ddc)
-* Bugfix - Leerer oder unvollständiger MIME-Typ gilt als unbekannt: [#7000278](https://github.com/BWTECH-github/owncloud.online/commit/7000278), [#5615018](https://github.com/BWTECH-github/owncloud.online/commit/5615018), [#6d6eeeb](https://github.com/BWTECH-github/owncloud.online/commit/6d6eeeb)
+* Bugfix - Leerer oder unvollständiger MIME-Typ legt keinen leeren Eintrag mehr an: [#7000278](https://github.com/BWTECH-github/owncloud.online/commit/7000278), [#5615018](https://github.com/BWTECH-github/owncloud.online/commit/5615018), [#6d6eeeb](https://github.com/BWTECH-github/owncloud.online/commit/6d6eeeb)
 * Bugfix - Keine Deprecation-Meldung beim Entfernen der E-Mail-Adresse oder des Anzeigenamens: [#658938b](https://github.com/BWTECH-github/owncloud.online/commit/658938b), [#433cb60](https://github.com/BWTECH-github/owncloud.online/commit/433cb60)
 
 ## Details
@@ -148,13 +148,15 @@ admins and users.
    Freigabe-Empfängern mit „@“ bricht nicht mehr ab, und signierte URLs werden
    ohne Warnung geprüft.
 
-* Bugfix - Leerer oder unvollständiger MIME-Typ gilt als unbekannt
+* Bugfix - Leerer oder unvollständiger MIME-Typ legt keinen leeren Eintrag mehr an
 
-   Dateien mit leerem oder unvollständigem MIME-Typ (etwa ohne „/“) legten
-   einen leeren Eintrag in der MIME-Typ-Tabelle an. Sie gelten jetzt als
-   „unbekannt“, und Ordnerlisten mit solchen Dateien brauchen keine
-   zusätzlichen Datenbank- und Cache-Abfragen mehr. Schon vorhandene leere
-   Einträge in `oc_mimetypes` bleiben bestehen.
+   Dateien mit leerem oder unvollständigem MIME-Typ legten einen leeren
+   Eintrag in der MIME-Typ-Tabelle an. Ein leerer MIME-Typ, auch einer nur
+   aus Leerzeichen, gilt jetzt als „unbekannt“. Fehlt der Hauptteil vor dem
+   „/“ (etwa `foo` oder `/foo`), bleibt der MIME-Typ gespeichert, und nur
+   der Hauptteil (`mimepart`) gilt als unbekannt (-1). Ordnerlisten mit
+   solchen Dateien brauchen keine zusätzlichen Datenbank- und Cache-Abfragen
+   mehr. Schon vorhandene leere Einträge in `oc_mimetypes` bleiben bestehen.
 
 * Bugfix - Keine Deprecation-Meldung beim Entfernen der E-Mail-Adresse oder des Anzeigenamens
 
