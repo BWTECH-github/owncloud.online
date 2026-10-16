@@ -76,7 +76,7 @@ interface IUser {
 	/**
 	 * set the display name for the user
 	 *
-	 * @param string $displayName
+	 * @param string|null $displayName
 	 * @return bool
 	 * @throws NotPermittedActionException
 	 * @since 8.0.0
