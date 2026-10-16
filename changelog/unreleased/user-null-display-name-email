@@ -1,0 +1,5 @@
+Bugfix: Accept null in User::setEMailAddress() and setDisplayName()
+
+Removing a user's email address or display name by passing null raised a
+deprecation message from trim() on PHP 8.1 and later. Null is now handled like
+an empty string before trimming; the stored value stays the same.

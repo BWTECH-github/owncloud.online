@@ -450,6 +450,77 @@ class UserTest extends TestCase {
 		$this->assertEquals('foo', $this->user->getDisplayName());
 	}
 
+	/**
+	 * null entfernt den Anzeigenamen ohne Deprecation-Meldung aus trim().
+	 */
+	public function testSetDisplayNameNullWithoutDeprecation() {
+		$backend = $this->getMockBuilder(Database::class)
+			->setMethods(['implementsActions', 'setDisplayName'])
+			->getMock();
+		$backend->method('implementsActions')
+			->willReturnCallback(static function ($actions) {
+				return $actions === Backend::SET_DISPLAYNAME;
+			});
+		$backend->expects($this->once())
+			->method('setDisplayName')
+			->with('foo', '');
+
+		/** @var Account | \PHPUnit\Framework\MockObject\MockObject $account */
+		$account = $this->getMockBuilder(Account::class)
+			->setMethods(['getBackendInstance'])
+			->getMock();
+		$account->method('getBackendInstance')->willReturn($backend);
+		$account->setUserId('foo');
+		$account->setDisplayName('Foo');
+		$this->accountMapper->expects($this->once())->method('update');
+		$user = new User($account, $this->accountMapper, null, $this->config);
+
+		$changed = null;
+		$deprecations = $this->collectDeprecations(static function () use ($user, &$changed) {
+			$changed = $user->setDisplayName(null);
+		});
+
+		$this->assertSame([], $deprecations);
+		$this->assertTrue($changed);
+		$this->assertSame('', $account->getDisplayName());
+	}
+
+	/**
+	 * null entfernt die E-Mail-Adresse ohne Deprecation-Meldung aus trim().
+	 */
+	public function testSetEMailAddressNullWithoutDeprecation() {
+		$this->account->setEmail('foo@bar.com');
+		$this->accountMapper->expects($this->once())->method('update');
+
+		$deprecations = $this->collectDeprecations(function () {
+			$this->user->setEMailAddress(null);
+		});
+
+		$this->assertSame([], $deprecations);
+		$this->assertSame('', $this->user->getEMailAddress());
+	}
+
+	/**
+	 * Führt $callback aus und sammelt alle Deprecation-Meldungen. Die
+	 * Testkonfiguration nimmt E_DEPRECATED aus error_reporting heraus; ein
+	 * eigener Fehlerhandler wird von PHP trotzdem aufgerufen.
+	 *
+	 * @return string[]
+	 */
+	private function collectDeprecations(callable $callback): array {
+		$deprecations = [];
+		\set_error_handler(static function (int $errno, string $errstr) use (&$deprecations): bool {
+			$deprecations[] = $errstr;
+			return true;
+		}, E_DEPRECATED | E_USER_DEPRECATED);
+		try {
+			$callback();
+		} finally {
+			\restore_error_handler();
+		}
+		return $deprecations;
+	}
+
 	public function testSetDisplayNameNotSupported() {
 		$backend = $this->getMockBuilder(Database::class)
 			->setMethods(['implementsActions'])

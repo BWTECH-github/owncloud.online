@@ -208,7 +208,7 @@ class User implements IUser {
 	/**
 	 * set the displayname for the user
 	 *
-	 * @param string $displayName
+	 * @param string|null $displayName
 	 * @return bool
 	 * @throws NotPermittedActionException
 	 */
@@ -220,7 +220,8 @@ class User implements IUser {
 		if (!$this->canChangeDisplayName()) {
 			return false;
 		}
-		$displayName = \trim($displayName);
+		// trim(null) ist seit PHP 8.1 veraltet; null entfernt den Namen wie ''
+		$displayName = \trim($displayName ?? '');
 		if ($displayName === $this->account->getDisplayName()) {
 			return false;
 		}
@@ -251,7 +252,8 @@ class User implements IUser {
 			throw new NotPermittedActionException("Operation cannot be allowed as other apps are fetching extended attributes of this user.");
 		}
 
-		$mailAddress = \trim($mailAddress);
+		// null entfernt die Adresse; trim(null) ist seit PHP 8.1 veraltet
+		$mailAddress = \trim($mailAddress ?? '');
 		if ($mailAddress === $this->account->getEmail()) {
 			return;
 		}
