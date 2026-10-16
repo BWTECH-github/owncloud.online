@@ -613,6 +613,59 @@ class LostControllerTest extends TestCase {
 		$this->assertSame($expectedResponse, $response);
 	}
 
+	/**
+	 * „Erneut anfordern“ nach einem gescheiterten Versand: Der Token des ersten
+	 * Versuchs blieb gespeichert, der zweite Versuch innerhalb von fünf Minuten
+	 * galt als „recently sent“, verschickte nichts und meldete trotzdem Erfolg.
+	 */
+	public function testRetryWithinFiveMinutesAfterFailedSendSendsTheMail() {
+		// Benutzerwerte im Speicher, damit beide Versuche denselben Stand sehen
+		$userValues = [];
+		$this->config->method('getUserValue')
+			->willReturnCallback(function ($userId, $appName, $key, $default = '') use (&$userValues) {
+				return $userValues["$userId/$appName/$key"] ?? $default;
+			});
+		$this->config->method('setUserValue')
+			->willReturnCallback(function ($userId, $appName, $key, $value) use (&$userValues) {
+				$userValues["$userId/$appName/$key"] = $value;
+			});
+		$this->config->method('deleteUserValue')
+			->willReturnCallback(function ($userId, $appName, $key) use (&$userValues) {
+				unset($userValues["$userId/$appName/$key"]);
+			});
+		$this->userManager->method('userExists')->with('ExistingUser')->willReturn(true);
+		$this->userManager->method('get')->with('ExistingUser')->willReturn($this->existingUser);
+		$this->secureRandom->method('generate')->willReturnOnConsecutiveCalls('FirstToken', 'SecondToken');
+		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.com/index.php/lostpassword/');
+		$now = 12000;
+		$this->timeFactory->method('getTime')->willReturnCallback(function () use (&$now) {
+			return $now;
+		});
+		$message = $this->getMockBuilder('\OC\Mail\Message')
+			->disableOriginalConstructor()->getMock();
+		$this->mailer->method('createMessage')->willReturn($message);
+		// Der erste Versand scheitert, jeder weitere klappt
+		$sendAttempts = 0;
+		$this->mailer->method('send')->willReturnCallback(function () use (&$sendAttempts) {
+			$sendAttempts++;
+			if ($sendAttempts === 1) {
+				throw new \Exception('SMTP-Server nicht erreichbar');
+			}
+			return [];
+		});
+
+		$firstResponse = $this->lostController->email('ExistingUser');
+		// „Erneut anfordern“ eine Minute später
+		$now = 12060;
+		$retryResponse = $this->lostController->email('ExistingUser');
+
+		$this->assertSame('error', $firstResponse['status']);
+		$this->assertSame(2, $sendAttempts, 'Der zweite Versuch muss die Mail wirklich verschicken.');
+		$this->assertSame(['status' => 'success'], $retryResponse);
+		// Gültig ist der Token aus der zugestellten Mail
+		$this->assertSame('12060:SecondToken', $userValues['ExistingUser/owncloud/lostpassword'] ?? null);
+	}
+
 	public function testSetPasswordUnsuccessful() {
 		$this->config
 			->expects($this->once())

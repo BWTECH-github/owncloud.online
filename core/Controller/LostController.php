@@ -397,6 +397,10 @@ class LostController extends Controller {
 			$message->setFrom([$this->from => $this->defaults->getName()]);
 			$this->mailer->send($message);
 		} catch (\Exception $e) {
+			// Ohne zugestellte Mail darf der Token nicht stehen bleiben: Er galt
+			// sonst fünf Minuten lang als „recently sent“, „Erneut anfordern“
+			// verschickte nichts und email() meldete trotzdem Erfolg.
+			$this->config->deleteUserValue($user, 'owncloud', 'lostpassword');
 			throw new \Exception($this->l10n->t(
 				'Couldn\'t send reset email. Please contact your administrator.'
 			));
