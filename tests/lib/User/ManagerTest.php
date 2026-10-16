@@ -143,6 +143,63 @@ class ManagerTest extends TestCase {
 		$this->assertFalse($this->manager->checkPassword('foo', 'bar'));
 	}
 
+	/**
+	 * Ein fehlendes Anmeldefeld kommt als null an: Anmeldeformular ohne
+	 * user-Feld oder mit user[]=x, das der LoginController wie ein fehlendes
+	 * Feld behandelt. Gemeint ist ein leeres Feld – ohne „Passing null to
+	 * parameter“ aus str_replace(), das Backend bekommt ''.
+	 */
+	public function testCheckPasswordTreatsMissingFieldsAsEmpty() {
+		/** @var Database | \PHPUnit\Framework\MockObject\MockObject $backend */
+		$backend = $this->createMock(Database::class);
+		$backend->method('implementsActions')->willReturn(true);
+		$backend->expects($this->once())
+			->method('checkPassword')
+			->with($this->identicalTo(''), $this->identicalTo(''))
+			->willReturn(false);
+		$this->manager->registerBackend($backend);
+
+		$deprecations = [];
+		\set_error_handler(function ($errno, $errstr) use (&$deprecations) {
+			$deprecations[] = $errstr;
+			return true;
+		}, E_DEPRECATED);
+		try {
+			$result = $this->manager->checkPassword(null, null);
+		} finally {
+			\restore_error_handler();
+		}
+
+		$this->assertFalse($result);
+		$this->assertSame([], $deprecations);
+	}
+
+	public function providesArrayCredentials() {
+		return [
+			'Name als Array' => [['admin'], 'secret'],
+			'Passwort als Array' => ['admin', ['secret']],
+		];
+	}
+
+	/**
+	 * Ein Array ist weder Anmeldename noch Passwort. Es erreicht weder die
+	 * Bremse noch ein Backend.
+	 *
+	 * @dataProvider providesArrayCredentials
+	 *
+	 * @param mixed $loginName
+	 * @param mixed $password
+	 */
+	public function testCheckPasswordRejectsArrays($loginName, $password) {
+		/** @var Database | \PHPUnit\Framework\MockObject\MockObject $backend */
+		$backend = $this->createMock(Database::class);
+		$backend->method('implementsActions')->willReturn(true);
+		$backend->expects($this->never())->method('checkPassword');
+		$this->manager->registerBackend($backend);
+
+		$this->assertFalse($this->manager->checkPassword($loginName, $password));
+	}
+
 	public function testGetAccountExists() {
 		$account = new Account();
 		$account->setUserId('foo');

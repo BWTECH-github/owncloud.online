@@ -35,6 +35,7 @@
  * Changes:
  *   - throttle password spraying per-IP, reset delay on successful auth
  *   - Bruteforce- und Rate-Limiting-Schutz hinzufügen
+ *   - checkPassword(): fehlendes Feld (null) als leer, Arrays sofort abweisen
  */
 
 namespace OC\User;
@@ -258,8 +259,17 @@ class Manager extends PublicEmitter implements IUserManager {
 	 * @return mixed the User object on success, false otherwise
 	 */
 	public function checkPassword($loginName, $password) {
-		$loginName = \str_replace("\0", '', $loginName);
-		$password = \str_replace("\0", '', $password);
+		// Ein Array (user[]=x, password[]=x) ist weder Name noch Passwort und
+		// darf weder die Bremse noch ein Backend erreichen.
+		if (\is_array($loginName) || \is_array($password)) {
+			return false;
+		}
+		// Ein fehlendes Feld kommt als null an, etwa vom Anmeldeformular ohne
+		// user-Feld oder mit user[]=x (LoginController::arrayAsMissing()).
+		// Gemeint ist ein leeres Feld; str_replace() mit null ist seit PHP 8.1
+		// veraltet.
+		$loginName = \str_replace("\0", '', (string)$loginName);
+		$password = \str_replace("\0", '', (string)$password);
 
 		$ip = \OC::$server->getRequest()->getRemoteAddress();
 		/** @var Throttler $throttler */

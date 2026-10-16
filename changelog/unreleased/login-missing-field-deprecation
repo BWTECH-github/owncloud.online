@@ -1,0 +1,8 @@
+Bugfix: A login without user name no longer logs a PHP deprecation
+
+A login form sent without the user or password field, or with one of them as a
+list (user[]=x), reached the password check with null. PHP then logged
+"Passing null to parameter" from str_replace() for each of them. A missing
+field now counts as empty. A list as user name or password is refused before
+the brute force throttle or a user backend sees it. The login still fails with
+"Wrong password".
