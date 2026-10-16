@@ -1,5 +1,6 @@
 # Table of Contents
 
+* [Changelog for owncloud.online 11.0.23](#changelog-for-owncloudonline-11023-2026-10-16)
 * [Changelog for owncloud.online 11.0.22](#changelog-for-owncloudonline-11022-2026-10-02)
 * [Changelog for owncloud.online 11.0.21](#changelog-for-owncloudonline-11021-2026-09-30)
 * [Changelog for ownCloud.online 11.0.20](#changelog-for-owncloudonline-11020-2026-09-24)
@@ -39,6 +40,129 @@
 * [Changelog for 10.4.1](#changelog-for-owncloud-core-1041-2020-03-30)
 * [Changelog for 10.4.0](#changelog-for-owncloud-core-1040-2020-02-10)
 * [Changelog for 10.3.2](#changelog-for-owncloud-core-1032-2019-12-04)
+# Changelog for owncloud.online [11.0.23] (2026-10-16)
+
+The following sections list the changes in owncloud.online 11.0.23 relevant to
+admins and users.
+
+[11.0.23]: https://github.com/BWTECH-github/owncloud.online
+
+## Summary
+
+* Bugfix - Anmeldekarte bleibt mittig, ein Fokusrahmen statt zwei: [#e745e31](https://github.com/BWTECH-github/owncloud.online/commit/e745e31), [#bb5d3dd](https://github.com/BWTECH-github/owncloud.online/commit/bb5d3dd)
+* Bugfix - Knöpfe der Gastseiten im Windows-Kontrastmodus mit Rahmen: [#94ce8fa](https://github.com/BWTECH-github/owncloud.online/commit/94ce8fa)
+* Bugfix - „Passwort vergessen“ mit Tastatur und Screenreader: [#a2afedc](https://github.com/BWTECH-github/owncloud.online/commit/a2afedc), [#038d54d](https://github.com/BWTECH-github/owncloud.online/commit/038d54d), [#c03adc3](https://github.com/BWTECH-github/owncloud.online/commit/c03adc3)
+* Bugfix - Seite „Neues Passwort“ mit richtiger Beschriftung, Fehler werden vorgelesen: [#038d54d](https://github.com/BWTECH-github/owncloud.online/commit/038d54d)
+* Bugfix - Update-Seite per Tastatur bedienbar, Abbruch ohne Verweis auf externe Foren: [#a2afedc](https://github.com/BWTECH-github/owncloud.online/commit/a2afedc), [#038d54d](https://github.com/BWTECH-github/owncloud.online/commit/038d54d), [#c03adc3](https://github.com/BWTECH-github/owncloud.online/commit/c03adc3)
+* Bugfix - Manipulierte Anfrageparameter führen auf den Gastseiten nicht mehr zu HTTP 500: [#0c32496](https://github.com/BWTECH-github/owncloud.online/commit/0c32496), [#7a68fb2](https://github.com/BWTECH-github/owncloud.online/commit/7a68fb2)
+* Bugfix - Anmeldeseite lädt ihre Bilder bei zwei Webroots über den eigenen Pfad: [#ccb77d2](https://github.com/BWTECH-github/owncloud.online/commit/ccb77d2), [#5794f07](https://github.com/BWTECH-github/owncloud.online/commit/5794f07)
+* Bugfix - Kein Fehler im Protokoll, wenn eine Datei während ihrer Vorschau gelöscht wird: [#1594919](https://github.com/BWTECH-github/owncloud.online/commit/1594919)
+* Bugfix - Unvollständige trusted_domains stören Host-Ermittlung und Empfängersuche nicht mehr: [#06f7683](https://github.com/BWTECH-github/owncloud.online/commit/06f7683), [#5a89ddc](https://github.com/BWTECH-github/owncloud.online/commit/5a89ddc)
+* Bugfix - Leerer oder unvollständiger MIME-Typ gilt als unbekannt: [#7000278](https://github.com/BWTECH-github/owncloud.online/commit/7000278), [#5615018](https://github.com/BWTECH-github/owncloud.online/commit/5615018), [#6d6eeeb](https://github.com/BWTECH-github/owncloud.online/commit/6d6eeeb)
+* Bugfix - Keine Deprecation-Meldung beim Entfernen der E-Mail-Adresse oder des Anzeigenamens: [#658938b](https://github.com/BWTECH-github/owncloud.online/commit/658938b), [#433cb60](https://github.com/BWTECH-github/owncloud.online/commit/433cb60)
+
+## Details
+
+* Bugfix - Anmeldekarte bleibt mittig, ein Fokusrahmen statt zwei
+
+   Blendete eine App wie OAuth2 auf der Anmeldeseite einen Hinweis ein
+   (etwa „Die Anwendung „Desktop Client“ erfordert den Zugriff …“), rutschte
+   die Anmeldekarte nach links oben. Ursache war ein Kopfelement ohne Inhalt,
+   das der Server als `<data …/>` ausgab. HTML kennt `<data>` nicht als leeres
+   Element, das offene Element umschloss die ganze Seite. Kopfelemente ohne
+   Inhalt bekommen jetzt ihr Endtag, nur echte leere Elemente wie `<meta>` und
+   `<link>` bleiben `<…/>`. Die Karte steht damit auf allen Gastseiten mittig,
+   auch bei 600 bis 764 px Fensterbreite.
+
+   Text- und Kennwortfelder zeigen im Fokus nur noch einen klaren Ring
+   (#262B45, 13,9:1 auf Weiß) statt Rand plus abgesetzter Kontur. Im
+   Windows-Kontrastmodus ist der Infopunkt im OAuth2-Hinweis wieder sichtbar,
+   und die Erfolgsmeldung von „Passwort vergessen“ macht die Karte nicht mehr
+   breiter.
+
+* Bugfix - Knöpfe der Gastseiten im Windows-Kontrastmodus mit Rahmen
+
+   Im Kontrastmodus verlieren Knöpfe ihre Füllung, vom Knopf „Anmelden“
+   blieb nur fetter Text. „Anmelden“, die Absendeknöpfe der Gastseiten und der
+   Update-Knopf haben dort jetzt einen Rahmen, deaktiviert in Grau. Außerhalb
+   des Kontrastmodus ändert sich nichts.
+
+* Bugfix - „Passwort vergessen“ mit Tastatur und Screenreader
+
+   Erfolg und Fehler werden Screenreadern angesagt und bekommen den
+   Tastaturfokus, statt ihn auf die Seite fallen zu lassen. Der Sperrhinweis
+   nach zu vielen Fehlversuchen erscheint auch ohne „Angemeldet bleiben“, und
+   nach einem Fehler wird die Anforderung nicht mehr mehrfach verschickt. Auf
+   eine Fehlermeldung folgt der neue Knopf „Erneut anfordern“, der auch per
+   Eingabe- und Leertaste funktioniert. Er ist in allen Sprachen übersetzt.
+
+* Bugfix - Seite „Neues Passwort“ mit richtiger Beschriftung, Fehler werden vorgelesen
+
+   Die Beschriftung „Passwort bestätigen“ gehörte zum ersten Feld. Stimmen
+   die beiden Eingaben nicht überein, wird der Grund jetzt vorgelesen und
+   beiden Feldern zugeordnet.
+
+* Bugfix - Update-Seite per Tastatur bedienbar, Abbruch ohne Verweis auf externe Foren
+
+   „Detaillierte Protokolle“ lässt sich per Tastatur öffnen. Nach
+   „Aktualisierung starten“ bleibt der Fokus auf der Seite, Fortschritt und
+   Ergebnis werden angesagt. Schlägt das Update fehl, nennt die Seite weiter
+   den Grund und verweist danach auf das Serverprotokoll und die
+   Administration statt auf ein externes Forum oder eine externe Fehlerliste.
+   Fünf Übersetzungen der Gastseiten (ar, fa, sv, kn, vi) nennen jetzt
+   owncloud.online statt des alten Produktnamens.
+
+* Bugfix - Manipulierte Anfrageparameter führen auf den Gastseiten nicht mehr zu HTTP 500
+
+   Parameter als Array statt als Zeichenkette, etwa
+   `/index.php/login?redirect_url[]=x`, endeten bei der Anmeldung, bei
+   „Passwort vergessen“, bei der Zwei-Faktor-Anmeldung und beim Aufruf der
+   Startseite mit HTTP 500, ebenso jedes Absenden einer Gastseite mit
+   `requesttoken[]=x`. Solche Werte gelten jetzt wie fehlende Parameter bzw.
+   als ungültiges Token. Das Absenden ohne Benutzernamen meldet „Falsches
+   Passwort“ statt HTTP 500.
+
+* Bugfix - Anmeldeseite lädt ihre Bilder bei zwei Webroots über den eigenen Pfad
+
+   Ist dieselbe Instanz unter zwei Webroots erreichbar (z. B. `/` ohne SSO
+   und `/oc-shib` hinter Shibboleth), bestimmte der zuerst benutzte Einstieg
+   die Bildpfade beider. Die Anmeldeseite ohne SSO lud ihren Hintergrund dann
+   über `/oc-shib`, wurde zum Identitätsanbieter umgeleitet und von der
+   Content Security Policy blockiert. Der Bildpfad-Cache trennt die Webroots
+   jetzt.
+
+* Bugfix - Kein Fehler im Protokoll, wenn eine Datei während ihrer Vorschau gelöscht wird
+
+   Wurde eine Datei gelöscht, während ihre Vorschau entstand (etwa mit
+   „Endgültig löschen“ im Papierkorb), landete ein TypeError im Protokoll.
+   Betroffen waren Text, Markdown, SVG, MP3, Office und Video. Die Vorschau
+   bleibt in diesem Fall jetzt leer.
+
+* Bugfix - Unvollständige trusted_domains stören Host-Ermittlung und Empfängersuche nicht mehr
+
+   Fehlten in `trusted_domains` einzelne Einträge (etwa nach
+   `occ config:system:delete trusted_domains 0`), fiel der Server bei einer
+   Anfrage mit fremdem Host auf einen nicht vorhandenen Eintrag zurück
+   („Undefined array key 0“). Jetzt gilt der erste vorhandene Eintrag. Ist der
+   Wert keine Liste, gilt er überall als nicht gesetzt: Die Suche nach
+   Freigabe-Empfängern mit „@“ bricht nicht mehr ab, und signierte URLs werden
+   ohne Warnung geprüft.
+
+* Bugfix - Leerer oder unvollständiger MIME-Typ gilt als unbekannt
+
+   Dateien mit leerem oder unvollständigem MIME-Typ (etwa ohne „/“) legten
+   einen leeren Eintrag in der MIME-Typ-Tabelle an. Sie gelten jetzt als
+   „unbekannt“, und Ordnerlisten mit solchen Dateien brauchen keine
+   zusätzlichen Datenbank- und Cache-Abfragen mehr. Schon vorhandene leere
+   Einträge in `oc_mimetypes` bleiben bestehen.
+
+* Bugfix - Keine Deprecation-Meldung beim Entfernen der E-Mail-Adresse oder des Anzeigenamens
+
+   Wer die E-Mail-Adresse entfernte oder den Anzeigenamen leerte, erzeugte
+   unter PHP 8.1 und neuer die Meldung „trim(): Passing null to parameter #1
+   … is deprecated“ im Protokoll. Der gespeicherte Wert bleibt wie bisher
+   leer.
+
 # Changelog for owncloud.online [11.0.22] (2026-10-02)
 
 The following sections list the changes in owncloud.online 11.0.22 relevant to
