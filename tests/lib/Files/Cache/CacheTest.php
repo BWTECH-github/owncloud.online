@@ -10,6 +10,7 @@ namespace Test\Files\Cache;
 
 use OC\Files\Cache\Cache;
 use OC\Files\Storage\Temporary;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use Test\TestCase;
 
 class LongId extends Temporary {
@@ -640,6 +641,76 @@ class CacheTest extends TestCase {
 		$this->cache->update($this->cache->getId('somefile.txt'), ['mtime' => 0,'checksum' => '']);
 		$entry = $this->cache->get('somefile.txt');
 		$this->assertEmpty($entry['checksum']);
+	}
+
+	/**
+	 * Ein leerer Mimetype gilt wie false als unbekannt: gespeichert wird -1,
+	 * und in oc_mimetypes entsteht kein Eintrag mit leerer Zeichenkette.
+	 */
+	public function testInsertStoresEmptyMimetypeAsUnknown() {
+		$emptyMimetypesBefore = $this->countEmptyMimetypes();
+
+		$fileId = $this->cache->put('empty-mimetype.bin', ['size' => 1, 'mtime' => 1, 'mimetype' => '']);
+
+		$this->assertSame(-1, $this->getStoredMimetypeId($fileId));
+		$this->assertSame($emptyMimetypesBefore, $this->countEmptyMimetypes());
+	}
+
+	public function providesEmptyMimetypes() {
+		return [
+			'leere Zeichenkette' => [''],
+			'null' => [null],
+		];
+	}
+
+	/**
+	 * Beim Aktualisieren kommt auch null an (unter Oracle wird '' vorher zu
+	 * null umgewandelt).
+	 *
+	 * @dataProvider providesEmptyMimetypes
+	 *
+	 * @param string|null $emptyMimetype
+	 */
+	public function testUpdateStoresEmptyMimetypeAsUnknown($emptyMimetype) {
+		$fileId = $this->cache->put('known-mimetype.txt', ['size' => 1, 'mtime' => 1, 'mimetype' => 'text/plain']);
+		$emptyMimetypesBefore = $this->countEmptyMimetypes();
+
+		$this->cache->update($fileId, ['mimetype' => $emptyMimetype]);
+
+		$this->assertSame(-1, $this->getStoredMimetypeId($fileId));
+		$this->assertSame($emptyMimetypesBefore, $this->countEmptyMimetypes());
+	}
+
+	/**
+	 * Liest die gespeicherte Mimetype-ID direkt aus der Datenbank; get()
+	 * übersetzt sie bereits in den Mimetype.
+	 */
+	private function getStoredMimetypeId(int $fileId): int {
+		$qb = \OC::$server->getDatabaseConnection()->getQueryBuilder();
+		$qb->select('mimetype')
+			->from('filecache')
+			->where($qb->expr()->eq('fileid', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
+		$result = $qb->execute();
+		$mimetypeId = $result->fetchOne();
+		$result->free();
+		return (int)$mimetypeId;
+	}
+
+	/**
+	 * Zählt in PHP statt per SQL, weil Oracle '' als NULL speichert.
+	 */
+	private function countEmptyMimetypes(): int {
+		$qb = \OC::$server->getDatabaseConnection()->getQueryBuilder();
+		$qb->select('mimetype')->from('mimetypes');
+		$result = $qb->execute();
+		$count = 0;
+		while (($mimetype = $result->fetchOne()) !== false) {
+			if ((string)$mimetype === '') {
+				$count++;
+			}
+		}
+		$result->free();
+		return $count;
 	}
 
 	public function testRemoveChildren() {

@@ -465,8 +465,12 @@ class Cache implements ICache {
 					$params[] = \md5($value);
 					$queryParts[] = '`path_hash`';
 				} elseif ($name === 'mimetype') {
-					# an unknown mimetyp will be stored as -1
-					if ($value === false) {
+					// Ein unbekannter oder leerer Mimetype wird als -1 gespeichert.
+					// '' und null liefen sonst in den Mimetype-Loader: getId('')
+					// legt einen leeren Eintrag in oc_mimetypes an, und mimepart
+					// zeigt ebenfalls darauf (null zusätzlich mit Deprecations aus
+					// strpos()/substr()). update() macht unter Oracle aus '' null.
+					if ($value === false || $value === null || $value === '') {
 						$value = -1;
 					} else {
 						$params[] = $this->mimetypeLoader->getId(\substr($value, 0, \strpos($value, '/')));
