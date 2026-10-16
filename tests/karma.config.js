@@ -203,6 +203,14 @@ module.exports = function(config) {
 
 	// need to test the core app as well ?
 	if (testCore) {
+		// Skripte der Gastseiten (Anmeldung, Update) stehen nicht in core.json,
+		// weil sie nur auf ihrer eigenen Seite laden - ihre Specs brauchen sie trotzdem.
+		['lostpassword.js', 'update.js'].forEach(function(guestFile) {
+			files.push(corePath + guestFile);
+			if (enableCoverage) {
+				preprocessors[corePath + guestFile] = 'coverage';
+			}
+		});
 		// core tests
 		files.push(corePath + 'tests/specs/**/*.js');
 	}

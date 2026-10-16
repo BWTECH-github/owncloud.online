@@ -49,7 +49,11 @@
 		<p id="update-progress-message-error" class="warning hidden"></p>
 		<ul id="update-progress-message-warnings" class="warning hidden"></ul>
 		<p id="update-progress-message"></p>
-		<a class="update-show-detailed"><?php p($l->t('Detailed logs')); ?> <img src="<?php print_unescaped(image_path('', 'actions/caret.svg')); ?>" /></a>
+		<?php /* Ohne href war der Anker per Tastatur nicht erreichbar (SC 2.1.1). Er
+			bleibt ein Anker mit role="button", weil update.css ihn als
+			a.update-show-detailed gestaltet; Leertaste und aria-expanded kommen aus
+			js/update.js. Das Pfeilbild ist Zierde und braucht keinen Alternativtext. */ ?>
+		<a class="update-show-detailed" href="#" role="button" aria-expanded="false" aria-controls="update-progress-detailed"><?php p($l->t('Detailed logs')); ?> <img src="<?php print_unescaped(image_path('', 'actions/caret.svg')); ?>" alt="" /></a>
 		<div id="update-progress-detailed" class="hidden warning"></div>
 	</div>
 </div>

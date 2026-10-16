@@ -16,14 +16,30 @@ OC.Lostpassword = {
 		// haengt am selben Handler, weil der beide Faelle schon abdeckt: ist
 		// lost_password_link gesetzt, wird dorthin navigiert, sonst geht die
 		// Anforderung per POST an /lostpassword/email.
-		$('#lost-password, #login-throttle-reset').click(OC.Lostpassword.resetLink);
-		$('#reset-password #submit').click(OC.Lostpassword.resetPassword);
+		//
+		// sendLinkError ruft init() erneut auf, damit die Fehlermeldung (das neue
+		// '#lost-password') wieder anklickbar ist. Ohne das off() hing danach jeder
+		// Handler doppelt: am Link im Sperrhinweis schickte der nächste Klick die
+		// Anforderung zweimal, nach jedem weiteren Fehler einmal mehr.
+		$('#lost-password, #login-throttle-reset')
+			.off('click', OC.Lostpassword.resetLink)
+			.on('click', OC.Lostpassword.resetLink);
+		$('#reset-password #submit')
+			.off('click', OC.Lostpassword.resetPassword)
+			.on('click', OC.Lostpassword.resetPassword);
 	},
 
 	resetLink : function(event){
 		event.preventDefault();
 		if (!$('#user').val().length){
-			$('#submit').trigger('click');
+			if ($('#submit').prop('disabled')) {
+				// Sperrzustand: js/login.js hat den Anmeldeknopf deaktiviert, ein
+				// Klick darauf verpufft ohne jede Rückmeldung. Dann das leere Feld
+				// selbst melden - so, wie es der Browser beim Absenden täte.
+				OC.Lostpassword.reportEmptyUser();
+			} else {
+				$('#submit').trigger('click');
+			}
 		} else {
 			if (OC.config['lost_password_link']) {
 				window.location = OC.config['lost_password_link'];
@@ -54,27 +70,65 @@ OC.Lostpassword = {
 		}
 	},
 
+	reportEmptyUser : function(){
+		var user = $('#user').get(0);
+		user.focus();
+		if (typeof user.reportValidity === 'function') {
+			user.reportValidity();
+		}
+	},
+
 	sendLinkSuccess : function(msg){
 		var node = OC.Lostpassword.getSendStatusNode();
 		// update is the better success message styling
 		node.addClass('update').css({width:'auto'});
-		node.html(OC.Lostpassword.sendSuccessMsg);
+		OC.Lostpassword.showSendStatus(node, 'status', OC.Lostpassword.sendSuccessMsg);
 	},
 
 	sendLinkError : function(msg){
 		var node = OC.Lostpassword.getSendStatusNode();
 		node.addClass('warning');
-		node.html(msg);
+		OC.Lostpassword.showSendStatus(node, 'alert', msg);
 		OC.Lostpassword.init();
 	},
 
-	getSendStatusNode : function(){
-		if (!$('#lost-password').length){
-			$('<p id="lost-password"></p>').insertBefore($('#remember_login'));
-		} else {
-			$('#lost-password').replaceWith($('<p id="lost-password"></p>'));
+	/**
+	 * Zeigt das Ergebnis der Anforderung und meldet es Hilfsmitteln.
+	 *
+	 * role="status" bzw. "alert" macht die Meldung zur Statusmeldung (SC 4.1.3).
+	 * Der Fokus wandert auf sie, wenn er sonst verloren wäre - der angeklickte
+	 * Link '#lost-password' ist gerade durch sie ersetzt worden (SC 2.4.3) - oder
+	 * wenn er noch auf dem Link im Sperrhinweis steht: Die Meldung ist dann das
+	 * Ergebnis genau dieser Aktion, und eine frisch eingefügte Live-Region lesen
+	 * nicht alle Screenreader zuverlässig vor. Aus einem Feld, in das der Nutzer
+	 * inzwischen gewechselt ist, wird er nie herausgezogen.
+	 *
+	 * @param {jQuery} node Knoten aus getSendStatusNode()
+	 * @param {string} role 'status' oder 'alert'
+	 * @param {string} html Meldung, darf <br> enthalten
+	 */
+	showSendStatus : function(node, role, html){
+		var active = document.activeElement;
+		node.attr('role', role).html(html);
+		if (!active || active === document.body || $(active).is('#login-throttle-reset')) {
+			node.focus();
 		}
-		return $('#lost-password');
+	},
+
+	getSendStatusNode : function(){
+		// tabindex="-1": per Skript fokussierbar, aber kein zusätzlicher Tab-Halt.
+		var node = $('<p id="lost-password" tabindex="-1"></p>');
+		if ($('#lost-password').length){
+			$('#lost-password').replaceWith(node);
+		} else {
+			// Hierher kommt nur der Link im Sperrhinweis: '#lost-password' gibt es
+			// im Sperrzustand nicht. Die Meldung steht dann dort, wo sonst
+			// '#lost-password' steht - im Knopfbereich vor „Anmelden“. Bisher hing
+			// sie an '#remember_login'; ist „Angemeldet bleiben“ abgeschaltet, fehlt
+			// das Feld, und die Meldung erschien nie.
+			$('form[name="login"] .submit-wrap').first().prepend(node);
+		}
+		return node;
 	},
 
 	resetPassword : function(event){
@@ -142,7 +196,10 @@ OC.Lostpassword = {
 
 	resetError : function(msg){
 		var node = OC.Lostpassword.getResetStatusNode();
-		node.addClass('warning');
+		// Derselbe Knoten wie auf der Anmeldeseite, hier nur für Fehler. Der Fokus
+		// bleibt auf „Passwort zurücksetzen“ - die Rolle sorgt dafür, dass die
+		// Meldung trotzdem vorgelesen wird (SC 4.1.3).
+		node.addClass('warning').attr('role', 'alert');
 		node.html(msg);
 	},
 

@@ -165,8 +165,21 @@ $(document).ready(function() {
 		});
 		return false;
 	});
-	$('.update-show-detailed').on('click', function() {
-		$('#update-progress-detailed').toggleClass('hidden');
+	// „Detaillierte Protokolle“ ist ein Anker mit role="button": href="#" macht
+	// ihn per Tab erreichbar und lässt die Eingabetaste nativ auslösen, die
+	// Leertaste wird nachgereicht. aria-expanded meldet, ob die Protokolle offen
+	// sind. Delegiert, damit es nicht darauf ankommt, ob der Anker beim Laden
+	// schon im DOM steht (die Specs fügen ihn erst später ein).
+	$(document).on('click', '.update-show-detailed', function() {
+		var $details = $('#update-progress-detailed').toggleClass('hidden');
+		$(this).attr('aria-expanded', $details.hasClass('hidden') ? 'false' : 'true');
 		return false;
+	});
+	$(document).on('keydown', '.update-show-detailed', function(event) {
+		if (event.key === ' ' || event.key === 'Spacebar') {
+			// sonst scrollt die Seite
+			event.preventDefault();
+			$(this).trigger('click');
+		}
 	});
 });
