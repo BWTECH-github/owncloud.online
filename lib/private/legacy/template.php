@@ -263,10 +263,15 @@ class OC_Template extends \OC\Template\Base {
 
 	/**
 	 * Add a custom element to the header
+	 *
+	 * Hinweis: Diese Liste der Instanz gibt OC_Template derzeit nirgends aus. In
+	 * den Seitenkopf gelangt nur, was \OCP\Util::addHeader() sammelt.
+	 *
 	 * @param string $tag tag name of the element
 	 * @param array $attributes array of attributes for the element
-	 * @param string $text the text content for the element. If $text is null then the
-	 * element will be written as empty element. So use "" to get a closing tag.
+	 * @param string $text the text content for the element. Ist $text null,
+	 * erscheinen leere HTML-Elemente (meta, link …) als <tag/>, alle anderen mit
+	 * Endtag; "" erzwingt immer ein Endtag (siehe renderHeaders()).
 	 */
 	public function addHeader($tag, $attributes, $text=null) {
 		$this->headers[]= [

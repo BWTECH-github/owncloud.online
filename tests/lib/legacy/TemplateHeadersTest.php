@@ -57,4 +57,57 @@ class TemplateHeadersTest extends TestCase {
 	public function testEmptyListGivesEmptyString(): void {
 		$this->assertSame('', OC_Template::renderHeaders([]));
 	}
+
+	public function testEmptyTextForcesClosingTag(): void {
+		$html = OC_Template::renderHeaders([
+			['tag' => 'data', 'attributes' => ['key' => 'x'], 'text' => ''],
+			['tag' => 'script', 'attributes' => ['src' => '/a.js'], 'text' => ''],
+		]);
+
+		$this->assertSame('<data key="x"></data><script src="/a.js"></script>', $html);
+	}
+
+	public function testElementWithoutAttributesIsClosed(): void {
+		$html = OC_Template::renderHeaders([
+			['tag' => 'data', 'attributes' => [], 'text' => null],
+		]);
+
+		$this->assertSame('<data></data>', $html);
+	}
+
+	/**
+	 * Bisheriges Verhalten festhalten: "" erzwingt das Endtag auch bei leeren
+	 * HTML-Elementen. Der Parser verwirft das überzählige </meta> im Kopf.
+	 */
+	public function testVoidElementWithEmptyTextKeepsClosingTag(): void {
+		$html = OC_Template::renderHeaders([
+			['tag' => 'meta', 'attributes' => ['name' => 'x', 'content' => 'y'], 'text' => ''],
+		]);
+
+		$this->assertSame('<meta name="x" content="y"></meta>', $html);
+	}
+
+	/**
+	 * Echter Ausgabeweg wie beim Anmelden mit oauth2: \OCP\Util::addHeader()
+	 * → OC_Template::fetchPage() → TemplateLayout „guest“ →
+	 * core/templates/layout.guest.php. Als Inhalt dient die 403-Vorlage, sie
+	 * kommt ohne Variablen aus.
+	 */
+	public function testGuestPageClosesDataHeaderInsideHead(): void {
+		$savedHeaders = \OC_Util::$headers;
+		try {
+			\OC_Util::$headers = [];
+			\OCP\Util::addHeader('data', ['key' => 'oauth2', 'client' => 'Desktop Client']);
+			$html = (new OC_Template('core', '403', 'guest'))->fetchPage();
+		} finally {
+			\OC_Util::$headers = $savedHeaders;
+		}
+
+		$closed = '<data key="oauth2" client="Desktop Client"></data>';
+		$this->assertStringContainsString($closed, $html);
+		$this->assertDoesNotMatchRegularExpression('/<data\b[^>]*\/>/', $html);
+		// Das Element endet im Kopf und umschließt nicht die Karte.
+		$this->assertLessThan(\strpos($html, '</head>'), \strpos($html, $closed));
+		$this->assertStringContainsString('<div class="v-align">', $html);
+	}
 }

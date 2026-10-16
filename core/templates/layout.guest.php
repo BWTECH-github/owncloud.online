@@ -64,6 +64,10 @@
 			   Lücke. Als Maske nimmt er die Textfarbe des Hinweises an und passt damit auch zu Kästen,
 			   die das Theming einfärbt (dort bleibt er hell wie bisher). */
 			#body-login .v-align .icon-info-white{display:inline-block;width:16px;height:16px;padding:0;margin:0 6px 0 0;vertical-align:-3px;background-image:none;background-color:currentColor;-webkit-mask:url('<?php print_unescaped(image_path('core', 'actions/info-white.svg')); ?>') center/16px 16px no-repeat;mask:url('<?php print_unescaped(image_path('core', 'actions/info-white.svg')); ?>') center/16px 16px no-repeat;}
+			/* Kontrastmodus (forced-colors): Dort setzt der Browser background-color auf Canvas, die
+			   Maske hätte die Farbe des Hintergrunds und der Infopunkt verschwände. CanvasText ist die
+			   Textfarbe des Systemschemas; forced-color-adjust:none lässt sie stehen. */
+			@media (forced-colors: active){#body-login .v-align .icon-info-white{forced-color-adjust:none;background-color:CanvasText;}}
 			#body-login footer{flex:0 0 auto;text-align:center;padding:10px 0 14px;margin:0;}
 			/* Update-/Wartungs-Screens nutzen dieselbe Gastkarte: breiter, EINE Karte, zentrierter Text.
 			   Nur div.update direkt in der Karte zählt – die Erfolgsmeldung von „Passwort vergessen“
@@ -72,7 +76,11 @@
 			#body-login .v-align .error-wide{list-style:none;margin:0 !important;padding:0 !important;background:transparent !important;text-align:center;}
 			#body-login .v-align .error-wide li.error,#body-login .v-align .error-wide li{background:transparent !important;border:none !important;color:#26384d;margin:0 0 12px;padding:0;font-size:15px;line-height:1.5;}
 			#body-login .v-align .error-wide .hint{font-size:13px;color:#5b6675;margin:6px 0 0;}
-			#body-login .v-align > .update,#body-login .v-align li.update,#body-login .v-align .updateProgress{background:transparent !important;box-shadow:none !important;border:none !important;border-radius:0 !important;padding:0 !important;margin:0 !important;width:100% !important;color:#26384d;text-align:center;}
+			/* Meldungskästen schlicht in der Karte, ohne eigenen Rahmen und Schatten: div.update der
+			   Update-Seite, li.update der Wartungsseite und die Erfolgsmeldung von „Passwort vergessen“
+			   (p#lost-password.update im Formular). Für die Breite der Karte zählt weiterhin nur
+			   :has(> .update) oben – die Anmeldekarte bleibt 320 px breit. */
+			#body-login .v-align > .update,#body-login .v-align li.update,#body-login .v-align form .update,#body-login .v-align .updateProgress{background:transparent !important;box-shadow:none !important;border:none !important;border-radius:0 !important;padding:0 !important;margin:0 !important;width:100% !important;color:#26384d;text-align:center;}
 			#body-login .v-align .update .updateOverview{text-align:center;}
 			#body-login .v-align .update h2.title,#body-login .v-align .update .title{font-size:20px;line-height:1.3;font-weight:600;margin:0 0 14px;color:#26384d;}
 			#body-login .v-align .update .infogroup{margin:0 0 16px;font-size:14px;line-height:1.55;color:#5b6675;text-align:center;}

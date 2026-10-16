@@ -62,6 +62,7 @@
  *   - PHP 8.4 strict types - fix getUserValue() boolean default for isGuest checks
  *   - PHP 8.4 compatibility and owncloud.online design integration
  *   - doctrine/dbal:3 (#41450)
+ *   - addHeader(): Doku zur Ausgabe ohne Inhalt berichtigt (2026-10-16)
  */
 
 use OC\Security\SignedUrl\Verifier;
@@ -694,8 +695,9 @@ class OC_Util {
 
 	/**
 	 * Add a custom element to the header
-	 * If $text is null then the element will be written as empty element.
-	 * So use "" to get a closing tag.
+	 * Ist $text null, erscheinen leere HTML-Elemente (meta, link …) als <tag/>,
+	 * alle anderen mit Endtag, z. B. <data key="x"></data>. "" erzwingt immer
+	 * ein Endtag, auch bei meta und link. Siehe OC_Template::renderHeaders().
 	 * @param string $tag tag name of the element
 	 * @param array $attributes array of attributes for the element
 	 * @param string $text the text content for the element

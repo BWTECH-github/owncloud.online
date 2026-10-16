@@ -44,6 +44,7 @@
  * Changes:
  *   - add @since tag to OCP\Util::getPublicVersionString
  *   - Prepare ownCloud.online 11.0.2 release
+ *   - addHeader(): Doku zur Ausgabe ohne Inhalt berichtigt (2026-10-16)
  */
 
 /**
@@ -270,8 +271,9 @@ class Util {
 
 	/**
 	 * Add a custom element to the header
-	 * If $text is null then the element will be written as empty element.
-	 * So use "" to get a closing tag.
+	 * Ist $text null, erscheinen leere HTML-Elemente (meta, link …) als <tag/>,
+	 * alle anderen mit Endtag, z. B. <data key="x"></data>. "" erzwingt immer
+	 * ein Endtag, auch bei meta und link.
 	 * @param string $tag tag name of the element
 	 * @param array $attributes array of attributes for the element
 	 * @param string $text the text content for the element
