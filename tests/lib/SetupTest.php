@@ -282,4 +282,77 @@ class SetupTest extends \Test\TestCase {
 			$content
 		);
 	}
+
+	/**
+	 * Führt $test mit einem eigenen Serververzeichnis aus, das nur die
+	 * genannten Unterordner hat. \OC::$APPSROOTS steht dabei so, wie
+	 * \OC::initPaths() es ohne apps_paths in config.php setzt: nur apps/.
+	 *
+	 * @param string[] $dirs
+	 * @param callable $test bekommt das Serververzeichnis
+	 */
+	private function withServerRoot(array $dirs, callable $test) {
+		$root = \rtrim(\OC::$server->getTempManager()->getTemporaryFolder(), '/');
+		foreach ($dirs as $dir) {
+			\mkdir("$root/$dir");
+		}
+		$origServerRoot = \OC::$SERVERROOT;
+		$origAppsRoots = \OC::$APPSROOTS;
+		\OC::$SERVERROOT = $root;
+		\OC::$APPSROOTS = [['path' => "$root/apps", 'url' => '/apps', 'writable' => true]];
+		try {
+			$test($root);
+		} finally {
+			\OC::$SERVERROOT = $origServerRoot;
+			\OC::$APPSROOTS = $origAppsRoots;
+		}
+	}
+
+	/**
+	 * Bei der Neuinstallation fehlen apps_paths noch. Der laufende Prozess muss
+	 * apps-external sofort kennen, sonst findet installShippedApps() dort die
+	 * Markt-App nicht und sie bleibt bis zum ersten occ upgrade aus.
+	 */
+	public function testAddDefaultAppsPathsMakesAppsExternalKnownToTheRunningProcess() {
+		$this->withServerRoot(['apps', 'apps-external'], function ($root) {
+			$this->config->method('getSystemValue')->with('apps_paths', false)->willReturn(false);
+			$this->config->expects($this->once())
+				->method('setSystemValues')
+				->with(['apps_paths' => [
+					['path' => "$root/apps", 'url' => '/apps', 'writable' => false],
+					['path' => "$root/apps-external", 'url' => '/apps-external', 'writable' => true],
+				]]);
+
+			\OC\Setup::addDefaultAppsPaths($this->config);
+
+			$this->assertSame(["$root/apps", "$root/apps-external"], \array_column(\OC::$APPSROOTS, 'path'));
+		});
+	}
+
+	public function testAddDefaultAppsPathsKeepsConfiguredAppsPaths() {
+		$this->withServerRoot(['apps', 'apps-external'], function ($root) {
+			$configured = [['path' => "$root/apps", 'url' => '/apps', 'writable' => true]];
+			$this->config->method('getSystemValue')->with('apps_paths', false)->willReturn($configured);
+			$this->config->expects($this->never())->method('setSystemValues');
+
+			\OC\Setup::addDefaultAppsPaths($this->config);
+
+			$this->assertSame(["$root/apps"], \array_column(\OC::$APPSROOTS, 'path'));
+		});
+	}
+
+	/**
+	 * Ohne apps-external auf der Platte bleibt der Prozess bei apps/, ein
+	 * fehlendes Verzeichnis gäbe dort nur Warnungen beim Durchsuchen.
+	 */
+	public function testAddDefaultAppsPathsSkipsMissingDirectoriesForTheRunningProcess() {
+		$this->withServerRoot(['apps'], function ($root) {
+			$this->config->method('getSystemValue')->with('apps_paths', false)->willReturn(false);
+			$this->config->expects($this->once())->method('setSystemValues');
+
+			\OC\Setup::addDefaultAppsPaths($this->config);
+
+			$this->assertSame(["$root/apps"], \array_column(\OC::$APPSROOTS, 'path'));
+		});
+	}
 }

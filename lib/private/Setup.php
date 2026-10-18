@@ -42,6 +42,8 @@
  *   - htaccess RewriteBase rules block API requests for files with common exten...
  *   - Improve large filecache performance
  *   - PHP 8.4 compatibility and owncloud.online design integration
+ *   - apps_paths vor installShippedApps() eintragen, damit die Apps aus
+ *     apps-external (Markt-App) bei der Installation aktiviert werden
  */
 
 namespace OC;
@@ -395,6 +397,10 @@ class Setup {
 			$group =\OC::$server->getGroupManager()->createGroup('admin');
 			$group->addUser($user);
 
+			// apps-external zuerst eintragen, sonst übersieht die Installation
+			// die Apps dort, allen voran die Markt-App.
+			self::addDefaultAppsPaths($config);
+
 			//guess what this does
 			Installer::installShippedApps();
 
@@ -416,29 +422,6 @@ class Setup {
 				$config->setSystemValue('logtimezone', \date_default_timezone_get());
 			}
 
-			// add the apps-external directory to config using apps_path
-			// add the key only if it does not exist (protect against overwriting)
-			$apps2Key = \OC::$server->getSystemConfig()->getValue('apps_paths', false);
-
-			if ($apps2Key === false) {
-				$defaultAppsPaths = [
-					'apps_paths' => [
-						[
-							"path" => \OC::$SERVERROOT . '/apps',
-							"url" => "/apps",
-							"writable" => false
-						],
-						[
-							"path" => \OC::$SERVERROOT . '/apps-external',
-							"url" => "/apps-external",
-							"writable" => true
-						]
-					]
-				];
-
-				$config->setSystemValues($defaultAppsPaths);
-			}
-
 			self::installBackgroundJobs();
 
 			// save the origin version that we installed at
@@ -451,6 +434,38 @@ class Setup {
 		}
 
 		return $error;
+	}
+
+	/**
+	 * Trägt apps und apps-external als App-Pfade in config.php ein, sofern dort
+	 * noch keine apps_paths stehen, und macht sie dem laufenden Prozess sofort
+	 * bekannt.
+	 *
+	 * \OC::$APPSROOTS entsteht beim Start aus apps_paths. Bei der
+	 * Neuinstallation fehlt der Schlüssel dann noch, der Prozess kennt nur
+	 * apps/. Ohne den Nachtrag fand installShippedApps() die Apps in
+	 * apps-external nicht: Die Markt-App blieb nach der Installation aus, bis
+	 * occ upgrade sie beim nächsten Update nachholte.
+	 */
+	public static function addDefaultAppsPaths(IConfig $config): void {
+		// add the key only if it does not exist (protect against overwriting)
+		if ($config->getSystemValue('apps_paths', false) !== false) {
+			return;
+		}
+		$appsPaths = [
+			['path' => \OC::$SERVERROOT . '/apps', 'url' => '/apps', 'writable' => false],
+			['path' => \OC::$SERVERROOT . '/apps-external', 'url' => '/apps-external', 'writable' => true],
+		];
+		$config->setSystemValues(['apps_paths' => $appsPaths]);
+
+		// Nur vorhandene Verzeichnisse, die der Prozess noch nicht kennt:
+		// getShippedApps() durchsucht jedes davon.
+		$known = \array_column(\OC::$APPSROOTS, 'path');
+		foreach ($appsPaths as $appsPath) {
+			if (!\in_array($appsPath['path'], $known, true) && \is_dir($appsPath['path'])) {
+				\OC::$APPSROOTS[] = $appsPath;
+			}
+		}
 	}
 
 	public static function installBackgroundJobs() {

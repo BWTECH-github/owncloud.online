@@ -1,0 +1,8 @@
+Bugfix: The market app is enabled right after the installation
+
+A new installation registered apps-external as an app directory only after the
+bundled apps had been installed. The installer therefore did not see the market
+app there, and it stayed disabled until the first update ran occ upgrade. The
+app directories are now registered first and are known to the running
+installation, so occ maintenance:install and the web installer enable the
+market app, as the installation guide describes.
