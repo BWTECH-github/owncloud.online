@@ -666,6 +666,68 @@ class LostControllerTest extends TestCase {
 		$this->assertSame('12060:SecondToken', $userValues['ExistingUser/owncloud/lostpassword'] ?? null);
 	}
 
+	/**
+	 * Scheitert das Zusammenstellen der Mail schon vor dem Versand (Vorlagen,
+	 * Empfängername), darf kein Token gespeichert bleiben. Sonst galt der
+	 * nächste Versuch fünf Minuten lang als „recently sent“: Er verschickte
+	 * nichts und meldete trotzdem Erfolg.
+	 */
+	public function testFailureBeforeSendingLeavesNoRecentlySentToken() {
+		$userValues = [];
+		$this->config->method('getUserValue')
+			->willReturnCallback(function ($userId, $appName, $key, $default = '') use (&$userValues) {
+				return $userValues["$userId/$appName/$key"] ?? $default;
+			});
+		$this->config->method('setUserValue')
+			->willReturnCallback(function ($userId, $appName, $key, $value) use (&$userValues) {
+				$userValues["$userId/$appName/$key"] = $value;
+			});
+		$this->config->method('deleteUserValue')
+			->willReturnCallback(function ($userId, $appName, $key) use (&$userValues) {
+				unset($userValues["$userId/$appName/$key"]);
+			});
+		// Beim ersten Versuch scheitert das Zusammenstellen der Mail
+		$user = $this->createMock(IUser::class);
+		$user->method('getEMailAddress')->willReturn('test@example.com');
+		$user->method('getUID')->willReturn('ExistingUser');
+		$nameLookups = 0;
+		$user->method('getDisplayName')->willReturnCallback(function () use (&$nameLookups) {
+			$nameLookups++;
+			if ($nameLookups === 1) {
+				throw new \Exception('Anzeigename nicht lesbar');
+			}
+			return 'Existing User Name';
+		});
+		$this->userManager->method('userExists')->with('ExistingUser')->willReturn(true);
+		$this->userManager->method('get')->with('ExistingUser')->willReturn($user);
+		$this->secureRandom->method('generate')->willReturnOnConsecutiveCalls('FirstToken', 'SecondToken');
+		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.com/index.php/lostpassword/');
+		$now = 12000;
+		$this->timeFactory->method('getTime')->willReturnCallback(function () use (&$now) {
+			return $now;
+		});
+		$message = $this->getMockBuilder('\OC\Mail\Message')
+			->disableOriginalConstructor()->getMock();
+		$this->mailer->method('createMessage')->willReturn($message);
+		$sendAttempts = 0;
+		$this->mailer->method('send')->willReturnCallback(function () use (&$sendAttempts) {
+			$sendAttempts++;
+			return [];
+		});
+
+		$firstResponse = $this->lostController->email('ExistingUser');
+		$tokenAfterFailure = $userValues['ExistingUser/owncloud/lostpassword'] ?? null;
+		// „Erneut anfordern“ eine Minute später
+		$now = 12060;
+		$retryResponse = $this->lostController->email('ExistingUser');
+
+		$this->assertSame('error', $firstResponse['status']);
+		$this->assertNull($tokenAfterFailure, 'Ohne Versand darf kein Token gespeichert sein.');
+		$this->assertSame(1, $sendAttempts, 'Der zweite Versuch muss die Mail wirklich verschicken.');
+		$this->assertSame(['status' => 'success'], $retryResponse);
+		$this->assertSame('12060:SecondToken', $userValues['ExistingUser/owncloud/lostpassword'] ?? null);
+	}
+
 	public function testSetPasswordUnsuccessful() {
 		$this->config
 			->expects($this->once())

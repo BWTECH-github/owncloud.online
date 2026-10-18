@@ -30,6 +30,8 @@
  * Changes:
  *   - PHP 8.4 compatibility and owncloud.online design integration
  *   - php8.3 (#41449)
+ *   - Reset-Token erst unmittelbar vor dem Versand speichern, ohne Mail
+ *     keinen „recently sent“-Zustand hinterlassen
  */
 
 namespace OC\Core\Controller;
@@ -378,8 +380,6 @@ class LostController extends Controller {
 			}
 		}
 
-		$this->config->setUserValue($user, 'owncloud', 'lostpassword', $this->timeFactory->getTime() . ':' . $token);
-
 		$tmpl = new \OC_Template('core', 'lostpassword/email');
 		$tmpl->assign('link', $link);
 		$msg = $tmpl->fetchPage();
@@ -388,6 +388,7 @@ class LostController extends Controller {
 		$msgAlt = $tmplAlt->fetchPage();
 		$name = $userObject->getDisplayName();
 
+		$tokenStored = false;
 		try {
 			$message = $this->mailer->createMessage();
 			$message->setTo([$email => $name]);
@@ -395,12 +396,20 @@ class LostController extends Controller {
 			$message->setPlainBody($msgAlt);
 			$message->setHtmlBody($msg);
 			$message->setFrom([$this->from => $this->defaults->getName()]);
+			// Den Token erst unmittelbar vor dem Versand speichern: Scheitert
+			// vorher etwas (Vorlagen, Empfänger, Nachricht), bleibt der Stand
+			// vor der Anforderung erhalten und nichts gilt als „recently sent“.
+			$this->config->setUserValue($user, 'owncloud', 'lostpassword', $this->timeFactory->getTime() . ':' . $token);
+			$tokenStored = true;
 			$this->mailer->send($message);
 		} catch (\Exception $e) {
 			// Ohne zugestellte Mail darf der Token nicht stehen bleiben: Er galt
 			// sonst fünf Minuten lang als „recently sent“, „Erneut anfordern“
-			// verschickte nichts und email() meldete trotzdem Erfolg.
-			$this->config->deleteUserValue($user, 'owncloud', 'lostpassword');
+			// verschickte nichts und email() meldete trotzdem Erfolg. Entfernt
+			// wird nur ein Token, den diese Anforderung selbst gespeichert hat.
+			if ($tokenStored) {
+				$this->config->deleteUserValue($user, 'owncloud', 'lostpassword');
+			}
 			throw new \Exception($this->l10n->t(
 				'Couldn\'t send reset email. Please contact your administrator.'
 			));
