@@ -54,7 +54,20 @@ class ExceptionLoggerPlugin extends \Sabre\DAV\ServerPlugin {
 		'Sabre\DAV\Exception\Locked' => true,
 		'OCA\DAV\Connector\Sabre\Exception\FileLocked' => true,  // thrown by the LockPlugin
 		//If the exception is InsufficientStorage, then log a debug message
-		'Sabre\DAV\Exception\InsufficientStorage' => true
+		'Sabre\DAV\Exception\InsufficientStorage' => true,
+		// Erwartbare Fehler des Clients, kein Serverproblem. MKCOL auf einen
+		// vorhandenen Ordner (405) gehört zum normalen Ablauf des Sync-Clients und
+		// stand nach jedem Bulk-Upload hundertfach als FATAL im Protokoll.
+		'Sabre\DAV\Exception\MethodNotAllowed' => true,
+		// Zielordner fehlt (PUT, MKCOL oder MOVE in einen gelöschten Ordner)
+		'Sabre\DAV\Exception\Conflict' => true,
+		'Sabre\DAV\Exception\LockTokenMatchesRequestUri' => true,
+		// Methode oder REPORT, den der Server nicht anbietet
+		'Sabre\DAV\Exception\NotImplemented' => true,
+		'Sabre\DAV\Exception\ReportNotSupported' => true,
+		// Bereich hinter dem Dateiende angefragt, Länge fehlt
+		'Sabre\DAV\Exception\RequestedRangeNotSatisfiable' => true,
+		'Sabre\DAV\Exception\LengthRequired' => true,
 	];
 
 	/** @var string */

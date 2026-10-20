@@ -1,0 +1,18 @@
+Change: Expected WebDAV client errors are no longer logged as fatal
+
+Every WebDAV error that the exception logger did not know as expected went into
+owncloud.log at level fatal. That included requests the desktop client sends
+as part of its normal work: MKCOL on a folder that already exists answers
+"405 The resource you tried to create already exists", and a test instance
+collected more than 500 of these fatal entries in two days of sync tests, which
+buried the few entries that mattered.
+
+The following client errors are now logged at debug level, like the ones that
+were already treated as expected (404, 412, 423 and others): 405 Method Not
+Allowed, 409 Conflict (also when a lock token does not match), 411 Length
+Required, 415 for an unsupported REPORT, 416 Requested Range Not Satisfiable
+and 501 Not Implemented.
+
+400 Bad Request, other 415 errors and 503 stay at level fatal, because they can
+point to a problem on the server side, for example an upload whose size does not
+match or content that a storage rejected.

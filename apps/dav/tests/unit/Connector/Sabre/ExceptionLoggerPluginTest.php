@@ -32,8 +32,18 @@ use OCA\DAV\Connector\Sabre\Exception\InvalidPath;
 use OCA\DAV\Connector\Sabre\ExceptionLoggerPlugin as PluginToTest;
 use OCP\Files\ExcludeForbiddenException;
 use OCP\Files\FileContentNotAllowedException;
+use Sabre\DAV\Exception\BadRequest;
+use Sabre\DAV\Exception\Conflict;
 use Sabre\DAV\Exception\InsufficientStorage;
+use Sabre\DAV\Exception\LengthRequired;
+use Sabre\DAV\Exception\LockTokenMatchesRequestUri;
+use Sabre\DAV\Exception\MethodNotAllowed;
 use Sabre\DAV\Exception\NotFound;
+use Sabre\DAV\Exception\NotImplemented;
+use Sabre\DAV\Exception\ReportNotSupported;
+use Sabre\DAV\Exception\RequestedRangeNotSatisfiable;
+use Sabre\DAV\Exception\ServiceUnavailable;
+use Sabre\DAV\Exception\UnsupportedMediaType;
 use Sabre\DAV\Server;
 use Test\TestCase;
 
@@ -88,7 +98,19 @@ class ExceptionLoggerPluginTest extends TestCase {
 			[0, 'HTTP/1.1 404 Not Found', new NotFound()],
 			[4, 'HTTP/1.1 400 This path leads to nowhere', new InvalidPath('This path leads to nowhere')],
 			[0, '', new FileContentNotAllowedException("Testing", 0, new FileContentNotAllowedException("pervious exception", 0))],
-			[0, "HTTP/1.1 507 Testing", new InsufficientStorage("Testing", 0, null)]
+			[0, "HTTP/1.1 507 Testing", new InsufficientStorage("Testing", 0, null)],
+			// Erwartbare Client-Fehler: DEBUG statt FATAL
+			[0, 'HTTP/1.1 405 The resource you tried to create already exists', new MethodNotAllowed('The resource you tried to create already exists')],
+			[0, 'HTTP/1.1 409 Files cannot be created in non-existent collections', new Conflict('Files cannot be created in non-existent collections')],
+			[0, 'HTTP/1.1 409 The locktoken supplied does not match any locks on this entity', new LockTokenMatchesRequestUri()],
+			[0, 'HTTP/1.1 501 Invalid chunk name', new NotImplemented('Invalid chunk name')],
+			[0, 'HTTP/1.1 415 Unsupported Media Type', new ReportNotSupported()],
+			[0, 'HTTP/1.1 416 Requested Range Not Satisfiable', new RequestedRangeNotSatisfiable()],
+			[0, 'HTTP/1.1 411 Length Required', new LengthRequired()],
+			// Bleiben FATAL: Sie können auf Fehler des Servers deuten.
+			[4, 'HTTP/1.1 400 Expected filesize of 10 bytes but read 5', new BadRequest('Expected filesize of 10 bytes but read 5')],
+			[4, 'HTTP/1.1 415 Content not allowed', new UnsupportedMediaType('Content not allowed')],
+			[4, 'HTTP/1.1 503 Service Unavailable', new ServiceUnavailable()],
 		];
 	}
 }
