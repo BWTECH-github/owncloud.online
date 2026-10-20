@@ -143,7 +143,7 @@ class Factory implements ICacheFactory {
 	 * @return \OC\Memcache\Cache
 	 */
 	public function createDistributed($prefix = '') {
-		return new $this->distributedCacheClass($this->globalPrefix . '/' . $prefix);
+		return $this->createCache($this->distributedCacheClass, $this->globalPrefix . '/' . $prefix);
 	}
 
 	/**
@@ -153,7 +153,27 @@ class Factory implements ICacheFactory {
 	 * @return \OC\Memcache\Cache
 	 */
 	public function createLocal($prefix = '') {
-		return new $this->localCacheClass($this->globalPrefix . '/' . $prefix);
+		return $this->createCache($this->localCacheClass, $this->globalPrefix . '/' . $prefix);
+	}
+
+	/**
+	 * Zwischenspeicher anlegen. Redis kommt in eine FailSafeCache-Hülle: ein
+	 * gestörter oder überlasteter Redis bremst dann nur, statt jede Anfrage schon
+	 * beim Hochfahren mit einer RedisException abzubrechen (WebDAV: 503). Sperren
+	 * (createLocking()) bleiben davon unberührt. Memcached braucht die Hülle nicht:
+	 * die Erweiterung meldet Ausfälle über Rückgabewerte, nicht über Ausnahmen.
+	 *
+	 * @param string $class
+	 * @param string $prefix
+	 * @return \OC\Memcache\Cache
+	 */
+	private function createCache($class, $prefix) {
+		if (!\is_a(\ltrim($class, '\\'), Redis::class, true)) {
+			return new $class($prefix);
+		}
+		return new FailSafeCache(static function () use ($class, $prefix) {
+			return new $class($prefix);
+		}, $this->logger, $prefix);
 	}
 
 	/**

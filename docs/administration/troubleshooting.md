@@ -30,6 +30,45 @@ Proxy-Beispiel:
 'trusted_proxies' => ['127.0.0.1'],
 ```
 
+## WebDAV antwortet unter Last mit 503
+
+Antwortet der Server bei vielen gleichzeitigen Anfragen – etwa nach einem
+großen Sync oder Bulk-Upload – mit `503 Internal Server Error`, ist die Anfrage
+schon beim Hochfahren an einem Dienst gescheitert, bevor WebDAV sie bearbeiten
+konnte. Die eigentliche Ausnahme steht im Protokoll (App `remote`). Häufige
+Ursachen:
+
+- **Redis gestört oder überlastet** (`RedisException`, etwa „read error on
+  connection“): Als Zwischenspeicher (`memcache.local`, `memcache.distributed`)
+  bricht ein Redis-Ausfall keine Anfrage ab, er wirkt wie ein leerer Cache und
+  steht je Anfrage einmal im Protokoll („Memory cache unavailable …“). Für
+  Dateisperren (`memcache.locking`) bleibt Redis Pflicht. Ein
+  Verbindungs-Timeout setzen, sonst wartet jede Anfrage bei einem nicht
+  erreichbaren Redis bis zum TCP-Timeout des Betriebssystems:
+
+    ```php
+    'redis' => [
+      'host' => 'redis.example.com',
+      'port' => 6379,
+      'timeout' => 1.5,
+    ],
+    ```
+
+    Auf dem Redis-Server müssen `maxclients` und `tcp-backlog` über der Summe
+    der PHP-Worker aller Webserver liegen, die ihn nutzen.
+- **Datenbankverbindungen erschöpft** (`Failed to connect to the database`,
+  „Too many connections“; die Antwort ist dann oft `599`, die Ausnahme steht in
+  `crash-JJJJ-MM-TT.log` im Datenverzeichnis): `max_connections` jedes
+  Datenbankknotens muss über der Zahl der PHP-Worker liegen, die ihn erreichen –
+  bei mehreren Webservern oder Mandanten auf einem Cluster über deren Summe.
+- **Galera-Cluster mit Lastverteilung auf alle Knoten** („Deadlock found when
+  trying to get lock“ bei gleichzeitigen Änderungen): Schreibzugriffe auf einen
+  Knoten lenken, etwa in HAProxy die übrigen Knoten als `backup` eintragen.
+- **Verbindungsabbrüche bei langen Anfragen** („MySQL server has gone away“):
+  Leerlauf-Timeouts eines Datenbank-Proxys (HAProxy `timeout client` und
+  `timeout server`) müssen länger sein als die längste Anfrage, etwa der
+  Zusammenbau großer Uploads.
+
 ## JavaScript-Fehler: jQuery ist nicht definiert
 
 Ursache ist meist ein unvollständiger Build. Bei owncloud.online müssen Composer und `make` im Release-Prozess laufen.

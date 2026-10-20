@@ -1,0 +1,13 @@
+Bugfix: A disturbed Redis no longer breaks requests when used as a cache
+
+With Redis as memcache.local or memcache.distributed, every request reads
+cached app information while starting up. When Redis refused or dropped the
+connection - a restart, a network hiccup, maxclients reached under load - this
+already threw an exception, and WebDAV answered with 503 (or 599 when handling
+the error failed as well). Under load this hit many parallel requests at once,
+for example the PROPFIND requests a desktop client sends after a bulk upload.
+
+Redis used as a cache is now treated like an empty cache when it fails: the
+request goes on without it, and the cause is logged once per request. Redis
+used for file locking (memcache.locking) still has to be available. The
+troubleshooting guide lists the usual causes of 503 under load.

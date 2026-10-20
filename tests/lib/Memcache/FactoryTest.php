@@ -62,6 +62,20 @@ class Test_Factory_Unavailable_Cache2 {
 	}
 }
 
+/**
+ * Redis, dessen Server nicht erreichbar ist: schon der Aufbau scheitert, wie bei
+ * phpredis connect() gegen einen gestörten oder überlasteten Dienst.
+ */
+class Test_Factory_Unreachable_Redis extends \OC\Memcache\Redis {
+	public function __construct($prefix = '') {
+		throw new \RuntimeException('Connection refused');
+	}
+
+	public static function isAvailable() {
+		return true;
+	}
+}
+
 class FactoryTest extends \Test\TestCase {
 	public const AVAILABLE1 = '\\Test\\Memcache\\Test_Factory_Available_Cache1';
 	public const AVAILABLE2 = '\\Test\\Memcache\\Test_Factory_Available_Cache2';
@@ -141,5 +155,29 @@ class FactoryTest extends \Test\TestCase {
 
 		$logger = $this->getMockBuilder('\OCP\ILogger')->getMock();
 		new \OC\Memcache\Factory('abc', $logger, $localCache, $distributedCache);
+	}
+
+	/**
+	 * Ein gestörter Redis darf als Zwischenspeicher keine Anfrage abbrechen –
+	 * bisher warf schon createLocal() beim Hochfahren und WebDAV antwortete mit
+	 * 503. Für Sperren bleibt der Fehler sichtbar.
+	 */
+	public function testUnreachableRedisIsAnEmptyCacheButNoLockingBackend() {
+		\OC\Memcache\FailSafeCache::resetForTesting();
+		$logger = $this->getMockBuilder('\OCP\ILogger')->getMock();
+		$factory = new \OC\Memcache\Factory('abc', $logger, Test_Factory_Unreachable_Redis::class, null, Test_Factory_Unreachable_Redis::class);
+
+		try {
+			$local = $factory->createLocal('app-info');
+			$distributed = $factory->createDistributed('mimetypes');
+
+			$this->assertNull($local->get('files'));
+			$this->assertFalse($distributed->set('text/plain', 1));
+			$this->assertSame('abc/app-info', $local->getPrefix());
+		} finally {
+			\OC\Memcache\FailSafeCache::resetForTesting();
+		}
+		$this->expectException(\RuntimeException::class);
+		$factory->createLocking('lock');
 	}
 }
