@@ -49,6 +49,8 @@ class CryptoSessionData implements \ArrayAccess, ISession {
 	protected $sessionValues;
 	/** @var bool */
 	protected $isModified = false;
+	/** @var array|null Werte beim vorzeitigen Freigeben der Sperre (releaseLock()), sonst null */
+	protected $valuesAtRelease = null;
 	public const encryptedSessionName = 'encrypted_session_data';
 
 	/**
@@ -143,6 +145,9 @@ class CryptoSessionData implements \ArrayAccess, ISession {
 	public function clear() {
 		$this->sessionValues = [];
 		$this->isModified = true;
+		// Leeren ersetzt alles, es gibt nichts zusammenzuführen; die Sperre holt
+		// sich Internal::clear() dafür selbst zurück.
+		$this->valuesAtRelease = null;
 		$this->session->clear();
 	}
 
@@ -153,6 +158,10 @@ class CryptoSessionData implements \ArrayAccess, ISession {
 	 * @return void
 	 */
 	public function regenerateId($deleteOldSession = true) {
+		if ($this->valuesAtRelease !== null) {
+			// Die neue Kennung soll den aktuellen Stand tragen, nicht den beim Freigeben.
+			$this->mergeChangesSinceRelease(true);
+		}
 		$this->session->regenerateId($deleteOldSession);
 	}
 
@@ -171,12 +180,85 @@ class CryptoSessionData implements \ArrayAccess, ISession {
 	 * Close the session and release the lock, also writes all changed data in batch
 	 */
 	public function close(): void {
+		if ($this->valuesAtRelease !== null) {
+			$this->mergeChangesSinceRelease(false);
+		}
+		$this->writeValues();
+		$this->session->close();
+	}
+
+	/**
+	 * Schreibt die Sitzung und gibt ihre Sperre schon vor close() frei.
+	 *
+	 * Für Anfragen, die die Sitzung danach nur noch lesen: Parallele Anfragen
+	 * derselben Sitzung warten dann nicht mehr, bis diese hier fertig ist. Ändert
+	 * die Anfrage doch noch etwas, holt close() die Sperre zurück, liest die
+	 * Sitzung neu und trägt nur diese Änderungen ein – was andere Anfragen
+	 * inzwischen gespeichert haben, bleibt erhalten.
+	 *
+	 * @return bool false, wenn die Sitzung darunter das nicht kann
+	 */
+	public function releaseLock(): bool {
+		if (!($this->session instanceof Internal)) {
+			return false;
+		}
+		$this->writeValues();
+		if (!$this->session->releaseLock()) {
+			return false;
+		}
+		$this->valuesAtRelease = (array)$this->sessionValues;
+		return true;
+	}
+
+	private function writeValues(): void {
 		if ($this->isModified) {
 			$encryptedValue = $this->crypto->encrypt(\json_encode($this->sessionValues), $this->passphrase);
 			$this->session->set(self::encryptedSessionName, $encryptedValue);
 			$this->isModified = false;
 		}
-		$this->session->close();
+	}
+
+	/**
+	 * Nach releaseLock(): Was hat die Anfrage seitdem geändert? Gibt es etwas
+	 * (oder verlangt $force den frischen Stand), die Sperre zurückholen, die
+	 * Sitzung neu lesen und nur diese Änderungen darauf anwenden. Zwischenwerte,
+	 * die bis hierher wieder zurückgesetzt wurden, zählen nicht.
+	 *
+	 * @param bool $force auch ohne Änderungen frisch lesen
+	 */
+	private function mergeChangesSinceRelease(bool $force): void {
+		$valuesAtRelease = $this->valuesAtRelease;
+		$this->valuesAtRelease = null;
+		$values = (array)$this->sessionValues;
+		$changed = [];
+		foreach ($values as $key => $value) {
+			if (!\array_key_exists($key, $valuesAtRelease) || $valuesAtRelease[$key] !== $value) {
+				$changed[$key] = $value;
+			}
+		}
+		$removed = \array_keys(\array_diff_key($valuesAtRelease, $values));
+		$this->isModified = false;
+		if (!$force && $changed === [] && $removed === []) {
+			return;
+		}
+		$reacquired = $this->session instanceof Internal && $this->session->reacquireLock();
+		if (!$reacquired) {
+			if ($changed !== [] || $removed !== []) {
+				\OC::$server->getLogger()->warning(
+					'Session lock could not be reacquired, changes to the session were not saved (keys: {keys})',
+					['app' => 'core', 'keys' => \implode(', ', \array_merge(\array_keys($changed), $removed))]
+				);
+			}
+			return;
+		}
+		$this->initializeSession();
+		foreach ($changed as $key => $value) {
+			$this->sessionValues[$key] = $value;
+		}
+		foreach ($removed as $key) {
+			unset($this->sessionValues[$key]);
+		}
+		$this->isModified = $changed !== [] || $removed !== [];
 	}
 
 	/**

@@ -701,7 +701,9 @@ class Session implements IUserSession, Emitter {
 		} catch (SessionNotAvailableException $ex) {
 			// This can happen with OCC, where a memory session is used
 			// if a memory session is used, we shouldn't create a session token anyway
-			$this->logger->logException($ex, ['app' => __METHOD__]);
+			// Ebenso, wenn die PHP-Sitzung nicht startete (etwa Sitzungssperre belegt):
+			// Das steht schon einmal als Warnung im Protokoll, hier reicht debug.
+			$this->logger->debug('No session id, session token not created', ['app' => __METHOD__]);
 			return false;
 		} catch (UniqueConstraintViolationException $ex) {
 			// Benign race: another concurrent request on the same session created the

@@ -1,0 +1,19 @@
+Bugfix: Parallel WebDAV requests no longer fail at the session lock
+
+With sessions in Redis (phpredis with session locking, 100 retries of 20 ms),
+parallel requests of the same session queued up at the session lock. The
+desktop client sends its single PROPFIND requests after a bulk upload in
+parallel, each with its Bearer token and the session cookie. Under load the
+last requests waited longer than 2 seconds, phpredis gave up, the session start
+failed silently, the session cookie was deleted and the request ended with
+"503 Internal Server Error"; a browser request in the same situation got a 500
+and was logged out.
+
+Requests of sync clients (Authorization header plus session cookie on
+remote.php, session already authenticated for WebDAV) now release the session
+lock right after reading the session and writing LAST_ACTIVITY. Changes made
+later in such a request are merged into the freshly read session on close.
+If the lock still cannot be acquired in time, the request continues with a
+read-only session (phpredis 6.3 and later) or without a session, the session
+cookie is kept, and a warning in the log names the cause. Browser sessions keep
+the previous behaviour.

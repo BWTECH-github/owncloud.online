@@ -45,18 +45,35 @@ use OCP\Session\Exceptions\SessionNotAvailableException;
  */
 class Internal extends Session {
 	/**
+	 * So meldet phpredis, dass die Sitzungssperre in der eingestellten Wartezeit
+	 * (redis.session.lock_retries × lock_wait_time) nicht frei wurde: 6.x „Failed
+	 * to acquire session lock“, 6.3 im Lesemodus mit dem Zusatz „…, session will
+	 * be read only“, 5.3 „Acquire of session lock was not successful“.
+	 */
+	private const LOCK_FAILURE_MESSAGES = [
+		'Failed to acquire session lock',
+		'Acquire of session lock was not successful',
+	];
+
+	/** @var string|null erste Meldung beim letzten Sitzungsstart, null wenn er glatt lief */
+	private $startFailure = null;
+
+	/** @var bool die Sitzungssperre war beim letzten Start nicht zu bekommen */
+	private $lockFailed = false;
+
+	/** @var bool ohne Sperre geöffnet: lesbar, Änderungen werden nicht gespeichert */
+	private $readOnly = false;
+
+	/** @var bool Sperre nach releaseLock() frei, die Daten bleiben lesbar */
+	private $lockReleased = false;
+
+	/**
 	 * @param string $name
 	 * @throws \Exception
 	 */
 	public function __construct($name) {
 		\session_name($name);
-		\set_error_handler([$this, 'trapError']);
-		try {
-			$this->start();
-		} catch (\Exception $e) {
-			\setcookie(\session_name(), '', -1, \OC::$WEBROOT ? : '/');
-		}
-		\restore_error_handler();
+		$this->startSession();
 		if ($_SESSION === null) {
 			throw new \Exception('Failed to start session');
 		}
@@ -101,6 +118,20 @@ class Internal extends Session {
 	}
 
 	public function clear() {
+		if ($this->lockReleased) {
+			// Leeren (Abmelden) muss gespeichert werden: Sperre zurückholen
+			$this->reacquireLock();
+		}
+		if ($this->readOnly) {
+			// Ohne Sperre lässt sich die gespeicherte Sitzung nur noch verwerfen,
+			// dafür braucht phpredis keine Sperre. Danach ohne Sitzung weiter.
+			@\session_destroy();
+			$this->readOnly = false;
+		}
+		if (\session_status() !== PHP_SESSION_ACTIVE) {
+			$_SESSION = [];
+			return;
+		}
 		\session_unset();
 		$this->regenerateId();
 		@\session_destroy();
@@ -109,8 +140,77 @@ class Internal extends Session {
 	}
 
 	public function close(): void {
-		\session_write_close();
+		if ($this->readOnly) {
+			// Ohne Sperre geöffnet: nichts zurückschreiben, phpredis lehnte es ab
+			// („Unable to write session: session lock not held“).
+			\session_abort();
+		} elseif (!$this->lockReleased) {
+			\session_write_close();
+		}
 		parent::close();
+	}
+
+	/**
+	 * Schreibt die Sitzung und gibt ihre Sperre frei, ohne sie zu schließen.
+	 *
+	 * Lesen geht danach weiter; set() und remove() wirken nur noch im Speicher,
+	 * bis reacquireLock() die Sperre zurückholt. Wer die Sitzung danach ändern
+	 * will, muss das selbst tun (siehe CryptoSessionData::releaseLock()).
+	 *
+	 * @return bool false, wenn die Sitzung nicht gesperrt offen war
+	 */
+	public function releaseLock(): bool {
+		if ($this->sessionClosed || $this->readOnly || \session_status() !== PHP_SESSION_ACTIVE) {
+			return false;
+		}
+		// Scheitert das Schreiben, meldet PHP das selbst; frei ist die Sperre so oder so.
+		\session_write_close();
+		$this->lockReleased = true;
+		return true;
+	}
+
+	/**
+	 * Holt nach releaseLock() die Sperre zurück und liest die Sitzung dabei neu.
+	 *
+	 * Wartet wie jeder Sitzungsstart höchstens so lange, wie phpredis es zulässt.
+	 * Geht nicht mehr, sobald die Antwortköpfe gesendet sind.
+	 *
+	 * @return bool true, wenn die Sitzung wieder gesperrt und speicherbar offen ist
+	 */
+	public function reacquireLock(): bool {
+		if (!$this->lockReleased || $this->sessionClosed || \headers_sent()) {
+			return false;
+		}
+		$this->lockReleased = false;
+		$this->startSession();
+		return !$this->readOnly && \session_status() === PHP_SESSION_ACTIVE;
+	}
+
+	/**
+	 * @return bool true, wenn die Sitzung ohne Sperre nur lesend offen ist
+	 */
+	public function isReadOnly(): bool {
+		return $this->readOnly;
+	}
+
+	/**
+	 * @return bool true, wenn der letzte Start an der Sitzungssperre scheiterte
+	 */
+	public function hasLockFailed(): bool {
+		return $this->lockFailed;
+	}
+
+	/**
+	 * Erste Meldung des letzten Sitzungsstarts, ohne Speicherpfad (der kann bei
+	 * Redis Zugangsdaten enthalten).
+	 *
+	 * @return string|null null, wenn der Start glatt lief
+	 */
+	public function getStartFailure(): ?string {
+		if ($this->startFailure === null) {
+			return null;
+		}
+		return \preg_replace('/\s*\((?:path: )?[^()]*:\/\/[^()]*\)/', '', $this->startFailure);
 	}
 
 	/**
@@ -120,7 +220,13 @@ class Internal extends Session {
 	 * @return void
 	 */
 	public function regenerateId($deleteOldSession = true) {
-		@\session_regenerate_id($deleteOldSession);
+		if ($this->lockReleased && !$this->reacquireLock()) {
+			return;
+		}
+		if (@\session_regenerate_id($deleteOldSession) && $this->readOnly) {
+			// Die neue Kennung hat ihre eigene Sperre: ab jetzt wieder speicherbar.
+			$this->readOnly = false;
+		}
 	}
 
 	/**
@@ -151,7 +257,48 @@ class Internal extends Session {
 	 * @throws \ErrorException
 	 */
 	public function trapError($errorNumber, $errorString): void {
+		if ($this->startFailure === null) {
+			$this->startFailure = $errorString;
+		}
+		foreach (self::LOCK_FAILURE_MESSAGES as $lockFailure) {
+			if (\strpos($errorString, $lockFailure) !== false) {
+				// Nur belegt, nicht kaputt: nicht abbrechen. Im Lesemodus hat
+				// phpredis die Sitzung trotzdem gelesen.
+				$this->lockFailed = true;
+				return;
+			}
+		}
 		throw new \ErrorException($errorString);
+	}
+
+	/**
+	 * Startet die PHP-Sitzung und hält fest, wie das ausging.
+	 */
+	private function startSession(): void {
+		$this->startFailure = null;
+		$this->lockFailed = false;
+		\set_error_handler([$this, 'trapError']);
+		try {
+			$this->start();
+		} catch (\Exception $e) {
+			if ($this->startFailure === null) {
+				$this->startFailure = $e->getMessage();
+			}
+			// Eine nur belegte Sitzung ist gültig: das Cookie bleibt, sonst meldet
+			// sich der Client neu an bzw. der Browser ist abgemeldet.
+			if (!$this->lockFailed) {
+				$this->deleteSessionCookie();
+			}
+		}
+		\restore_error_handler();
+		$this->readOnly = $this->lockFailed && \session_status() === PHP_SESSION_ACTIVE;
+	}
+
+	/**
+	 * Lässt den Browser das Sitzungs-Cookie verwerfen.
+	 */
+	protected function deleteSessionCookie(): void {
+		\setcookie(\session_name(), '', -1, \OC::$WEBROOT ? : '/');
 	}
 
 	/**
@@ -179,6 +326,12 @@ class Internal extends Session {
 			//try to set the session lifetime
 			$sessionLifeTime = self::getSessionLifeTime();
 			@\ini_set('session.gc_maxlifetime', (string)$sessionLifeTime);
+		}
+		if (\ini_get('session.save_handler') === 'redis') {
+			// phpredis ab 6.3.0: Wird die Sitzungssperre nicht rechtzeitig frei, die
+			// Sitzung nur lesend öffnen statt gar nicht. Ältere Versionen kennen den
+			// Schalter nicht; ein per php_admin_value gesetzter Wert hat Vorrang.
+			@\ini_set('redis.session.lock_failure_readonly', '1');
 		}
 		\session_start();
 	}

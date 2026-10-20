@@ -433,6 +433,7 @@ class OC {
 	public static function initSession() {
 		// Let the session name be changed in the initSession Hook
 		$sessionName = OC_Util::getInstanceId();
+		$internalSession = null;
 
 		try {
 			// Allow session apps to create a custom session object
@@ -442,6 +443,7 @@ class OC {
 			if (!$useCustomSession) {
 				// set the session name to the instance id - which is unique
 				$session = new \OC\Session\Internal($sessionName);
+				$internalSession = $session;
 			}
 
 			$cryptoWrapper = \OC::$server->getSessionCryptoWrapper();
@@ -458,6 +460,14 @@ class OC {
 			die();
 		}
 
+		// Erst nach setSession() protokollieren: Vorher bauten Logger und Request
+		// den CSRF-Schutz noch mit der vorläufigen Sitzung.
+		$sessionStartedCleanly = true;
+		if ($internalSession !== null && $internalSession->getStartFailure() !== null) {
+			$sessionStartedCleanly = false;
+			self::logSessionStartFailure($internalSession);
+		}
+
 		$sessionLifeTime = self::getSessionLifeTime();
 
 		if (!$session->exists('LAST_ACTIVITY')) {
@@ -468,9 +478,16 @@ class OC {
 			// generated session id cannot have an orphaned token, so cookie-less clients
 			// (DAV sync, owncloudcmd, CalDAV/CardDAV, status polls) would otherwise pay a
 			// guaranteed no-op DELETE on oc_authtoken on every single request.
-			if (isset($_COOKIE[\session_name()]) && \OC::$server->getUserSession() !== null) {
+			// Neu ist sie aber nur, wenn sie normal (mit Sperre) gestartet ist. Ließ sie
+			// sich nicht oder nur ohne Sperre lesen, legt sie womöglich gerade eine
+			// parallele Anfrage an: deren Token bleibt.
+			if ($sessionStartedCleanly && isset($_COOKIE[\session_name()]) && \OC::$server->getUserSession() !== null) {
 				// web installer doesn't have a valid userSession at this point
-				\OC::$server->getUserSession()->invalidateSessionToken();
+				try {
+					\OC::$server->getUserSession()->invalidateSessionToken();
+				} catch (\OCP\Session\Exceptions\SessionNotAvailableException $e) {
+					// ohne Sitzungskennung gibt es kein Token zu invalidieren
+				}
 			}
 		} else {
 			if (\time() - $session->get('LAST_ACTIVITY') > $sessionLifeTime) {
@@ -483,6 +500,69 @@ class OC {
 		}
 
 		$session->set('LAST_ACTIVITY', \time());
+
+		if ($internalSession !== null
+			&& $session instanceof \OC\Session\CryptoSessionData
+			&& self::canReleaseSessionLock(self::$SUBURI, self::$server->getRequest(), $session)
+		) {
+			$session->releaseLock();
+		}
+	}
+
+	/**
+	 * Darf die Sitzungssperre gleich nach dem Lesen wieder frei werden?
+	 *
+	 * Sync-Clients (Desktop, owncloudcmd, Mobil) schicken bei WebDAV jede Anfrage
+	 * mit Authorization-Kopf und zusätzlich mit dem Sitzungs-Cookie, oft viele
+	 * gleichzeitig. Ist die Sitzung schon für WebDAV angemeldet, liest die Anfrage
+	 * sie danach nur noch. Hielte sie die Sperre bis zum DAV-Backend (nach
+	 * setupFS), reihten sich die parallelen Anfragen dort hintereinander – unter
+	 * Last bis zur Zeitüberschreitung der Sperre. Ändert die Anfrage doch etwas,
+	 * holt CryptoSessionData::close() die Sperre dafür zurück.
+	 *
+	 * Browser (Weboberfläche, öffentliche Links) schicken keinen Authorization-
+	 * Kopf zur Sitzung und behalten das bisherige Verhalten.
+	 *
+	 * @param string $script aufgerufenes Skript relativ zur Installation
+	 * @param IRequest $request
+	 * @param \OCP\ISession $session
+	 * @return bool
+	 */
+	private static function canReleaseSessionLock($script, IRequest $request, \OCP\ISession $session) {
+		if ($script !== '/remote.php' || $request->getCookie(\session_name()) === null) {
+			return false;
+		}
+		$authorization = $request->getHeader('Authorization') ?? $request->server['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+		if ($authorization === '' && !isset($request->server['PHP_AUTH_USER'])) {
+			return false;
+		}
+		$userId = $session->get('user_id');
+		return \is_string($userId) && $userId !== ''
+			&& $session->get(\OCA\DAV\Connector\Sabre\Auth::DAV_AUTHENTICATED) === $userId;
+	}
+
+	/**
+	 * Den gescheiterten oder nur lesenden Sitzungsstart eindeutig protokollieren.
+	 *
+	 * Ohne diesen Eintrag sah man bisher nur die Folgen, etwa eine WebDAV-Antwort
+	 * „503 Internal Server Error“, aber nicht, dass die Sitzungssperre der Grund war.
+	 */
+	private static function logSessionStartFailure(\OC\Session\Internal $session) {
+		$failure = $session->getStartFailure();
+		$logger = \OC::$server->getLogger();
+		if ($session->isReadOnly()) {
+			$logger->warning(
+				'Session lock not acquired in time (redis.session.lock_retries * lock_wait_time), continuing read-only, changes to the session are not saved: ' . $failure,
+				['app' => 'core']
+			);
+		} elseif ($session->hasLockFailed()) {
+			$logger->warning(
+				'Session lock not acquired in time (redis.session.lock_retries * lock_wait_time), continuing without session: ' . $failure,
+				['app' => 'core']
+			);
+		} else {
+			$logger->error('Session could not be started properly: ' . $failure, ['app' => 'core']);
+		}
 	}
 
 	/**

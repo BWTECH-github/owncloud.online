@@ -68,6 +68,15 @@ Ursachen:
   Leerlauf-Timeouts eines Datenbank-Proxys (HAProxy `timeout client` und
   `timeout server`) müssen länger sein als die längste Anfrage, etwa der
   Zusammenbau großer Uploads.
+- **Sitzungssperre** (Sitzungen in Redis mit `redis.session.locking_enabled`):
+  Anfragen derselben Sitzung warten aufeinander, höchstens
+  `redis.session.lock_retries` × `redis.session.lock_wait_time` (Vorgabe
+  100 × 20 ms = 2 s). Sync-Clients geben die Sperre gleich nach dem Lesen der
+  Sitzung wieder frei. Wird sie trotzdem nicht rechtzeitig frei, läuft die
+  Anfrage weiter – mit phpredis ab 6.3 nur lesend, sonst ohne Sitzung – und
+  das Protokoll meldet „Session lock not acquired in time“ (App `core`).
+  Häufen sich diese Meldungen, hält eine Anfrage ihre Sitzung zu lange, meist
+  wegen einer langsamen Datenbank oder eines überlasteten Redis.
 
 ## JavaScript-Fehler: jQuery ist nicht definiert
 
