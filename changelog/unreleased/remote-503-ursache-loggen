@@ -1,0 +1,7 @@
+Bugfix: WebDAV-Fehler mit 503 zeigen ihre Ursache im Protokoll
+
+Scheiterte eine WebDAV-Anfrage schon vor der Sabre-Verarbeitung (etwa an einem
+Datenbank- oder Sperrfehler unter Last), antwortete remote.php mit
+„503 Internal Server Error“ und schrieb nur diese allgemeine Hülle ins
+Protokoll. Jetzt wird die eigentliche Ausnahme samt Trace protokolliert; der
+Client bekommt weiter nur die allgemeine Meldung.

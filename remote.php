@@ -34,7 +34,6 @@
  *
  */
 
-use OCA\DAV\Connector\Sabre\ExceptionLoggerPlugin;
 use Sabre\DAV\Exception\ServiceUnavailable;
 use Sabre\DAV\Server;
 
@@ -57,8 +56,11 @@ function handleException($e) {
 		// fire up a simple server to properly process the exception
 		$server = new Server();
 		if (!($e instanceof RemoteException)) {
-			// we shall not log on RemoteException
-			$server->addPlugin(new ExceptionLoggerPlugin('webdav', \OC::$server->getLogger()));
+			// Die eigentliche Ausnahme protokollieren. Der Client bekommt unten nur eine
+			// allgemeine 503-Antwort; bisher landete auch im Protokoll nur diese Hülle
+			// („Internal Server Error“), die Ursache – etwa ein Datenbank- oder Sperrfehler
+			// unter Last – blieb unsichtbar. RemoteException wird weiter nicht geloggt.
+			\OC::$server->getLogger()->logException($e, ['app' => 'remote']);
 		}
 		$server->on('beforeMethod:*', function () use ($e) {
 			if ($e instanceof RemoteException) {
