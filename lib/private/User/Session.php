@@ -109,6 +109,20 @@ class Session implements IUserSession, Emitter {
 	 */
 	private const AUTH_MODULE = 'auth_module';
 
+	/**
+	 * Endpunkte, die Clients mit dem Sitzungs-Cookie ihrer Kontoverbindung, aber
+	 * ohne den Bearer der Sitzung aufrufen (Pfad wie getRawPathInfo() => Methode):
+	 * der Token-Endpunkt der App oauth2 (Client-Daten über HTTP-Basic oder im
+	 * Formular, bei jeder Token-Erneuerung) und die OpenID-Connect-Discovery der App
+	 * openidconnect (Ziel von /.well-known/openid-configuration, vor jeder
+	 * Erneuerung). Beide brauchen die Sitzung nicht; validateDavSession() lässt sie
+	 * dort unberührt, statt sie mangels Bearer zu beenden.
+	 */
+	private const CLIENT_ENDPOINTS = [
+		'/apps/oauth2/api/v1/token' => 'POST',
+		'/apps/openidconnect/config' => 'GET',
+	];
+
 	/** @var IUserManager | PublicEmitter $manager */
 	private $manager;
 
@@ -303,18 +317,31 @@ class Session implements IUserSession, Emitter {
 	 *
 	 * Eine solche Sitzung gilt nur, solange gilt, womit sie angemeldet wurde:
 	 * - App-Passwort: Es muss noch bestehen. Wird es widerrufen, endet die Sitzung
-	 *   mit der nächsten Anfrage, auch wenn der Client nur das Cookie schickt.
+	 *   mit der nächsten Anfrage, auch wenn der Client nur das Cookie schickt. Das
+	 *   Kennwort, mit dem es angelegt wurde, prüft der Server alle
+	 *   core/last_check_timeout Minuten wie bei einer Anmeldung mit dem App-Passwort
+	 *   (Konten aus LDAP ausgenommen, wie dort); gilt es nicht mehr, wird das
+	 *   App-Passwort ungültig und die Sitzung endet.
+	 * - Kennwort: Schickt der Client nur das Cookie, prüft der Server das bei der
+	 *   Anmeldung hinterlegte Kennwort alle core/last_check_timeout Minuten, wie für
+	 *   Browser; schickt er es mit, prüft es BasicAuthModule wie bisher.
 	 * - Sitzungstoken: Hatte die Sitzung schon eines, muss es noch bestehen (etwa
 	 *   unter „Sitzungen“ entfernt). Fehlt es noch, legt diese Anfrage es an – wie
 	 *   bisher erst, wenn der Client das Cookie zurückschickt, damit Clients ohne
 	 *   Cookies nicht mit jeder Anfrage ein Token erzeugen.
-	 * - Anmeldemodul (Bearer): Jede Anfrage muss den Authorization-Kopf tragen,
-	 *   den das Modul zuletzt bestätigt hat. Einen anderen – auch gar keinen –
-	 *   prüft das Modul sofort, denselben spätestens nach core/last_check_timeout
-	 *   Minuten wieder (wie die Kennwortprüfung). Für WebDAV prüft das Modul den
-	 *   Bearer ohnehin bei jeder Anfrage. Kommt ein solcher Kopf zu einer Sitzung
-	 *   ohne diesen Vermerk (begonnen vor dieser Prüfung), muss ein Modul ihren
-	 *   Nutzer bestätigen und wird dann vermerkt.
+	 * - Anmeldemodul (Bearer): Jede Anfrage muss einen Authorization-Kopf tragen,
+	 *   den das Modul für den Nutzer der Sitzung bestätigt. Einen anderen als den
+	 *   zuletzt bestätigten – auch gar keinen – prüft das Modul sofort, denselben
+	 *   spätestens nach core/last_check_timeout Minuten wieder. Lehnt es einen
+	 *   Bearer ab (abgelaufenes oder widerrufenes Token), lässt diese Prüfung die
+	 *   Sitzung für das erneuerte Token bestehen; die Anfrage selbst weisen
+	 *   WebDAV, OCS und Weboberfläche ab (die beiden letzten beenden die Sitzung
+	 *   dabei wie bisher). Ohne Bearer, mit einem, für den das Modul ohne Nutzer
+	 *   antwortet, oder mit dem eines anderen Nutzers endet sie. Kommt ein Bearer
+	 *   zu einer Sitzung ohne diesen Vermerk (begonnen vor dieser Prüfung), muss
+	 *   ein Modul ihren Nutzer bestätigen und wird dann vermerkt.
+	 * - Token-Endpunkt und Discovery (self::CLIENT_ENDPOINTS) ruft der Client mit
+	 *   dem Cookie, aber ohne Bearer auf; sie lassen die Sitzung unberührt.
 	 * - Eine Sitzung von vor dieser Prüfung ohne App-Passwort, deren erste Anfrage
 	 *   danach nur das Cookie schickt, meldet sich einmal neu an: Ob sie mit
 	 *   Kennwort oder Bearer begann, ist nicht bekannt.
@@ -339,8 +366,16 @@ class Session implements IUserSession, Emitter {
 		}
 
 		$appPassword = $this->session->get('app_password');
-		if ($appPassword !== null && !$this->isTokenOfUser($appPassword, $sessionUser)) {
-			$this->endDavSession($sessionUser, 'app password no longer valid');
+		if ($appPassword !== null) {
+			$problem = $this->checkAppPassword($appPassword, $sessionUser);
+			if ($problem !== null) {
+				$this->endDavSession($sessionUser, $problem);
+				return;
+			}
+		}
+
+		if (self::isClientEndpoint($request)) {
+			// Weder Vermerk noch Aktivität: Die Anfrage nutzt die Sitzung nicht.
 			return;
 		}
 
@@ -370,9 +405,14 @@ class Session implements IUserSession, Emitter {
 			$beganBeforeCheck = true;
 		}
 
-		$problem = $this->checkClientCredential($sessionUser, $request, $sessionToken, $appPassword !== null, $beganBeforeCheck);
-		if ($problem !== null) {
-			$this->endDavSession($sessionUser, $problem);
+		$verdict = $this->checkClientCredential($sessionUser, $request, $sessionId, $sessionToken, $appPassword !== null, $beganBeforeCheck);
+		if ($verdict === false) {
+			// Weder bestätigt noch widerlegt (siehe checkAuthModuleCredential()):
+			// Sitzung unverändert lassen, auch ihre Aktivität.
+			return;
+		}
+		if ($verdict !== null) {
+			$this->endDavSession($sessionUser, $verdict);
 			return;
 		}
 
@@ -387,16 +427,18 @@ class Session implements IUserSession, Emitter {
 	 *
 	 * @param IUser $sessionUser
 	 * @param IRequest $request
-	 * @param IToken|null $sessionToken
+	 * @param string $sessionId
+	 * @param IToken|null $sessionToken null, wenn diese Anfrage es eben erst angelegt hat
 	 * @param bool $hasAppPassword die Sitzung begann mit einem App-Passwort
 	 * @param bool $beganBeforeCheck die Sitzung begann vor dieser Prüfung
-	 * @return string|null warum die Sitzung nicht mehr gilt, null wenn sie gilt
+	 * @return string|false|null warum die Sitzung nicht mehr gilt; null, wenn sie
+	 *                           gilt; false, wenn die Anfrage sie weder bestätigt
+	 *                           noch widerlegt
 	 */
-	private function checkClientCredential(IUser $sessionUser, IRequest $request, ?IToken $sessionToken, $hasAppPassword, $beganBeforeCheck) {
+	private function checkClientCredential(IUser $sessionUser, IRequest $request, $sessionId, ?IToken $sessionToken, $hasAppPassword, $beganBeforeCheck) {
 		$authModule = $this->session->get(self::AUTH_MODULE);
 		if ($authModule !== null) {
-			return $this->isAuthModuleCredentialValid($authModule, $sessionUser, $request, $sessionToken)
-				? null : 'credential not confirmed by the authentication module';
+			return $this->checkAuthModuleCredential($authModule, $sessionUser, $request, $sessionToken);
 		}
 		if ($hasAppPassword) {
 			return null;
@@ -405,26 +447,96 @@ class Session implements IUserSession, Emitter {
 			return $this->adoptAuthModule($sessionUser, $request)
 				? null : 'credential not confirmed by any authentication module';
 		}
-		if ($beganBeforeCheck && self::getAuthorizationHeader($request) === '' && !isset($request->server['PHP_AUTH_USER'])) {
+		if (!self::sendsNoCredentials($request)) {
+			// Kennwort über HTTP-Basic: prüft BasicAuthModule alle paar Minuten
+			return null;
+		}
+		if ($beganBeforeCheck) {
 			// Ob eine Sitzung von vor dieser Prüfung mit Kennwort oder Bearer
 			// begann, ist unbekannt; nur mit Cookie ließe sich ein widerrufener
 			// Bearer nie erkennen. Einmal neu anmelden.
 			return 'session from before the check without credentials';
 		}
+		if ($sessionToken !== null && !$this->isStoredPasswordValid($sessionToken, $sessionId)) {
+			return 'password changed';
+		}
 		return null;
 	}
 
 	/**
-	 * @param string $token
-	 * @param IUser $user
-	 * @return bool true, wenn das Token besteht und dem Nutzer gehört
+	 * Gilt das App-Passwort der Sitzung noch? Es muss bestehen und dem Nutzer
+	 * gehören. Das Kennwort, mit dem es angelegt wurde, prüft der Server wie bei
+	 * einer Anmeldung mit dem App-Passwort (validateToken()): alle
+	 * core/last_check_timeout Minuten und nicht bei Konten aus LDAP, deren
+	 * App-Passwörter sonst schon ein kurzer Ausfall des Verzeichnisses löschte.
+	 * Gilt das Kennwort nicht mehr, wird das App-Passwort ungültig, wie dort.
+	 *
+	 * @param string $appPassword
+	 * @param IUser $sessionUser
+	 * @return string|null warum die Sitzung nicht mehr gilt, null wenn sie gilt
 	 */
-	private function isTokenOfUser($token, IUser $user) {
+	private function checkAppPassword($appPassword, IUser $sessionUser) {
 		try {
-			return $this->tokenProvider->getToken($token)->getUID() === $user->getUID();
+			$token = $this->tokenProvider->getToken($appPassword);
+		} catch (InvalidTokenException $ex) {
+			$token = null;
+		}
+		if ($token === null || $token->getUID() !== $sessionUser->getUID()) {
+			return 'app password no longer valid';
+		}
+		if ($sessionUser->getBackendClassName() !== 'LDAP' && !$this->isStoredPasswordValid($token, $appPassword)) {
+			$this->tokenProvider->invalidateToken($appPassword);
+			return 'password of the app password changed';
+		}
+		return null;
+	}
+
+	/**
+	 * Gilt das Kennwort noch, das im Token hinterlegt ist? Geprüft wird höchstens
+	 * alle core/last_check_timeout Minuten (last_check am Token, wie in
+	 * checkTokenCredentials()), und von parallelen Anfragen mit demselben Token nur
+	 * von der, die die Prüfung übernimmt; sonst prüften sie alle zugleich, je mit
+	 * einem Kennwort-Hash oder einer Anmeldung am Verzeichnis. Lässt sich das
+	 * Kennwort gerade nicht prüfen (Token ohne Kennwort, Ausnahme der
+	 * Benutzerverwaltung), gilt es bis zur nächsten Prüfung weiter.
+	 *
+	 * @param IToken $dbToken
+	 * @param string $tokenId
+	 * @return bool
+	 */
+	private function isStoredPasswordValid(IToken $dbToken, $tokenId) {
+		$now = $this->timeFactory->getTime();
+		if (!$this->isCredentialCheckDue($dbToken, $now)
+			|| !$this->tokenProvider->claimCredentialCheck($dbToken, $now)
+		) {
+			return true;
+		}
+		try {
+			$password = $this->tokenProvider->getPassword($dbToken, $tokenId);
+		} catch (PasswordlessTokenException $ex) {
+			return true;
 		} catch (InvalidTokenException $ex) {
 			return false;
 		}
+		try {
+			return $this->manager->checkPassword($dbToken->getLoginName(), $password) !== false;
+		} catch (Exception $ex) {
+			$this->logger->logException($ex, ['app' => __METHOD__]);
+			return true;
+		}
+	}
+
+	/**
+	 * Ist die nächste Prüfung der Zugangsdaten fällig, die das Token vertritt?
+	 * Abstand: App-Wert core/last_check_timeout in Minuten (Vorgabe 5).
+	 *
+	 * @param IToken $token
+	 * @param int $now
+	 * @return bool
+	 */
+	private function isCredentialCheckDue(IToken $token, $now) {
+		$checkTimeout = 60 * (int)$this->config->getAppValue('core', 'last_check_timeout', 5);
+		return $token->getLastCheck() <= $now - $checkTimeout;
 	}
 
 	/**
@@ -434,37 +546,54 @@ class Session implements IUserSession, Emitter {
 	 * core/last_check_timeout Minuten her ist; vermerkt wird sie wie die
 	 * Kennwortprüfung am Sitzungstoken.
 	 *
+	 * Lehnt das Modul einen Bearer mit einer Ausnahme ab, bleibt die Sitzung
+	 * unverändert: Abgelaufene und widerrufene Tokens sehen für den Kern gleich
+	 * aus, und mit einem abgelaufenen holt sich der Client gleich ein neues. Die
+	 * Anfrage selbst weisen WebDAV (Bearer-Backend des Moduls) sowie OCS und
+	 * Weboberfläche (verifyAuthHeaders(), beendet die Sitzung dabei wie bisher)
+	 * ohnehin ab. Antwortet das Modul ohne Nutzer, bürgt es nicht für den Kopf,
+	 * und verifyAuthHeaders() ließe die Anfrage über die Sitzung durch: Dann
+	 * endet sie.
+	 *
 	 * @param mixed $authModule Wert von self::AUTH_MODULE
 	 * @param IUser $sessionUser
 	 * @param IRequest $request
 	 * @param IToken|null $sessionToken null, wenn diese Anfrage es eben erst angelegt hat
-	 * @return bool
+	 * @return string|false|null wie checkClientCredential()
 	 */
-	private function isAuthModuleCredentialValid($authModule, IUser $sessionUser, IRequest $request, ?IToken $sessionToken) {
+	private function checkAuthModuleCredential($authModule, IUser $sessionUser, IRequest $request, ?IToken $sessionToken) {
 		$class = \is_array($authModule) ? ($authModule['class'] ?? null) : null;
 		$confirmed = \is_array($authModule) ? ($authModule['credential'] ?? null) : null;
 		$credential = self::getCredentialFingerprint($request);
 		$changed = !\is_string($confirmed) || !\hash_equals($confirmed, $credential);
 		$now = $this->timeFactory->getTime();
-		$checkTimeout = 60 * (int)$this->config->getAppValue('core', 'last_check_timeout', 5);
-		if (!$changed && ($sessionToken === null || $sessionToken->getLastCheck() > $now - $checkTimeout)) {
-			return true;
+		if (!$changed && ($sessionToken === null || !$this->isCredentialCheckDue($sessionToken, $now))) {
+			return null;
 		}
 
-		$user = null;
-		foreach ($this->getAuthModules(false) as $module) {
-			if (\get_class($module) !== $class) {
-				continue;
+		$module = null;
+		foreach ($this->getAuthModules(false) as $candidate) {
+			if (\get_class($candidate) === $class) {
+				$module = $candidate;
+				break;
 			}
-			try {
-				$user = $module->auth($request);
-			} catch (Exception $ex) {
-				$user = null;
-			}
-			break;
 		}
-		if ($user === null || $user->getUID() !== $sessionUser->getUID()) {
-			return false;
+		if ($module === null) {
+			return 'authentication module not available';
+		}
+		try {
+			$user = $module->auth($request);
+		} catch (Exception $ex) {
+			if (self::sendsModuleCredential($request)) {
+				return false;
+			}
+			$user = null;
+		}
+		if ($user === null) {
+			return 'credential not confirmed by the authentication module';
+		}
+		if ($user->getUID() !== $sessionUser->getUID()) {
+			return 'credential of another user';
 		}
 
 		if ($changed) {
@@ -474,7 +603,7 @@ class Session implements IUserSession, Emitter {
 			$sessionToken->setLastCheck($now);
 			$this->tokenProvider->updateToken($sessionToken);
 		}
-		return true;
+		return null;
 	}
 
 	/**
@@ -530,6 +659,36 @@ class Session implements IUserSession, Emitter {
 	private static function sendsModuleCredential(IRequest $request) {
 		$authorization = self::getAuthorizationHeader($request);
 		return $authorization !== '' && \stripos($authorization, 'Basic ') !== 0;
+	}
+
+	/**
+	 * Schickt die Anfrage gar keine Zugangsdaten, nur das Sitzungs-Cookie? Basic
+	 * steht unter mod_php auch ohne Authorization-Kopf in PHP_AUTH_USER.
+	 *
+	 * @param IRequest $request
+	 * @return bool
+	 */
+	private static function sendsNoCredentials(IRequest $request) {
+		return self::getAuthorizationHeader($request) === '' && !isset($request->server['PHP_AUTH_USER']);
+	}
+
+	/**
+	 * Ruft die Anfrage einen der self::CLIENT_ENDPOINTS auf? Verglichen wird mit
+	 * getRawPathInfo() – demselben Pfad, nach dem der Router zuteilt – und der
+	 * Methode der Route, wie in BasicAuthModule.
+	 *
+	 * @param IRequest $request
+	 * @return bool
+	 */
+	private static function isClientEndpoint(IRequest $request) {
+		try {
+			$path = $request->getRawPathInfo();
+		} catch (\Exception $e) {
+			// Pfad nicht bestimmbar: dann teilt auch der Router die Anfrage keinem
+			// dieser Endpunkte zu.
+			return false;
+		}
+		return isset(self::CLIENT_ENDPOINTS[$path]) && self::CLIENT_ENDPOINTS[$path] === $request->getMethod();
 	}
 
 	/**

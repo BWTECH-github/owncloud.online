@@ -9,19 +9,35 @@ they were started with, and every request extended them. Removing such a
 session under "Sessions" in the settings had no effect either, its session
 token was simply created again with the next request. A session started with
 an OAuth2 token went on accepting requests with the cookie alone after the
-desktop authorization was revoked.
+desktop authorization was revoked, and a password change did not end any of
+these sessions.
 
 These sessions are now checked before every request, like browser sessions:
 
 - App password: the session ends with the next request after the app password
-  was revoked, also when the client only sends the cookie.
+  was revoked, also when the client only sends the cookie. Every
+  core/last_check_timeout minutes (default 5) the password the app password
+  was created with is checked, as a login with the app password does; after a
+  password change the app password becomes invalid and the session ends.
+  Accounts from LDAP are exempt, as on login.
+- Password: when the client sends only the cookie, the password stored with
+  the session is checked every core/last_check_timeout minutes; after a
+  password change the session ends. Requests that send the password are
+  checked by the HTTP Basic login as before.
 - Session removed in the settings: the session ends with the next request. A
   client with valid credentials signs in again and gets a new session.
-- OAuth2 and OpenID Connect: every request has to carry the Authorization
-  header that the authentication module confirmed. A different header, or none
-  at all, is checked by the module at once, the same header again after
-  core/last_check_timeout minutes (default 5). As before, the module itself
-  rejects WebDAV requests with a revoked token right away.
+- OAuth2 and OpenID Connect: every request has to carry an Authorization
+  header that the authentication module confirms for the user of the session.
+  A different header, or none at all, is checked by the module at once, the
+  same header again after core/last_check_timeout minutes. Without a token or
+  with the token of another user the session ends. If the module rejects the
+  token, for example because it has expired or was revoked, the request fails
+  as before (401); on WebDAV the session stays for the renewed token, OCS and
+  the web interface end it as before. After a revocation the session can no
+  longer be used.
+- The token endpoint of the OAuth2 app and the OpenID Connect discovery, which
+  the desktop client calls with its cookie but without its token, leave the
+  session alone. Renewing a token no longer ends the session.
 
 A session that is no longer valid is logged out and its session token is
 deleted; the request continues without a login and gets 401 unless it carries
@@ -34,6 +50,8 @@ session was not started with an app password, the client signs in once more.
 The check reads the session token from the database as before, for app
 passwords also the app password token, which the HTTP Basic login of the same
 request loads anyway. The session and the token are written only when
-something changes, the last activity of the token at most once a minute.
-Browser sessions, public links, guests and the early release of the session
-lock for sync clients are unchanged.
+something changes, the last activity of the token at most once a minute. Of
+parallel requests with the same token only one checks a stored password; it
+takes over the check with a single conditional update. Browser sessions, public
+links, guests and the early release of the session lock for sync clients are
+unchanged.

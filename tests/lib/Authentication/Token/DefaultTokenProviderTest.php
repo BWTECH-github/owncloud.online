@@ -120,7 +120,38 @@ class DefaultTokenProviderTest extends TestCase {
 
 		$this->tokenProvider->updateTokenActivity($tk);
 	}
-	
+
+	public function providesCredentialCheckClaims() {
+		return [
+			'übernommen' => [true],
+			'eine parallele Anfrage war schneller' => [false],
+		];
+	}
+
+	/**
+	 * @dataProvider providesCredentialCheckClaims
+	 * @param bool $claimed
+	 */
+	public function testClaimCredentialCheck($claimed) {
+		$tk = new DefaultToken();
+		$tk->setId(42);
+		$tk->setLastCheck($this->time - 600);
+		$this->mapper->expects($this->once())
+			->method('claimLastCheck')
+			->with(42, $this->time - 600, $this->time)
+			->willReturn($claimed);
+
+		$this->assertSame($claimed, $this->tokenProvider->claimCredentialCheck($tk, $this->time));
+		$this->assertSame($claimed ? $this->time : $this->time - 600, $tk->getLastCheck());
+	}
+
+	public function testClaimCredentialCheckOfForeignToken() {
+		$this->expectException(\OC\Authentication\Exceptions\InvalidTokenException::class);
+		$this->mapper->expects($this->never())->method('claimLastCheck');
+
+		$this->tokenProvider->claimCredentialCheck($this->createMock(\OC\Authentication\Token\IToken::class), $this->time);
+	}
+
 	public function testGetTokenByUser() {
 		$user = $this->createMock('\OCP\IUser');
 		$this->mapper->expects($this->once())

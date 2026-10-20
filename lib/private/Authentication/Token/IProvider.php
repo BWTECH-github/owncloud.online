@@ -78,6 +78,19 @@ interface IProvider {
 	public function updateTokenActivity(IToken $token);
 
 	/**
+	 * Übernimmt die fällige Prüfung der Zugangsdaten eines Tokens: setzt seinen
+	 * Zeitpunkt der letzten Prüfung auf $now, aber nur, wenn ihn seit dem Laden
+	 * niemand sonst gesetzt hat. Von parallelen Anfragen mit demselben Token prüft
+	 * so genau eine.
+	 *
+	 * @param IToken $token
+	 * @param int $now
+	 * @throws InvalidTokenException
+	 * @return bool true, wenn dieser Aufruf die Prüfung übernimmt
+	 */
+	public function claimCredentialCheck(IToken $token, $now);
+
+	/**
 	 * Get all token of a user
 	 *
 	 * The provider may limit the number of result rows in case of an abuse

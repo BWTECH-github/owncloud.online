@@ -65,6 +65,25 @@ class DefaultTokenMapper extends Mapper {
 	}
 
 	/**
+	 * Setzt last_check eines Tokens auf $now, wenn es noch $lastCheck ist –
+	 * Vergleichen und Setzen in einer Anweisung, damit von parallelen Anfragen
+	 * genau eine die fällige Prüfung übernimmt.
+	 *
+	 * @param int $id
+	 * @param int $lastCheck der beim Laden gelesene Wert
+	 * @param int $now
+	 * @return bool true, wenn dieser Aufruf den Wert gesetzt hat
+	 */
+	public function claimLastCheck($id, $lastCheck, $now) {
+		$qb = $this->db->getQueryBuilder();
+		$qb->update('authtoken')
+			->set('last_check', $qb->createNamedParameter($now, IQueryBuilder::PARAM_INT))
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('last_check', $qb->createNamedParameter($lastCheck, IQueryBuilder::PARAM_INT)));
+		return (int)$qb->execute() === 1;
+	}
+
+	/**
 	 * Get the user UID for the given token
 	 *
 	 * @param string $token

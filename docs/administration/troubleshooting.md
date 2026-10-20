@@ -110,15 +110,34 @@ vor jeder Anfrage:
 - **App-Passwort entzogen** (Persönlich → Sicherheit → App-Passwörter / Token):
   Die nächste Anfrage des Geräts bekommt 401, auch wenn es nur das Cookie
   schickt. Der Client muss mit einem neuen App-Passwort eingerichtet werden.
+- **Kennwort geändert**: Sitzungen, die mit dem Kennwort begannen, enden
+  spätestens `last_check_timeout` Minuten (App-Wert `core`, Vorgabe 5) nach der
+  Änderung, auch wenn das Gerät nur das Cookie schickt. App-Passwörter, die vor
+  der Änderung entstanden, werden mit ihrer nächsten Prüfung ungültig (wie
+  bisher bei einer Anmeldung damit), ihre Sitzungen enden; der Client braucht
+  ein neues App-Passwort. Ausgenommen sind Konten aus LDAP: Deren App-Passwörter
+  prüft der Server nicht gegen das Kennwort, sie müssen entzogen werden. Jede
+  dieser Prüfungen mit dem alten Kennwort steht als „Login failed“ im Protokoll
+  und zählt wie ein Fehlversuch für die Bremse gegen Passwort-Raten.
 - **Sitzung unter „Sitzungen“ entfernt**: Die Sitzung endet mit der nächsten
   Anfrage. Hat das Gerät noch gültige Zugangsdaten (App-Passwort, OAuth2-Token,
   Kennwort), meldet es sich damit sofort neu an. Um ein Gerät auszusperren,
-  dessen Zugang entziehen, nicht nur die Sitzung.
+  dessen Zugang entziehen oder das Kennwort ändern, nicht nur die Sitzung
+  entfernen.
 - **Desktop-Freigabe (OAuth2) widerrufen**: WebDAV- und OCS-Anfragen mit dem
-  Token werden sofort abgewiesen. Die Sitzung selbst endet mit der ersten
-  Anfrage ohne das Token (etwa nur mit Cookie), sonst mit der ersten Anfrage,
-  die mehr als `last_check_timeout` Minuten (App-Wert `core`, Vorgabe 5) nach
-  der letzten Prüfung des Tokens kommt.
+  Token werden sofort abgewiesen. Die Sitzung lässt sich danach nicht mehr
+  nutzen: Sie gilt nur zusammen mit einem Token, das die OAuth2-App für ihr
+  Konto bestätigt, und endet mit der ersten Anfrage ohne Token (etwa nur mit
+  Cookie), spätestens mit ihrem Ablauf (`session_lifetime`).
+
+Ein abgelaufenes Access-Token beendet die Sitzung bei WebDAV nicht: Die Anfrage
+damit bekommt 401, der Client erneuert das Token und arbeitet mit derselben
+Sitzung weiter. Kommt es zuerst über OCS oder die Weboberfläche, endet die
+Sitzung dort wie bisher, und der Client meldet sich mit dem neuen Token neu an.
+Token-Erneuerung (`POST /index.php/apps/oauth2/api/v1/token`) und
+OpenID-Connect-Discovery (`/index.php/apps/openidconnect/config`, Ziel von
+`/.well-known/openid-configuration`) ruft der Desktop-Client mit dem Cookie, aber
+ohne Token auf; sie lassen die Sitzung unberührt.
 
 Eine so beendete Sitzung steht mit Stufe info im Protokoll:
 „Client session of `<konto>` ended: `<Grund>`“. Anfragen, die zu einer per
@@ -163,4 +182,5 @@ Prüfen:
 Die Token-Anfrage (`POST /index.php/apps/oauth2/api/v1/token`) weist mit
 HTTP-Basic den Client aus, nicht den Benutzer. Sie zählt deshalb nicht als
 Anmeldeversuch: kein „Login failed“ im Protokoll, keine Bremse gegen
-Passwort-Raten, und eine mitgeschickte Sitzung bleibt bestehen.
+Passwort-Raten, und eine mitgeschickte Sitzung bleibt bestehen – auch wenn der
+Client seine Daten im Formular statt über HTTP-Basic schickt.

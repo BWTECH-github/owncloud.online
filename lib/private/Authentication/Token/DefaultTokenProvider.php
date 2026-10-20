@@ -159,6 +159,21 @@ class DefaultTokenProvider implements IProvider {
 	}
 
 	/**
+	 * @inheritdoc
+	 */
+	public function claimCredentialCheck(IToken $token, $now) {
+		if (!($token instanceof DefaultToken)) {
+			throw new InvalidTokenException();
+		}
+		$claimed = $this->mapper->claimLastCheck($token->getId(), (int)$token->getLastCheck(), $now);
+		$this->tokenMemo = [];
+		if ($claimed) {
+			$token->setLastCheck($now);
+		}
+		return $claimed;
+	}
+
+	/**
 	 * Get all token of a user
 	 *
 	 * The provider may limit the number of result rows in case of an abuse

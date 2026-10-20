@@ -87,6 +87,10 @@ class Log implements ILogger {
 		'loginWithPassword',
 		'createSessionToken',
 		'loginInOwnCloud',
+		// Prüfung von Client-Sitzungen: App-Passwort und Sitzungskennung als Parameter
+		'checkClientCredential',
+		'checkAppPassword',
+		'isStoredPasswordValid',
 
 		// TokenProvider
 		'getToken',

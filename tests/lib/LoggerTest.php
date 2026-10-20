@@ -330,6 +330,52 @@ class LoggerTest extends TestCase {
 		}
 	}
 
+	/**
+	 * Session::checkAppPassword() bekommt das App-Passwort als Parameter.
+	 *
+	 * @dataProvider userAndPasswordData
+	 */
+	public function testDetectcheckAppPassword($user, $password): void {
+		$this->assertSensitiveParametersReplaced('checkAppPassword', [$user, $password]);
+	}
+
+	/**
+	 * Session::isStoredPasswordValid() bekommt App-Passwort oder Sitzungskennung als Parameter.
+	 *
+	 * @dataProvider userAndPasswordData
+	 */
+	public function testDetectisStoredPasswordValid($user, $password): void {
+		$this->assertSensitiveParametersReplaced('isStoredPasswordValid', [$user, $password]);
+	}
+
+	/**
+	 * Session::checkClientCredential() bekommt die Sitzungskennung als Parameter.
+	 *
+	 * @dataProvider userAndPasswordData
+	 */
+	public function testDetectcheckClientCredential($user, $password): void {
+		$this->assertSensitiveParametersReplaced('checkClientCredential', [$user, $password]);
+	}
+
+	/**
+	 * Protokolliert eine hier ausgelöste Ausnahme (ihr Stack nennt die aufrufende
+	 * Testmethode samt Parametern) und prüft, dass deren Werte ersetzt sind.
+	 *
+	 * @param string $method
+	 * @param string[] $secrets
+	 */
+	private function assertSensitiveParametersReplaced(string $method, array $secrets): void {
+		$e = new \Exception('test');
+		$this->logger->logException($e);
+
+		foreach ($this->getLogs() as $logLine) {
+			foreach ($secrets as $secret) {
+				$this->assertStringNotContainsString($secret, $logLine['message']);
+			}
+			$this->assertStringContainsString("$method(*** sensitive parameters replaced ***)", $logLine['message']);
+		}
+	}
+
 	public function testPasswordInCallback(): void {
 		$config = $this->createMock(IConfig::class);
 		$logger = $this->createMock(ILogger::class);

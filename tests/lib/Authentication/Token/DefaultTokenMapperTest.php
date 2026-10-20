@@ -147,6 +147,25 @@ class DefaultTokenMapperTest extends TestCase {
 	}
 
 	/**
+	 * Von parallelen Anfragen mit demselben Token übernimmt genau eine die fällige
+	 * Prüfung: Nur wer last_check noch mit dem geladenen Wert antrifft, setzt ihn.
+	 */
+	public function testClaimLastCheckSucceedsOnlyOnce() {
+		$dbToken = $this->mapper->getToken('9c5a2e661482b65597408a6bb6c4a3d1af36337381872ac56e445a06cdb7fea2b1039db707545c11027a4966919918b19d875a8b774840b18c6cbb7ae56fe206');
+		$loaded = (int)$dbToken->getLastCheck();
+
+		$this->assertTrue($this->mapper->claimLastCheck($dbToken->getId(), $loaded, $this->time));
+		$this->assertFalse($this->mapper->claimLastCheck($dbToken->getId(), $loaded, $this->time + 1));
+
+		$this->assertSame($this->time, (int)$this->mapper->getToken($dbToken->getToken())->getLastCheck());
+	}
+
+	public function testClaimLastCheckOfMissingToken() {
+		$this->assertFalse($this->mapper->claimLastCheck(-1, $this->time - 600, $this->time));
+		$this->assertSame(3, $this->getNumberOfTokens());
+	}
+
+	/**
 	 */
 	public function testGetInvalidToken() {
 		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
