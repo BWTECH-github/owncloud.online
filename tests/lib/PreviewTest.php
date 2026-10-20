@@ -939,6 +939,33 @@ class PreviewTest extends TestCase {
 		$this->assertEquals('thumbnails/' . $file->getId() . '/64-64.png', $preview->isCached());
 	}
 
+	/**
+	 * Im Vorschau-Ordner einer Datei liegen auch die Unterordner der
+	 * Versionsvorschauen (Ordnername = Versions-ID, ohne Maße) und gelegentlich
+	 * fremde Dateien. Beide dürfen die Suche nach einer größeren Vorschau nicht
+	 * abbrechen: früher „Undefined array key 1“ und DivisionByZeroError in
+	 * getDimensionsFromFilename(), die Vorschau kam als HTTP 500.
+	 */
+	public function testPreviewFolderEntriesWithoutDimensionsAreIgnored() {
+		$file = \OC::$server->getUserFolder(self::TEST_PREVIEW_USER1)->get('testimage.jpg');
+		$preview = new Preview(self::TEST_PREVIEW_USER1, '', $file, 150, 150);
+		$preview->getPreview();
+		$previewFolder = '/' . self::TEST_PREVIEW_USER1 . '/' . Preview::THUMBNAILS_FOLDER . '/' . $file->getId();
+		$this->rootView->mkdir($previewFolder . '/1790255183');
+		$this->rootView->file_put_contents($previewFolder . '/1790255183/150-150.png', 'x');
+		$this->rootView->file_put_contents($previewFolder . '/notizen.png', 'x');
+		$this->rootView->file_put_contents($previewFolder . '/0-0.png', 'x');
+
+		$preview = new Preview(self::TEST_PREVIEW_USER1, '', $file, 100, 100);
+		$cached = $preview->isCached();
+		$image = $preview->getPreview();
+
+		$this->assertSame(Preview::THUMBNAILS_FOLDER . '/' . $file->getId() . '/150-150.png', $cached);
+		$this->assertTrue($image->valid());
+		$this->assertSame(100, $image->width());
+		$this->assertSame(100, $image->height());
+	}
+
 	public function testPreviewReGenerationForSharee() {
 		$x = 50;
 		$y = 50;

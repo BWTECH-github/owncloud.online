@@ -1,0 +1,12 @@
+Bugfix: Previews no longer fail when a file has version previews
+
+The preview cache of a file also holds the previews of its versions, in a
+subfolder named after the version. Looking for a larger cached preview treated
+that subfolder like a preview file, took its name apart as "width-height" and
+divided by zero: the preview request ended with HTTP 500, and the log showed
+"Undefined array key 1" and a DivisionByZeroError. Entries whose names carry no
+dimensions are skipped now.
+
+Broken image data, for example text in a .png file, no longer writes
+"getimagesizefromstring(): Error reading from ..." to the log on every preview
+attempt. The file is still rejected as before.

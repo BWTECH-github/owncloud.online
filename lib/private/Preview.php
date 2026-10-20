@@ -469,8 +469,12 @@ class Preview {
 
 		foreach ($allThumbnails as $thumbnail) {
 			$name = $thumbnail['name'];
-			if (\strpos($name, 'max')) {
-				list($maxPreviewX, $maxPreviewY) = $this->getDimensionsFromFilename($name);
+			if (!\strpos($name, 'max')) {
+				continue;
+			}
+			$dimensions = $this->getDimensionsFromFilename($name);
+			if ($dimensions !== null) {
+				list($maxPreviewX, $maxPreviewY) = $dimensions;
 				break;
 			}
 		}
@@ -635,8 +639,11 @@ class Preview {
 		//array for usable cached thumbnails
 		$possibleThumbnails = [];
 		foreach ($allThumbnails as $thumbnail) {
-			$name = \rtrim($thumbnail['name'], '.png');
-			list($x, $y, $aspectRatio) = $this->getDimensionsFromFilename($name);
+			$dimensions = $this->getDimensionsFromFilename($thumbnail['name']);
+			if ($dimensions === null) {
+				continue;
+			}
+			list($x, $y, $aspectRatio) = $dimensions;
 			if (\abs($aspectRatio - $wantedAspectRatio) >= 0.000001
 				|| $this->unscalable($x, $y)
 			) {
@@ -653,17 +660,27 @@ class Preview {
 	/**
 	 * Looks at the preview filename from the cache and extracts the size of the preview
 	 *
+	 * Im Vorschau-Ordner einer Datei liegen nicht nur Vorschauen („B-H.png“,
+	 * „B-H-max.png“, „B-H-with-aspect.png“ …), sondern auch die Unterordner der
+	 * Versionsvorschauen, deren Name die Versions-ID ist. Solche Einträge tragen
+	 * keine Maße und werden übergangen – früher endeten sie in „Undefined array
+	 * key 1“ und einem DivisionByZeroError, die Vorschau kam als HTTP 500.
+	 *
 	 * @param string $name
 	 *
-	 * @return array<int,int,float>
+	 * @return array|null [Breite, Höhe, Seitenverhältnis] oder null, wenn der Name keine Vorschau beschreibt
 	 */
 	private function getDimensionsFromFilename($name) {
-		$size = \explode('-', $name);
-		$x = (int)$size[0];
-		$y = (int)$size[1];
-		$aspectRatio = (float)($x / $y);
+		if (!\preg_match('/^(\d+)-(\d+)(?:-|\.png$)/', (string)$name, $size)) {
+			return null;
+		}
+		$x = (int)$size[1];
+		$y = (int)$size[2];
+		if ($x === 0 || $y === 0) {
+			return null;
+		}
 
-		return [$x, $y, $aspectRatio];
+		return [$x, $y, (float)($x / $y)];
 	}
 
 	/**

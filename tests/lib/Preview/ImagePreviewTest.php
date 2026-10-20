@@ -22,6 +22,7 @@
 namespace Test\Preview;
 
 use OC\Preview\JPEG;
+use OC\Preview\PNG;
 use OCP\Files\File;
 use Test\TestCase;
 
@@ -34,6 +35,25 @@ class ImagePreviewTest extends TestCase {
 		$result = $p->getThumbnail($file, 64, 64, true);
 		self::assertFalse($result);
 	}
+	/**
+	 * Kaputte Bilddaten (hier Text in einer .png-Datei) sind kein Fehler des
+	 * Servers: der Anbieter lehnt sie ab, ohne dass getimagesizefromstring()
+	 * eine PHP-Meldung ins Protokoll schreibt („Error reading from …“).
+	 */
+	public function testBrokenImageDataIsRejectedWithoutPhpNotice(): void {
+		$stream = \fopen('php://memory', 'r+b');
+		\fwrite($stream, 'Test!');
+		\rewind($stream);
+		$file = $this->createMock(File::class);
+		$file->method('getSize')->willReturn(5);
+		$file->method('fopen')->willReturn($stream);
+		$p = new PNG();
+
+		$result = $p->getThumbnail($file, 32, 32, false);
+
+		self::assertFalse($result);
+	}
+
 	public function testPixelFlood(): void {
 		$filename = __DIR__ . '/../../data/pixel.jpg';
 		$stream = fopen($filename, 'rb');

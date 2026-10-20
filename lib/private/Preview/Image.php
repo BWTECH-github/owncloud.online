@@ -67,7 +67,10 @@ abstract class Image implements IProvider2 {
 		// in den speicherschonenden imagick-Pfad (jpeg:size-Hint laesst libjpeg
 		// beim Dekodieren herunterskalieren), ohne dass GD es erst vollstaendig
 		// dekodiert und das Ergebnis wieder verwirft.
-		$rawSize = \getimagesizefromstring($content);
+		// Kaputte Bilddaten sind hier ein erwarteter Fall: die Funktion liefert dann
+		// false (unten abgefangen), meldet aber zusätzlich „Error reading from …“
+		// als PHP-Notice, die sonst bei jedem Vorschauversuch im Protokoll landet.
+		$rawSize = @\getimagesizefromstring($content);
 		if (\is_array($rawSize) && !$this->validateRawDimensions((int)$rawSize[0], (int)$rawSize[1])) {
 			// Pixel-Flood-Schutz (Dekompressionsbombe): der imagick-Fallback ist
 			// fuer echte Kamerafotos gedacht. Alles jenseits der 4-fachen
