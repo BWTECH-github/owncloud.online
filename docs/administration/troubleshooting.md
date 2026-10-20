@@ -73,10 +73,33 @@ Ursachen:
   `redis.session.lock_retries` × `redis.session.lock_wait_time` (Vorgabe
   100 × 20 ms = 2 s). Sync-Clients geben die Sperre gleich nach dem Lesen der
   Sitzung wieder frei. Wird sie trotzdem nicht rechtzeitig frei, läuft die
-  Anfrage weiter – mit phpredis ab 6.3 nur lesend, sonst ohne Sitzung – und
-  das Protokoll meldet „Session lock not acquired in time“ (App `core`).
-  Häufen sich diese Meldungen, hält eine Anfrage ihre Sitzung zu lange, meist
-  wegen einer langsamen Datenbank oder eines überlasteten Redis.
+  Anfrage weiter, und das Protokoll meldet „Session lock not acquired in time“
+  (App `core`). Ein angemeldeter Browser behält seine Sitzung dann nur lesend
+  („continuing read-only“, Änderungen daran werden nicht gespeichert). Das geht
+  mit phpredis 5.3 und ab 6.3 über `redis.session.lock_failure_readonly`, das
+  owncloud.online selbst einschaltet, solange kein `php_admin_value` es auf 0
+  setzt. Clients mit Authorization-Kopf (Sync-Clients, API), leere Sitzungen
+  und Sitzungen, die sich ohne Sperre gar nicht lesen lassen (phpredis 6.0 bis
+  6.2), bekommen eine neue Sitzung samt neuem Cookie („continuing with a new
+  session“); ein Browser ist dann abgemeldet. Häufen sich diese Meldungen über
+  viele Sitzungen, hält eine Anfrage ihre Sitzung zu lange, meist wegen einer
+  langsamen Datenbank oder eines überlasteten Redis.
+- **Verwaiste Sitzungssperre**: Endet ein PHP-Prozess, ohne die Sperre
+  freizugeben (Neustart von Apache oder PHP-FPM, OOM-Killer), bleibt sie bis
+  `redis.session.lock_expire` stehen; ohne eigenen Wert gilt
+  `max_execution_time`, bei owncloud.online meist 3600 s. Sync-Clients wechseln
+  dann von selbst zu einer neuen Sitzung. Ein angemeldeter Browser wartet bei
+  jeder Anfrage die volle Zeit, bis er sich ab- und wieder anmeldet. Jede Sperre
+  ist ein eigener Schlüssel `<prefix><Sitzungskennung>_LOCK` (Datenbank und
+  Präfix aus `session.save_path`, die Sitzungskennung steht im Cookie, das wie
+  die `instanceid` heißt). Sein Wert nennt Rechner und PID des PHP-Prozesses,
+  der die Sperre hält. Läuft dieser Prozess nicht mehr, die Sperre löschen:
+
+    ```bash
+    redis-cli -h <redis-host> -n 1 --scan --pattern '<prefix>*_LOCK'
+    redis-cli -h <redis-host> -n 1 GET '<prefix><Sitzungskennung>_LOCK'
+    redis-cli -h <redis-host> -n 1 DEL '<prefix><Sitzungskennung>_LOCK'
+    ```
 
 ## JavaScript-Fehler: jQuery ist nicht definiert
 

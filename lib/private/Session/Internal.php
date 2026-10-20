@@ -67,6 +67,9 @@ class Internal extends Session {
 	/** @var bool Sperre nach releaseLock() frei, die Daten bleiben lesbar */
 	private $lockReleased = false;
 
+	/** @var bool nach einem Sperrfehler mit einer neuen, leeren Sitzung weiter */
+	private $replacedLockedSession = false;
+
 	/**
 	 * @param string $name
 	 * @throws \Exception
@@ -74,6 +77,9 @@ class Internal extends Session {
 	public function __construct($name) {
 		\session_name($name);
 		$this->startSession();
+		if ($this->lockFailed && $this->shouldReplaceLockedSession()) {
+			$this->replaceLockedSession();
+		}
 		if ($_SESSION === null) {
 			throw new \Exception('Failed to start session');
 		}
@@ -201,6 +207,14 @@ class Internal extends Session {
 	}
 
 	/**
+	 * @return bool true, wenn die Anfrage nach einem Sperrfehler mit einer neuen,
+	 *              leeren Sitzung weiterläuft (getStartFailure() nennt den Sperrfehler)
+	 */
+	public function hasReplacedLockedSession(): bool {
+		return $this->replacedLockedSession;
+	}
+
+	/**
 	 * Erste Meldung des letzten Sitzungsstarts, ohne Speicherpfad (der kann bei
 	 * Redis Zugangsdaten enthalten).
 	 *
@@ -284,14 +298,69 @@ class Internal extends Session {
 			if ($this->startFailure === null) {
 				$this->startFailure = $e->getMessage();
 			}
-			// Eine nur belegte Sitzung ist gültig: das Cookie bleibt, sonst meldet
-			// sich der Client neu an bzw. der Browser ist abgemeldet.
+			// Eine nur belegte Sitzung ist nicht kaputt: das Cookie nicht verwerfen.
+			// Ob es mit ihr weitergeht, entscheidet shouldReplaceLockedSession().
 			if (!$this->lockFailed) {
 				$this->deleteSessionCookie();
 			}
 		}
 		\restore_error_handler();
 		$this->readOnly = $this->lockFailed && \session_status() === PHP_SESSION_ACTIVE;
+	}
+
+	/**
+	 * Nach einem Sperrfehler: neue Sitzung statt der belegten?
+	 *
+	 * Mit der belegten geht es nur weiter, wenn sie lesbar ist (phpredis 5.3 und
+	 * ab 6.3 im Lesemodus), etwas enthält und der Client sich nicht ohnehin mit
+	 * jeder Anfrage selbst anmeldet: So bleibt etwa ein angemeldeter Browser
+	 * angemeldet, solange die Sperre nur kurz belegt ist. Sonst bringt die alte
+	 * Sitzung nichts, und mit ihrem Cookie wartete jede weitere Anfrage wieder die
+	 * volle Zeit – bei einer verwaisten Sperre (PHP-Prozess beendet, ohne sie
+	 * freizugeben) bis redis.session.lock_expire. Eine Anmeldung fände zudem für
+	 * ihr Formular-Token keinen Platz.
+	 */
+	private function shouldReplaceLockedSession(): bool {
+		return !$this->readOnly || empty($_SESSION) || self::sendsAuthorization();
+	}
+
+	/**
+	 * Meldet sich der Client mit jeder Anfrage selbst an (Authorization-Kopf, etwa
+	 * Sync-Clients und API-Aufrufe)? Basic steht nach OC::handleAuthHeaders() bzw.
+	 * unter mod_php auch in PHP_AUTH_USER.
+	 */
+	private static function sendsAuthorization(): bool {
+		return !empty($_SERVER['HTTP_AUTHORIZATION'])
+			|| !empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])
+			|| isset($_SERVER['PHP_AUTH_USER']);
+	}
+
+	/**
+	 * Beginnt nach einem Sperrfehler eine neue, leere Sitzung mit eigener Kennung
+	 * und eigener Sperre; PHP schickt dem Client dafür ein neues Cookie. Die
+	 * belegte Sitzung bleibt unberührt, parallele Anfragen mit dem alten Cookie
+	 * arbeiten mit ihr weiter. Klappt der Wechsel nicht, bleibt es beim Stand nach
+	 * dem Sperrfehler bzw. nach dem neuen Fehler.
+	 */
+	private function replaceLockedSession(): void {
+		if (\headers_sent()) {
+			return;
+		}
+		if (\session_status() === PHP_SESSION_ACTIVE) {
+			// nur lesend offen: nichts zurückschreiben
+			\session_abort();
+		}
+		$newId = \session_create_id();
+		if ($newId === false) {
+			return;
+		}
+		$lockFailure = $this->startFailure;
+		\session_id($newId);
+		$this->startSession();
+		if ($this->startFailure === null) {
+			$this->startFailure = $lockFailure;
+			$this->replacedLockedSession = true;
+		}
 	}
 
 	/**

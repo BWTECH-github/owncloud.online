@@ -17,7 +17,13 @@ the periodic password check is due: then the first of the parallel requests
 keeps the lock, checks the password once and the others see the result.
 Changes made later in such a request are merged into the freshly read session
 on close.
-If the lock still cannot be acquired in time, the request continues with a
-read-only session (phpredis 6.3 and later) or without a session, the session
-cookie is kept, and a warning in the log names the cause. Browser sessions keep
-the previous behaviour.
+If the lock still cannot be acquired in time, the request continues and a
+warning in the log names the cause. A session that can be read without the lock
+(phpredis 5.3, and 6.3 or later with redis.session.lock_failure_readonly, which
+the server switches on itself) and holds data is used read-only, so a signed-in
+browser stays signed in. Requests with an Authorization header (sync clients,
+API), empty sessions and sessions that cannot be read at all (phpredis 6.0 to
+6.2) continue with a new session and get a new session cookie. A lock left
+behind by a PHP process that died therefore no longer slows down every request
+of a sync client until redis.session.lock_expire, and signing in works while it
+is still held.

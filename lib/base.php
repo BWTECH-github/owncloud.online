@@ -133,6 +133,14 @@ class OC {
 	private static $config = null;
 
 	/**
+	 * Sitzungsschlüssel, unter dem die dav-App die WebDAV-Anmeldung vermerkt
+	 * (\OCA\DAV\Connector\Sabre\Auth::DAV_AUTHENTICATED). Hier als Zeichenkette:
+	 * initSession() läuft auch, wenn keine App geladen ist (Wartungsmodus,
+	 * ausstehendes Upgrade), und dann ist die Klasse der App nicht ladbar.
+	 */
+	private const DAV_AUTHENTICATED = 'AUTHENTICATED_TO_DAV_BACKEND';
+
+	/**
 	 * @throws \RuntimeException when the app path list is empty or contains an invalid path
 	 */
 	public static function initPaths() {
@@ -480,7 +488,8 @@ class OC {
 			// guaranteed no-op DELETE on oc_authtoken on every single request.
 			// Neu ist sie aber nur, wenn sie normal (mit Sperre) gestartet ist. Ließ sie
 			// sich nicht oder nur ohne Sperre lesen, legt sie womöglich gerade eine
-			// parallele Anfrage an: deren Token bleibt.
+			// parallele Anfrage an: deren Token bleibt. Auch nach dem Wechsel zu einer
+			// neuen Sitzung bleibt es – parallele Anfragen nutzen die alte weiter.
 			if ($sessionStartedCleanly && isset($_COOKIE[\session_name()]) && \OC::$server->getUserSession() !== null) {
 				// web installer doesn't have a valid userSession at this point
 				try {
@@ -539,7 +548,7 @@ class OC {
 		}
 		$userId = $session->get('user_id');
 		if (!\is_string($userId) || $userId === ''
-			|| $session->get(\OCA\DAV\Connector\Sabre\Auth::DAV_AUTHENTICATED) !== $userId
+			|| $session->get(self::DAV_AUTHENTICATED) !== $userId
 		) {
 			return false;
 		}
@@ -563,7 +572,12 @@ class OC {
 	private static function logSessionStartFailure(\OC\Session\Internal $session) {
 		$failure = $session->getStartFailure();
 		$logger = \OC::$server->getLogger();
-		if ($session->isReadOnly()) {
+		if ($session->hasReplacedLockedSession()) {
+			$logger->warning(
+				'Session lock not acquired in time (redis.session.lock_retries * lock_wait_time), continuing with a new session: ' . $failure,
+				['app' => 'core']
+			);
+		} elseif ($session->isReadOnly()) {
 			$logger->warning(
 				'Session lock not acquired in time (redis.session.lock_retries * lock_wait_time), continuing read-only, changes to the session are not saved: ' . $failure,
 				['app' => 'core']

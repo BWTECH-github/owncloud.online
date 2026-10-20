@@ -21,13 +21,16 @@ namespace Test\Session;
 /**
  * Sitzungsspeicher im Speicher. $failure stellt nach, was phpredis meldet, wenn
  * die Sitzungssperre nicht frei wird ('locked', 'readonly') oder Redis nicht
- * antwortet ('broken').
+ * antwortet ('broken'). Mit $failingId trifft das nur diese Kennung – so wie
+ * eine belegte Sperre nur ihre Sitzung betrifft, nicht eine neue.
  */
 class FakeSessionSaveHandler implements \SessionHandlerInterface {
 	/** @var array<string, string> Kennung => serialisierte Sitzung */
 	public $store = [];
 	/** @var string|null */
 	public $failure = null;
+	/** @var string|null nur diese Kennung scheitert, null: jede */
+	public $failingId = null;
 	/** @var int */
 	public $reads = 0;
 	/** @var int */
@@ -45,6 +48,9 @@ class FakeSessionSaveHandler implements \SessionHandlerInterface {
 
 	public function read(string $id): string|false {
 		$this->reads++;
+		if ($this->failingId !== null && $this->failingId !== $id) {
+			return $this->store[$id] ?? '';
+		}
 		if ($this->failure === 'locked') {
 			\trigger_error('session_start(): Failed to acquire session lock', E_USER_WARNING);
 			return false;

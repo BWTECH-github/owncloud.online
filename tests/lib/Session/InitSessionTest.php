@@ -60,12 +60,16 @@ class InitSessionTest extends TestCase {
 
 		$this->handler = new FakeSessionSaveHandler();
 		$this->handler->failure = $failure;
+		// belegt ist nur die Sitzung des Cookies, nicht eine neue
+		$this->handler->failingId = self::SESSION_ID;
 		if ($values !== null) {
 			$encrypted = \OC::$server->getCrypto()->encrypt(\json_encode($values), self::PASSPHRASE);
 			$this->handler->store[self::SESSION_ID] = 'encrypted_session_data|' . \serialize($encrypted);
 		}
 		\session_set_save_handler($this->handler, false);
 
+		// Internal liest den Authorization-Kopf aus $_SERVER, initSession() aus dem Request
+		$_SERVER = $server + $_SERVER;
 		$request = new Request(
 			['cookies' => $cookies, 'server' => $server + ['REQUEST_METHOD' => 'PROPFIND']],
 			\OC::$server->getSecureRandom(),
@@ -105,21 +109,47 @@ class InitSessionTest extends TestCase {
 	}
 
 	/**
-	 * Der Fall von testoo: Sperre nicht rechtzeitig frei, keine Sitzung.
+	 * Der Fall von testoo: Sperre nicht rechtzeitig frei. Ist die Sitzung dann
+	 * nicht lesbar (phpredis 6.0 bis 6.2), geht es mit einer neuen weiter; die
+	 * belegte bleibt unberührt.
 	 *
 	 * @runInSeparateProcess
 	 * @preserveGlobalState disabled
 	 */
 	public function testLockTimeoutNoLongerAbortsTheRequest(): void {
 		$this->prepare('locked', ['user_id' => 'alice', 'LAST_ACTIVITY' => \time()]);
+		$stored = $this->handler->store[self::SESSION_ID];
 
 		\OC::initSession();
 
 		$warnings = $this->loggedStartingWith('Session lock not acquired in time');
 		$this->assertCount(1, $warnings);
 		$this->assertSame(Util::WARN, $warnings[0]['loglevel']);
+		$this->assertStringContainsString('continuing with a new session: session_start(): Failed to acquire session lock', $warnings[0]['formattedMessage']);
+		$session = \OC::$server->getSession();
+		$this->assertNotSame(self::SESSION_ID, $session->getId());
+		$this->assertNull($session->get('user_id'));
+		$this->assertIsInt($session->get('LAST_ACTIVITY'));
+		$session->close();
+		$this->assertSame($stored, $this->handler->store[self::SESSION_ID], 'die belegte Sitzung bleibt unberührt');
+	}
+
+	/**
+	 * Lässt sich auch keine neue Sitzung öffnen (hier ist jede Kennung belegt),
+	 * läuft die Anfrage ohne Sitzung weiter.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function testWithoutAnyUsableSessionTheRequestContinuesWithoutSession(): void {
+		$this->prepare('locked', ['user_id' => 'alice', 'LAST_ACTIVITY' => \time()]);
+		$this->handler->failingId = null;
+
+		\OC::initSession();
+
+		$warnings = $this->loggedStartingWith('Session lock not acquired in time');
+		$this->assertCount(1, $warnings);
 		$this->assertStringContainsString('continuing without session: session_start(): Failed to acquire session lock', $warnings[0]['formattedMessage']);
-		// ohne Sitzung weiter
 		$this->assertNull(\OC::$server->getSession()->get('user_id'));
 		$this->assertIsInt(\OC::$server->getSession()->get('LAST_ACTIVITY'));
 		$this->assertSame(0, $this->handler->writes);
@@ -208,6 +238,45 @@ class InitSessionTest extends TestCase {
 			\OC::initSession();
 
 			$this->assertTrue($this->sessionTokenExists());
+		} finally {
+			$this->tokenProvider()->invalidateToken(self::SESSION_ID);
+		}
+	}
+
+	/**
+	 * Sync-Client (Authorization-Kopf) bei belegter Sitzung, auch wenn sie lesbar
+	 * wäre: Er bekommt eine neue Sitzung und meldet sich mit dem Kopf an, statt
+	 * mit dem alten Cookie bei jeder Anfrage wieder auf die Sperre zu warten –
+	 * bei einer verwaisten Sperre bis redis.session.lock_expire. Die alte Sitzung
+	 * und ihr Token bleiben für parallele Anfragen mit dem alten Cookie.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function testSyncClientWithALockedSessionContinuesWithANewSession(): void {
+		$this->setScript('/remote.php');
+		$this->prepare(
+			'readonly',
+			['user_id' => 'alice', Auth::DAV_AUTHENTICATED => 'alice', 'LAST_ACTIVITY' => \time() - 10],
+			['HTTP_AUTHORIZATION' => 'Bearer token-for-tests']
+		);
+		$stored = $this->handler->store[self::SESSION_ID];
+		$this->tokenProvider()->generateToken(self::SESSION_ID, 'alice', 'alice', null, 'alte Sitzung');
+
+		try {
+			\OC::initSession();
+			$session = \OC::$server->getSession();
+			$newId = $session->getId();
+			$session->close();
+
+			$warnings = $this->loggedStartingWith('Session lock not acquired in time');
+			$this->assertCount(1, $warnings);
+			$this->assertStringContainsString('continuing with a new session: session_start(): Failed to acquire session lock, session will be read only', $warnings[0]['formattedMessage']);
+			$this->assertNotSame(self::SESSION_ID, $newId);
+			$this->assertNull($session->get('user_id'));
+			$this->assertTrue($this->sessionTokenExists(), 'das Token der alten Sitzung bleibt');
+			$this->assertSame($stored, $this->handler->store[self::SESSION_ID], 'die alte Sitzung bleibt unberührt');
+			$this->assertArrayHasKey($newId, $this->handler->store);
 		} finally {
 			$this->tokenProvider()->invalidateToken(self::SESSION_ID);
 		}
@@ -345,5 +414,53 @@ class InitSessionTest extends TestCase {
 		}
 
 		$this->assertSame($expected, self::invokePrivate(\OC::class, 'canReleaseSessionLock', [$script, $request, $session]));
+	}
+
+	public function providesStatesWithoutApps(): array {
+		return [
+			'Wartungsmodus' => [['OC_maintenance' => 'true']],
+			'Upgrade steht aus' => [['OC_version' => (\OCP\Util::getVersion()[0] - 1) . '.0.0.0']],
+		];
+	}
+
+	/**
+	 * Im Wartungsmodus und bei ausstehendem Upgrade lädt OC::init() keine App,
+	 * auch ihre Autoloader fehlen. initSession() darf dann keine App-Klasse
+	 * brauchen: Sonst scheitert jede WebDAV-Anfrage eines angemeldeten
+	 * Sync-Clients mit „Class "OCA\DAV\Connector\Sabre\Auth" not found“, statt
+	 * „System in maintenance mode.“ bzw. „Service unavailable“ zu bekommen.
+	 *
+	 * Der Test-Bootstrap lädt alle Apps, deshalb läuft das in einem eigenen
+	 * PHP-Prozess. Den Zustand setzen OC_-Umgebungsvariablen, die Config vor
+	 * config.php liest; config.php bleibt unberührt.
+	 *
+	 * @dataProvider providesStatesWithoutApps
+	 */
+	public function testSyncClientRequestWithoutLoadedApps(array $environment): void {
+		$errorFile = \OC::$server->getTempManager()->getTemporaryFile('.log');
+		$process = \proc_open(
+			[
+				PHP_BINARY,
+				\OC::$SERVERROOT . '/tests/data/session/init-session-without-apps.php',
+				\OC::$SERVERROOT,
+				\OC_Util::getInstanceId(),
+				CryptoWrapper::COOKIE_NAME,
+				Auth::DAV_AUTHENTICATED,
+			],
+			[1 => ['pipe', 'w'], 2 => ['file', $errorFile, 'w']],
+			$pipes,
+			null,
+			$environment + \getenv()
+		);
+		$output = \stream_get_contents($pipes[1]);
+		\fclose($pipes[1]);
+		$exitCode = \proc_close($process);
+
+		$result = \json_decode($output, true);
+		$this->assertIsArray($result, "Kindprozess (Exit $exitCode): $output " . \file_get_contents($errorFile));
+		$this->assertFalse($result['davAppLoadable'], 'Voraussetzung: Die Klassen der dav-App sind im Kindprozess nicht ladbar');
+		$this->assertNull($result['error']);
+		$this->assertSame('alice', $result['userId']);
+		$this->assertTrue($result['lockReleased'], 'Sync-Client: Sperre gleich wieder frei, auch ohne geladene Apps');
 	}
 }
