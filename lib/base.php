@@ -520,8 +520,13 @@ class OC {
 	 * Last bis zur Zeitüberschreitung der Sperre. Ändert die Anfrage doch etwas,
 	 * holt CryptoSessionData::close() die Sperre dafür zurück.
 	 *
-	 * Browser (Weboberfläche, öffentliche Links) schicken keinen Authorization-
-	 * Kopf zur Sitzung und behalten das bisherige Verhalten.
+	 * Bearer-Token und App-Passwörter prüft der Server in der Datenbank. Ein
+	 * echtes Kennwort über Basic prüft BasicAuthModule alle paar Minuten erneut
+	 * und vermerkt das in der Sitzung. Ist das fällig, behält die Anfrage die
+	 * Sperre: Von parallelen Anfragen prüft dann nur die erste, die übrigen
+	 * sehen danach den frischen Vermerk (sonst prüfte jede, bei LDAP je eine
+	 * Anmeldung am Verzeichnis). Browser (Weboberfläche, öffentliche Links,
+	 * ohne Authorization-Kopf) behalten das bisherige Verhalten.
 	 *
 	 * @param string $script aufgerufenes Skript relativ zur Installation
 	 * @param IRequest $request
@@ -532,13 +537,21 @@ class OC {
 		if ($script !== '/remote.php' || $request->getCookie(\session_name()) === null) {
 			return false;
 		}
-		$authorization = $request->getHeader('Authorization') ?? $request->server['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
-		if ($authorization === '' && !isset($request->server['PHP_AUTH_USER'])) {
+		$userId = $session->get('user_id');
+		if (!\is_string($userId) || $userId === ''
+			|| $session->get(\OCA\DAV\Connector\Sabre\Auth::DAV_AUTHENTICATED) !== $userId
+		) {
 			return false;
 		}
-		$userId = $session->get('user_id');
-		return \is_string($userId) && $userId !== ''
-			&& $session->get(\OCA\DAV\Connector\Sabre\Auth::DAV_AUTHENTICATED) === $userId;
+		$authorization = $request->getHeader('Authorization') ?? $request->server['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+		if (\stripos($authorization, 'Bearer ') === 0) {
+			return true;
+		}
+		if (!isset($request->server['PHP_AUTH_USER']) && \stripos($authorization, 'Basic ') !== 0) {
+			return false;
+		}
+		return $session->exists('app_password')
+			|| !\OC\User\BasicAuthModule::isPasswordCheckDue($session, \OC::$server->getConfig(), \OC::$server->getTimeFactory()->getTime());
 	}
 
 	/**

@@ -88,16 +88,9 @@ class BasicAuthModule implements IAuthModule {
 		// only check password periodically, otherwise we will be hammering
 		// external systems like ldap.
 		// FIXME ignore session for dav endpoint / only create session on web login
-
-		if ($this->session->exists('last_check_timeout')) {
-			$lastCheck = $this->session->get('last_check_timeout');
-		} else {
-			$lastCheck = 0;
-		}
 		$now = $this->timeFactory->getTime();
-		$last_check_timeout = (int)$this->config->getAppValue('core', 'last_check_timeout', 5);
 
-		if ($lastCheck > ($now - 60 * $last_check_timeout)) {
+		if (!self::isPasswordCheckDue($this->session, $this->config, $now)) {
 			// Checked performed recently, nothing to do now
 			$userId = $this->session->get('user_id');
 			if ($userId === null || $userId === '') {
@@ -143,6 +136,22 @@ class BasicAuthModule implements IAuthModule {
 			return $user;
 		}
 		throw new \Exception('Invalid credentials');
+	}
+
+	/**
+	 * Ist für diese Sitzung die nächste Kennwortprüfung fällig? Bis dahin liest
+	 * auth() nur die Sitzung, damit externe Systeme wie LDAP nicht bei jeder
+	 * Anfrage gefragt werden (Abstand: App-Wert core/last_check_timeout, Minuten).
+	 *
+	 * @param ISession $session
+	 * @param IConfig $config
+	 * @param int $now
+	 * @return bool
+	 */
+	public static function isPasswordCheckDue(ISession $session, IConfig $config, $now) {
+		$lastCheck = $session->exists('last_check_timeout') ? $session->get('last_check_timeout') : 0;
+		$lastCheckTimeout = (int)$config->getAppValue('core', 'last_check_timeout', 5);
+		return $lastCheck <= $now - 60 * $lastCheckTimeout;
 	}
 
 	/**

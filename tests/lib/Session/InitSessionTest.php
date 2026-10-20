@@ -254,7 +254,7 @@ class InitSessionTest extends TestCase {
 		$this->setScript('/remote.php');
 		$this->prepare(
 			null,
-			['user_id' => 'alice', Auth::DAV_AUTHENTICATED => 'alice', 'LAST_ACTIVITY' => \time() - 10],
+			['user_id' => 'alice', Auth::DAV_AUTHENTICATED => 'alice', 'app_password' => 'app-password', 'LAST_ACTIVITY' => \time() - 10],
 			['PHP_AUTH_USER' => 'alice', 'PHP_AUTH_PW' => 'app-password']
 		);
 		\OC::initSession();
@@ -285,13 +285,42 @@ class InitSessionTest extends TestCase {
 		$this->assertSame(0, $this->handler->writes);
 	}
 
+	/**
+	 * Basic mit echtem Kennwort, Prüfung fällig: Sperre bleibt, damit von
+	 * parallelen Anfragen nur die erste das Kennwort erneut prüft
+	 * (BasicAuthModule, last_check_timeout).
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function testBasicWithPasswordKeepsTheLockWhileTheCheckIsDue(): void {
+		$this->setScript('/remote.php');
+		$this->prepare(
+			null,
+			['user_id' => 'alice', Auth::DAV_AUTHENTICATED => 'alice', 'LAST_ACTIVITY' => \time() - 10],
+			['PHP_AUTH_USER' => 'alice', 'PHP_AUTH_PW' => 'kennwort']
+		);
+
+		\OC::initSession();
+
+		$this->assertSame(PHP_SESSION_ACTIVE, \session_status());
+		$this->assertSame(0, $this->handler->writes);
+	}
+
 	public function providesReleaseCases(): array {
 		$davSession = ['user_id' => 'alice', Auth::DAV_AUTHENTICATED => 'alice'];
+		$appPasswordSession = $davSession + ['app_password' => 'app-password'];
 		$bearer = ['HTTP_AUTHORIZATION' => 'Bearer abc'];
+		$basic = ['PHP_AUTH_USER' => 'alice', 'PHP_AUTH_PW' => 'x'];
 		return [
 			'Bearer, WebDAV-Sitzung' => [true, '/remote.php', $bearer, true, $davSession],
-			'Basic über PHP_AUTH_USER' => [true, '/remote.php', ['PHP_AUTH_USER' => 'alice', 'PHP_AUTH_PW' => 'x'], true, $davSession],
-			'Kopf nach Rewrite' => [true, '/remote.php', ['REDIRECT_HTTP_AUTHORIZATION' => 'Bearer abc'], true, $davSession],
+			'Bearer, Kopf nach Rewrite' => [true, '/remote.php', ['REDIRECT_HTTP_AUTHORIZATION' => 'Bearer abc'], true, $davSession],
+			'Basic mit App-Passwort' => [true, '/remote.php', $basic, true, $appPasswordSession],
+			'Basic mit App-Passwort, Kopf nach Rewrite' => [true, '/remote.php', ['REDIRECT_HTTP_AUTHORIZATION' => 'Basic YWxpY2U6eA=='], true, $appPasswordSession],
+			'Basic mit echtem Kennwort, Prüfung fällig' => [false, '/remote.php', $basic, true, $davSession],
+			'Basic mit echtem Kennwort, gerade geprüft' => [true, '/remote.php', $basic, true, $davSession + ['last_check_timeout' => \time() - 30]],
+			'Basic mit echtem Kennwort, Prüfung abgelaufen' => [false, '/remote.php', $basic, true, $davSession + ['last_check_timeout' => \time() - 600]],
+			'anderes Verfahren' => [false, '/remote.php', ['HTTP_AUTHORIZATION' => 'Digest username="alice"'], true, $appPasswordSession],
 			'Browser ohne Authorization' => [false, '/remote.php', [], true, $davSession],
 			'andere Skripte' => [false, '/index.php', $bearer, true, $davSession],
 			'ohne Sitzungs-Cookie' => [false, '/remote.php', $bearer, false, $davSession],

@@ -313,4 +313,28 @@ class BasicAuthModuleTest extends TestCase {
 
 		$module->auth($this->request);
 	}
+
+	public function providesLastChecks() {
+		$now = 1000000;
+		return [
+			'noch nie geprüft' => [true, null, $now],
+			'vor 4 Minuten' => [false, $now - 60 * 4, $now],
+			'vor 4:59 Minuten' => [false, $now - 60 * 5 + 1, $now],
+			'vor genau 5 Minuten' => [true, $now - 60 * 5, $now],
+			'vor 6 Minuten' => [true, $now - 60 * 6, $now],
+		];
+	}
+
+	/**
+	 * Dieselbe Regel nutzt OC::initSession(), um zu entscheiden, ob eine
+	 * Basic-Anfrage die Sitzungssperre gleich wieder freigeben darf.
+	 *
+	 * @dataProvider providesLastChecks
+	 */
+	public function testIsPasswordCheckDue(bool $expected, ?int $lastCheck, int $now) {
+		$this->session->method('exists')->with('last_check_timeout')->willReturn($lastCheck !== null);
+		$this->session->method('get')->with('last_check_timeout')->willReturn($lastCheck);
+
+		$this->assertSame($expected, BasicAuthModule::isPasswordCheckDue($this->session, $this->config, $now));
+	}
 }
