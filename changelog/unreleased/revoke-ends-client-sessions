@@ -1,0 +1,39 @@
+Bugfix: Revoked access ends the session of a sync client
+
+Sync clients send their session cookie along with every request. After an app
+password was revoked in the personal settings, a client that used it kept
+syncing: requests with the revoked app password and the cookie, and requests
+with the cookie alone, were answered with 207. Sessions started by a client
+itself (WebDAV, HTTP Basic, OAuth2) were never checked against the credentials
+they were started with, and every request extended them. Removing such a
+session under "Sessions" in the settings had no effect either, its session
+token was simply created again with the next request. A session started with
+an OAuth2 token went on accepting requests with the cookie alone after the
+desktop authorization was revoked.
+
+These sessions are now checked before every request, like browser sessions:
+
+- App password: the session ends with the next request after the app password
+  was revoked, also when the client only sends the cookie.
+- Session removed in the settings: the session ends with the next request. A
+  client with valid credentials signs in again and gets a new session.
+- OAuth2 and OpenID Connect: every request has to carry the Authorization
+  header that the authentication module confirmed. A different header, or none
+  at all, is checked by the module at once, the same header again after
+  core/last_check_timeout minutes (default 5). As before, the module itself
+  rejects WebDAV requests with a revoked token right away.
+
+A session that is no longer valid is logged out and its session token is
+deleted; the request continues without a login and gets 401 unless it carries
+valid credentials. Requests that send only the cookie of a session started with
+an OAuth2 token are no longer accepted; the desktop and mobile clients send
+their token with every request. Sessions started before the update are taken
+over with their first request; if that request sends only the cookie and the
+session was not started with an app password, the client signs in once more.
+
+The check reads the session token from the database as before, for app
+passwords also the app password token, which the HTTP Basic login of the same
+request loads anyway. The session and the token are written only when
+something changes, the last activity of the token at most once a minute.
+Browser sessions, public links, guests and the early release of the session
+lock for sync clients are unchanged.

@@ -101,6 +101,32 @@ Ursachen:
     redis-cli -h <redis-host> -n 1 DEL '<prefix><Sitzungskennung>_LOCK'
     ```
 
+## Client nach Widerruf abgemeldet
+
+Sync-Clients schicken mit jeder Anfrage ihr Sitzungs-Cookie mit. Die Sitzung
+gilt nur, solange die Anmeldung gilt, mit der sie begann; der Server prüft das
+vor jeder Anfrage:
+
+- **App-Passwort entzogen** (Persönlich → Sicherheit → App-Passwörter / Token):
+  Die nächste Anfrage des Geräts bekommt 401, auch wenn es nur das Cookie
+  schickt. Der Client muss mit einem neuen App-Passwort eingerichtet werden.
+- **Sitzung unter „Sitzungen“ entfernt**: Die Sitzung endet mit der nächsten
+  Anfrage. Hat das Gerät noch gültige Zugangsdaten (App-Passwort, OAuth2-Token,
+  Kennwort), meldet es sich damit sofort neu an. Um ein Gerät auszusperren,
+  dessen Zugang entziehen, nicht nur die Sitzung.
+- **Desktop-Freigabe (OAuth2) widerrufen**: WebDAV- und OCS-Anfragen mit dem
+  Token werden sofort abgewiesen. Die Sitzung selbst endet mit der ersten
+  Anfrage ohne das Token (etwa nur mit Cookie), sonst mit der ersten Anfrage,
+  die mehr als `last_check_timeout` Minuten (App-Wert `core`, Vorgabe 5) nach
+  der letzten Prüfung des Tokens kommt.
+
+Eine so beendete Sitzung steht mit Stufe info im Protokoll:
+„Client session of `<konto>` ended: `<Grund>`“. Anfragen, die zu einer per
+OAuth2 begonnenen Sitzung nur das Cookie ohne Token schicken, werden nicht mehr
+angenommen; Desktop- und Mobil-Clients senden das Token immer mit. Sitzungen,
+die vor dem Update begannen und danach ohne App-Passwort nur das Cookie
+schicken, müssen sich einmal neu anmelden.
+
 ## JavaScript-Fehler: jQuery ist nicht definiert
 
 Ursache ist meist ein unvollständiger Build. Bei owncloud.online müssen Composer und `make` im Release-Prozess laufen.

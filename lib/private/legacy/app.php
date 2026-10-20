@@ -148,23 +148,9 @@ class OC_App {
 				if ($davUser === null) {
 					$session->validateSession();
 				} else {
-					/** @var \OC\Authentication\Token\DefaultTokenProvider $tokenProvider */
-					$tokenProvider = \OC::$server->query('\OC\Authentication\Token\DefaultTokenProvider');
-					$token = null;
-					try {
-						$token = $tokenProvider->getToken($session->getSession()->getId());
-					} catch (\Exception $ex) {
-						$password = null;
-						if (isset($_SERVER['PHP_AUTH_PW'])) {
-							$password = $_SERVER['PHP_AUTH_PW'];
-						}
-
-						$session->createSessionToken($request, $session->getUser()->getUID(), $session->getLoginName(), $password);
-					}
-
-					if ($token) {
-						$tokenProvider->updateToken($token);
-					}
+					// Von einem Client selbst angemeldet: Die Sitzung endet mit dem
+					// App-Passwort, Sitzungstoken oder Bearer, mit dem sie begann.
+					$session->validateDavSession($request);
 				}
 			}
 		}

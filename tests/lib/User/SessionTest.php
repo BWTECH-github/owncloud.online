@@ -15,6 +15,7 @@
 
 namespace Test\User;
 
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use OC\AppFramework\Http\Request;
 use OC\Authentication\Exceptions\InvalidTokenException;
 use OC\Authentication\Exceptions\PasswordlessTokenException;
@@ -2075,5 +2076,389 @@ class SessionTest extends TestCase {
 			->with($this->equalTo($beforeEvent), $this->equalTo('user.beforelogin'));
 
 		self::invokePrivate($userSession, 'loginUser', [$iUser, 'bar', 'authModuleClassname']);
+	}
+
+	/**
+	 * Sitzung, die ein Client selbst angemeldet hat (WebDAV), mit Kennung
+	 * 'sessionid'; logout() und die Anmeldemodule sind ersetzt.
+	 *
+	 * @param array $values zusätzliche Sitzungswerte
+	 * @param IAuthModule[] $modules
+	 * @param bool $enabled
+	 * @return array [Session (Mock), Sitzungsspeicher]
+	 */
+	private function createDavSession(array $values, array $modules = [], $enabled = true) {
+		$store = new class extends Memory {
+			public function getId() {
+				return 'sessionid';
+			}
+		};
+		$values += [
+			'user_id' => 'user1',
+			'loginname' => 'User1',
+			'AUTHENTICATED_TO_DAV_BACKEND' => 'user1',
+		];
+		foreach ($values as $key => $value) {
+			$store->set($key, $value);
+		}
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('user1');
+		$user->method('isEnabled')->willReturn($enabled);
+		$manager = $this->createMock(Manager::class);
+		$manager->method('get')->willReturnCallback(function ($uid) use ($user) {
+			return $uid === 'user1' ? $user : null;
+		});
+		$this->config->method('getAppValue')->willReturnMap([['core', 'last_check_timeout', 5, '5']]);
+
+		/** @var Session | \PHPUnit\Framework\MockObject\MockObject $userSession */
+		$userSession = $this->getMockBuilder(Session::class)
+			->setConstructorArgs([$manager, $store, $this->timeFactory, $this->tokenProvider, $this->config, $this->logger, $this->serviceLoader, $this->userSyncService, $this->eventDispatcher])
+			->onlyMethods(['logout', 'getAuthModules'])
+			->getMock();
+		$userSession->method('getAuthModules')->willReturn($modules);
+		return [$userSession, $store];
+	}
+
+	/**
+	 * @param string $uid
+	 * @param int $lastCheck
+	 * @return DefaultToken
+	 */
+	private function createDavToken($uid, $lastCheck = 10000) {
+		$token = new DefaultToken();
+		$token->setUid($uid);
+		$token->setLastCheck($lastCheck);
+		$token->setLastActivity(10000);
+		return $token;
+	}
+
+	/**
+	 * @param array $server
+	 * @return Request
+	 */
+	private function createDavRequest(array $server = []) {
+		return new Request(
+			['server' => $server + ['HTTP_USER_AGENT' => 'mirall']],
+			$this->createMock(ISecureRandom::class),
+			$this->createMock(IConfig::class),
+			$this->createMock(CsrfTokenManager::class)
+		);
+	}
+
+	/**
+	 * Tokens nach Kennung: Fehlt eine, gilt das Token als nicht vorhanden.
+	 *
+	 * @param IToken[] $tokens
+	 */
+	private function withTokens(array $tokens) {
+		$this->tokenProvider->method('getToken')->willReturnCallback(function ($id) use ($tokens) {
+			if (!isset($tokens[$id])) {
+				throw new InvalidTokenException();
+			}
+			return $tokens[$id];
+		});
+	}
+
+	public function testValidateDavSessionKeepsAppPasswordSession() {
+		[$userSession, $store] = $this->createDavSession(['app_password' => 'APPPW', 'session_token_created' => true]);
+		$sessionToken = $this->createDavToken('user1');
+		$this->withTokens(['APPPW' => $this->createDavToken('user1'), 'sessionid' => $sessionToken]);
+		$this->tokenProvider->expects($this->once())->method('updateTokenActivity')->with($sessionToken);
+		$userSession->expects($this->never())->method('logout');
+
+		$userSession->validateDavSession($this->createDavRequest());
+		$this->assertSame('APPPW', $store->get('app_password'));
+	}
+
+	public function providesInvalidAppPasswords() {
+		return [
+			'widerrufen' => [[]],
+			'Token eines anderen Nutzers' => [['APPPW' => 'user2']],
+		];
+	}
+
+	/**
+	 * Widerrufenes App-Passwort: Die Sitzung endet, auch wenn der Client nur das
+	 * Cookie schickt und das Sitzungstoken noch besteht.
+	 *
+	 * @dataProvider providesInvalidAppPasswords
+	 * @param array $owners Token => Nutzer
+	 */
+	public function testValidateDavSessionEndsWhenAppPasswordIsInvalid(array $owners) {
+		[$userSession] = $this->createDavSession(['app_password' => 'APPPW', 'session_token_created' => true]);
+		$tokens = ['sessionid' => $this->createDavToken('user1')];
+		foreach ($owners as $id => $uid) {
+			$tokens[$id] = $this->createDavToken($uid);
+		}
+		$this->withTokens($tokens);
+		$this->logger->expects($this->once())->method('info')
+			->with($this->stringContains('ended'), $this->callback(function ($context) {
+				return $context['reason'] === 'app password no longer valid';
+			}));
+		$userSession->expects($this->once())->method('logout');
+
+		$userSession->validateDavSession($this->createDavRequest());
+	}
+
+	/**
+	 * Sitzung unter „Sitzungen“ entfernt: Das Token wird nicht neu angelegt.
+	 */
+	public function testValidateDavSessionEndsWhenSessionTokenWasRemoved() {
+		[$userSession] = $this->createDavSession(['session_token_created' => true]);
+		$this->withTokens([]);
+		$this->tokenProvider->expects($this->never())->method('generateToken');
+		$userSession->expects($this->once())->method('logout');
+
+		$userSession->validateDavSession($this->createDavRequest(['PHP_AUTH_USER' => 'user1', 'PHP_AUTH_PW' => 'secret']));
+	}
+
+	/**
+	 * Zweite Anfrage einer Sitzung: Das Token entsteht wie bisher erst jetzt,
+	 * mit dem Kennwort der Anfrage, und die Sitzung merkt sich das.
+	 */
+	public function testValidateDavSessionCreatesSessionTokenOnce() {
+		[$userSession, $store] = $this->createDavSession([]);
+		$this->withTokens([]);
+		$this->tokenProvider->expects($this->once())->method('generateToken')
+			->with('sessionid', 'user1', 'User1', 'secret', 'mirall');
+		$userSession->expects($this->never())->method('logout');
+
+		$userSession->validateDavSession($this->createDavRequest(['PHP_AUTH_USER' => 'user1', 'PHP_AUTH_PW' => 'secret']));
+		$this->assertTrue($store->get('session_token_created'));
+	}
+
+	public function providesExistingSessionTokens() {
+		return [
+			'Token der Sitzung besteht schon' => [false],
+			'parallel angelegt (Unique-Verletzung)' => [true],
+		];
+	}
+
+	/**
+	 * Auch wenn das Token schon besteht, merkt sich die Sitzung, dass sie eines hat.
+	 *
+	 * @dataProvider providesExistingSessionTokens
+	 * @param bool $concurrent
+	 */
+	public function testCreateSessionTokenMarksSessionWithExistingToken($concurrent) {
+		$store = new class extends Memory {
+			public function getId() {
+				return 'sessionid';
+			}
+		};
+		$manager = $this->createMock(Manager::class);
+		$manager->method('get')->willReturn($this->createMock(IUser::class));
+		$userSession = new Session($manager, $store, $this->timeFactory, $this->tokenProvider, $this->config, $this->logger, $this->serviceLoader, $this->userSyncService, $this->eventDispatcher);
+		if ($concurrent) {
+			$this->withTokens([]);
+			$this->tokenProvider->expects($this->once())->method('generateToken')
+				->willThrowException($this->createMock(UniqueConstraintViolationException::class));
+		} else {
+			$this->withTokens(['sessionid' => $this->createDavToken('user1')]);
+			$this->tokenProvider->expects($this->never())->method('generateToken');
+		}
+
+		$this->assertTrue($userSession->createSessionToken($this->createDavRequest(), 'user1', 'User1'));
+		$this->assertTrue($store->get('session_token_created'));
+	}
+
+	public function providesSessionsFromBeforeTheCheck() {
+		return [
+			'App-Passwort, nur Cookie' => [['app_password' => 'APPPW'], [], false],
+			'Kennwort über Basic' => [[], ['HTTP_AUTHORIZATION' => 'Basic dXNlcjE6c2VjcmV0'], false],
+			'Kennwort über Basic ohne Authorization-Kopf (mod_php)' => [[], ['PHP_AUTH_USER' => 'user1', 'PHP_AUTH_PW' => 'secret'], false],
+			'nur Cookie, weder App-Passwort noch Kennwort' => [[], [], true],
+		];
+	}
+
+	/**
+	 * Sitzung von vor dieser Prüfung (Token ohne Vermerk): Sie behält ihr Token
+	 * und gilt ab jetzt wie jede neue. Woher sie stammt, zeigt erst die Anfrage;
+	 * nur mit Cookie und ohne App-Passwort ist das unbekannt – einmal neu anmelden.
+	 *
+	 * @dataProvider providesSessionsFromBeforeTheCheck
+	 * @param array $values
+	 * @param array $server
+	 * @param bool $ends
+	 */
+	public function testValidateDavSessionOfSessionFromBeforeTheCheck(array $values, array $server, $ends) {
+		[$userSession, $store] = $this->createDavSession($values);
+		$this->withTokens(['APPPW' => $this->createDavToken('user1'), 'sessionid' => $this->createDavToken('user1')]);
+		$this->tokenProvider->expects($this->never())->method('generateToken');
+		$userSession->expects($ends ? $this->once() : $this->never())->method('logout');
+
+		$userSession->validateDavSession($this->createDavRequest($server));
+		$this->assertTrue($store->get('session_token_created'));
+	}
+
+	public function testValidateDavSessionEndsWhenSessionTokenBelongsToOtherUser() {
+		[$userSession] = $this->createDavSession(['session_token_created' => true]);
+		$this->withTokens(['sessionid' => $this->createDavToken('user2')]);
+		$userSession->expects($this->once())->method('logout');
+
+		$userSession->validateDavSession($this->createDavRequest());
+	}
+
+	public function testValidateDavSessionEndsForDisabledUser() {
+		[$userSession] = $this->createDavSession(['session_token_created' => true], [], false);
+		$this->withTokens(['sessionid' => $this->createDavToken('user1')]);
+		$userSession->expects($this->once())->method('logout');
+
+		$userSession->validateDavSession($this->createDavRequest());
+	}
+
+	/**
+	 * Kennwort über HTTP-Basic: kein Anmeldemodul beteiligt, die Sitzung bleibt.
+	 */
+	public function testValidateDavSessionKeepsPasswordSession() {
+		$module = $this->createMock(IAuthModule::class);
+		$module->expects($this->never())->method('auth');
+		[$userSession] = $this->createDavSession(['session_token_created' => true], [$module]);
+		$this->withTokens(['sessionid' => $this->createDavToken('user1')]);
+		$userSession->expects($this->never())->method('logout');
+
+		$userSession->validateDavSession($this->createDavRequest(['HTTP_AUTHORIZATION' => 'Basic dXNlcjE6c2VjcmV0']));
+	}
+
+	public function providesModulesForUnmarkedSessions() {
+		return [
+			'zweites Modul bestätigt den Nutzer' => ['user1', false],
+			'kein Modul kennt den Kopf' => [null, true],
+			'Modul nennt einen anderen Nutzer' => ['user2', true],
+			'Modul lehnt ab' => [new \OC\User\LoginException('Invalid token'), true],
+		];
+	}
+
+	/**
+	 * Bearer an einer Sitzung ohne Vermerk eines Anmeldemoduls (begonnen vor
+	 * dieser Prüfung): Bestätigt ein Modul den Nutzer, wird es vermerkt, sonst
+	 * endet die Sitzung.
+	 *
+	 * @dataProvider providesModulesForUnmarkedSessions
+	 * @param string|\Exception|null $moduleResult
+	 * @param bool $ends
+	 */
+	public function testValidateDavSessionOfUnmarkedSessionWithBearer($moduleResult, $ends) {
+		$first = $this->createMock(IAuthModule::class);
+		$first->method('auth')->willReturn(null);
+		$second = $this->createMock(IAuthModule::class);
+		$auth = $second->expects($this->once())->method('auth');
+		if ($moduleResult instanceof \Exception) {
+			$auth->willThrowException($moduleResult);
+		} elseif ($moduleResult !== null) {
+			$user = $this->createMock(IUser::class);
+			$user->method('getUID')->willReturn($moduleResult);
+			$auth->willReturn($user);
+		} else {
+			$auth->willReturn(null);
+		}
+		[$userSession, $store] = $this->createDavSession(['session_token_created' => true], [$first, $second]);
+		$this->withTokens(['sessionid' => $this->createDavToken('user1')]);
+		$userSession->expects($ends ? $this->once() : $this->never())->method('logout');
+
+		$userSession->validateDavSession($this->createDavRequest(['HTTP_AUTHORIZATION' => 'Bearer abc']));
+		if (!$ends) {
+			$this->assertSame(
+				['class' => \get_class($second), 'credential' => \hash('sha256', 'Bearer abc')],
+				$store->get('auth_module')
+			);
+		}
+	}
+
+	public function providesAuthModuleRequests() {
+		return [
+			'derselbe Bearer, eben geprüft' => [['HTTP_AUTHORIZATION' => 'Bearer abc'], 10000, false, null, false],
+			'derselbe Bearer nach Rewrite, eben geprüft' => [['REDIRECT_HTTP_AUTHORIZATION' => 'Bearer abc'], 10000, false, null, false],
+			'nur Cookie' => [[], 10000, true, null, true],
+			'Basic statt Bearer' => [['HTTP_AUTHORIZATION' => 'Basic dXNlcjE6c2VjcmV0'], 10000, true, null, true],
+			'erneuerter Bearer' => [['HTTP_AUTHORIZATION' => 'Bearer neu'], 10000, true, 'user1', false],
+			'Bearer eines anderen Nutzers' => [['HTTP_AUTHORIZATION' => 'Bearer fremd'], 10000, true, 'user2', true],
+			'derselbe Bearer, Prüfung fällig, gilt noch' => [['HTTP_AUTHORIZATION' => 'Bearer abc'], 10000 - 301, true, 'user1', false],
+			'derselbe Bearer, Prüfung fällig, widerrufen' => [['HTTP_AUTHORIZATION' => 'Bearer abc'], 10000 - 301, true, new \OC\User\LoginException('Invalid token'), true],
+			'derselbe Bearer, Prüfung gerade noch nicht fällig' => [['HTTP_AUTHORIZATION' => 'Bearer abc'], 10000 - 299, false, null, false],
+		];
+	}
+
+	/**
+	 * Sitzung eines Anmeldemoduls (OAuth2): Jede Anfrage muss den bestätigten
+	 * Authorization-Kopf tragen; ein anderer wird sofort geprüft, derselbe nach
+	 * last_check_timeout (5 Minuten).
+	 *
+	 * @dataProvider providesAuthModuleRequests
+	 * @param array $server
+	 * @param int $lastCheck
+	 * @param bool $asksModule
+	 * @param string|\Exception|null $moduleResult Nutzer, Ausnahme oder null
+	 * @param bool $ends
+	 */
+	public function testValidateDavSessionOfAuthModule(array $server, $lastCheck, $asksModule, $moduleResult, $ends) {
+		$module = $this->createMock(IAuthModule::class);
+		$auth = $module->expects($asksModule ? $this->once() : $this->never())->method('auth');
+		if ($moduleResult instanceof \Exception) {
+			$auth->willThrowException($moduleResult);
+		} elseif ($moduleResult !== null) {
+			$user = $this->createMock(IUser::class);
+			$user->method('getUID')->willReturn($moduleResult);
+			$auth->willReturn($user);
+		} else {
+			$auth->willReturn(null);
+		}
+		$authModule = ['class' => \get_class($module), 'credential' => \hash('sha256', 'Bearer abc')];
+		[$userSession, $store] = $this->createDavSession(['session_token_created' => true, 'auth_module' => $authModule], [$module]);
+		$sessionToken = $this->createDavToken('user1', $lastCheck);
+		$this->withTokens(['sessionid' => $sessionToken]);
+		$userSession->expects($ends ? $this->once() : $this->never())->method('logout');
+
+		$userSession->validateDavSession($this->createDavRequest($server));
+
+		if (!$ends && $asksModule) {
+			$authorization = $server['HTTP_AUTHORIZATION'] ?? '';
+			$this->assertSame(\hash('sha256', $authorization), $store->get('auth_module')['credential']);
+			$this->assertSame(10000, $sessionToken->getLastCheck());
+		} elseif (!$ends) {
+			$this->assertSame($authModule, $store->get('auth_module'));
+			$this->assertSame($lastCheck, $sessionToken->getLastCheck());
+		}
+	}
+
+	/**
+	 * Ist die App des Anmeldemoduls nicht mehr da, lässt sich der Kopf nicht
+	 * prüfen: Die Sitzung endet.
+	 */
+	public function testValidateDavSessionEndsWhenAuthModuleIsGone() {
+		$authModule = ['class' => 'OCA\Gone\AuthModule', 'credential' => \hash('sha256', 'Bearer abc')];
+		[$userSession] = $this->createDavSession(['session_token_created' => true, 'auth_module' => $authModule]);
+		$this->withTokens(['sessionid' => $this->createDavToken('user1')]);
+		$userSession->expects($this->once())->method('logout');
+
+		$userSession->validateDavSession($this->createDavRequest(['HTTP_AUTHORIZATION' => 'Bearer neu']));
+	}
+
+	/**
+	 * Anmeldung über ein Anmeldemodul: Die Sitzung merkt sich Modul und
+	 * Fingerabdruck des Authorization-Kopfs, nicht den Kopf selbst.
+	 */
+	public function testTryAuthModuleLoginRemembersModuleAndCredential() {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('user1');
+		$user->method('isEnabled')->willReturn(true);
+		$module = $this->createMock(IAuthModule::class);
+		$module->method('auth')->willReturn($user);
+		$store = new Memory();
+		/** @var Session | \PHPUnit\Framework\MockObject\MockObject $userSession */
+		$userSession = $this->getMockBuilder(Session::class)
+			->setConstructorArgs([$this->createMock(Manager::class), $store, $this->timeFactory, $this->tokenProvider, $this->config, $this->logger, $this->serviceLoader, $this->userSyncService, $this->eventDispatcher])
+			->onlyMethods(['getAuthModules', 'createSessionToken', 'loginUser'])
+			->getMock();
+		$userSession->method('getAuthModules')->willReturn([$module]);
+		$userSession->expects($this->once())->method('loginUser')->willReturn(true);
+		$userSession->expects($this->once())->method('createSessionToken');
+
+		$this->assertTrue($userSession->tryAuthModuleLogin($this->createDavRequest(['HTTP_AUTHORIZATION' => 'Bearer abc'])));
+		$this->assertSame('user1', $store->get('AUTHENTICATED_TO_DAV_BACKEND'));
+		$this->assertSame(
+			['class' => \get_class($module), 'credential' => \hash('sha256', 'Bearer abc')],
+			$store->get('auth_module')
+		);
 	}
 }
