@@ -33,6 +33,7 @@ namespace OC\Settings;
 
 use OC\Server;
 use OC\AppFramework\Utility\TimeFactory;
+use OC\Log\LogFileReader;
 use OC\Settings\Controller\CorsController;
 use OC\Settings\Controller\SettingsPageController;
 use OC\Settings\Controller\AppConfigController;
@@ -154,7 +155,12 @@ class Application extends App {
 				$c->query('AppName'),
 				$c->query('Request'),
 				$c->query('Config'),
-				$c->query('L10N')
+				$c->query('L10N'),
+				$c->query('UserSession'),
+				$c->query('GroupManager'),
+				$c->query('ICacheFactory'),
+				$c->query('TimeFactory'),
+				new LogFileReader((string)\OC\Log\Owncloud::getLogFilePath())
 			);
 		});
 		$container->registerService('LegalSettingsController', function (IContainer $c) {

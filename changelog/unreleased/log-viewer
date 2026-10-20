@@ -1,0 +1,33 @@
+Enhancement: Read the log in the admin settings and through a JSON endpoint
+
+Settings > General only offered the log level and a download of owncloud.log.
+To see why a request failed, an admin had to download the whole file - on
+installations with a large log that meant hundreds of megabytes - or ask
+someone with shell access.
+
+The log section now lists the newest entries below the download button: time,
+level, app, message, user and request, newest first. The list can be filtered
+by minimum level and app and searched for any text, including exception
+classes, traces, request IDs, user names and addresses. "Load more" continues
+with older entries. Clicking an entry (or pressing Enter on it) opens its
+details: the full message, the exception with file and line, the trace and
+the chain of exceptions that caused it, which Log::logException() writes as
+separate "Caused by" lines and the view joins again. The download button stays.
+
+The same data is available as JSON for admins at
+GET /index.php/settings/admin/log/entries with the parameters offset, count
+(1 to 200, default 50), level (minimum level 0 to 4), app and search. Besides
+the browser session (with the request token, like every other settings
+request) it accepts basic authentication with an admin's password or app
+password, so scripts and monitoring tools can read the log without shell
+access. The response contains next_offset, the byte position to pass as
+offset for the next older page, and restarted when the log file was rotated in
+the meantime.
+
+The file is read backwards in blocks. A request reads at most 32 MB and returns
+at most 200 entries or about 2 MB of text, so even a log file of several
+gigabytes answers quickly; the view keeps reading on its own when a filter did
+not match anything in that part. With a memory cache configured, an admin can
+make 60 requests per minute (HTTP 429 with Retry-After after that). The viewer
+needs log_type owncloud; with syslog or errorlog the endpoint answers 404 and
+the section is not shown, as before.

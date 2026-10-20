@@ -125,14 +125,16 @@ module.exports = function(config) {
 					'settings/js/users/deleteHandler.js',
 					'settings/js/admin-apps.js',
 					'settings/js/setpassword.js',
-					'settings/js/panels/mail.js'
+					'settings/js/panels/mail.js',
+					'settings/js/panels/logviewer.js'
 				],
 				testFiles: [
 					'settings/tests/js/users/groupsSpec.js',
 					'settings/tests/js/users/deleteHandlerSpec.js',
 					'settings/tests/js/apps/appSettingsSpec.js',
 					'settings/tests/js/setpasswordSpec.js',
-					'settings/tests/js/panels/mailSpec.js'
+					'settings/tests/js/panels/mailSpec.js',
+					'settings/tests/js/panels/logviewerSpec.js'
 				]
 			}
 		];

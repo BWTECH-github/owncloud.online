@@ -53,6 +53,7 @@ class LoggingTest extends \Test\TestCase {
 			->willReturn('/var/log/file/doesnt/exist.log');
 		$templateHtml = $this->panel->getPanel()->fetchPage();
 		$this->assertStringNotContainsString('<div class="section">', $templateHtml);
+		$this->assertStringNotContainsString('id="log-viewer"', $templateHtml);
 	}
 
 	public function testGetPanelWithLogFile() {
@@ -66,5 +67,17 @@ class LoggingTest extends \Test\TestCase {
 		]));
 		$templateHtml = $this->panel->getPanel()->fetchPage();
 		$this->assertStringContainsString('<div class="section">', $templateHtml);
+		$this->assertStringContainsString('id="downloadLog"', $templateHtml);
+
+		// Protokollansicht: beschriftete Filter, Live-Region, Tabelle, „Mehr laden“
+		$this->assertStringContainsString('<div id="log-viewer" class="log-viewer">', $templateHtml);
+		foreach (['log-viewer-level', 'log-viewer-app', 'log-viewer-search'] as $field) {
+			$this->assertStringContainsString('<label for="' . $field . '">', $templateHtml);
+			$this->assertMatchesRegularExpression('/<(select|input)[^>]* id="' . $field . '"/', $templateHtml);
+		}
+		$this->assertStringContainsString('id="log-viewer-status" class="log-viewer-status" role="status" aria-live="polite"', $templateHtml);
+		$this->assertStringContainsString('<table id="log-viewer-table" class="grid log-viewer-table" aria-labelledby="log-viewer-heading">', $templateHtml);
+		$this->assertSame(6, \substr_count($templateHtml, '<th scope="col"'));
+		$this->assertStringContainsString('<button type="button" id="log-viewer-more" class="hidden">', $templateHtml);
 	}
 }
