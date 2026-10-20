@@ -26,6 +26,11 @@ OC.L10N.register(
     "Caused by" : "Сабаб",
     "Request ID" : "ID-и дархост",
     "Remote address" : "Суроғаи дурдаст",
+    "Too many requests. Please try again later." : "Дархостҳо аз ҳад зиёданд. Лутфан, баъдтар дубора кӯшиш кунед.",
+    "_Too many requests. Please try again in %n second._::_Too many requests. Please try again in %n seconds._" : ["Дархостҳо аз ҳад зиёданд. Лутфан, пас аз %n сония дубора кӯшиш кунед.","Дархостҳо аз ҳад зиёданд. Лутфан, пас аз %n сония дубора кӯшиш кунед."],
+    "Only administrators can read the log." : "Журналро танҳо маъмурон хонда метавонанд.",
+    "The log file is not available." : "Файли журнал дастрас нест.",
+    "Trace (cause {number})" : "Пайгирӣ (сабаб {number})",
     "Group" : "Гурӯҳ"
 },
 "nplurals=2; plural=(n != 1);");

@@ -71,21 +71,28 @@ $levelLabels = [
 				<button type="submit" id="log-viewer-refresh"><?php p($l->t('Refresh')); ?></button>
 			</form>
 			<p id="log-viewer-status" class="log-viewer-status" role="status" aria-live="polite"></p>
+			<?php /* Die Rollen stehen ausdrücklich da: Schmal zeigt settings.css die
+				Einträge als Karten (display: block/flex), und Safari verwirft die
+				Tabellensemantik sonst. */ ?>
 			<div class="log-viewer-scroll">
-				<table id="log-viewer-table" class="grid log-viewer-table" aria-labelledby="log-viewer-heading">
-					<thead>
-						<tr>
-							<th scope="col" class="log-viewer-time"><?php p($l->t('Time')); ?></th>
-							<th scope="col" class="log-viewer-level"><?php p($l->t('Level')); ?></th>
-							<th scope="col" class="log-viewer-app"><?php p($l->t('App')); ?></th>
-							<th scope="col" class="log-viewer-message"><?php p($l->t('Message')); ?></th>
-							<th scope="col" class="log-viewer-user"><?php p($l->t('User')); ?></th>
-							<th scope="col" class="log-viewer-request"><?php p($l->t('Request')); ?></th>
+				<table id="log-viewer-table" class="grid log-viewer-table" role="table" aria-labelledby="log-viewer-heading">
+					<thead role="rowgroup">
+						<tr role="row">
+							<th scope="col" role="columnheader" class="log-viewer-time"><?php p($l->t('Time')); ?></th>
+							<th scope="col" role="columnheader" class="log-viewer-level"><?php p($l->t('Level')); ?></th>
+							<th scope="col" role="columnheader" class="log-viewer-app"><?php p($l->t('App')); ?></th>
+							<th scope="col" role="columnheader" class="log-viewer-message"><?php p($l->t('Message')); ?></th>
+							<th scope="col" role="columnheader" class="log-viewer-user"><?php p($l->t('User')); ?></th>
+							<th scope="col" role="columnheader" class="log-viewer-request"><?php p($l->t('Request')); ?></th>
 						</tr>
 					</thead>
-					<tbody></tbody>
+					<tbody role="rowgroup"></tbody>
 				</table>
 			</div>
+			<?php /* Fehler stehen getrennt vom Status direkt über „Mehr laden“: Dort
+				sieht man sie auch am Ende einer langen Liste, und role=alert sagt sie
+				sofort an. */ ?>
+			<p id="log-viewer-error" class="log-viewer-error" role="alert"></p>
 			<button type="button" id="log-viewer-more" class="hidden"><?php p($l->t('Load more')); ?></button>
 		</div>
 	</div>

@@ -26,6 +26,11 @@ OC.L10N.register(
     "Caused by" : "Způsobeno",
     "Request ID" : "ID požadavku",
     "Remote address" : "Vzdálená adresa",
+    "Too many requests. Please try again later." : "Příliš mnoho požadavků. Zkuste to prosím znovu později.",
+    "_Too many requests. Please try again in %n second._::_Too many requests. Please try again in %n seconds._" : ["Příliš mnoho požadavků. Zkuste to prosím znovu za %n sekundu.","Příliš mnoho požadavků. Zkuste to prosím znovu za %n sekundy.","Příliš mnoho požadavků. Zkuste to prosím znovu za %n sekundy.","Příliš mnoho požadavků. Zkuste to prosím znovu za %n sekund."],
+    "Only administrators can read the log." : "Protokol mohou číst pouze administrátoři.",
+    "The log file is not available." : "Soubor protokolu není k dispozici.",
+    "Trace (cause {number})" : "Trasa (příčina {number})",
     "Valid until" : "Valid until",
     "Version" : "Version"
 },

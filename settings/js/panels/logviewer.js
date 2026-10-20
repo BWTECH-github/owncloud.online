@@ -95,6 +95,57 @@
 	}
 
 	/**
+	 * Wartezeit aus Retry-After in Sekunden. Der Kopf darf eine Sekundenzahl
+	 * oder ein HTTP-Datum sein; null, wenn er fehlt oder nichts Brauchbares sagt.
+	 */
+	function retryAfterSeconds(xhr) {
+		var value = $.trim(xhr.getResponseHeader('Retry-After') || '');
+		if (/^\d+$/.test(value)) {
+			return Math.max(1, parseInt(value, 10));
+		}
+		var date = value === '' ? NaN : Date.parse(value);
+		if (!isNaN(date) && date > Date.now()) {
+			return Math.ceil((date - Date.now()) / 1000);
+		}
+		return null;
+	}
+
+	/**
+	 * Fehlermeldung je Antwort von LogSettingsController::getEntries().
+	 * 401 behandelt OC._processAjaxError() für alle Anfragen (Seite neu laden).
+	 */
+	function errorText(xhr) {
+		if (xhr.status === 429) {
+			var seconds = retryAfterSeconds(xhr);
+			if (seconds === null) {
+				return t('settings', 'Too many requests. Please try again later.');
+			}
+			return n('settings', 'Too many requests. Please try again in %n second.', 'Too many requests. Please try again in %n seconds.', seconds);
+		}
+		if (xhr.status === 403) {
+			return t('settings', 'Only administrators can read the log.');
+		}
+		if (xhr.status === 404) {
+			// log_type ist nicht owncloud oder die Datei fehlt bzw. ist nicht lesbar
+			return t('settings', 'The log file is not available.');
+		}
+		return t('settings', 'Could not load the log.');
+	}
+
+	function cell(className) {
+		return $('<td>').addClass(className).attr('role', 'cell');
+	}
+
+	/**
+	 * Werte aus dem Protokoll (Pfade, Klassen, Benutzer-IDs) laufen meist von
+	 * links nach rechts, auch auf einer Seite von rechts nach links. bdi trennt
+	 * sie vom Umfeld, sonst ordnet der Bidi-Algorithmus Satzzeichen und Zahlen um.
+	 */
+	function isolated(value) {
+		return value ? $('<bdi>').text(value) : null;
+	}
+
+	/**
 	 * @param {jQuery} $root Element #log-viewer aus panels/admin/logging.php
 	 */
 	var LogViewer = function ($root) {
@@ -105,12 +156,15 @@
 		this.$apps = $root.find('#log-viewer-apps');
 		this.$search = $root.find('#log-viewer-search');
 		this.$status = $root.find('#log-viewer-status');
+		this.$error = $root.find('#log-viewer-error');
 		this.$table = $root.find('#log-viewer-table');
 		this.$tbody = this.$table.find('tbody');
 		this.$more = $root.find('#log-viewer-more');
 
 		this._request = null;
 		this._generation = 0;
+		// Filter der angezeigten Liste. Nur mit ihnen passt _nextOffset.
+		this._filters = null;
 		this._nextOffset = null;
 		this._shown = 0;
 		this._rowCounter = 0;
@@ -134,6 +188,9 @@
 				self.reload();
 			});
 			this.$app.add(this.$search).on('input', function () {
+				// Der Offset gehört zum bisherigen Filter – nicht erst nach der
+				// Entprellung, sondern ab dem ersten Tastendruck.
+				self._invalidate();
 				clearTimeout(self._timer);
 				self._timer = setTimeout(function () {
 					self.reload();
@@ -163,13 +220,33 @@
 		 */
 		reload: function () {
 			clearTimeout(this._timer);
+			this._invalidate();
+			this._filters = this.getFilters();
 			this._fetch(0, false, MAX_EMPTY_PAGES);
 		},
 
+		/**
+		 * Ältere Einträge mit den Filtern der angezeigten Liste, nicht mit dem,
+		 * was inzwischen in den Feldern steht.
+		 */
 		loadMore: function () {
 			if (this._nextOffset !== null && this._request === null) {
 				this._fetch(this._nextOffset, true, MAX_EMPTY_PAGES);
 			}
+		},
+
+		/**
+		 * Der Filter ändert sich: Der Offset der angezeigten Liste gilt nicht mehr,
+		 * und eine laufende Anfrage zum alten Filter darf nichts mehr eintragen.
+		 */
+		_invalidate: function () {
+			this._generation++;
+			if (this._request) {
+				this._request.abort();
+				this._request = null;
+			}
+			this._nextOffset = null;
+			this.$more.addClass('hidden');
 		},
 
 		_fetch: function (offset, append, emptyPagesLeft) {
@@ -178,12 +255,13 @@
 			if (this._request) {
 				this._request.abort();
 			}
-			var params = $.extend({count: PAGE_SIZE}, this.getFilters());
+			var params = $.extend({count: PAGE_SIZE}, this._filters);
 			if (offset > 0) {
 				params.offset = offset;
 			}
 
 			this._setBusy(true);
+			this._setError('');
 			this._setStatus(t('settings', 'Loading …'));
 			this._request = $.ajax({
 				url: OC.generateUrl('/settings/admin/log/entries'),
@@ -196,7 +274,7 @@
 				}
 				self._request = null;
 				var entries = (data && data.entries) || [];
-				if (!append || data.restarted) {
+				if (!append || (data && data.restarted)) {
 					self._clear();
 				}
 				self._render(entries);
@@ -212,7 +290,19 @@
 				}
 				self._request = null;
 				self._setBusy(false);
-				self._setStatus(t('settings', 'Could not load the log.'));
+				if (append) {
+					// Zeilen und Offset gehören weiter zusammen – „Mehr laden“
+					// versucht es mit demselben Filter noch einmal.
+					self.$more.toggleClass('hidden', self._nextOffset === null);
+				} else {
+					// Die Zeilen stammen von einem anderen Filter oder Stand und
+					// dürfen nicht als Ergebnis stehen bleiben.
+					self._clear();
+					self.$more.addClass('hidden');
+				}
+				// Nur die Fehlermeldung ansagen (role=alert), nicht dazu den Status
+				self._setStatus('');
+				self._setError(errorText(xhr));
 			});
 		},
 
@@ -277,6 +367,10 @@
 			this.$status.text(text);
 		},
 
+		_setError: function (text) {
+			this.$error.text(text);
+		},
+
 		_toggle: function ($button) {
 			var expanded = $button.attr('aria-expanded') === 'true';
 			$button.attr('aria-expanded', expanded ? 'false' : 'true');
@@ -285,51 +379,69 @@
 
 		/**
 		 * Zeile mit Knopf in der Meldungsspalte plus aufklappbare Detailzeile.
-		 * Alle Werte kommen als Text in die Seite, nie als HTML.
+		 * Alle Werte kommen als Text in die Seite, nie als HTML. Die Rollen stehen
+		 * ausdrücklich da, weil die schmale Darstellung display ändert und Safari
+		 * die Tabellensemantik dann sonst verwirft.
 		 */
 		_renderRows: function (entry) {
 			var detailsId = 'log-viewer-details-' + (++this._rowCounter);
 			var level = typeof entry.level === 'number' ? entry.level : null;
-			var $row = $('<tr>').addClass('log-viewer-row');
+			var $row = $('<tr>').addClass('log-viewer-row').attr('role', 'row');
 
-			$('<td>').addClass('log-viewer-time')
-				.append($('<time>').attr('datetime', entry.time || '').text(formatTime(entry.time)))
+			cell('log-viewer-time')
+				.append($('<time>').attr({datetime: entry.time || '', dir: 'auto'}).text(formatTime(entry.time)))
 				.appendTo($row);
-			$('<td>').addClass('log-viewer-level')
+			cell('log-viewer-level')
 				.append($('<span>').addClass('log-viewer-badge log-level-' + (level === null ? 'unknown' : level)).text(levelLabel(level)))
 				.appendTo($row);
-			$('<td>').addClass('log-viewer-app').text(entry.app || '').appendTo($row);
-			$('<td>').addClass('log-viewer-message')
+			cell('log-viewer-app').append(isolated(entry.app)).appendTo($row);
+			cell('log-viewer-message')
 				.append($('<button>').attr({
 					type: 'button',
 					'class': 'log-viewer-toggle',
 					'aria-expanded': 'false',
 					'aria-controls': detailsId
-				}).text(summary(entry)))
+				}).append(isolated(summary(entry))))
 				.appendTo($row);
-			$('<td>').addClass('log-viewer-user').text(entry.user && entry.user !== '--' ? entry.user : '').appendTo($row);
-			// In der Tabelle gekürzt, vollständig in den Details
-			$('<td>').addClass('log-viewer-request')
-				.append($('<span>').attr('title', requestText(entry)).text(requestText(entry)))
+			cell('log-viewer-user').append(isolated(entry.user !== '--' ? entry.user : '')).appendTo($row);
+			// In der Tabelle gekürzt, vollständig in den Details. dir am Block selbst,
+			// damit die Auslassungspunkte am Ende des Pfads stehen.
+			cell('log-viewer-request')
+				.append($('<span>').attr({title: requestText(entry), dir: 'auto'}).text(requestText(entry)))
 				.appendTo($row);
 
-			var $details = $('<tr>').addClass('log-viewer-details hidden').attr('id', detailsId);
-			$('<td>').attr('colspan', 6).append(this._renderDetails(entry)).appendTo($details);
+			var $details = $('<tr>').addClass('log-viewer-details hidden').attr({id: detailsId, role: 'row'});
+			$('<td>').attr({colspan: 6, role: 'cell'}).append(this._renderDetails(entry)).appendTo($details);
 			return $row.add($details);
 		},
 
 		_renderDetails: function (entry) {
 			var $list = $('<dl>').addClass('log-viewer-detail');
-			var add = function (label, value, preformatted) {
+			/**
+			 * @param {string} label
+			 * @param {string} value
+			 * @param {string} [traceName] Name des Trace-Kastens; ohne ihn steht
+			 *   der Wert als Text im dd
+			 */
+			var add = function (label, value, traceName) {
 				if (value === null || value === undefined || value === '') {
 					return;
 				}
 				$('<dt>').text(label).appendTo($list);
 				var $value = $('<dd>').appendTo($list);
-				if (preformatted) {
-					$('<pre>').text(value).appendTo($value);
+				if (traceName) {
+					// Lange Traces scrollen in ihrem Kasten. Mit tabindex erreicht
+					// man ihn auch dort per Tastatur, wo der Browser scrollbare
+					// Bereiche nicht selbst in die Tab-Folge nimmt (WCAG 2.1.1).
+					// Ein Trace ist Code und läuft immer von links nach rechts.
+					$('<pre>').attr({
+						tabindex: '0',
+						role: 'region',
+						'aria-label': traceName,
+						dir: 'ltr'
+					}).text(value).appendTo($value);
 				} else {
-					$value.text(value);
+					$value.attr('dir', 'auto').text(value);
 				}
 			};
 
@@ -338,11 +450,11 @@
 			}
 			if (entry.exception) {
 				add(t('settings', 'Exception'), exceptionText(entry.exception));
-				add(t('settings', 'Trace'), entry.exception.trace, true);
+				add(t('settings', 'Trace'), entry.exception.trace, t('settings', 'Trace'));
 			}
 			$.each(entry.previous || [], function (index, cause) {
 				add(t('settings', 'Caused by'), exceptionText(cause));
-				add(t('settings', 'Trace'), cause.trace, true);
+				add(t('settings', 'Trace'), cause.trace, t('settings', 'Trace (cause {number})', {number: index + 1}));
 			});
 			add(t('settings', 'Request'), requestText(entry));
 			add(t('settings', 'Request ID'), entry.reqId);

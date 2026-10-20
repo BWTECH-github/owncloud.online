@@ -76,8 +76,12 @@ class LoggingTest extends \Test\TestCase {
 			$this->assertMatchesRegularExpression('/<(select|input)[^>]* id="' . $field . '"/', $templateHtml);
 		}
 		$this->assertStringContainsString('id="log-viewer-status" class="log-viewer-status" role="status" aria-live="polite"', $templateHtml);
-		$this->assertStringContainsString('<table id="log-viewer-table" class="grid log-viewer-table" aria-labelledby="log-viewer-heading">', $templateHtml);
-		$this->assertSame(6, \substr_count($templateHtml, '<th scope="col"'));
+		// Rollen ausdrücklich: Die Kartenansicht für schmale Breiten setzt display: block
+		$this->assertStringContainsString('<table id="log-viewer-table" class="grid log-viewer-table" role="table" aria-labelledby="log-viewer-heading">', $templateHtml);
+		$this->assertSame(2, \substr_count($templateHtml, 'role="rowgroup"'));
+		$this->assertSame(6, \substr_count($templateHtml, '<th scope="col" role="columnheader"'));
+		// Fehler stehen getrennt vom Status und werden sofort angesagt
+		$this->assertStringContainsString('<p id="log-viewer-error" class="log-viewer-error" role="alert"></p>', $templateHtml);
 		$this->assertStringContainsString('<button type="button" id="log-viewer-more" class="hidden">', $templateHtml);
 	}
 }

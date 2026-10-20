@@ -26,6 +26,11 @@ OC.L10N.register(
     "Caused by" : "Disebabake dening",
     "Request ID" : "ID panjaluk",
     "Remote address" : "Alamat adoh",
+    "Too many requests. Please try again later." : "Panjaluk kakehan. Mangga coba maneh mengko.",
+    "_Too many requests. Please try again in %n second._::_Too many requests. Please try again in %n seconds._" : ["Panjaluk kakehan. Mangga coba maneh sajrone %n detik."],
+    "Only administrators can read the log." : "Mung administrator sing bisa maca log.",
+    "The log file is not available." : "Berkas log ora kasedhiya.",
+    "Trace (cause {number})" : "Lacak (sabab {number})",
     "Couldn't send reset email. Please contact your administrator." : "Ora iso ngirim reset email. Tulung celuk administratormu.",
     "Invalid request" : "Panjalukan salah"
 },

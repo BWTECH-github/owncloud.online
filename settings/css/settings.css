@@ -566,6 +566,12 @@ table.grid td.date {
 	white-space: nowrap;
 }
 
+/* Logstufe (panels/admin/logging.php): Die Texte der Stufen sind lang, schmal
+   ragte das Auswahlfeld über den Rand */
+#loglevel {
+	max-width: 100%;
+}
+
 /* Protokollansicht (panels/logviewer.js) */
 #log-viewer {
 	margin-top: 24px;
@@ -583,9 +589,17 @@ table.grid td.date {
 	gap: 8px 16px;
 }
 
+/* min-width: 0, damit das Feld schmal mitschrumpft – die Texte der Stufen
+   machen das Auswahlfeld sonst über 400 px breit */
 #log-viewer .log-viewer-field {
 	display: flex;
 	flex-direction: column;
+	min-width: 0;
+	max-width: 100%;
+}
+
+#log-viewer .log-viewer-field select {
+	max-width: 100%;
 }
 
 #log-viewer .log-viewer-field label {
@@ -597,8 +611,13 @@ table.grid td.date {
 	margin: 8px 0;
 }
 
+/* Maßstab für die schmale Darstellung unten ist die Breite der Liste, nicht
+   die des Fensters: Neben der Navigation reicht auch ein breites Fenster oft
+   nicht für die Tabelle. */
 #log-viewer .log-viewer-scroll {
 	overflow-x: auto;
+	container-type: inline-size;
+	container-name: log-viewer-list;
 }
 
 #log-viewer table.log-viewer-table th {
@@ -617,19 +636,32 @@ table.grid td.date {
 }
 
 #log-viewer td.log-viewer-time,
-#log-viewer td.log-viewer-level,
-#log-viewer td.log-viewer-user {
+#log-viewer td.log-viewer-level {
 	white-space: nowrap;
 }
 
-/* App-Namen wie OC\User\Session::loginInOwnCloud dürfen umbrechen */
-#log-viewer td.log-viewer-app {
-	min-width: 8em;
+/* App-Namen wie OC\User\Session::loginInOwnCloud und lange Benutzer-IDs (etwa
+   aus LDAP) dürfen umbrechen, sonst machen sie die Tabelle beliebig breit.
+   white-space ausdrücklich: core/css/styles.css setzt nowrap auf jede Tabelle. */
+#log-viewer td.log-viewer-app,
+#log-viewer td.log-viewer-user {
+	white-space: normal;
 	overflow-wrap: anywhere;
 }
 
+#log-viewer td.log-viewer-app {
+	min-width: 8em;
+}
+
+#log-viewer td.log-viewer-user {
+	min-width: 6em;
+}
+
+/* Mit diesen Mindestbreiten braucht die Tabelle gut 70em, mit Abstand unter den
+   76em, unterhalb derer sie zur Kartenansicht wird (Ende des Abschnitts). Breiter
+   passt sie damit ohne waagerechtes Scrollen. */
 #log-viewer td.log-viewer-message {
-	min-width: 20em;
+	min-width: 14em;
 }
 
 #log-viewer td.log-viewer-request span {
@@ -672,18 +704,25 @@ table.grid td.date {
 	cursor: pointer;
 }
 
+/* Das Dreieck zeigt in Leserichtung, von rechts nach links also nach links */
 #log-viewer button.log-viewer-toggle::before {
 	content: '';
 	display: inline-block;
 	margin-inline-end: 6px;
 	border-style: solid;
-	border-width: 5px 0 5px 7px;
-	border-color: transparent transparent transparent currentColor;
+	border-width: 5px 0;
+	border-inline-start-width: 7px;
+	border-color: transparent;
+	border-inline-start-color: currentColor;
 	vertical-align: middle;
 }
 
 #log-viewer button.log-viewer-toggle[aria-expanded="true"]::before {
 	transform: rotate(90deg);
+}
+
+#log-viewer button.log-viewer-toggle[aria-expanded="true"]:dir(rtl)::before {
+	transform: rotate(-90deg);
 }
 
 #log-viewer button.log-viewer-toggle:hover {
@@ -726,8 +765,92 @@ table.grid td.date {
 	overflow-wrap: anywhere;
 }
 
+#log-viewer .log-viewer-error {
+	margin: 12px 0 0;
+	/* 6,5:1 auf Weiß */
+	color: #b91c1c;
+	font-weight: 600;
+}
+
+#log-viewer .log-viewer-error:empty {
+	margin: 0;
+}
+
 #log-viewer #log-viewer-more {
 	margin-top: 12px;
+}
+
+/*
+ * Ist die Liste schmaler, als die Tabelle mindestens braucht (gut 900 px), lägen
+ * Meldung und aufgeklappte Details außerhalb des sichtbaren Bereichs: auf dem
+ * Telefon, aber auch neben der Navigation auf einem Tablet. Jeder Eintrag wird
+ * dann zur Karte – Zeit, Stufe und App, darunter die Meldung, darunter Benutzer
+ * und Anfrage, in der Reihenfolge der Spalten. Die Tabellensemantik tragen die
+ * role-Attribute aus logging.php und logviewer.js: Mit display: block verwirft
+ * Safari sie sonst.
+ */
+@container log-viewer-list (max-width: 76em) {
+	#log-viewer table.log-viewer-table,
+	#log-viewer table.log-viewer-table tbody,
+	#log-viewer table.log-viewer-table tr,
+	#log-viewer table.log-viewer-table td {
+		display: block;
+	}
+
+	/* .hidden aus core/css/global.css käme gegen die Regel oben nicht an */
+	#log-viewer table.log-viewer-table tr.hidden {
+		display: none;
+	}
+
+	/* Spaltenköpfe nur für Screenreader */
+	#log-viewer table.log-viewer-table thead {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0 0 0 0);
+		clip-path: inset(50%);
+	}
+
+	#log-viewer table.log-viewer-table tr.log-viewer-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 4px 12px;
+		padding: 8px 0;
+		border-bottom: 1px solid #ddd;
+	}
+
+	#log-viewer table.log-viewer-table tr.log-viewer-row td {
+		min-width: 0;
+		padding: 0;
+		border-bottom: 0;
+	}
+
+	/* Ohne Benutzer (Cron, CLI) rückte die Anfrage sonst um den Abstand ein */
+	#log-viewer table.log-viewer-table tr.log-viewer-row td:empty {
+		display: none;
+	}
+
+	/* Die Meldung steht in einer eigenen Zeile über die ganze Breite */
+	#log-viewer table.log-viewer-table td.log-viewer-message {
+		flex: 1 1 100%;
+	}
+
+	/* Die Anfrage nimmt den Rest der letzten Zeile, gekürzt wie in der Tabelle */
+	#log-viewer table.log-viewer-table td.log-viewer-request {
+		flex: 1 1 12em;
+	}
+
+	#log-viewer table.log-viewer-table td.log-viewer-request span {
+		max-width: 100%;
+	}
+
+	#log-viewer table.log-viewer-table tr.log-viewer-details td {
+		padding: 0 8px 8px;
+		border-bottom: 1px solid #ddd;
+	}
 }
 
 /* ADMIN */

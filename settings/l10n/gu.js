@@ -26,6 +26,11 @@ OC.L10N.register(
     "Caused by" : "કારણ",
     "Request ID" : "રિક્વેસ્ટ આઈ ડી",
     "Remote address" : "દૂરનું એડ્રેસ",
+    "Too many requests. Please try again later." : "ઘણી બધી વિનંતીઓ. કૃપા કરીને પછીથી ફરી પ્રયાસ કરો.",
+    "_Too many requests. Please try again in %n second._::_Too many requests. Please try again in %n seconds._" : ["ઘણી બધી વિનંતીઓ. કૃપા કરીને %n સેકન્ડ પછી ફરી પ્રયાસ કરો.","ઘણી બધી વિનંતીઓ. કૃપા કરીને %n સેકન્ડ પછી ફરી પ્રયાસ કરો."],
+    "Only administrators can read the log." : "ફક્ત સંચાલકો જ લૉગ વાંચી શકે છે.",
+    "The log file is not available." : "લૉગ ફાઇલ ઉપલબ્ધ નથી.",
+    "Trace (cause {number})" : "ટ્રૈસ (કારણ {number})",
     "Delete" : "કાઢો",
     "Personal" : "વ્યક્તિગત"
 },

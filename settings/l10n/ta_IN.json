@@ -24,6 +24,11 @@
     "Caused by" : "காரணம்",
     "Request ID" : "கோரிக்கை ஐடி",
     "Remote address" : "தொலை முகவரி",
+    "Too many requests. Please try again later." : "அதிகமான கோரிக்கைகள். பின்னர் மீண்டும் முயற்சிக்கவும்.",
+    "_Too many requests. Please try again in %n second._::_Too many requests. Please try again in %n seconds._" : ["அதிகமான கோரிக்கைகள். %n வினாடி கழித்து மீண்டும் முயற்சிக்கவும்.","அதிகமான கோரிக்கைகள். %n வினாடிகள் கழித்து மீண்டும் முயற்சிக்கவும்."],
+    "Only administrators can read the log." : "நிர்வாகிகள் மட்டுமே பதிவைப் படிக்க முடியும்.",
+    "The log file is not available." : "பதிவுக் கோப்பு கிடைக்கவில்லை.",
+    "Trace (cause {number})" : "தடம் (காரணம் {number})",
     "Settings" : "அமைப்புகள்"
 },"pluralForm" :"nplurals=2; plural=(n != 1);"
 }

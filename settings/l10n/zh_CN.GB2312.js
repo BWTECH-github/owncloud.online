@@ -26,6 +26,11 @@ OC.L10N.register(
     "Caused by" : "原因",
     "Request ID" : "请求 ID",
     "Remote address" : "远程地址",
+    "Too many requests. Please try again later." : "请求过多。请稍后再试。",
+    "_Too many requests. Please try again in %n second._::_Too many requests. Please try again in %n seconds._" : ["请求过多。请在 %n 秒后重试。"],
+    "Only administrators can read the log." : "只有管理员可以读取日志。",
+    "The log file is not available." : "日志文件不可用。",
+    "Trace (cause {number})" : "追踪（原因 {number}）",
     "Unable to change display name" : "无法更改显示名称"
 },
 "nplurals=1; plural=0;");

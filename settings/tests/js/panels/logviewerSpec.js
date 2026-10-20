@@ -31,7 +31,8 @@ describe('OC.Settings.LogViewer', function() {
 					'<button type="submit" id="log-viewer-refresh">Refresh</button>' +
 				'</form>' +
 				'<p id="log-viewer-status" role="status" aria-live="polite"></p>' +
-				'<table id="log-viewer-table"><thead></thead><tbody></tbody></table>' +
+				'<table id="log-viewer-table" role="table"><thead></thead><tbody role="rowgroup"></tbody></table>' +
+				'<p id="log-viewer-error" role="alert"></p>' +
 				'<button type="button" id="log-viewer-more" class="hidden">Load more</button>' +
 			'</div>'
 		);
@@ -99,6 +100,18 @@ describe('OC.Settings.LogViewer', function() {
 		return $root.find('tbody tr.log-viewer-row');
 	}
 
+	function statusText() {
+		return $root.find('#log-viewer-status').text();
+	}
+
+	function errorText() {
+		return $root.find('#log-viewer-error').text();
+	}
+
+	function fail(request, status, headers) {
+		request.respond(status, $.extend({'Content-Type': 'application/json'}, headers || {}), JSON.stringify({message: 'nope'}));
+	}
+
 	beforeEach(function() {
 		$root = fixture();
 		$('#testArea').append($root);
@@ -127,12 +140,25 @@ describe('OC.Settings.LogViewer', function() {
 		expect(window.__logViewerXss).toBeUndefined();
 
 		var $first = rows().eq(0);
+		// Rollen ausdrücklich, damit die schmale Kartenansicht die Tabelle nicht verliert
+		expect($first.attr('role')).toEqual('row');
+		expect($first.children('td').map(function() {
+			return $(this).attr('role');
+		}).get()).toEqual(['cell', 'cell', 'cell', 'cell', 'cell', 'cell']);
+		expect($first.next('tr.log-viewer-details').attr('role')).toEqual('row');
+		expect($first.next('tr.log-viewer-details').children('td').attr('role')).toEqual('cell');
 		expect($first.find('.log-viewer-toggle').text()).toEqual('<img src="x" onerror="window.__logViewerXss = 1">');
 		expect($first.find('.log-viewer-badge').text()).toEqual('Warning');
 		expect($first.find('.log-viewer-badge').hasClass('log-level-2')).toEqual(true);
-		expect($first.find('td.log-viewer-user').text()).toEqual('');
+		// „--“ heißt ohne Benutzer: Die Zelle bleibt leer (schmal wird sie ausgeblendet)
+		expect($first.find('td.log-viewer-user').is(':empty')).toEqual(true);
 		expect($first.find('td.log-viewer-request').text()).toEqual('PROPFIND /remote.php/dav/files/alice/a.txt');
 		expect($first.find('time').attr('datetime')).toEqual('2026-10-19T20:35:05+02:00');
+		// Werte aus dem Protokoll bleiben auf Seiten von rechts nach links lesbar
+		expect($first.find('.log-viewer-toggle > bdi').length).toEqual(1);
+		expect($first.find('td.log-viewer-app > bdi').text()).toEqual('core');
+		expect($first.find('td.log-viewer-request > span').attr('dir')).toEqual('auto');
+		expect($first.find('time').attr('dir')).toEqual('auto');
 
 		var $second = rows().eq(1);
 		expect($second.find('.log-viewer-toggle').text()).toEqual('RuntimeException: Sitzung weg');
@@ -168,6 +194,15 @@ describe('OC.Settings.LogViewer', function() {
 		expect(values.eq(1).find('pre').text()).toEqual('#0 /var/www/remote.php(198): handleException()\n#1 {main}');
 		expect(values.eq(2).text()).toEqual('PDOException (1040): Too many connections\n/var/www/lib/private/DB/Connection.php:12');
 		expect(values.eq(5).text()).toEqual('abc123');
+
+		// Trace-Kästen sind per Tastatur erreichbar und je Kasten unterscheidbar benannt;
+		// ein Trace läuft immer von links nach rechts, die übrigen Werte je nach Inhalt
+		var $traces = $details.find('pre');
+		expect($traces.map(function() {
+			return [[$(this).attr('tabindex'), $(this).attr('role'), $(this).attr('aria-label'), $(this).attr('dir')]];
+		}).get()).toEqual([['0', 'region', 'Trace', 'ltr'], ['0', 'region', 'Trace (cause 1)', 'ltr']]);
+		expect(values.eq(0).attr('dir')).toEqual('auto');
+		expect(values.eq(1).attr('dir')).toBeUndefined();
 
 		$toggle.trigger('click');
 		expect($toggle.attr('aria-expanded')).toEqual('false');
@@ -250,9 +285,129 @@ describe('OC.Settings.LogViewer', function() {
 		expect($root.find('#log-viewer-more').hasClass('hidden')).toEqual(false);
 	});
 
-	it('reports a failed request', function() {
-		respond(lastRequest(), {message: 'Too many requests'}, 429);
-		expect($root.find('#log-viewer-status').text()).toEqual('Could not load the log.');
-		expect($root.find('#log-viewer-table').attr('aria-busy')).toEqual('false');
+	it('drops an answer for older entries once a filter changes', function() {
+		var clock = sinon.useFakeTimers();
+		try {
+			respond(lastRequest(), page([entry('neu')], 1234));
+			var $more = $root.find('#log-viewer-more');
+			$more.trigger('click');
+			var older = lastRequest();
+
+			// Der Offset gehört zum alten Filter – ab dem ersten Tastendruck
+			$root.find('#log-viewer-search').val('Login').trigger('input');
+			expect(older.aborted).toEqual(true);
+			expect($more.hasClass('hidden')).toEqual(true);
+			$more.trigger('click');
+			expect(fakeServer.requests.length).toEqual(2);
+
+			clock.tick(400);
+			expect(fakeServer.requests.length).toEqual(3);
+			expect(OC.parseQueryString(lastRequest().url)).toEqual({count: '50', level: '', app: '', search: 'Login'});
+		} finally {
+			clock.restore();
+		}
+	});
+
+	describe('when a request fails', function() {
+		it('empties the list if reloading with a new filter fails', function() {
+			respond(lastRequest(), page([entry('alter Filter')], 1234));
+			var $more = $root.find('#log-viewer-more');
+
+			$root.find('#log-viewer-level').val('3').trigger('change');
+			expect($more.hasClass('hidden')).toEqual(true);
+			fail(lastRequest(), 500);
+
+			expect(rows().length).toEqual(0);
+			expect($more.hasClass('hidden')).toEqual(true);
+			expect(errorText()).toEqual('Could not load the log.');
+			// Angesagt wird nur die Fehlermeldung (role=alert), der Status bleibt leer
+			expect(statusText()).toEqual('');
+			expect($root.find('#log-viewer-table').attr('aria-busy')).toEqual('false');
+
+			// Der Offset des alten Filters ist weg
+			$more.trigger('click');
+			expect(fakeServer.requests.length).toEqual(2);
+		});
+
+		it('loads the new filter as usual afterwards', function() {
+			respond(lastRequest(), page([entry('alter Filter')], 1234));
+			$root.find('#log-viewer-level').val('3').trigger('change');
+			fail(lastRequest(), 429, {'Retry-After': '20'});
+
+			$root.find('#log-viewer-filter').trigger('submit');
+			expect(OC.parseQueryString(lastRequest().url)).toEqual({count: '50', level: '3', app: '', search: ''});
+			expect(errorText()).toEqual('');
+			expect(statusText()).toEqual('Loading …');
+
+			respond(lastRequest(), page([entry('Fehler', {level: 3})], 900));
+			expect(rows().length).toEqual(1);
+			expect(statusText()).toEqual('Entries shown: 1');
+			expect($root.find('#log-viewer-more').hasClass('hidden')).toEqual(false);
+		});
+
+		it('keeps the rows if older entries fail and retries with the same filter', function() {
+			respond(lastRequest(), page([entry('neu')], 1234));
+			var $more = $root.find('#log-viewer-more');
+			$more.trigger('click');
+			fail(lastRequest(), 429, {'Retry-After': '30'});
+
+			expect(rows().length).toEqual(1);
+			expect($more.hasClass('hidden')).toEqual(false);
+			expect(errorText()).toEqual('Too many requests. Please try again in 30 seconds.');
+			expect(statusText()).toEqual('');
+
+			$more.trigger('click');
+			expect(fakeServer.requests.length).toEqual(3);
+			expect(OC.parseQueryString(lastRequest().url)).toEqual({count: '50', level: '', app: '', search: '', offset: '1234'});
+			expect(errorText()).toEqual('');
+
+			respond(lastRequest(), page([entry('alt')]));
+			expect(rows().length).toEqual(2);
+			expect(rows().eq(1).find('.log-viewer-toggle').text()).toEqual('alt');
+		});
+
+		it('keeps the position if reading on after an empty page fails', function() {
+			$root.find('#log-viewer-level').val('3').trigger('change');
+			respond(lastRequest(), page([], 500));
+			// Die Ansicht liest von selbst weiter – und das schlägt fehl
+			expect(OC.parseQueryString(lastRequest().url).offset).toEqual('500');
+			fail(lastRequest(), 500);
+
+			var $more = $root.find('#log-viewer-more');
+			expect(rows().length).toEqual(0);
+			expect($more.hasClass('hidden')).toEqual(false);
+			expect(errorText()).toEqual('Could not load the log.');
+
+			$more.trigger('click');
+			expect(OC.parseQueryString(lastRequest().url)).toEqual({count: '50', level: '3', app: '', search: '', offset: '500'});
+		});
+
+		it('names the cause', function() {
+			var cases = [
+				[429, {'Retry-After': '1'}, 'Too many requests. Please try again in 1 second.'],
+				[429, {'Retry-After': '0'}, 'Too many requests. Please try again in 1 second.'],
+				[429, {}, 'Too many requests. Please try again later.'],
+				[429, {'Retry-After': 'bald'}, 'Too many requests. Please try again later.'],
+				[403, {}, 'Only administrators can read the log.'],
+				[404, {}, 'The log file is not available.'],
+				[500, {}, 'Could not load the log.'],
+				[400, {}, 'Could not load the log.']
+			];
+			$.each(cases, function(index, testCase) {
+				$root.find('#log-viewer-filter').trigger('submit');
+				fail(lastRequest(), testCase[0], testCase[1]);
+				expect(errorText()).toEqual(testCase[2]);
+			});
+		});
+
+		it('also reads Retry-After as a date', function() {
+			var clock = sinon.useFakeTimers({now: Date.parse('2026-10-20T12:00:00Z')});
+			try {
+				fail(lastRequest(), 429, {'Retry-After': 'Tue, 20 Oct 2026 12:00:45 GMT'});
+				expect(errorText()).toEqual('Too many requests. Please try again in 45 seconds.');
+			} finally {
+				clock.restore();
+			}
+		});
 	});
 });

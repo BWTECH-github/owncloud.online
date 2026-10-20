@@ -1,0 +1,25 @@
+Bugfix: The log viewer keeps its list consistent after errors and fits narrow screens
+
+When reloading the log viewer after a filter change failed - for example
+because the 60 requests per minute were used up - the entries of the previous
+filter stayed in the list together with "Load more", which then appended
+entries of the new filter from the old position. A failed reload now empties
+the list and hides "Load more". A failed "Load more" keeps the entries and can
+be retried with the same filter. Answers to requests that a newer filter
+replaced are still discarded.
+
+The error message now names the cause: the waiting time from Retry-After when
+there were too many requests, missing admin rights, or a log file that is not
+available. Screen readers announce it right away, separately from the status
+line.
+
+On narrow screens - phones, but also tablets next to the navigation - the table
+no longer pushes the page sideways. When the list is narrower than the table
+needs, each entry is shown as a card: time, level and app, the message below,
+user and request at the end. Opened details, including stack traces, fit the
+screen. Both log level selections shrink with the screen, and long app names
+and user IDs wrap.
+
+Stack trace boxes can be reached with the keyboard and are named ("Trace",
+"Trace (cause 1)", ...). Paths, traces and other log data keep their
+left-to-right order on right-to-left pages.
