@@ -197,6 +197,80 @@ class BasicAuthModuleTest extends TestCase {
 		$this->assertEquals($this->user, $module->auth($this->request));
 	}
 
+	/**
+	 * Am Token-Endpunkt der App oauth2 trägt HTTP-Basic Kennung und Geheimnis des
+	 * Clients (RFC 6749, Abschnitt 2.3.1), keine Benutzerdaten. Als Anmeldung
+	 * gewertet, stand bei jeder Token-Erneuerung „Login failed“ im Protokoll, die
+	 * Bremse gegen Passwort-Raten zählte mit, und eine mitgeschickte Sitzung des
+	 * Desktop-Clients wurde beendet.
+	 */
+	public function testClientCredentialsAtOAuth2TokenEndpointAreNoUserLogin() {
+		$this->session->method('exists')->willReturn(false);
+		$this->timeFactory->method('getTime')->willReturn(\time());
+		$this->request->method('getMethod')->willReturn('POST');
+		$this->request->method('getRawPathInfo')->willReturn('/apps/oauth2/api/v1/token');
+		$this->request->server = [
+			'PHP_AUTH_USER' => 'user2',
+			'PHP_AUTH_PW' => '123456',
+		];
+		$this->manager->expects($this->never())->method('checkPassword');
+		$this->manager->expects($this->never())->method('getByEmail');
+		$module = new BasicAuthModule($this->config, $this->logger, $this->manager, $this->session, $this->timeFactory);
+
+		$user = $module->auth($this->request);
+
+		$this->assertNull($user);
+	}
+
+	public function providesRequestsWhereBasicAuthIsAUserLogin() {
+		return [
+			'other route' => ['POST', '/apps/files/ajax/upload.php'],
+			'GET on the token path' => ['GET', '/apps/oauth2/api/v1/token'],
+			'trailing slash' => ['POST', '/apps/oauth2/api/v1/token/'],
+			'longer path' => ['POST', '/apps/oauth2/api/v1/tokens'],
+			'encoded path' => ['POST', '/apps/oauth2/api/v1/%74oken'],
+			'token path below another prefix' => ['POST', '/apps/files/apps/oauth2/api/v1/token'],
+		];
+	}
+
+	/**
+	 * Überall sonst bleibt HTTP-Basic eine Benutzeranmeldung: falsche Daten
+	 * werden geprüft und abgewiesen wie bisher.
+	 *
+	 * @dataProvider providesRequestsWhereBasicAuthIsAUserLogin
+	 */
+	public function testBasicAuthStaysAUserLoginElsewhere($method, $path) {
+		$this->session->method('exists')->willReturn(false);
+		$this->timeFactory->method('getTime')->willReturn(\time());
+		$this->request->method('getMethod')->willReturn($method);
+		$this->request->method('getRawPathInfo')->willReturn($path);
+		$this->request->server = [
+			'PHP_AUTH_USER' => 'user2',
+			'PHP_AUTH_PW' => '123456',
+		];
+		$module = new BasicAuthModule($this->config, $this->logger, $this->manager, $this->session, $this->timeFactory);
+
+		$this->expectException(\Exception::class);
+		$this->expectExceptionMessage('Invalid credentials');
+		$module->auth($this->request);
+	}
+
+	public function testBasicAuthStaysAUserLoginWhenThePathCannotBeDetermined() {
+		$this->session->method('exists')->willReturn(false);
+		$this->timeFactory->method('getTime')->willReturn(\time());
+		$this->request->method('getMethod')->willReturn('POST');
+		$this->request->method('getRawPathInfo')->willThrowException(new \Exception('The requested uri cannot be processed'));
+		$this->request->server = [
+			'PHP_AUTH_USER' => 'user2',
+			'PHP_AUTH_PW' => '123456',
+		];
+		$module = new BasicAuthModule($this->config, $this->logger, $this->manager, $this->session, $this->timeFactory);
+
+		$this->expectException(\Exception::class);
+		$this->expectExceptionMessage('Invalid credentials');
+		$module->auth($this->request);
+	}
+
 	public function invalidUserIdProvider() {
 		return [
 			[''], [null],

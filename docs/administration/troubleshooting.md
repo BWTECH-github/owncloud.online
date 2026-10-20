@@ -62,3 +62,8 @@ Prüfen:
 - Desktop Client ist als OAuth2-Client registriert.
 - Redirect-URL passt zu `http://localhost:*`.
 - Server liefert eine gültige OIDC-Discovery unter `/.well-known/openid-configuration` oder der Client nutzt einen kompatiblen Fallback.
+
+Die Token-Anfrage (`POST /index.php/apps/oauth2/api/v1/token`) weist mit
+HTTP-Basic den Client aus, nicht den Benutzer. Sie zählt deshalb nicht als
+Anmeldeversuch: kein „Login failed“ im Protokoll, keine Bremse gegen
+Passwort-Raten, und eine mitgeschickte Sitzung bleibt bestehen.

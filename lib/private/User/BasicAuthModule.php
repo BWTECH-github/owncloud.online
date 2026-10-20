@@ -32,6 +32,16 @@ use OCP\IUser;
 use OCP\IUserManager;
 
 class BasicAuthModule implements IAuthModule {
+	/**
+	 * Routen, an denen HTTP-Basic keinen Benutzer, sondern einen OAuth2-Client
+	 * ausweist (Kennung und Geheimnis des Clients, RFC 6749, Abschnitt 2.3.1).
+	 * Verglichen wird mit getRawPathInfo() – demselben Pfad, nach dem der Router
+	 * die Anfrage zuteilt – und nur für POST, die einzige Methode der Route.
+	 */
+	private const CLIENT_AUTHENTICATION_ROUTES = [
+		'/apps/oauth2/api/v1/token',
+	];
+
 	/** @var IConfig */
 	private $config;
 	/** @var ILogger */
@@ -56,6 +66,14 @@ class BasicAuthModule implements IAuthModule {
 	 */
 	public function auth(IRequest $request) {
 		if (!isset($request->server['PHP_AUTH_USER'], $request->server['PHP_AUTH_PW'])) {
+			return null;
+		}
+		if ($this->isClientAuthentication($request)) {
+			// Keine Benutzeranmeldung: der Token-Endpunkt prüft die Client-Daten
+			// selbst. Als Anmeldung gewertet, stand bei jeder Token-Erneuerung
+			// „Login failed“ im Protokoll, die Bremse gegen Passwort-Raten zählte
+			// den Client mit (und verzögerte danach auch echte Anmeldungen von
+			// derselben Adresse), und eine mitgeschickte Sitzung wurde beendet.
 			return null;
 		}
 		if ($this->session->exists('app_password')) {
@@ -125,6 +143,26 @@ class BasicAuthModule implements IAuthModule {
 			return $user;
 		}
 		throw new \Exception('Invalid credentials');
+	}
+
+	/**
+	 * Weist HTTP-Basic in dieser Anfrage einen OAuth2-Client statt eines Benutzers aus?
+	 *
+	 * @param IRequest $request
+	 * @return bool
+	 */
+	private function isClientAuthentication(IRequest $request) {
+		if ($request->getMethod() !== 'POST') {
+			return false;
+		}
+		try {
+			$path = $request->getRawPathInfo();
+		} catch (\Exception $e) {
+			// Pfad nicht bestimmbar: dann teilt auch der Router die Anfrage nicht
+			// dem Token-Endpunkt zu, HTTP-Basic bleibt eine Benutzeranmeldung.
+			return false;
+		}
+		return \in_array($path, self::CLIENT_AUTHENTICATION_ROUTES, true);
 	}
 
 	/**

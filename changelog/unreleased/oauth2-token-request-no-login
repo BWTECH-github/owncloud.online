@@ -1,0 +1,10 @@
+Bugfix: Token requests of OAuth2 clients no longer count as failed logins
+
+At the token endpoint of the oauth2 app, HTTP Basic carries the client id and
+secret, not user credentials. When a desktop client also sent its session
+cookie, as version 6.0.3 does, the request was checked like a user login with
+the client id as user name: every token refresh logged "Login failed", counted
+towards the brute-force protection - which then also slowed down real logins
+from the same address - and ended the session. Basic credentials on
+POST /apps/oauth2/api/v1/token are no longer evaluated as a user login. Nothing
+changes on any other route.
