@@ -281,6 +281,7 @@
     "To avoid timeouts with larger installations, you can instead run the following command from your installation directory:" : "Zur Vermeidung von Zeitüberschreitungen bei größeren Installationen kannst Du stattdessen den folgenden Befehl in Deinem Installationsverzeichnis ausführen:",
     "Detailed logs" : "Detaillierte Fehlermeldungen",
     "This %s instance is currently in maintenance mode, which may take a while." : "Diese %s-Instanz befindet sich gerade im Wartungsmodus, was eine Weile dauern kann.",
-    "This page will refresh itself when the %s instance is available again." : "Diese Seite aktualisiert sich automatisch, wenn die %s-Instanz wieder verfügbar ist."
+    "This page will refresh itself when the %s instance is available again." : "Diese Seite aktualisiert sich automatisch, wenn die %s-Instanz wieder verfügbar ist.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "Dieser Server läuft mit PHP {version}. PHP {fixedVersion} und neuer schließen kritische Sicherheitslücken ({cves}), über die Angreifer ohne Anmeldung Code auf diesem Server ausführen können. Installieren Sie das PHP-Sicherheitsupdate und starten Sie den Webserver und PHP-FPM neu. Liefert Ihre Distribution die Korrektur bereits in ihren eigenen PHP-Paketen, setzen Sie php_security_check in der config.php auf false."
 },"pluralForm" :"nplurals=2; plural=(n != 1);"
 }

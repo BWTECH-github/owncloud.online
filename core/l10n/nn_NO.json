@@ -317,6 +317,7 @@
     "Detailed logs" : "Detaljert logg",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "For hjelp, sjå <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">dokumentasjon</a>.",
     "This %s instance is currently in maintenance mode, which may take a while." : "Denne %s førekomst er i forbetrings modus som kan ta ei stund.",
-    "This page will refresh itself when the %s instance is available again." : "Denne sida vil lastast på ny når %s førekomsten er tilgjengeleg att."
+    "This page will refresh itself when the %s instance is available again." : "Denne sida vil lastast på ny når %s førekomsten er tilgjengeleg att.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "Denne tenaren køyrer PHP {version}. PHP {fixedVersion} og nyare rettar kritiske tryggleikshol ({cves}) som lèt angriparar køyre kode på denne tenaren utan å logge inn. Installer tryggleiksoppdateringa for PHP og start nettenaren og PHP-FPM på nytt. Viss distribusjonen din allereie leverer rettinga i eigne PHP-pakkar, set du php_security_check til false i config.php."
 },"pluralForm" :"nplurals=2; plural=(n != 1);"
 }

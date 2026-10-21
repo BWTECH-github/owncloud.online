@@ -288,6 +288,7 @@
     "Detailed logs" : "Registros detaliate",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "Pro adjuta, vide le  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>.",
     "This %s instance is currently in maintenance mode, which may take a while." : "Iste installation de %s es actualmente in modo de mantenentia, lo que pote prender un certe tempore.",
-    "This page will refresh itself when the %s instance is available again." : "Iste pagina se refrescara quando le installation de %s es disponibile de novo."
+    "This page will refresh itself when the %s instance is available again." : "Iste pagina se refrescara quando le installation de %s es disponibile de novo.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "Iste servitor executa PHP {version}. PHP {fixedVersion} e versiones plus nove corrige vulnerabilitates de securitate critic ({cves}) que permitte a attaccatores executar codice sur iste servitor sin aperir session. Installa le actualisation de securitate de PHP e reinitia le servitor web e PHP-FPM. Si tu distribution ja forni le correction in su proprie pacchettos PHP, configura php_security_check a false in config.php."
 },"pluralForm" :"nplurals=2; plural=(n != 1);"
 }

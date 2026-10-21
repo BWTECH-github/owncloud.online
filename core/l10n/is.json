@@ -361,6 +361,7 @@
     "Upgrade needed" : "Þarfnast uppfærslu",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "Til að fá hjálp er best að skoða fyrst  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">hjálparskjölin</a>.",
     "This %s instance is currently in maintenance mode, which may take a while." : "Þetta %s tilvik er nú í viðhaldsham, sem getur tekið smá stund.",
-    "This page will refresh itself when the %s instance is available again." : "Þessi síða mun uppfæra sig þegar %s er í boði á ný."
+    "This page will refresh itself when the %s instance is available again." : "Þessi síða mun uppfæra sig þegar %s er í boði á ný.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "Þessi þjónn keyrir PHP {version}. PHP {fixedVersion} og nýrri laga alvarlega öryggisgalla ({cves}) sem gera árásaraðilum kleift að keyra kóða á þjóninum án innskráningar. Settu upp öryggisuppfærslu PHP og endurræstu vefþjóninn og PHP-FPM. Ef dreifingin þín inniheldur nú þegar lagfæringuna í eigin PHP-pökkum skaltu setja php_security_check á false í config.php."
 },"pluralForm" :"nplurals=2; plural=(n % 10 != 1 || n % 100 == 11);"
 }

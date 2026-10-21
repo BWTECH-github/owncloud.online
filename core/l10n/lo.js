@@ -383,6 +383,7 @@ OC.L10N.register(
     "Automatic upgrading is not enabled in config.php. To upgrade your instance, please use the command line updater (occ upgrade)." : "ການອັບເກຣດອັດຕະໂນມັດບໍ່ໄດ້ເປີດໃຊ້ໃນ config.php. ເພື່ອອັບເກຣດຕົວຢ່າງຂອງທ່ານ, ກະລຸນາໃຊ້ຕົວອັບເດດຜ່ານຄອມມານລາຍ (occ upgrade).",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "ສຳລັບຄວາມຊ່ວຍເຫຼືອ, ເບິ່ງທີ່ <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">ເອກະສານອ້າງອີງ</a>.",
     "This %s instance is currently in maintenance mode, which may take a while." : "ຕົວຢ່າງ %s ນີ້ກຳລັງຢູ່ໃນໂໝດບຳລຸງຮັກສາ, ເຊິ່ງອາດຈະໃຊ້ເວລາໄລຍະໜຶ່ງ.",
-    "This page will refresh itself when the %s instance is available again." : "ໜ້ານີ້ຈະໂຫຼດໃໝ່ເອງ ເມື່ອຕົວຢ່າງ %s ກັບມາໃຊ້ງານໄດ້ອີກຄັ້ງ."
+    "This page will refresh itself when the %s instance is available again." : "ໜ້ານີ້ຈະໂຫຼດໃໝ່ເອງ ເມື່ອຕົວຢ່າງ %s ກັບມາໃຊ້ງານໄດ້ອີກຄັ້ງ.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "ເຊີບເວີນີ້ໃຊ້ PHP {version}. PHP {fixedVersion} ແລະ ໃໝ່ກວ່າ ແກ້ໄຂຊ່ອງໂຫວ່ຄວາມປອດໄພຮ້າຍແຮງ ({cves}) ທີ່ໃຫ້ຜູ້ໂຈມຕີແລ່ນໂຄດໃນເຊີບເວີນີ້ໄດ້ໂດຍບໍ່ຕ້ອງເຂົ້າສູ່ລະບົບ. ຕິດຕັ້ງການອັບເດດຄວາມປອດໄພຂອງ PHP ແລະ ເລີ່ມເວັບເຊີບເວີ ແລະ PHP-FPM ໃໝ່. ຖ້າດິສທຣິບິວຊັນຂອງທ່ານມີການແກ້ໄຂໃນແພັກເກັດ PHP ຂອງຕົນເອງແລ້ວ, ໃຫ້ຕັ້ງ php_security_check ເປັນ false ໃນ config.php."
 },
 "nplurals=1; plural=0;");

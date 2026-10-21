@@ -383,6 +383,7 @@ OC.L10N.register(
     "Automatic upgrading is not enabled in config.php. To upgrade your instance, please use the command line updater (occ upgrade)." : "Automatisch upgraden is niet ingeschakeld in config.php. Als u uw exemplaar wilt upgraden, gebruikt u de command line updater (occ upgrade).",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "Voor hulp, lees de <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentatie</a>.",
     "This %s instance is currently in maintenance mode, which may take a while." : "Deze %s staat momenteel in de onderhoudsstand, dat kan enige tijd duren.",
-    "This page will refresh itself when the %s instance is available again." : "Deze pagina wordt ververst als de %s-installatie weer beschikbaar is."
+    "This page will refresh itself when the %s instance is available again." : "Deze pagina wordt ververst als de %s-installatie weer beschikbaar is.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "Deze server draait PHP {version}. PHP {fixedVersion} en nieuwer verhelpen kritieke beveiligingslekken ({cves}) waarmee aanvallers zonder in te loggen code op deze server kunnen uitvoeren. Installeer de PHP-beveiligingsupdate en herstart de webserver en PHP-FPM. Levert je distributie de oplossing al in haar eigen PHP-pakketten, zet dan php_security_check op false in config.php."
 },
 "nplurals=2; plural=(n != 1);");

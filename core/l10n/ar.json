@@ -361,6 +361,7 @@
     "Detailed logs" : "السجلات التفصيلية",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "للاطلاع على التعليمات، راجع <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">المستندات</a>.",
     "This %s instance is currently in maintenance mode, which may take a while." : "هذا المثيل %s في وضع الصيانة حاليًا، قد يستغرق الأمر بعض الوقت.",
-    "This page will refresh itself when the %s instance is available again." : "ستحدِّث هذه الصفحة نفسها عندما يكون مثيل %s متوفرًا مرة أخرى."
+    "This page will refresh itself when the %s instance is available again." : "ستحدِّث هذه الصفحة نفسها عندما يكون مثيل %s متوفرًا مرة أخرى.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "يعمل هذا الخادم بإصدار PHP {version}. يُصلح PHP {fixedVersion} والإصدارات الأحدث ثغرات أمنية حرجة ({cves}) تتيح للمهاجمين تشغيل تعليمات برمجية على هذا الخادم دون تسجيل الدخول. ثبّت التحديث الأمني لـ PHP وأعد تشغيل خادم الويب وPHP-FPM. إذا كانت توزيعتك توفر الإصلاح بالفعل في حزم PHP الخاصة بها، فاضبط php_security_check على false في config.php."
 },"pluralForm" :"nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;"
 }

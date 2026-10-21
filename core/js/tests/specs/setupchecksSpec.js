@@ -376,6 +376,88 @@ describe('OC.SetupChecks tests', function() {
 				done();
 			});
 		});
+
+		it('should return an error if the php version has known critical vulnerabilities', function(done) {
+			var async = OC.SetupChecks.checkSetup();
+
+			suite.server.requests[0].respond(
+				200,
+				{
+					'Content-Type': 'application/json',
+				},
+				JSON.stringify({
+					isUrandomAvailable: true,
+					securityDocs: 'https://docs.owncloud.com/myDocs.html',
+					serverHasInternetConnection: true,
+					isMemcacheConfigured: true,
+					forwardedForHeadersWorking: true,
+					phpSecurity: {vulnerable: true, version: '8.4.23', fixedIn: '8.4.27', cves: 'CVE-2026-109618, CVE-2026-109619', distributionBuild: false},
+					isCorrectMemcachedPHPModuleInstalled: true,
+					hasPassedCodeIntegrityCheck: true,
+				})
+			);
+
+			async.done(function( data, s, x ){
+				expect(data).toEqual([{
+					msg: 'This server runs PHP 8.4.23. PHP 8.4.27 and newer fix critical security vulnerabilities (CVE-2026-109618, CVE-2026-109619) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php.',
+					type: OC.SetupChecks.MESSAGE_TYPE_ERROR
+				}]);
+				done();
+			});
+		});
+
+		it('should only warn about known php vulnerabilities on distribution builds', function(done) {
+			var async = OC.SetupChecks.checkSetup();
+
+			suite.server.requests[0].respond(
+				200,
+				{
+					'Content-Type': 'application/json',
+				},
+				JSON.stringify({
+					isUrandomAvailable: true,
+					securityDocs: 'https://docs.owncloud.com/myDocs.html',
+					serverHasInternetConnection: true,
+					isMemcacheConfigured: true,
+					forwardedForHeadersWorking: true,
+					phpSecurity: {vulnerable: true, version: '8.4.23-1ubuntu2.1', fixedIn: '8.4.27', cves: 'CVE-2026-109618, CVE-2026-109619', distributionBuild: true},
+					isCorrectMemcachedPHPModuleInstalled: true,
+					hasPassedCodeIntegrityCheck: true,
+				})
+			);
+
+			async.done(function( data, s, x ){
+				expect(data.length).toEqual(1);
+				expect(data[0].type).toEqual(OC.SetupChecks.MESSAGE_TYPE_WARNING);
+				done();
+			});
+		});
+
+		it('should not report anything if the php version has the security fixes', function(done) {
+			var async = OC.SetupChecks.checkSetup();
+
+			suite.server.requests[0].respond(
+				200,
+				{
+					'Content-Type': 'application/json',
+				},
+				JSON.stringify({
+					isUrandomAvailable: true,
+					securityDocs: 'https://docs.owncloud.com/myDocs.html',
+					serverHasInternetConnection: true,
+					isMemcacheConfigured: true,
+					forwardedForHeadersWorking: true,
+					phpSecurity: {vulnerable: false, version: '8.4.27', fixedIn: '', cves: 'CVE-2026-109618, CVE-2026-109619', distributionBuild: false},
+					isCorrectMemcachedPHPModuleInstalled: true,
+					hasPassedCodeIntegrityCheck: true,
+				})
+			);
+
+			async.done(function( data, s, x ){
+				expect(data).toEqual([]);
+				done();
+			});
+		});
 	});
 
 	describe('checkGeneric', function() {

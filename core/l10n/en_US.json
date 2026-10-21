@@ -381,6 +381,7 @@
     "Automatic upgrading is not enabled in config.php. To upgrade your instance, please use the command line updater (occ upgrade)." : "Automatic upgrading is not enabled in config.php. To upgrade your instance, please use the command line updater (occ upgrade).",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>.",
     "This %s instance is currently in maintenance mode, which may take a while." : "This %s instance is currently in maintenance mode, which may take a while.",
-    "This page will refresh itself when the %s instance is available again." : "This page will refresh itself when the %s instance is available again."
+    "This page will refresh itself when the %s instance is available again." : "This page will refresh itself when the %s instance is available again.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php."
 },"pluralForm" :"nplurals=2; plural=(n != 1);"
 }

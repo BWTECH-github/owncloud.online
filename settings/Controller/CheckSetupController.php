@@ -48,6 +48,25 @@ use OCP\IURLGenerator;
  * @package OC\Settings\Controller
  */
 class CheckSetupController extends Controller {
+	/**
+	 * Erste PHP-Version je Zweig, die die zuletzt bekannt gewordenen kritischen
+	 * Lücken im PHP-Interpreter schließt. Bei einem neuen Sicherheits-Release von
+	 * PHP diese Liste und PHP_SECURITY_CVES nachziehen.
+	 *
+	 * Stand 21.10.2026: CVE-2026-109618 und CVE-2026-109619 (Codeausführung ohne
+	 * Anmeldung), behoben in 8.2.35, 8.3.36, 8.4.27, 8.5.12 und 8.6.0RC4.
+	 */
+	private const PHP_SECURITY_FIXES = [
+		'8.2' => '8.2.35',
+		'8.3' => '8.3.36',
+		'8.4' => '8.4.27',
+		'8.5' => '8.5.12',
+		'8.6' => '8.6.0RC4',
+	];
+
+	/** Lücken, die PHP_SECURITY_FIXES schließt */
+	private const PHP_SECURITY_CVES = ['CVE-2026-109618', 'CVE-2026-109619'];
+
 	/** @var IConfig */
 	private $config;
 	/** @var IClientService */
@@ -305,6 +324,7 @@ Raw output
 				'securityDocs' => $this->urlGenerator->linkToDocs('admin-security'),
 				'isUsedTlsLibOutdated' => $this->isUsedTlsLibOutdated(),
 				'phpSupported' => $this->isPhpSupported(),
+				'phpSecurity' => $this->getPhpSecurityStatus(),
 				'forwardedForHeadersWorking' => $this->forwardedForHeadersWorking(),
 				'reverseProxyDocs' => $this->urlGenerator->linkToDocs('admin-reverse-proxy'),
 				'isCorrectMemcachedPHPModuleInstalled' => $this->isCorrectMemcachedPHPModuleInstalled(),
@@ -320,5 +340,60 @@ Raw output
 		// PHP 5.5 is EOL on 21 Jul 2016
 		# PHP 7.4 is EOL as well - but we support it via distributions
 		return \version_compare(PHP_VERSION, '7.3.0') === -1;
+	}
+
+	/**
+	 * Fehlen der laufenden PHP-Version die Korrekturen der zuletzt bekannt
+	 * gewordenen kritischen Lücken?
+	 *
+	 * Distributionen spielen Sicherheitskorrekturen oft in ältere Versionsnummern
+	 * ein; dann lässt sich der Stand an der Nummer nicht sicher ablesen. Builds mit
+	 * Zusatz (PHP_EXTRA_VERSION, z. B. Ubuntu) meldet die Oberfläche deshalb nur
+	 * als Warnung statt als Fehler, und wer die Korrektur auf anderem Weg erhalten
+	 * hat, schaltet die Prüfung mit 'php_security_check' => false ab.
+	 */
+	private function getPhpSecurityStatus(): array {
+		$version = $this->getPhpVersion();
+		$fixedIn = $this->config->getSystemValue('php_security_check', true)
+			? self::getPhpSecurityFix($version)
+			: null;
+		return [
+			'vulnerable' => $fixedIn !== null,
+			'version' => $version,
+			'fixedIn' => (string)$fixedIn,
+			'cves' => \implode(', ', self::PHP_SECURITY_CVES),
+			'distributionBuild' => $this->getPhpExtraVersion() !== '',
+		];
+	}
+
+	/**
+	 * PHP-Version, auf die aktualisiert werden muss, oder null, wenn die Version
+	 * die Korrekturen schon enthält. Zweige, die das PHP-Projekt nicht mehr pflegt
+	 * (älter als der älteste Eintrag), verweisen auf den Zweig, den
+	 * owncloud.online mindestens voraussetzt.
+	 */
+	private static function getPhpSecurityFix(string $version): ?string {
+		// nur die Nummer und eine Vorabkennung wie „RC4“ zählen, nicht der Zusatz einer Distribution
+		if (!\preg_match('/^(\d+)\.(\d+)\.(\d+)((?:alpha|beta|RC)\d+)?/i', $version, $m)) {
+			return null;
+		}
+		$branch = $m[1] . '.' . $m[2];
+		$base = $branch . '.' . $m[3] . ($m[4] ?? '');
+		if (isset(self::PHP_SECURITY_FIXES[$branch])) {
+			$fixed = self::PHP_SECURITY_FIXES[$branch];
+			return \version_compare($base, $fixed, '<') ? $fixed : null;
+		}
+		if (\version_compare($branch, (string)\array_key_last(self::PHP_SECURITY_FIXES), '>')) {
+			return null;
+		}
+		return self::PHP_SECURITY_FIXES['8.4'];
+	}
+
+	protected function getPhpVersion(): string {
+		return PHP_VERSION;
+	}
+
+	protected function getPhpExtraVersion(): string {
+		return PHP_EXTRA_VERSION;
 	}
 }

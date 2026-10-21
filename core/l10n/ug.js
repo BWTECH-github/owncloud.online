@@ -370,6 +370,7 @@ OC.L10N.register(
     "Automatic upgrading is not enabled in config.php. To upgrade your instance, please use the command line updater (occ upgrade)." : "ئاپتوماتىك يۈكسەلدۈرۈش config.php دا قوزغىتىلماپتۇ. مىسالىڭىزنى يۈكسەلدۈرۈش ئۈچۈن، بۇيرۇق سۇپىسى يېڭىلاش بۇيرۇقىنى ئىشلىتىڭ (occ upgrade)",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "ياردەم ئۈچۈن، <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">پۈتۈك</a> نى كۆرۈڭ.",
     "This %s instance is currently in maintenance mode, which may take a while." : "بۇ %s مىسالى نۆۋەتتە ئاسىراش ھالىتىدە، بەلكىم بىر مەزگىل كىتىدۇ.",
-    "This page will refresh itself when the %s instance is available again." : "بۇ بەت %s مىسالى تەييار بولغاندا ئۆزلۈكىدىن يېڭىلىنىدۇ."
+    "This page will refresh itself when the %s instance is available again." : "بۇ بەت %s مىسالى تەييار بولغاندا ئۆزلۈكىدىن يېڭىلىنىدۇ.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "بۇ مۇلازىمېتىردا PHP {version} ئىجرا بولۇۋاتىدۇ. PHP {fixedVersion} ۋە ئۇنىڭدىن يېڭى نەشرلەر ھۇجۇمچىلارنىڭ كىرمەيلا بۇ مۇلازىمېتىردا كود ئىجرا قىلىشىغا يول قويىدىغان ھالقىلىق بىخەتەرلىك يوچۇقلىرىنى ({cves}) تۈزىتىدۇ. PHP بىخەتەرلىك يېڭىلانمىسىنى ئورنىتىپ، تور مۇلازىمېتىرى ۋە PHP-FPM نى قايتا قوزغىتىڭ. ئەگەر تارقىتىلمىڭىز تۈزىتىشنى ئۆزىنىڭ PHP بوغچىلىرىدا تەمىنلىگەن بولسا، config.php دا php_security_check نى false قىلىپ بەلگىلەڭ."
 },
 "nplurals=2; plural=(n != 1);");

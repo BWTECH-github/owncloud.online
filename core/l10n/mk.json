@@ -343,6 +343,7 @@
     "Detailed logs" : "Детални логови",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "За помош, видете ја <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">документацијата</a>.",
     "This %s instance is currently in maintenance mode, which may take a while." : "Оваа %s истанца е моментално во режим на одржување, што може да потрае некое време.",
-    "This page will refresh itself when the %s instance is available again." : "This page will refresh itself when the %s instance is available again."
+    "This page will refresh itself when the %s instance is available again." : "This page will refresh itself when the %s instance is available again.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "Овој сервер работи со PHP {version}. PHP {fixedVersion} и понови верзии ги поправаат критичните безбедносни ранливости ({cves}) преку кои напаѓачи можат да извршуваат код на овој сервер без најава. Инсталирајте ја безбедносната надградба за PHP и рестартирајте го веб-серверот и PHP-FPM. Ако вашата дистрибуција веќе ја испорачува поправката во своите PHP-пакети, поставете php_security_check на false во config.php."
 },"pluralForm" :"nplurals=2; plural=(n % 10 == 1 && n % 100 != 11) ? 0 : 1;"
 }

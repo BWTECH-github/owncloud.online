@@ -291,6 +291,7 @@
     "Detailed logs" : "Rexistros detallaos",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "Pa llograr sofitu, consulte la  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentación</a>.",
     "This %s instance is currently in maintenance mode, which may take a while." : "Esta instancia %s  ta anguaño en mou de mantenimientu, polo que pue tardar un pocoñín.",
-    "This page will refresh itself when the %s instance is available again." : "Esta páxina va anovase sola cuando la instancia %s tea disponible de nueves."
+    "This page will refresh itself when the %s instance is available again." : "Esta páxina va anovase sola cuando la instancia %s tea disponible de nueves.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "Esti sirvidor executa PHP {version}. PHP {fixedVersion} y versiones más nueves igüen fallos de seguranza críticos ({cves}) que permiten a atacantes executar códigu nesti sirvidor ensin aniciar sesión. Instala l'anovamientu de seguranza de PHP y reanicia'l sirvidor web y PHP-FPM. Si la to distribución yá ufre la igua nos sos propios paquetes PHP, afita php_security_check a false en config.php."
 },"pluralForm" :"nplurals=2; plural=(n != 1);"
 }

@@ -381,6 +381,7 @@
     "Automatic upgrading is not enabled in config.php. To upgrade your instance, please use the command line updater (occ upgrade)." : "config.php で自動アップグレードが有効になっていません。インスタンスをアップグレードするには、アップデータのコマンドライン (occ upgrade) を使用してください。",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "不明な場合、<a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">ドキュメント</a>を参照してください。",
     "This %s instance is currently in maintenance mode, which may take a while." : "この %s サーバーは現在メンテナンスモードです。しばらくお待ちください。",
-    "This page will refresh itself when the %s instance is available again." : "この画面は、 %s サーバーの再起動後に自動的に更新されます。"
+    "This page will refresh itself when the %s instance is available again." : "この画面は、 %s サーバーの再起動後に自動的に更新されます。",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "このサーバーは PHP {version} で動作しています。PHP {fixedVersion} 以降では、攻撃者がログインせずにこのサーバー上でコードを実行できる重大なセキュリティ脆弱性 ({cves}) が修正されています。PHP のセキュリティアップデートをインストールし、Web サーバーと PHP-FPM を再起動してください。ディストリビューションが独自の PHP パッケージで既に修正を提供している場合は、config.php で php_security_check を false に設定してください。"
 },"pluralForm" :"nplurals=1; plural=0;"
 }

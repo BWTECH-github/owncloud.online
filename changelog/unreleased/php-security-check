@@ -1,0 +1,14 @@
+Enhancement: Warn about PHP versions with known critical vulnerabilities
+
+The security & setup warnings in the admin settings now report a PHP version
+that lacks the fixes for the critical vulnerabilities of the PHP interpreter
+published on 21 October 2026 (CVE-2026-109618 and CVE-2026-109619, remote code
+execution without authentication). They are fixed in PHP 8.2.35, 8.3.36,
+8.4.27, 8.5.12 and 8.6.0RC4; older branches get no fix and are pointed to the
+supported 8.4 branch.
+
+The warning is an error for upstream builds. For distribution builds (a PHP
+version with a distribution suffix, for example from Ubuntu) it is only a
+warning, because distributions often ship the fix with an older version
+number. Once the fix is installed that way, 'php_security_check' => false in
+config.php hides it.

@@ -298,6 +298,7 @@ OC.L10N.register(
     "Detailed logs" : "Podrobné záznamy",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "Pomoc nájdete v  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">dokumentácii</a>.",
     "This %s instance is currently in maintenance mode, which may take a while." : "Táto %s inštancia je v súčasnej dobe v režime údržby. Počkajte prosím.",
-    "This page will refresh itself when the %s instance is available again." : "Táto stránka sa obnoví sama hneď ako bude %s inštancia znovu dostupná."
+    "This page will refresh itself when the %s instance is available again." : "Táto stránka sa obnoví sama hneď ako bude %s inštancia znovu dostupná.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "Tento server používa PHP {version}. PHP {fixedVersion} a novšie opravujú kritické bezpečnostné zraniteľnosti ({cves}), ktoré útočníkom umožňujú spustiť kód na tomto serveri bez prihlásenia. Nainštalujte bezpečnostnú aktualizáciu PHP a reštartujte webový server a PHP-FPM. Ak vaša distribúcia už dodáva opravu vo vlastných balíkoch PHP, nastavte php_security_check v config.php na false."
 },
 "nplurals=4; plural=(n % 1 == 0 && n == 1 ? 0 : n % 1 == 0 && n >= 2 && n <= 4 ? 1 : n % 1 != 0 ? 2: 3);");

@@ -344,6 +344,7 @@ OC.L10N.register(
     "Detailed logs" : "Részletezett naplók",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "Segítségért keresse fel a <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">dokumentációt</a>.",
     "This %s instance is currently in maintenance mode, which may take a while." : "Ez a %s folyamat éppen karbantartó üzemmódban van, ami eltarthat egy darabig.",
-    "This page will refresh itself when the %s instance is available again." : "Ez az oldal frissíteni fogja magát amint a(z) %s példány ismét elérhető."
+    "This page will refresh itself when the %s instance is available again." : "Ez az oldal frissíteni fogja magát amint a(z) %s példány ismét elérhető.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "Ez a kiszolgáló a PHP {version} verzióját futtatja. A PHP {fixedVersion} és újabb verziók kritikus biztonsági réseket ({cves}) javítanak, amelyeken keresztül a támadók bejelentkezés nélkül futtathatnak kódot ezen a kiszolgálón. Telepítse a PHP biztonsági frissítését, és indítsa újra a webkiszolgálót és a PHP-FPM-et. Ha a disztribúciója már a saját PHP-csomagjaiban tartalmazza a javítást, állítsa a php_security_check értékét false-ra a config.php fájlban."
 },
 "nplurals=2; plural=(n != 1);");

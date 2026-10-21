@@ -380,6 +380,7 @@ OC.L10N.register(
     "Automatic upgrading is not enabled in config.php. To upgrade your instance, please use the command line updater (occ upgrade)." : "config.php 中未启用自动升级。 要升级您的实例，请使用命令行更新程序 (occ upgrade)。",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "获取更多帮助，请查看  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">文档</a>.",
     "This %s instance is currently in maintenance mode, which may take a while." : "该 %s 实例当前处于维护模式，这将进行一些时间。",
-    "This page will refresh itself when the %s instance is available again." : "当实例 %s 再次可用时这个页面将刷新。"
+    "This page will refresh itself when the %s instance is available again." : "当实例 %s 再次可用时这个页面将刷新。",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "此服务器运行的是 PHP {version}。PHP {fixedVersion} 及更高版本修复了严重安全漏洞（{cves}），攻击者可利用这些漏洞在未登录的情况下在此服务器上执行代码。请安装 PHP 安全更新，并重启 Web 服务器和 PHP-FPM。如果您的发行版已在其自己的 PHP 软件包中提供了此修复，请在 config.php 中将 php_security_check 设置为 false。"
 },
 "nplurals=1; plural=0;");

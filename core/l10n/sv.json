@@ -380,6 +380,7 @@
     "Automatic upgrading is not enabled in config.php. To upgrade your instance, please use the command line updater (occ upgrade)." : "Automatisk uppgradering är inte aktiverad i config.php. För att uppgradera din instans, använd kommandoradsuppdateraren (occ upgrade).",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "För hjälp, se <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">dokumentationen</a>.",
     "This %s instance is currently in maintenance mode, which may take a while." : "Denna %s instans befinner sig för närvarande i underhållsläge, vilket kan ta ett tag.",
-    "This page will refresh itself when the %s instance is available again." : "Denna sida uppdaterar sig själv när %s instansen är tillgänglig igen."
+    "This page will refresh itself when the %s instance is available again." : "Denna sida uppdaterar sig själv när %s instansen är tillgänglig igen.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "Den här servern kör PHP {version}. PHP {fixedVersion} och senare åtgärdar kritiska säkerhetshål ({cves}) som låter angripare köra kod på servern utan att logga in. Installera PHP:s säkerhetsuppdatering och starta om webbservern och PHP-FPM. Om din distribution redan levererar rättelsen i sina egna PHP-paket, sätt php_security_check till false i config.php."
 },"pluralForm" :"nplurals=2; plural=(n != 1);"
 }

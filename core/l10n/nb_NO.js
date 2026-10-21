@@ -339,6 +339,7 @@ OC.L10N.register(
     "Detailed logs" : "Detaljerte logger",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "For hjelp, se  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">dokumentasjonen</a>.",
     "This %s instance is currently in maintenance mode, which may take a while." : "Denne %s-instansen er for øyeblikket i vedlikeholdsmodus, noe som kan vare en stund.",
-    "This page will refresh itself when the %s instance is available again." : "Denne siden vil bli lastet på nytt når %s-instansen er tilgjengelig igjen."
+    "This page will refresh itself when the %s instance is available again." : "Denne siden vil bli lastet på nytt når %s-instansen er tilgjengelig igjen.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "Denne serveren kjører PHP {version}. PHP {fixedVersion} og nyere retter kritiske sikkerhetshull ({cves}) som lar angripere kjøre kode på denne serveren uten å logge inn. Installer sikkerhetsoppdateringen for PHP og start webserveren og PHP-FPM på nytt. Hvis distribusjonen din allerede leverer rettelsen i egne PHP-pakker, setter du php_security_check til false i config.php."
 },
 "nplurals=2; plural=(n != 1);");

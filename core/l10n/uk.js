@@ -316,6 +316,7 @@ OC.L10N.register(
     "Detailed logs" : "Деталізований журнал",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "За допомогою зверніться до <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">документації</a>.",
     "This %s instance is currently in maintenance mode, which may take a while." : "Цей %s знаходиться в режимі технічного обслуговування, яке може зайняти деякий час.",
-    "This page will refresh itself when the %s instance is available again." : "Ця сторінка автоматично перезавантажиться коли екземпляр %s стане знову доступний."
+    "This page will refresh itself when the %s instance is available again." : "Ця сторінка автоматично перезавантажиться коли екземпляр %s стане знову доступний.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "Цей сервер працює на PHP {version}. У PHP {fixedVersion} і новіших усунено критичні вразливості ({cves}), які дозволяють зловмисникам виконувати код на цьому сервері без входу. Встановіть оновлення безпеки PHP і перезапустіть вебсервер та PHP-FPM. Якщо ваш дистрибутив уже містить виправлення у власних пакетах PHP, установіть php_security_check у значення false у config.php."
 },
 "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);");

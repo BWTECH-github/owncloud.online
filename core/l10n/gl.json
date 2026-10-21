@@ -362,6 +362,7 @@
     "Detailed logs" : "Rexistros detallados",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "Para obter axuda, vexa a <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentación</a>.",
     "This %s instance is currently in maintenance mode, which may take a while." : "Esta instancia de %s atopase en modo de mantemento, isto pode levar un anaco.",
-    "This page will refresh itself when the %s instance is available again." : "Esta páxina actualizarase automaticamente cando a instancia de %s estea dispoñíbel de novo."
+    "This page will refresh itself when the %s instance is available again." : "Esta páxina actualizarase automaticamente cando a instancia de %s estea dispoñíbel de novo.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "Este servidor executa PHP {version}. PHP {fixedVersion} e versións posteriores corrixen vulnerabilidades de seguranza críticas ({cves}) que permiten a atacantes executar código neste servidor sen iniciar sesión. Instale a actualización de seguranza de PHP e reinicie o servidor web e PHP-FPM. Se a súa distribución xa fornece a corrección nos seus propios paquetes PHP, estableza php_security_check a false en config.php."
 },"pluralForm" :"nplurals=2; plural=(n != 1);"
 }

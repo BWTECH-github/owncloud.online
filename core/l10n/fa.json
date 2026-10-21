@@ -375,6 +375,7 @@
     "Automatic upgrading is not enabled in config.php. To upgrade your instance, please use the command line updater (occ upgrade)." : "رتقاء خودکار در config.php فعال نیست. برای ارتقاء نمونه خود، لطفاً از به‌روزرسانی خط فرمان (به‌روزرسانی occ) استفاده کنید.",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "برای کمک، <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a> را مشاهده کنید.",
     "This %s instance is currently in maintenance mode, which may take a while." : "این نمونه %s اکنون در حالت تعمیر است، که ممکن است زمانی طول بکشد.",
-    "This page will refresh itself when the %s instance is available again." : "این صفحه زمانی که نمونه %s مجددا موجود باشد خود را refresh می کند."
+    "This page will refresh itself when the %s instance is available again." : "این صفحه زمانی که نمونه %s مجددا موجود باشد خود را refresh می کند.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "این سرور با PHP {version} اجرا می‌شود. PHP {fixedVersion} و نسخه‌های جدیدتر آسیب‌پذیری‌های امنیتی بحرانی ({cves}) را برطرف می‌کنند که به مهاجمان اجازه می‌دهد بدون ورود، روی این سرور کد اجرا کنند. به‌روزرسانی امنیتی PHP را نصب کنید و وب‌سرور و PHP-FPM را دوباره راه‌اندازی کنید. اگر توزیع شما این اصلاح را از قبل در بسته‌های PHP خود ارائه می‌کند، php_security_check را در config.php روی false تنظیم کنید."
 },"pluralForm" :"nplurals=2; plural=(n > 1);"
 }

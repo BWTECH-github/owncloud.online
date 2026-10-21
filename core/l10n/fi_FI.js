@@ -326,6 +326,7 @@ OC.L10N.register(
     "Detailed logs" : "Yksityiskohtainen loki",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "Apua saat <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">dokumentaatiosta</a>.",
     "This %s instance is currently in maintenance mode, which may take a while." : "Tämä %s-instanssi on parhaillaan huoltotilassa, huollossa saattaa kestää hetki.",
-    "This page will refresh itself when the %s instance is available again." : "Tämä sivu päivittää itsensä, kun %s on jälleen käytettävissä."
+    "This page will refresh itself when the %s instance is available again." : "Tämä sivu päivittää itsensä, kun %s on jälleen käytettävissä.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "Tämä palvelin käyttää PHP:n versiota {version}. PHP {fixedVersion} ja uudemmat korjaavat kriittisiä tietoturva-aukkoja ({cves}), joiden kautta hyökkääjät voivat suorittaa koodia tällä palvelimella kirjautumatta. Asenna PHP:n tietoturvapäivitys ja käynnistä verkkopalvelin ja PHP-FPM uudelleen. Jos jakelusi toimittaa korjauksen jo omissa PHP-paketeissaan, aseta php_security_check arvoon false tiedostossa config.php."
 },
 "nplurals=2; plural=(n != 1);");

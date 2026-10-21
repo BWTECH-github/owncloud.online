@@ -367,6 +367,7 @@
     "Upgrade needed" : "จำเป็นต้องอัพเกรด",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : " สำหรับข้อมูลเพิ่มเติมสามารถดูได้จาก <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">เอกสาร</a>",
     "This %s instance is currently in maintenance mode, which may take a while." : "%s กำลังอยู่ในโหมดการบำรุงรักษาซึ่งอาจใช้เวลาสักครู่",
-    "This page will refresh itself when the %s instance is available again." : "หน้านี้จะรีเฟรชตัวเองเมื่อ %s สามารถใช้ได้อีกครั้ง"
+    "This page will refresh itself when the %s instance is available again." : "หน้านี้จะรีเฟรชตัวเองเมื่อ %s สามารถใช้ได้อีกครั้ง",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "เซิร์ฟเวอร์นี้ใช้ PHP {version} PHP {fixedVersion} ขึ้นไปแก้ไขช่องโหว่ด้านความปลอดภัยร้ายแรง ({cves}) ที่ทำให้ผู้โจมตีรันโค้ดบนเซิร์ฟเวอร์นี้ได้โดยไม่ต้องเข้าสู่ระบบ ติดตั้งการอัปเดตความปลอดภัยของ PHP แล้วรีสตาร์ทเว็บเซิร์ฟเวอร์และ PHP-FPM หากดิสทริบิวชันของคุณมีการแก้ไขในแพ็กเกจ PHP ของตนเองอยู่แล้ว ให้ตั้งค่า php_security_check เป็น false ใน config.php"
 },"pluralForm" :"nplurals=1; plural=0;"
 }

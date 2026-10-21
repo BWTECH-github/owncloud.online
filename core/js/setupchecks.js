@@ -122,6 +122,13 @@
 							type: OC.SetupChecks.MESSAGE_TYPE_INFO
 						});
 					}
+					if(data.phpSecurity && data.phpSecurity.vulnerable) {
+						// Distributionen spielen Korrekturen oft in ältere Versionsnummern ein: dort nur warnen
+						messages.push({
+							msg: t('core', 'This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php.', {version: data.phpSecurity.version, fixedVersion: data.phpSecurity.fixedIn, cves: data.phpSecurity.cves}),
+							type: data.phpSecurity.distributionBuild ? OC.SetupChecks.MESSAGE_TYPE_WARNING : OC.SetupChecks.MESSAGE_TYPE_ERROR
+						});
+					}
 					if(!data.forwardedForHeadersWorking) {
 						messages.push({
 							msg: t('core', 'The reverse proxy headers configuration is incorrect, or you are accessing the server from a trusted proxy. If you are not accessing the server from a trusted proxy, this is a security issue and can allow an attacker to spoof their IP address as visible to the server. Further information can be found in our <a target="_blank" rel="noreferrer" href="{docLink}">documentation</a>.', {docLink: data.reverseProxyDocs}),

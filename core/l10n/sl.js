@@ -320,6 +320,7 @@ OC.L10N.register(
     "Detailed logs" : "Podrobni dnevniški zapisi",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "Za več podrobnosti si oglejte <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">dokumentacijo</a>.",
     "This %s instance is currently in maintenance mode, which may take a while." : "Strežnik %s je trenutno v načinu vzdrževanja, kar lahko traja.",
-    "This page will refresh itself when the %s instance is available again." : "Stran bo osvežena ko bo %s spet na voljo."
+    "This page will refresh itself when the %s instance is available again." : "Stran bo osvežena ko bo %s spet na voljo.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "Ta strežnik uporablja PHP {version}. PHP {fixedVersion} in novejše različice odpravljajo kritične varnostne ranljivosti ({cves}), prek katerih lahko napadalci brez prijave izvajajo kodo na tem strežniku. Namestite varnostno posodobitev PHP in znova zaženite spletni strežnik in PHP-FPM. Če vaša distribucija popravek že vključuje v lastnih paketih PHP, nastavite php_security_check v config.php na false."
 },
 "nplurals=4; plural=(n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3);");

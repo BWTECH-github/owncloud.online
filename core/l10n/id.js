@@ -335,6 +335,7 @@ OC.L10N.register(
     "Start update" : "Jalankan pembaruan",
     "To avoid timeouts with larger installations, you can instead run the following command from your installation directory:" : "Untuk menghindari waktu habis dengan instalasi yang lebih besar, Anda bisa menjalankan perintah berikut dari direktori instalasi Anda:",
     "This %s instance is currently in maintenance mode, which may take a while." : "Instansi %s ini sedang dalam modus pemeliharaan, mungkin memerlukan beberapa saat.",
-    "This page will refresh itself when the %s instance is available again." : "Halaman ini akan disegarkan dengan sendiri saat instansi %s tersebut tersedia kembali."
+    "This page will refresh itself when the %s instance is available again." : "Halaman ini akan disegarkan dengan sendiri saat instansi %s tersebut tersedia kembali.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "Server ini menjalankan PHP {version}. PHP {fixedVersion} dan yang lebih baru memperbaiki kerentanan keamanan kritis ({cves}) yang memungkinkan penyerang menjalankan kode di server ini tanpa masuk. Pasang pembaruan keamanan PHP lalu mulai ulang server web dan PHP-FPM. Jika distribusi Anda sudah menyertakan perbaikan dalam paket PHP-nya sendiri, setel php_security_check ke false di config.php."
 },
 "nplurals=1; plural=0;");

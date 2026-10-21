@@ -371,6 +371,7 @@ OC.L10N.register(
     "Upgrade needed" : "Wymagana jest aktualizacja",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "Aby uzyskać pomoc, zajrzyj do <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">dokumentacji</a>.",
     "This %s instance is currently in maintenance mode, which may take a while." : "Ta %s instancja jest obecnie w trybie serwisowym, co może potrwać chwilę.",
-    "This page will refresh itself when the %s instance is available again." : "Strona odświeży się gdy instancja %s będzie ponownie dostępna."
+    "This page will refresh itself when the %s instance is available again." : "Strona odświeży się gdy instancja %s będzie ponownie dostępna.",
+    "This server runs PHP {version}. PHP {fixedVersion} and newer fix critical security vulnerabilities ({cves}) that let attackers run code on this server without logging in. Install the PHP security update and restart the web server and PHP-FPM. If your distribution already ships the fix in its own PHP packages, set php_security_check to false in config.php." : "Ten serwer działa na PHP {version}. PHP {fixedVersion} i nowsze usuwają krytyczne luki bezpieczeństwa ({cves}), które pozwalają atakującym uruchomić kod na tym serwerze bez logowania. Zainstaluj aktualizację bezpieczeństwa PHP i uruchom ponownie serwer WWW oraz PHP-FPM. Jeśli Twoja dystrybucja dostarcza już poprawkę we własnych pakietach PHP, ustaw php_security_check na false w config.php."
 },
 "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);");

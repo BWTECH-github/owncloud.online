@@ -92,7 +92,7 @@ class CheckSetupControllerTest extends TestCase {
 				$this->l10n,
 				$this->checker,
 				])
-			->setMethods(['getCurlVersion', 'isEndOfLive'])->getMock();
+			->setMethods(['getCurlVersion', 'isEndOfLive', 'getPhpVersion', 'getPhpExtraVersion'])->getMock();
 	}
 
 	public function testIsInternetConnectionWorkingDisabledViaConfig() {
@@ -211,6 +211,7 @@ class CheckSetupControllerTest extends TestCase {
 				['internet_connectivity_detect_url', 'https://detectportal.firefox.com/success.txt'],
 				['memcache.local', null],
 				['has_internet_connection', true],
+				['php_security_check', true],
 				['trusted_proxies', []],
 			)
 			->willReturnOnConsecutiveCalls(
@@ -218,8 +219,11 @@ class CheckSetupControllerTest extends TestCase {
 				'https://detectportal.firefox.com/success.txt',
 				'SomeProvider',
 				false,
+				true,
 				['1.2.3.4'],
 			);
+		$this->checkSetupController->method('getPhpVersion')->willReturn('8.4.23');
+		$this->checkSetupController->method('getPhpExtraVersion')->willReturn('');
 
 		$this->request->expects($this->once())
 			->method('getRemoteAddress')
@@ -271,6 +275,13 @@ class CheckSetupControllerTest extends TestCase {
 					'eol' => true,
 					'version' => PHP_VERSION
 				],
+				'phpSecurity' => [
+					'vulnerable' => true,
+					'version' => '8.4.23',
+					'fixedIn' => '8.4.27',
+					'cves' => 'CVE-2026-109618, CVE-2026-109619',
+					'distributionBuild' => false,
+				],
 				'forwardedForHeadersWorking' => true,
 				'reverseProxyDocs' => 'reverse-proxy-doc-link',
 				'isCorrectMemcachedPHPModuleInstalled' => true,
@@ -280,6 +291,52 @@ class CheckSetupControllerTest extends TestCase {
 			]
 		);
 		$this->assertEquals($expected, $this->checkSetupController->check());
+	}
+
+	public function providesPhpVersions(): array {
+		return [
+			'8.4 vor der Korrektur' => ['8.4.23', '8.4.27'],
+			'8.4 mit der Korrektur' => ['8.4.27', null],
+			'8.4 danach' => ['8.4.30', null],
+			'8.5 vor der Korrektur' => ['8.5.11', '8.5.12'],
+			'8.5 mit der Korrektur' => ['8.5.12', null],
+			'8.3' => ['8.3.35', '8.3.36'],
+			'8.2' => ['8.2.34', '8.2.35'],
+			'8.6 frühe Vorabversion' => ['8.6.0RC3', '8.6.0RC4'],
+			'8.6 mit der Korrektur' => ['8.6.0RC4', null],
+			'8.6 fertig' => ['8.6.0', null],
+			'ohne Pflege, älter als 8.2' => ['8.1.31', '8.4.27'],
+			'neuer als alle bekannten Zweige' => ['8.7.0', null],
+			'Zusatz einer Distribution zählt nicht' => ['8.4.23-1ubuntu2.1', '8.4.27'],
+			'unlesbar' => ['unbekannt', null],
+		];
+	}
+
+	/**
+	 * @dataProvider providesPhpVersions
+	 */
+	public function testGetPhpSecurityFix(string $version, ?string $expected): void {
+		$this->assertSame($expected, self::invokePrivate($this->checkSetupController, 'getPhpSecurityFix', [$version]));
+	}
+
+	public function testPhpSecurityStatusDistributionBuild(): void {
+		$this->config->method('getSystemValue')->with('php_security_check', true)->willReturn(true);
+		$this->checkSetupController->method('getPhpVersion')->willReturn('8.4.23');
+		$this->checkSetupController->method('getPhpExtraVersion')->willReturn('-1ubuntu2.1');
+
+		$status = self::invokePrivate($this->checkSetupController, 'getPhpSecurityStatus');
+		$this->assertTrue($status['vulnerable']);
+		$this->assertTrue($status['distributionBuild']);
+	}
+
+	public function testPhpSecurityStatusDisabledViaConfig(): void {
+		$this->config->method('getSystemValue')->with('php_security_check', true)->willReturn(false);
+		$this->checkSetupController->method('getPhpVersion')->willReturn('8.4.23');
+		$this->checkSetupController->method('getPhpExtraVersion')->willReturn('');
+
+		$status = self::invokePrivate($this->checkSetupController, 'getPhpSecurityStatus');
+		$this->assertFalse($status['vulnerable']);
+		$this->assertSame('', $status['fixedIn']);
 	}
 
 	public function testGetCurlVersion() {

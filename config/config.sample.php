@@ -814,6 +814,16 @@ $CONFIG = [
 'check_for_working_wellknown_setup' => true,
 
 /**
+ * Check the PHP version for known critical security vulnerabilities
+ * The security & setup warnings in the admin settings report a PHP version that
+ * is older than the first release fixing the most recently published critical
+ * vulnerabilities of the PHP interpreter. Distributions often ship such fixes in
+ * PHP packages that keep an older version number; once the fix is installed
+ * that way, set this to `false` to hide the warning.
+ */
+'php_security_check' => true,
+
+/**
  * Define if config.php is read only
  * In certain environments it is desired to have a read-only configuration file.
  * When this switch is set to `true` ownCloud will not verify whether the
