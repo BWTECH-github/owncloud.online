@@ -222,8 +222,8 @@ class CheckSetupControllerTest extends TestCase {
 				true,
 				['1.2.3.4'],
 			);
-		$this->checkSetupController->method('getPhpVersion')->willReturn('8.4.23');
-		$this->checkSetupController->method('getPhpExtraVersion')->willReturn('');
+		$this->checkSetupController->expects($this->any())->method('getPhpVersion')->willReturn('8.4.23');
+		$this->checkSetupController->expects($this->any())->method('getPhpExtraVersion')->willReturn('');
 
 		$this->request->expects($this->once())
 			->method('getRemoteAddress')
@@ -321,8 +321,8 @@ class CheckSetupControllerTest extends TestCase {
 
 	public function testPhpSecurityStatusDistributionBuild(): void {
 		$this->config->method('getSystemValue')->with('php_security_check', true)->willReturn(true);
-		$this->checkSetupController->method('getPhpVersion')->willReturn('8.4.23');
-		$this->checkSetupController->method('getPhpExtraVersion')->willReturn('-1ubuntu2.1');
+		$this->checkSetupController->expects($this->any())->method('getPhpVersion')->willReturn('8.4.23');
+		$this->checkSetupController->expects($this->any())->method('getPhpExtraVersion')->willReturn('-1ubuntu2.1');
 
 		$status = self::invokePrivate($this->checkSetupController, 'getPhpSecurityStatus');
 		$this->assertTrue($status['vulnerable']);
@@ -331,8 +331,8 @@ class CheckSetupControllerTest extends TestCase {
 
 	public function testPhpSecurityStatusDisabledViaConfig(): void {
 		$this->config->method('getSystemValue')->with('php_security_check', true)->willReturn(false);
-		$this->checkSetupController->method('getPhpVersion')->willReturn('8.4.23');
-		$this->checkSetupController->method('getPhpExtraVersion')->willReturn('');
+		$this->checkSetupController->expects($this->any())->method('getPhpVersion')->willReturn('8.4.23');
+		$this->checkSetupController->expects($this->any())->method('getPhpExtraVersion')->willReturn('');
 
 		$status = self::invokePrivate($this->checkSetupController, 'getPhpSecurityStatus');
 		$this->assertFalse($status['vulnerable']);
