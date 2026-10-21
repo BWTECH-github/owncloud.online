@@ -181,3 +181,31 @@ Prüfen, welche Adresse tatsächlich ankommt: Nach einer fehlgeschlagenen
 Anmeldung steht sie im Protokoll (`remoteAddr`), siehe
 [Serverprotokoll und Fehlermeldungen](logging.md). Erscheint dort die Proxy-IP
 statt der Client-IP, ist `trusted_proxies` falsch.
+
+## PHP-Upload-Fortschritt
+
+PHP kann den Fortschritt eines Formular-Uploads in der Sitzung mitschreiben
+(`session.upload_progress.enabled`, ab Werk an). owncloud.online nutzt das
+nicht – die Fortschrittsanzeige im Browser rechnet selbst. Solange es an ist,
+schreibt PHP bei jedem Upload mit dem Formularfeld `PHP_SESSION_UPLOAD_PROGRESS`
+Daten des Absenders in den Sitzungsspeicher, bevor owncloud.online die Anfrage
+überhaupt sieht und ohne Anmeldung. Das ist ein bekannter Baustein für Angriffe
+über eingebundene Dateien und füllt nebenbei den Sitzungsspeicher.
+
+Die mitgelieferte `.user.ini` (PHP-FPM, CGI) und `.htaccess` (Apache mit
+`mod_php`) schalten es ab. Beide gelten nur für den owncloud.online-Ordner, und
+PHP-FPM liest die `.user.ini` erst nach bis zu fünf Minuten neu
+(`user_ini.cache_ttl`). Serverweit und sofort wirkt die Einstellung in der
+`php.ini` oder im FPM-Pool:
+
+```ini
+; php.ini
+session.upload_progress.enabled = Off
+
+; oder im Pool, z. B. /etc/php/8.4/fpm/pool.d/www.conf
+php_admin_flag[session.upload_progress.enabled] = off
+```
+
+Wirksam ist der Wert, den `phpinfo()` im Abschnitt „session“ als „Local Value“
+zeigt; die CLI (`php -i`, `occ`) hat ihre eigene `php.ini` und sagt darüber
+nichts.

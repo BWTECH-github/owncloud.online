@@ -1,0 +1,9 @@
+Security: Switch off PHP's session upload progress
+
+The shipped .user.ini (PHP-FPM, CGI) and .htaccess (Apache with mod_php) now
+switch off PHP's session upload progress. owncloud.online does not use it, but
+while it is on, anyone can make PHP write data of their choice into the session
+storage with a form field named PHP_SESSION_UPLOAD_PROGRESS, without logging
+in. The .htaccess gets a block for mod_php.c, the module name of PHP 8; its
+existing PHP values only cover mod_php5 and mod_php7 and never applied with
+PHP 8. That block only carries this setting.

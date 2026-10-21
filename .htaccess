@@ -78,6 +78,17 @@
     </IfModule>
 </IfModule>
 
+# PHP 8 heißt als Apache-Modul mod_php.c, die beiden Blöcke oben greifen dort
+# nicht. Den Upload-Fortschritt von PHP nutzt owncloud.online nicht; solange er
+# an ist, schreibt PHP über das Formularfeld PHP_SESSION_UPLOAD_PROGRESS ohne
+# Anmeldung Daten des Absenders in den Sitzungsspeicher. Unter PHP-FPM schaltet
+# ihn die .user.ini ab. Größen und memory_limit stehen hier bewusst nicht: Unter
+# PHP 8 galten sie nie, nachgezogen würden sie ein höheres memory_limit aus der
+# php.ini auf 512M senken.
+<IfModule mod_php.c>
+    php_flag session.upload_progress.enabled off
+</IfModule>
+
 <IfModule mod_rewrite.c>
   RewriteEngine on
   RewriteRule .* - [env=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
