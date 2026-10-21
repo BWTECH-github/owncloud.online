@@ -387,8 +387,9 @@ class InitSessionTest extends TestCase {
 			'Basic mit App-Passwort' => [true, '/remote.php', $basic, true, $appPasswordSession],
 			'Basic mit App-Passwort, Kopf nach Rewrite' => [true, '/remote.php', ['REDIRECT_HTTP_AUTHORIZATION' => 'Basic YWxpY2U6eA=='], true, $appPasswordSession],
 			'Basic mit echtem Kennwort, Prüfung fällig' => [false, '/remote.php', $basic, true, $davSession],
-			'Basic mit echtem Kennwort, gerade geprüft' => [true, '/remote.php', $basic, true, $davSession + ['last_check_timeout' => \time() - 30]],
-			'Basic mit echtem Kennwort, Prüfung abgelaufen' => [false, '/remote.php', $basic, true, $davSession + ['last_check_timeout' => \time() - 600]],
+			// Negative Werte für last_check_timeout: Sekunden vor dem Testlauf (siehe unten)
+			'Basic mit echtem Kennwort, gerade geprüft' => [true, '/remote.php', $basic, true, $davSession + ['last_check_timeout' => -30]],
+			'Basic mit echtem Kennwort, Prüfung abgelaufen' => [false, '/remote.php', $basic, true, $davSession + ['last_check_timeout' => -600]],
 			'anderes Verfahren' => [false, '/remote.php', ['HTTP_AUTHORIZATION' => 'Digest username="alice"'], true, $appPasswordSession],
 			'Browser ohne Authorization' => [false, '/remote.php', [], true, $davSession],
 			'andere Skripte' => [false, '/index.php', $bearer, true, $davSession],
@@ -408,6 +409,12 @@ class InitSessionTest extends TestCase {
 			\OC::$server->getSecureRandom(),
 			\OC::$server->getConfig()
 		);
+		// PHPUnit ruft alle Datenlieferanten vor dem ersten Test auf. Ein dort
+		// genommenes time() ist beim Lauf schon Minuten alt und „gerade geprüft“
+		// wäre dann abgelaufen; deshalb erst hier in einen Zeitpunkt umrechnen.
+		if (isset($values['last_check_timeout']) && $values['last_check_timeout'] < 0) {
+			$values['last_check_timeout'] = \time() + $values['last_check_timeout'];
+		}
 		$session = new Memory();
 		foreach ($values as $key => $value) {
 			$session->set($key, $value);
