@@ -79,7 +79,7 @@ erklären dort zugleich, mit welcher Serverfassung sie zusammenarbeiten:
 </dependencies>
 ```
 
-Die eigene Serverfassung — derzeit **11.0.23** — zeigt:
+Die eigene Serverfassung — derzeit **11.0.24** — zeigt:
 
 ```bash
 sudo -u www-data php8.4 occ status

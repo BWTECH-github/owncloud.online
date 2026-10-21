@@ -1,5 +1,6 @@
 # Table of Contents
 
+* [Changelog for owncloud.online 11.0.24](#changelog-for-owncloudonline-11024-2026-10-21)
 * [Changelog for owncloud.online 11.0.23](#changelog-for-owncloudonline-11023-2026-10-16)
 * [Changelog for owncloud.online 11.0.22](#changelog-for-owncloudonline-11022-2026-10-02)
 * [Changelog for owncloud.online 11.0.21](#changelog-for-owncloudonline-11021-2026-09-30)
@@ -40,6 +41,196 @@
 * [Changelog for 10.4.1](#changelog-for-owncloud-core-1041-2020-03-30)
 * [Changelog for 10.4.0](#changelog-for-owncloud-core-1040-2020-02-10)
 * [Changelog for 10.3.2](#changelog-for-owncloud-core-1032-2019-12-04)
+# Changelog for owncloud.online [11.0.24] (2026-10-21)
+
+The following sections list the changes in owncloud.online 11.0.24 relevant to
+admins and users.
+
+[11.0.24]: https://github.com/BWTECH-github/owncloud.online
+
+## Summary
+
+* Security - Warnung vor PHP-Versionen mit kritischen Lücken (CVE-2026-109618, CVE-2026-109619): [#1a2a650](https://github.com/BWTECH-github/owncloud.online/commit/1a2a650), [#10cddb0](https://github.com/BWTECH-github/owncloud.online/commit/10cddb0)
+* Security - Upload-Fortschritt von PHP abgeschaltet: [#10bcdb8](https://github.com/BWTECH-github/owncloud.online/commit/10bcdb8)
+* Bugfix - Kein 503 mehr bei parallelen WebDAV-Anfragen, wenn die Sitzungssperre belegt ist: [#04e4ba0](https://github.com/BWTECH-github/owncloud.online/commit/04e4ba0), [#4dbf30f](https://github.com/BWTECH-github/owncloud.online/commit/4dbf30f), [#95613ed](https://github.com/BWTECH-github/owncloud.online/commit/95613ed), [#298bbdc](https://github.com/BWTECH-github/owncloud.online/commit/298bbdc)
+* Bugfix - Gestörter Redis als Cache bricht keine Anfrage mehr ab: [#d10a5a0](https://github.com/BWTECH-github/owncloud.online/commit/d10a5a0)
+* Bugfix - Token-Anfragen von OAuth2-Clients zählen nicht mehr als fehlgeschlagene Anmeldung: [#4ab933b](https://github.com/BWTECH-github/owncloud.online/commit/4ab933b)
+* Bugfix - WebDAV-Fehler mit 503 zeigen ihre Ursache im Protokoll: [#eda8f58](https://github.com/BWTECH-github/owncloud.online/commit/eda8f58), [#1a36234](https://github.com/BWTECH-github/owncloud.online/commit/1a36234)
+* Change - Erwartbare WebDAV-Client-Fehler nicht mehr als FATAL im Protokoll: [#0c794b5](https://github.com/BWTECH-github/owncloud.online/commit/0c794b5)
+* Enhancement - Protokoll unter Einstellungen > Allgemein lesen und als JSON abrufen: [#fc56a34](https://github.com/BWTECH-github/owncloud.online/commit/fc56a34), [#762ae23](https://github.com/BWTECH-github/owncloud.online/commit/762ae23)
+* Bugfix - Vorschau bricht bei Versionsvorschauen und kaputten Bildern nicht mehr ab: [#e28db72](https://github.com/BWTECH-github/owncloud.online/commit/e28db72)
+* Bugfix - „Erneut anfordern“ verschickt die Mail nach einem gescheiterten Versand wieder: [#91e3e78](https://github.com/BWTECH-github/owncloud.online/commit/91e3e78)
+* Bugfix - Update-Seite sagt den Hinweis nach einem Fehler Screenreadern an: [#547b6a5](https://github.com/BWTECH-github/owncloud.online/commit/547b6a5)
+* Bugfix - owncloud.online statt „OwnCloud“ im Hinweis zum Teilen (es_AR, mk): [#05938a3](https://github.com/BWTECH-github/owncloud.online/commit/05938a3)
+* Change - Nachtrag zu 11.0.23: Eintrag zum MIME-Typ präzisiert: [#9530ed9](https://github.com/BWTECH-github/owncloud.online/commit/9530ed9)
+
+## Details
+
+* Security - Warnung vor PHP-Versionen mit kritischen Lücken (CVE-2026-109618, CVE-2026-109619)
+
+   Die Sicherheits- und Setup-Warnungen unter Einstellungen > Allgemein melden
+   jetzt eine PHP-Version ohne die Korrekturen für die am 21. Oktober 2026
+   veröffentlichten kritischen Lücken im PHP-Interpreter (CVE-2026-109618 und
+   CVE-2026-109619, Ausführung von Code ohne Anmeldung). Behoben sind sie in
+   PHP 8.2.35, 8.3.36, 8.4.27, 8.5.12 und 8.6.0RC4. Ältere Zweige bekommen
+   keine Korrektur; dort verweist die Warnung auf den unterstützten Zweig 8.4.
+
+   Bei einem PHP ohne Distributionszusatz in der Versionsnummer ist es ein
+   Fehler. Bei Distributions-Builds (Versionsnummer mit Zusatz, etwa von
+   Debian oder Ubuntu) ist es nur eine Warnung, weil Distributionen die
+   Korrektur oft unter der alten Nummer ausliefern. Ist sie so eingespielt,
+   blendet `'php_security_check' => false` in der `config.php` die Meldung
+   aus.
+
+* Security - Upload-Fortschritt von PHP abgeschaltet
+
+   Die mitgelieferte `.user.ini` (PHP-FPM, CGI) und `.htaccess` (Apache mit
+   `mod_php`) schalten `session.upload_progress` ab. owncloud.online nutzt
+   diese PHP-Funktion nicht; solange sie an ist, schreibt PHP über das
+   Formularfeld `PHP_SESSION_UPLOAD_PROGRESS` ohne Anmeldung Daten des
+   Absenders in den Sitzungsspeicher. Die `.htaccess` bekommt dafür einen
+   Block für PHP 8 (`mod_php.c`), denn die Blöcke für `mod_php5` und
+   `mod_php7` greifen unter PHP 8 nicht. Der neue Block setzt nur diesen
+   Schalter: Größen und `memory_limit` bleiben unter `mod_php` wie bisher
+   Sache der `php.ini`. PHP-FPM liest die `.user.ini` erst nach bis zu fünf
+   Minuten neu; serverweit und sofort wirkt
+   `session.upload_progress.enabled = Off` in der `php.ini` oder im FPM-Pool
+   (siehe Sicherheit und Setup-Warnungen in der Doku).
+
+* Bugfix - Kein 503 mehr bei parallelen WebDAV-Anfragen, wenn die Sitzungssperre belegt ist
+
+   Mit Sitzungen in Redis (phpredis mit Sitzungssperre, 100 Versuche à 20 ms)
+   warteten parallele Anfragen derselben Sitzung aufeinander. Der
+   Desktop-Client schickt nach einem Sammel-Upload seine PROPFIND-Anfragen
+   parallel, jeweils mit Token und Sitzungs-Cookie. Unter Last gab phpredis
+   nach 2 Sekunden auf, der Sitzungsstart scheiterte still, das
+   Sitzungs-Cookie wurde gelöscht, und die Anfrage endete mit
+   „503 Internal Server Error“. Eine Browser-Anfrage bekam in derselben Lage
+   einen 500 und war abgemeldet.
+
+   Anfragen von Sync-Clients geben die Sitzungssperre jetzt gleich nach dem
+   Lesen wieder frei. Das gilt für Bearer-Token, App-Passwörter und Basic mit
+   Kennwort; steht die regelmäßige Kennwortprüfung an, prüft nur die erste der
+   parallelen Anfragen, die anderen übernehmen das Ergebnis. Wird die Sperre
+   trotzdem nicht rechtzeitig frei, läuft die Anfrage weiter, und eine Warnung
+   im Protokoll nennt den Grund – ohne Speicherpfad und ohne
+   Sitzungskennung. Eine Sitzung, die sich ohne Sperre lesen lässt (phpredis
+   5.3 sowie ab 6.3 mit `redis.session.lock_failure_readonly`, das der Server
+   selbst setzt) und Inhalt hat, wird nur lesend genutzt; ein angemeldeter
+   Browser bleibt angemeldet. Eine Sperre, die ein abgestürzter PHP-Prozess
+   liegen ließ, bremst Sync-Clients nicht mehr bis `redis.session.lock_expire`
+   aus, und die Anmeldung funktioniert, solange sie noch besteht.
+
+* Bugfix - Gestörter Redis als Cache bricht keine Anfrage mehr ab
+
+   Mit Redis als `memcache.local` oder `memcache.distributed` liest jede
+   Anfrage beim Start App-Daten aus dem Cache. Lehnte Redis die Verbindung ab
+   oder brach sie ab – Neustart, Netzaussetzer, maxclients unter Last –, warf
+   das bereits eine Ausnahme, und WebDAV antwortete mit 503 (oder 599). Ein
+   gestörter Cache-Redis gilt jetzt wie ein leerer Cache: Die Anfrage läuft
+   ohne ihn weiter, der Grund steht einmal pro Anfrage im Protokoll. Redis für
+   die Dateisperren (`memcache.locking`) muss weiterhin erreichbar sein. Die
+   Doku zur Fehlersuche nennt die üblichen Ursachen von 503 unter Last.
+
+* Bugfix - Token-Anfragen von OAuth2-Clients zählen nicht mehr als fehlgeschlagene Anmeldung
+
+   Am Token-Endpunkt der App „OAuth2“ trägt HTTP Basic die Client-ID und das
+   Client-Geheimnis, keine Benutzerdaten. Schickte ein Desktop-Client
+   zusätzlich sein Sitzungs-Cookie (wie Version 6.0.3), wurde die Anfrage wie
+   eine Anmeldung mit der Client-ID als Benutzername geprüft: Jede
+   Token-Erneuerung schrieb „Login failed“, zählte für die Bremse gegen
+   Passwort-Raten – die dann auch echte Anmeldungen von derselben Adresse
+   bremste – und beendete die Sitzung. Basic-Daten an
+   `POST /apps/oauth2/api/v1/token` gelten nicht mehr als Anmeldung; an allen
+   anderen Adressen ändert sich nichts.
+
+* Bugfix - WebDAV-Fehler mit 503 zeigen ihre Ursache im Protokoll
+
+   Scheiterte eine WebDAV-Anfrage schon vor der Sabre-Verarbeitung (etwa an
+   einem Datenbank- oder Sperrfehler unter Last), stand im Protokoll nur die
+   allgemeine Hülle „503 Internal Server Error“. Jetzt steht dort die
+   eigentliche Ausnahme samt Trace; der Client bekommt weiter nur die
+   allgemeine Meldung.
+
+* Change - Erwartbare WebDAV-Client-Fehler nicht mehr als FATAL im Protokoll
+
+   Fehler, die der Desktop-Client bei normaler Arbeit auslöst – etwa MKCOL auf
+   einen schon vorhandenen Ordner („405 The resource you tried to create
+   already exists“) –, landeten als FATAL in `owncloud.log`; eine Testinstanz
+   sammelte so in zwei Tagen über 500 Einträge. Auf Stufe debug stehen jetzt:
+   405, 409 (auch bei nicht passendem Sperr-Token), 411, 415 für einen nicht
+   unterstützten REPORT, 416 und 501 – wie schon bisher 404, 412 und 423.
+   400, andere 415-Fehler und 503 bleiben FATAL, weil sie auf ein Problem auf
+   dem Server hindeuten können.
+
+* Enhancement - Protokoll unter Einstellungen > Allgemein lesen und als JSON abrufen
+
+   Bisher gab es dort nur die Protokollstufe und den Download von
+   `owncloud.log`. Der Abschnitt zeigt jetzt unter dem Download-Knopf die
+   neuesten Einträge: Zeit, Stufe, App, Meldung, Benutzer und Anfrage, neueste
+   zuerst. Die Liste lässt sich nach Mindeststufe und App filtern und nach
+   beliebigem Text durchsuchen, auch nach Ausnahmeklassen, Traces,
+   Anfrage-IDs, Benutzernamen und Adressen. „Mehr laden“ holt ältere
+   Einträge. Ein Klick oder die Eingabetaste öffnet die Details: vollständige
+   Meldung, Ausnahme mit Datei und Zeile, Trace und die Kette der auslösenden
+   Ausnahmen. Auf schmalen Bildschirmen erscheint jeder Eintrag als Karte.
+   Fehlermeldungen nennen den Grund (Wartezeit bei zu vielen Abfragen,
+   fehlende Adminrechte, Protokoll nicht verfügbar) und werden Screenreadern
+   angesagt.
+
+   Für Skripte und Monitoring liefert
+   `GET /index.php/settings/admin/log/entries` dieselben Daten als JSON
+   (Parameter `offset`, `count` 1–200, `level`, `app`, `search`), für Admins
+   mit Browsersitzung oder Basic-Anmeldung mit Kennwort oder App-Passwort. Die
+   Datei wird rückwärts in Blöcken gelesen, höchstens 32 MB und 200 Einträge
+   pro Abfrage, damit auch Protokolle von mehreren Gigabyte schnell antworten.
+   Mit Memory-Cache sind 60 Abfragen pro Minute möglich, danach HTTP 429 mit
+   Retry-After. Voraussetzung ist `log_type` owncloud; mit syslog oder
+   errorlog antwortet der Endpunkt mit 404, und der Abschnitt bleibt wie
+   bisher.
+
+* Bugfix - Vorschau bricht bei Versionsvorschauen und kaputten Bildern nicht mehr ab
+
+   Der Vorschau-Cache einer Datei enthält auch die Vorschauen ihrer Versionen,
+   in einem Unterordner je Version. Die Suche nach einer größeren Vorschau
+   hielt diesen Ordner für eine Vorschaudatei, las seinen Namen als
+   „Breite-Höhe“ und teilte durch null: Die Vorschau endete mit HTTP 500, im
+   Protokoll standen „Undefined array key 1“ und ein DivisionByZeroError.
+   Einträge ohne Maße im Namen werden jetzt übersprungen. Kaputte Bilddaten,
+   etwa Text in einer .png-Datei, schreiben nicht mehr bei jedem
+   Vorschauversuch „getimagesizefromstring(): Error reading …“ ins Protokoll;
+   die Datei wird wie bisher abgelehnt.
+
+* Bugfix - „Erneut anfordern“ verschickt die Mail nach einem gescheiterten Versand wieder
+
+   Konnte die Mail zum Zurücksetzen des Kennworts nicht verschickt werden,
+   blieb das Token des Versuchs gespeichert. „Erneut anfordern“ in den
+   nächsten fünf Minuten galt dann als Wiederholung: Es ging keine Mail
+   hinaus, die Seite meldete aber Erfolg. Das stand in 11.0.23 als bekannte
+   Einschränkung. Ein gescheiterter Versand entfernt sein Token jetzt, die
+   nächste Anforderung verschickt die Mail wieder. Die Antwort für unbekannte
+   Benutzer und die fünf Minuten Sperre nach einer verschickten Mail bleiben.
+
+* Bugfix - Update-Seite sagt den Hinweis nach einem Fehler Screenreadern an
+
+   Scheiterte ein Update, stand der Grund in der Alert-Region, der Hinweis,
+   das Serverprotokoll zu prüfen oder den Administrator zu fragen, aber
+   darunter außerhalb jeder Live-Region. Screenreader sagten nur den Grund an.
+   Der Hinweis folgt jetzt dem Grund in der Alert-Region und wird mit ihm
+   angesagt.
+
+* Bugfix - owncloud.online statt „OwnCloud“ im Hinweis zum Teilen (es_AR, mk)
+
+   Die Übersetzungen für Spanisch (Argentinien) und Mazedonisch nannten im
+   Hinweis zum Teilen noch den alten Namen.
+
+* Change - Nachtrag zu 11.0.23: Eintrag zum MIME-Typ präzisiert
+
+   Nur ein leerer MIME-Typ, auch einer nur aus Leerzeichen, gilt als
+   „unbekannt“. Fehlt der Hauptteil vor dem „/“ (etwa `foo` oder `/foo`),
+   bleibt der MIME-Typ gespeichert, und nur `mimepart` wird -1. Der Abschnitt
+   zu 11.0.23 sagt das jetzt so; am Code ändert sich nichts.
+
 # Changelog for owncloud.online [11.0.23] (2026-10-16)
 
 The following sections list the changes in owncloud.online 11.0.23 relevant to
