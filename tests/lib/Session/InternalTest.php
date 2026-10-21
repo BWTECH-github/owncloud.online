@@ -32,6 +32,8 @@ use Test\TestCase;
 class InternalTest extends TestCase {
 	private const SESSION_NAME = 'oc_internal_test';
 	private const SESSION_ID = 'sid0123456789';
+	// mit „,“ und „-“ wie bei session.sid_bits_per_character=6
+	private const LONG_SESSION_ID = 'k3j8vq0d1m2n,p5r6s7t8u9w-x';
 
 	/** @var FakeSessionSaveHandler */
 	private $handler;
@@ -319,6 +321,41 @@ class InternalTest extends TestCase {
 		$this->assertSame([self::SESSION_ID], $this->handler->destroyed);
 		$this->assertSame(0, $this->handler->writes);
 		$this->assertNull($session->get('user_id'));
+	}
+
+	public function providesStartFailures(): array {
+		return [
+			'files-Handler nennt die Kennung im Dateinamen' => [
+				'session_start(): open(/var/lib/php/sessions/sess_' . self::LONG_SESSION_ID . ', O_RDWR) failed: Permission denied (13)',
+				'session_start(): open(/var/lib/php/sessions/sess_***, O_RDWR) failed: Permission denied (13)',
+			],
+			'Kennung aus dem Cookie im Meldungstext' => [
+				'session_start(): Failed to read session ' . self::LONG_SESSION_ID,
+				'session_start(): Failed to read session ***',
+			],
+			'Redis-Pfad mit Zugangsdaten' => [
+				'session_start(): Failed to read session data: redis (path: tcp://127.0.0.1:6379?auth=geheim)',
+				'session_start(): Failed to read session data: redis',
+			],
+		];
+	}
+
+	/**
+	 * Die Meldung landet im Protokoll, das Admins auch unter Einstellungen >
+	 * Allgemein lesen: Speicherpfad und Sitzungskennung bleiben draußen.
+	 *
+	 * @dataProvider providesStartFailures
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function testStartFailureHidesStoragePathAndSessionId(string $failure, string $expected): void {
+		\session_name(self::SESSION_NAME);
+		$_COOKIE[self::SESSION_NAME] = self::LONG_SESSION_ID;
+		$session = (new \ReflectionClass(Internal::class))->newInstanceWithoutConstructor();
+		$property = new \ReflectionProperty(Internal::class, 'startFailure');
+		$property->setValue($session, $failure);
+
+		$this->assertSame($expected, $session->getStartFailure());
 	}
 }
 

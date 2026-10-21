@@ -18,7 +18,9 @@ keeps the lock, checks the password once and the others see the result.
 Changes made later in such a request are merged into the freshly read session
 on close.
 If the lock still cannot be acquired in time, the request continues and a
-warning in the log names the cause. A session that can be read without the lock
+warning in the log names the cause. That message leaves out the session storage
+path (it can hold Redis credentials) and session IDs, also the ones the files
+handler puts into its file names. A session that can be read without the lock
 (phpredis 5.3, and 6.3 or later with redis.session.lock_failure_readonly, which
 the server switches on itself) and holds data is used read-only, so a signed-in
 browser stays signed in. Requests with an Authorization header (sync clients,

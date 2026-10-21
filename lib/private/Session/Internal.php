@@ -216,7 +216,8 @@ class Internal extends Session {
 
 	/**
 	 * Erste Meldung des letzten Sitzungsstarts, ohne Speicherpfad (der kann bei
-	 * Redis Zugangsdaten enthalten).
+	 * Redis Zugangsdaten enthalten) und ohne Sitzungskennung (wer das Protokoll
+	 * liest, könnte damit die Sitzung übernehmen).
 	 *
 	 * @return string|null null, wenn der Start glatt lief
 	 */
@@ -224,7 +225,18 @@ class Internal extends Session {
 		if ($this->startFailure === null) {
 			return null;
 		}
-		return \preg_replace('/\s*\((?:path: )?[^()]*:\/\/[^()]*\)/', '', $this->startFailure);
+		$failure = \preg_replace('/\s*\((?:path: )?[^()]*:\/\/[^()]*\)/', '', $this->startFailure);
+		// Der files-Handler nennt die Kennung im Dateinamen, etwa „open(…/sess_<Kennung>, O_RDWR) failed“.
+		// Kennungen dürfen „,“ enthalten (session.sid_bits_per_character=6), deshalb endet sie
+		// erst vor „, “, „)“, Leerraum oder dem Textende.
+		$failure = \preg_replace('/\bsess_[A-Za-z0-9,-]+?(?=,\s|[\s)]|$)/', 'sess_***', $failure);
+		// Kurze Werte nicht ersetzen: Kennungen von PHP haben mindestens 22 Zeichen.
+		foreach ([@\session_id(), $_COOKIE[\session_name()] ?? null] as $id) {
+			if (\is_string($id) && \strlen($id) >= 16) {
+				$failure = \str_replace($id, '***', $failure);
+			}
+		}
+		return $failure;
 	}
 
 	/**
