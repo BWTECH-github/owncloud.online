@@ -53,7 +53,16 @@ class OwncloudTest extends TestCase {
 		Owncloud::init();
 		parent::tearDown();
 	}
-	
+
+	public function testSanitizeUrlMasksTokens(): void {
+		$this->assertSame(
+			'/index.php/apps/oco_office/wopi/files/7?access_token=***&access_token_ttl=0',
+			Owncloud::sanitizeUrl('/index.php/apps/oco_office/wopi/files/7?access_token=4f1a9c&access_token_ttl=0')
+		);
+		$this->assertSame('/x?a=1&requesttoken=***&password=***', Owncloud::sanitizeUrl('/x?a=1&requesttoken=abc&password=geheim'));
+		$this->assertSame('/remote.php/dav/files/u/a.txt', Owncloud::sanitizeUrl('/remote.php/dav/files/u/a.txt'));
+	}
+
 	public function testMicrosecondsLogTimestamp() {
 		$config = \OC::$server->getConfig();
 		# delete old logfile

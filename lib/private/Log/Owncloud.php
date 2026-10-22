@@ -74,6 +74,15 @@ class Owncloud {
 		self::writeExtra($app, $message, $level, $conditionalLogFile, []);
 	}
 
+	/**
+	 * Geheimnisse aus der protokollierten Adresse entfernen: WOPI-Zugriffstoken
+	 * (Collabora hängt access_token an jede Anfrage), CSRF-Token und Kennwörter
+	 * stünden sonst im Klartext in jedem Protokolleintrag dieser Anfrage.
+	 */
+	public static function sanitizeUrl(string $url): string {
+		return (string)\preg_replace('/([?&](?:access_token|requesttoken|password)=)[^&#]*/i', '$1***', $url);
+	}
+
 	public static function writeExtra($app, $message, $level, $conditionalLogFile, $extraFields = []) {
 		$config = \OC::$server->getSystemConfig();
 
@@ -102,7 +111,7 @@ class Owncloud {
 			$request = \OC::$server->getRequest();
 			$reqId = $request->getId();
 			$remoteAddr = $request->getRemoteAddress();
-			$url = ($request->getRequestUri() !== '') ? $request->getRequestUri() : '--';
+			$url = ($request->getRequestUri() !== '') ? self::sanitizeUrl($request->getRequestUri()) : '--';
 			$method = \is_string($request->getMethod()) ? $request->getMethod() : '--';
 			if (\OC::$server->getConfig()->getSystemValue('installed', false)) {
 				$user = (\OC_User::getUser()) ? \OC_User::getUser() : '--';

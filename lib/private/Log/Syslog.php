@@ -69,7 +69,7 @@ class Syslog {
 			'%user%' => $user,
 			'%app%' => $app,
 			'%method%' => \is_string($request->getMethod()) ? $request->getMethod() : '--',
-			'%url%' => ($request->getRequestUri() !== '') ? $request->getRequestUri() : '--',
+			'%url%' => ($request->getRequestUri() !== '') ? Owncloud::sanitizeUrl($request->getRequestUri()) : '--',
 			'%message%' => $message
 		];
 
