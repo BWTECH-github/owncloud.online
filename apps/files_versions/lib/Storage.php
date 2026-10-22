@@ -66,6 +66,9 @@ class Storage {
 
 	private static $sourcePathAndUser = [];
 
+	/** @var array<string, true> Pfade, deren nächster Schreibvorgang keine Version anlegt */
+	private static $skipNextVersion = [];
+
 	private static $max_versions_per_interval = [
 		//first 10sec, one version every 2sec
 		1 => ['intervalEndsAfter' => 10,      'step' => 2],
@@ -165,6 +168,19 @@ class Storage {
 	}
 
 	/**
+	 * Der nächste Schreibvorgang auf $path legt keine Version an – einmalig und nur
+	 * innerhalb dieser Anfrage. Für Editoren, die automatisch zwischenspeichern
+	 * (oco_office: Autosave von Collabora), damit nicht jedes Zwischenspeichern eine
+	 * Version erzeugt; ausdrückliches Speichern legt weiter eine an.
+	 *
+	 * @param string $path Pfad im Dateibaum des Nutzers, wie ihn die Filesystem-Hooks
+	 *                     liefern (z. B. "/Ordner/Bericht.odt")
+	 */
+	public static function skipNextVersion(string $path): void {
+		self::$skipNextVersion[Filesystem::normalizePath($path)] = true;
+	}
+
+	/**
 	 * store a new version of a file.
 	 */
 	public static function store($filename) {
@@ -174,6 +190,12 @@ class Storage {
 			$ext = \pathinfo($filename, PATHINFO_EXTENSION);
 			if ($ext === 'part') {
 				$filename = \substr($filename, 0, \strlen($filename) - 5);
+			}
+
+			$normalized = Filesystem::normalizePath($filename);
+			if (isset(self::$skipNextVersion[$normalized])) {
+				unset(self::$skipNextVersion[$normalized]);
+				return false;
 			}
 
 			// we don't support versioned directories

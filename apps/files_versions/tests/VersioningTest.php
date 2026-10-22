@@ -199,6 +199,18 @@ class VersioningTest extends TestCase {
 		Hooks::connectHooks();
 	}
 
+	public function testSkipNextVersion(): void {
+		$this->overwriteConfig(); // verbindet die Versions-Hooks
+		Filesystem::file_put_contents('autosave.txt', 'original');
+		// Zwischenspeichern eines Editors: keine Version
+		\OCA\Files_Versions\Storage::skipNextVersion('/autosave.txt');
+		Filesystem::file_put_contents('autosave.txt', 'autosave');
+		$this->assertCount(0, \OCA\Files_Versions\Storage::getVersions($this->user1, '/autosave.txt'));
+		// gilt nur einmal: der nächste Schreibvorgang legt wieder eine Version an
+		Filesystem::file_put_contents('autosave.txt', 'gespeichert');
+		$this->assertCount(1, \OCA\Files_Versions\Storage::getVersions($this->user1, '/autosave.txt'));
+	}
+
 	public function metaDataEnabledProvider(): array {
 		return [
 			'metaDisabled' => [false],
