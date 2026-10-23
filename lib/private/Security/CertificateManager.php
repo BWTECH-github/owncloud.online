@@ -330,7 +330,7 @@ class CertificateManager implements ICertificateManager {
 			return true;
 		}
 		if ($uid !== null) { // also depend on the system bundle
-			$sourceBundles[] = $this->view->filemtime($this->getCertificateBundle(null));
+			$sourceMTimes[] = $this->view->filemtime($this->getCertificateBundle(null));
 		}
 
 		$sourceMTime = \array_reduce($sourceMTimes, function ($max, $mtime) {

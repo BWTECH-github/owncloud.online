@@ -1,0 +1,10 @@
+Bugfix: Nutzerbündel folgen Änderungen am System-Zertifikatsbündel
+
+Das Zertifikatsbündel eines Kontos enthält das Systembündel. Die Prüfung, ob es
+veraltet ist, schrieb die Änderungszeit des Systembündels wegen eines
+Tippfehlers in eine Variable, die nie gelesen wurde. Importierte oder entfernte
+eine Administratorin ein System-Zertifikat, nutzten Konten mit eigenen
+hochgeladenen Zertifikaten weiter das alte Bündel. Jetzt wird ein Nutzerbündel
+neu gebaut, sobald das Systembündel jünger ist.
+
+Übernommen aus dem Upstream-Projekt (PR 41909).
