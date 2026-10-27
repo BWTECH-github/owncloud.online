@@ -1,0 +1,18 @@
+Bugfix: Zertifikatsbündel werden beim Upgrade neu gebaut
+
+Ausgehende HTTPS-Anfragen prüfen gegen ein zwischengespeichertes Bündel im
+Datenverzeichnis (files_external/rootcerts.crt). Neu gebaut wurde es bisher nur,
+wenn resources/config/ca-bundle.crt eine jüngere Änderungszeit hatte. Wer beim
+Ausrollen Zeitstempel erhält oder vereinheitlicht, vertraute deshalb weiter
+Wurzeln, die ein Update entfernt hatte.
+
+Der Reparaturschritt UpdateCertificateStore ist jetzt registriert und baut bei
+`occ upgrade` und `occ maintenance:repair` zuerst das Systembündel und danach die
+vorhandenen Nutzerbündel neu. Ein Fehler bricht das Upgrade nicht ab, sondern
+erscheint als Warnung und im Log; ein Bündel, das sich nicht neu bauen ließ,
+wird entfernt und beim nächsten Gebrauch neu erzeugt.
+
+Bei Instanzen mit sehr vielen Konten verlängert der Schritt das Upgrade, weil er
+für jedes Konto prüft, ob ein eigenes Bündel existiert.
+
+Übernommen aus dem Upstream-Projekt (PR 41910).
