@@ -1,5 +1,6 @@
 # Table of Contents
 
+* [Changelog for owncloud.online 11.0.25](#changelog-for-owncloudonline-11025-2026-10-28)
 * [Changelog for owncloud.online 11.0.24](#changelog-for-owncloudonline-11024-2026-10-21)
 * [Changelog for owncloud.online 11.0.23](#changelog-for-owncloudonline-11023-2026-10-16)
 * [Changelog for owncloud.online 11.0.22](#changelog-for-owncloudonline-11022-2026-10-02)
@@ -41,6 +42,165 @@
 * [Changelog for 10.4.1](#changelog-for-owncloud-core-1041-2020-03-30)
 * [Changelog for 10.4.0](#changelog-for-owncloud-core-1040-2020-02-10)
 * [Changelog for 10.3.2](#changelog-for-owncloud-core-1032-2019-12-04)
+# Changelog for owncloud.online [11.0.25] (2026-10-28)
+
+The following sections list the changes in owncloud.online 11.0.25 relevant to
+admins and users.
+
+[11.0.25]: https://github.com/BWTECH-github/owncloud.online
+
+## Summary
+
+* Security - Tokens und Kennwörter in der protokollierten Adresse maskiert: [#f4c475a](https://github.com/BWTECH-github/owncloud.online/commit/f4c475a)
+* Security - Widerruf und Kennwortwechsel beenden die Sitzung eines Sync-Clients: [#b8a070a](https://github.com/BWTECH-github/owncloud.online/commit/b8a070a), [#53397d1](https://github.com/BWTECH-github/owncloud.online/commit/53397d1)
+* Enhancement - Apps können die Version des nächsten Schreibvorgangs auslassen: [#a6b9cbc](https://github.com/BWTECH-github/owncloud.online/commit/a6b9cbc)
+* Bugfix - Markt-App ist direkt nach der Neuinstallation eingeschaltet: [#ed6b897](https://github.com/BWTECH-github/owncloud.online/commit/ed6b897)
+* Bugfix - Anmeldung ohne Benutzer- oder Kennwortfeld schreibt keine PHP-Deprecation mehr: [#467d479](https://github.com/BWTECH-github/owncloud.online/commit/467d479)
+* Bugfix - Fehler vor dem Versand der Reset-Mail blockiert die nächste Anforderung nicht mehr: [#07216ae](https://github.com/BWTECH-github/owncloud.online/commit/07216ae)
+* Bugfix - owncloud.online statt alter Produktnamen in den Übersetzungen: [#f4e2b9a](https://github.com/BWTECH-github/owncloud.online/commit/f4e2b9a)
+
+## Details
+
+* Security - Tokens und Kennwörter in der protokollierten Adresse maskiert
+
+   Jeder Eintrag in `owncloud.log` und im Syslog enthält die Adresse der
+   Anfrage, die ihn schrieb, samt Abfrageteil. WOPI-Clients wie Collabora
+   Online hängen das Zugriffstoken des geöffneten Dokuments als
+   `access_token` an jede Anfrage. Jeder Eintrag während einer solchen
+   Anfrage enthielt das gültige Token damit im Klartext, ebenso Einträge zu
+   Anfragen mit `requesttoken` oder `password` im Abfrageteil. In der
+   protokollierten Adresse steht jetzt `***` statt der Werte dieser drei
+   Parameter, bei den Protokollarten `owncloud` und `syslog`. Die Office-App
+   oco_office setzt diese Maskierung voraus und öffnet auf einem Server ohne
+   sie keine Dokumente.
+
+   Bekannte Einschränkung: Maskiert werden nur diese drei Abfrageparameter
+   in der Adresse des Eintrags. Tokens im Pfad einer Adresse (etwa in den
+   Links zum Zurücksetzen des Kennworts oder zum Bestätigen einer
+   Mailadresse), andere Parameter wie `log_secret` und der Text von
+   Meldungen und Ausnahmen stehen weiter unverändert im Protokoll.
+   Protokolle von vor dem Update sowie die Zugriffsprotokolle des Webservers
+   und von Collabora Online können solche Tokens noch enthalten; sie sollten
+   rotiert oder bereinigt werden.
+
+* Security - Widerruf und Kennwortwechsel beenden die Sitzung eines Sync-Clients
+
+   Sync-Clients schicken mit jeder Anfrage ihr Sitzungs-Cookie mit. Wurde
+   ein App-Passwort in den persönlichen Einstellungen widerrufen,
+   synchronisierte ein Client damit weiter: Anfragen mit dem widerrufenen
+   App-Passwort und dem Cookie und Anfragen nur mit dem Cookie bekamen 207.
+   Sitzungen, die ein Client selbst begonnen hatte (WebDAV, HTTP Basic,
+   OAuth2), prüfte der Server nie gegen die Anmeldung, mit der sie begannen,
+   und jede Anfrage verlängerte sie. „Sitzung entfernen“ unter „Sitzungen“
+   wirkte nicht, weil die nächste Anfrage das Sitzungstoken neu anlegte.
+   Nach dem Widerruf einer Desktop-Freigabe (OAuth2) galt die Sitzung mit
+   dem Cookie allein weiter, und ein Kennwortwechsel beendete keine dieser
+   Sitzungen.
+
+   Der Server prüft diese Sitzungen jetzt vor jeder Anfrage, wie
+   Browser-Sitzungen. Ein widerrufenes App-Passwort beendet die Sitzung mit
+   der nächsten Anfrage, auch wenn der Client nur das Cookie schickt, ebenso
+   das Entfernen der Sitzung unter „Sitzungen“. Alle `last_check_timeout`
+   Minuten (App-Wert `core`, Vorgabe 5) prüft der Server das Kennwort, das
+   in der Sitzung oder im App-Passwort hinterlegt ist; gilt es nicht mehr,
+   endet die Sitzung. Bei OAuth2 und OpenID Connect braucht jede Anfrage
+   einen Authorization-Kopf, den das Anmeldemodul für den Nutzer der Sitzung
+   bestätigt: Einen anderen oder fehlenden Kopf prüft es sofort, denselben
+   wieder nach `last_check_timeout` Minuten. Ein abgelaufenes Token beendet
+   die Sitzung bei WebDAV nicht, und Token-Erneuerung sowie
+   OpenID-Connect-Discovery lassen sie unberührt.
+
+   Verhaltensänderungen nach dem Update: Sitzungen von vor dem Update, die
+   ohne App-Passwort nur das Cookie schicken, melden sich einmal neu an.
+   App-Passwörter, die vor einem Kennwortwechsel entstanden, prüft der
+   Server jetzt auch in laufenden Sitzungen; sie werden mit der nächsten
+   Prüfung ungültig, wie bisher schon bei einer neuen Anmeldung damit, und
+   die Geräte brauchen ein neues App-Passwort. Ausgenommen sind Konten aus
+   LDAP, deren App-Passwörter widerrufen werden müssen. Anfragen, die zu
+   einer per OAuth2 begonnenen Sitzung nur das Cookie ohne Token schicken,
+   bekommen 401; Desktop- und Mobil-Clients senden das Token immer mit. Jede
+   Prüfung mit einem veralteten Kennwort steht als „Login failed“ im
+   Protokoll und zählt für die Bremse gegen Passwort-Raten. Hinter einer
+   gemeinsamen Adresse (NAT) können viele solcher Prüfungen nach einem
+   Kennwortwechsel die Bremse für alle Anmeldungen von dieser Adresse
+   auslösen.
+
+   Eine beendete Sitzung wird abgemeldet und ihr Sitzungstoken gelöscht; das
+   Protokoll meldet auf Stufe info „Client session of `<konto>` ended:
+   `<Grund>`“. Browser-Sitzungen, öffentliche Links, Gäste und die frühe
+   Freigabe der Sitzungssperre für Sync-Clients bleiben unverändert. Die
+   Doku beschreibt das Verhalten unter Fehlersuche im Abschnitt „Client nach
+   Widerruf abgemeldet“.
+
+   Bekannte Einschränkung: Hat eine Sitzung mit Kennwort ihr Sitzungstoken
+   mit einer Anfrage bekommen, die nur das Cookie trug, ist darin kein
+   Kennwort hinterlegt, und ein Kennwortwechsel beendet sie nicht. Dann
+   hilft „Sitzung entfernen“ unter „Sitzungen“.
+
+* Enhancement - Apps können die Version des nächsten Schreibvorgangs auslassen
+
+   Editoren, die ein geöffnetes Dokument selbst zwischenspeichern, etwa
+   Collabora Online in der Office-App oco_office, legten bei jedem
+   Zwischenspeichern eine neue Version der Datei an. Mit der neuen Methode
+   `OCA\Files_Versions\Storage::skipNextVersion($path)` teilt eine App der
+   Versionsverwaltung mit, dass der nächste Schreibvorgang auf diesen Pfad
+   keine Version anlegt, einmalig und nur innerhalb der laufenden Anfrage.
+   Der folgende Schreibvorgang legt wieder eine an, ausdrückliches Speichern
+   also weiterhin. Der Pfad ist der im Dateibaum des Nutzers, wie ihn die
+   Dateisystem-Hooks liefern (etwa `/Dokumente/Bericht.odt`). Für
+   Schreibvorgänge ohne diesen Aufruf ändert sich nichts.
+
+* Bugfix - Markt-App ist direkt nach der Neuinstallation eingeschaltet
+
+   Eine Neuinstallation trug `apps-external` erst nach der Einrichtung der
+   mitgelieferten Apps als App-Verzeichnis in die `config.php` ein. Der
+   Installer fand die Markt-App deshalb nicht, und sie blieb aus, bis das
+   erste Update sie mit `occ upgrade` einschaltete. Die App-Verzeichnisse
+   stehen jetzt vorher fest, und `occ maintenance:install` wie der
+   Web-Installer schalten die Markt-App ein, wie es die
+   Installationsanleitung beschreibt. Bestehende Installationen, Updates und
+   vorgegebene `apps_paths` ändern sich nicht.
+
+   Die Markt-App fragt den Katalog unter `appstoreurl` ab (Vorgabe
+   `https://marketplace.owncloud.online`), einmal am Tag auch ohne Zutun
+   eines Admins über einen Hintergrundjob, der nach App-Updates sucht. Wer
+   das nicht möchte, setzt `appstoreurl` auf `local` oder schaltet die App
+   mit `occ app:disable market` ab; ein späteres `occ upgrade` schaltet sie
+   dann nicht wieder ein.
+
+* Bugfix - Anmeldung ohne Benutzer- oder Kennwortfeld schreibt keine PHP-Deprecation mehr
+
+   Ein Anmeldeformular ohne Feld für Benutzer oder Kennwort, oder mit einem
+   davon als Liste (`user[]=x`), erreichte die Kennwortprüfung mit null, und
+   PHP schrieb für jedes der beiden Felder „Passing null to parameter“ aus
+   `str_replace()` ins Protokoll. Ein fehlendes Feld gilt jetzt als leer.
+   Kommt ein Benutzername oder Kennwort auf anderem Weg als Liste an (etwa
+   über OCS oder den Token-Endpunkt), scheitert die Prüfung sofort, bevor
+   die Bremse gegen Passwort-Raten oder ein Benutzer-Backend die Liste
+   sieht. Die Anmeldung scheitert in beiden Fällen wie bisher.
+
+* Bugfix - Fehler vor dem Versand der Reset-Mail blockiert die nächste Anforderung nicht mehr
+
+   Das Zurücksetzen des Kennworts speicherte sein Token, bevor die Mail
+   zusammengestellt war. Scheiterte das Zusammenstellen, etwa beim Rendern
+   der Vorlagen, blieb das Token gespeichert, und jede neue Anforderung in
+   den nächsten fünf Minuten galt als Wiederholung: Es ging keine Mail
+   hinaus, die Seite meldete aber Erfolg. Das Token wird jetzt erst
+   unmittelbar vor der Übergabe an den Mailserver gespeichert. Ein solcher
+   Fehler lässt den Stand von vor der Anforderung stehen, ein älterer, noch
+   gültiger Link bleibt also gültig. Das ergänzt die Korrektur zu „Erneut
+   anfordern“ aus 11.0.24.
+
+* Bugfix - owncloud.online statt alter Produktnamen in den Übersetzungen
+
+   In 68 Texten der Übersetzungen von Kern und mitgelieferten Apps stand
+   noch der alte Produktname, teils falsch geschrieben oder in kyrillischer
+   Umschrift, etwa im deutschen Hinweis zum Einzelbenutzermodus und in den
+   Hinweisen zu vertrauenswürdigen und föderierten Servern. Sie nennen jetzt
+   owncloud.online, jeweils in der `.json`- und der `.js`-Datei der Sprache.
+   Beispielpfade im Hinweis zum Teilen und Platzhalter bleiben unverändert.
+   Ein Test durchsucht alle Übersetzungen nach den alten Schreibweisen.
+
 # Changelog for owncloud.online [11.0.24] (2026-10-21)
 
 The following sections list the changes in owncloud.online 11.0.24 relevant to
