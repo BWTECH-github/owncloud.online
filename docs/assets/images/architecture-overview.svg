@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
-  <title id="title">owncloud.online Architektur</title>
-  <desc id="desc">Übersicht der Komponenten: Benutzer, Webserver, owncloud.online Core, Apps, Datenbank, Speicher, Market Backend und Desktop Client.</desc>
+  <title id="title">owncloud.online im Überblick</title>
+  <desc id="desc">Benutzer erreichen mit Browser, Desktop-Client, mobilen Apps oder WebDAV-Programmen den Webserver. Dahinter liegt der owncloud.online-Server mit Dateien, Freigaben und Apps. Er nutzt Datenbank und Speicher und holt Apps aus dem Marketplace.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#f8fafc"/>
@@ -18,59 +18,61 @@
     </marker>
   </defs>
   <rect width="1280" height="720" fill="url(#bg)"/>
-  <text x="70" y="78" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800" fill="#0f172a">owncloud.online Systemübersicht</text>
-  <text x="70" y="112" font-family="Inter, Arial, sans-serif" font-size="18" fill="#475569">PHP 8.4 Core, eigene Apps, Market Backend und Desktop Client</text>
+  <text x="70" y="78" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800" fill="#0f172a">owncloud.online im Überblick</text>
+  <text x="70" y="112" font-family="Inter, Arial, sans-serif" font-size="18" fill="#475569">Server mit PHP 8.4, Apps aus dem Marketplace, Desktop-Client</text>
 
   <g filter="url(#shadow)">
     <rect x="70" y="165" width="250" height="140" rx="16" fill="url(#card)" stroke="#dbeafe"/>
     <text x="95" y="210" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800" fill="#0f172a">Benutzer</text>
-    <text x="95" y="244" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">Browser, Mobile Apps,</text>
-    <text x="95" y="268" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">Desktop Client</text>
+    <text x="95" y="244" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">Browser, Desktop-Client,</text>
+    <text x="95" y="268" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">mobile Apps, WebDAV</text>
   </g>
 
   <g filter="url(#shadow)">
     <rect x="405" y="145" width="320" height="180" rx="16" fill="url(#card)" stroke="#ccfbf1"/>
     <text x="430" y="190" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800" fill="#0f172a">Webserver</text>
-    <text x="430" y="224" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">Apache oder Nginx</text>
+    <text x="430" y="224" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">Apache oder nginx</text>
     <text x="430" y="248" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">PHP-FPM 8.4</text>
-    <text x="430" y="272" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">HTTPS, Rewrite, Headers</text>
+    <text x="430" y="272" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">HTTPS, Rewrite, Header</text>
   </g>
 
   <g filter="url(#shadow)">
     <rect x="815" y="120" width="360" height="230" rx="18" fill="#0f172a" stroke="#164e63"/>
-    <text x="845" y="170" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800" fill="#ffffff">owncloud.online Core</text>
-    <text x="845" y="208" font-family="Inter, Arial, sans-serif" font-size="15" fill="#cbd5e1">Version 11.0.0</text>
-    <text x="845" y="232" font-family="Inter, Arial, sans-serif" font-size="15" fill="#cbd5e1">ownCloud Fork für PHP 8.4</text>
-    <text x="845" y="256" font-family="Inter, Arial, sans-serif" font-size="15" fill="#cbd5e1">OCS, WebDAV, Sharing, Files</text>
+    <text x="845" y="170" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800" fill="#ffffff">owncloud.online Server</text>
+    <text x="845" y="208" font-family="Inter, Arial, sans-serif" font-size="15" fill="#cbd5e1">Dateien, Freigaben, Versionen</text>
+    <text x="845" y="232" font-family="Inter, Arial, sans-serif" font-size="15" fill="#cbd5e1">WebDAV und OCS-API</text>
+    <text x="845" y="256" font-family="Inter, Arial, sans-serif" font-size="15" fill="#cbd5e1">Konten, Gruppen, Apps</text>
     <rect x="845" y="285" width="280" height="38" rx="10" fill="#00c8b4"/>
-    <text x="870" y="310" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="800" fill="#042f2e">apps-external und Market-App</text>
+    <text x="870" y="310" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="800" fill="#042f2e">Apps und Market-App</text>
   </g>
 
   <g filter="url(#shadow)">
-    <rect x="120" y="440" width="250" height="140" rx="16" fill="url(#card)" stroke="#dbeafe"/>
-    <text x="145" y="485" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800" fill="#0f172a">Market Backend</text>
-    <text x="145" y="519" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">Plugin-Katalog</text>
-    <text x="145" y="543" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">Pakete, Screenshots,</text>
-    <text x="145" y="567" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">Changelogs, API-Key</text>
+    <rect x="90" y="440" width="300" height="150" rx="16" fill="url(#card)" stroke="#dbeafe"/>
+    <text x="115" y="485" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800" fill="#0f172a">Marketplace</text>
+    <text x="115" y="519" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">marketplace.owncloud.online</text>
+    <text x="115" y="543" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">App-Katalog und Pakete</text>
+    <text x="115" y="567" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">API-Schlüssel für weitere Apps</text>
   </g>
 
   <g filter="url(#shadow)">
-    <rect x="455" y="445" width="250" height="140" rx="16" fill="url(#card)" stroke="#dbeafe"/>
+    <rect x="455" y="445" width="250" height="150" rx="16" fill="url(#card)" stroke="#dbeafe"/>
     <text x="480" y="490" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800" fill="#0f172a">Datenbank</text>
-    <text x="480" y="524" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">MariaDB/MySQL</text>
-    <text x="480" y="548" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">SQLite nur lokal</text>
+    <text x="480" y="524" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">MariaDB/MySQL (empfohlen)</text>
+    <text x="480" y="548" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">PostgreSQL</text>
+    <text x="480" y="572" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">SQLite nur zum Testen</text>
   </g>
 
   <g filter="url(#shadow)">
-    <rect x="790" y="445" width="250" height="140" rx="16" fill="url(#card)" stroke="#dbeafe"/>
-    <text x="815" y="490" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800" fill="#0f172a">Storage</text>
-    <text x="815" y="524" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">Data-Verzeichnis</text>
-    <text x="815" y="548" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">S3 Primary optional</text>
+    <rect x="790" y="445" width="250" height="150" rx="16" fill="url(#card)" stroke="#dbeafe"/>
+    <text x="815" y="490" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800" fill="#0f172a">Speicher</text>
+    <text x="815" y="524" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">Datenverzeichnis</text>
+    <text x="815" y="548" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">S3 als Primärspeicher</text>
+    <text x="815" y="572" font-family="Inter, Arial, sans-serif" font-size="15" fill="#475569">externe Speicher</text>
   </g>
 
   <path d="M320 235 H405" stroke="#0f766e" stroke-width="4" fill="none" marker-end="url(#arrow)"/>
   <path d="M725 235 H815" stroke="#0f766e" stroke-width="4" fill="none" marker-end="url(#arrow)"/>
   <path d="M995 350 V445" stroke="#0f766e" stroke-width="4" fill="none" marker-end="url(#arrow)"/>
   <path d="M890 350 C780 395 690 410 590 445" stroke="#0f766e" stroke-width="4" fill="none" marker-end="url(#arrow)"/>
-  <path d="M815 300 C620 370 450 400 370 485" stroke="#0f766e" stroke-width="4" fill="none" marker-end="url(#arrow)"/>
+  <path d="M815 300 C620 370 470 400 390 490" stroke="#0f766e" stroke-width="4" fill="none" marker-end="url(#arrow)"/>
 </svg>

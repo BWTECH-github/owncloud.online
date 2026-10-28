@@ -2,21 +2,29 @@
 
 Ein Teil des Funktionsumfangs von owncloud.online steckt in Apps: Papierkorb,
 Versionen, externe Speicher und Freigaben sind ebenso Apps wie später
-nachinstallierte Erweiterungen. Diese Seite beschreibt die drei Wege, eine App
-in eine Instanz zu bekommen, wie Sie Apps ein- und ausschalten, wie Sie Version
+nachinstallierte Erweiterungen. Eine App kommt auf drei Wegen in eine Instanz:
+über den Markt in der Weboberfläche, als Paket von Hand und über `occ`. Diese
+Seite beschreibt außerdem, wie Sie Apps ein- und ausschalten, wie Sie Version
 und Verträglichkeit prüfen und was beim Entfernen einer App mit ihren Daten
 geschieht.
 
 Es gibt zwei Sorten von Apps:
 
-* **Mitgelieferte Apps** stehen in `core/shipped.json` und kommen mit dem
-  Server. Sie lassen sich abschalten, aber nicht entfernen. Drei davon —
-  `files`, `dav` und `federatedfilesharing` — lassen sich nicht einmal
-  abschalten; `occ app:disable` bricht bei ihnen mit „can't be disabled" ab.
-* **Nachinstallierte Apps** liegen im selben Verzeichnisbaum, sind aber nicht
-  Teil des Servers. Nur sie lassen sich wieder löschen.
+* **Mitgelieferte Apps** stehen in `core/shipped.json`. Sie lassen sich
+  abschalten, aber nicht entfernen. Drei davon, `files`, `dav` und
+  `federatedfilesharing`, lassen sich nicht einmal abschalten; `occ
+  app:disable` bricht bei ihnen mit „can't be disabled.“ ab.
+* **Nachinstallierte Apps** kommen aus dem Marketplace oder als Paket und
+  liegen normalerweise in `apps-external/`. Nur sie lassen sich wieder löschen.
 
-## Was ist vorhanden?
+Die Liste in `core/shipped.json` und das Release-Archiv decken sich nicht ganz:
+`encryption` und `configreport` stehen in der Liste, liegen aber nicht im
+Archiv, sondern kommen aus dem Marketplace. Sie gelten trotzdem als
+mitgeliefert und lassen sich nur abschalten. Umgekehrt liegen `comments`,
+`systemtags` und `oco_mcp` im Archiv unter `apps/`, stehen aber nicht in der
+Liste.
+
+## Vorhandene Apps anzeigen
 
 ```bash
 sudo -u www-data php8.4 occ app:list
@@ -33,14 +41,14 @@ sudo -u www-data php8.4 occ app:list --enabled
 # kurze Liste, nur Name und Version
 sudo -u www-data php8.4 occ app:list --minimal
 
-# nur nachinstallierte Apps (mitgelieferte: --shipped true)
+# nur Apps, die nicht in core/shipped.json stehen (Gegenstück: --shipped true)
 sudo -u www-data php8.4 occ app:list --shipped false
 
 # Verzeichnis einer einzelnen App
 sudo -u www-data php8.4 occ app:getpath files_external
 ```
 
-In der Weboberfläche zeigt *Einstellungen → Administration → Apps* dieselbe
+In der Weboberfläche zeigt **Einstellungen → Administration → Apps** dieselbe
 Liste unter der Überschrift **Verwaltung der Apps**.
 
 ## Weg 1: über den Markt in der Weboberfläche
@@ -53,16 +61,20 @@ Die linke Spalte führt durch den Katalog:
 | Eintrag | Inhalt |
 | --- | --- |
 | *Entdecken* | Startseite des Katalogs |
-| *Installierte Apps* | alle in dieser Instanz vorhandenen Apps mit Version, Autor, Status und Kompatibilität |
+| *Installierte Apps* | alle in dieser Instanz vorhandenen Apps mit Version, Autor, Status und Kompatibilität; Filter *Alle*, *Aktiviert*, *Deaktiviert* |
 | *App-Bundles* | zusammengefasste Pakete mehrerer Apps |
 | *Updates* | Apps, für die im Katalog eine neuere Fassung liegt |
 | *Kategorien* | Katalog nach Kategorien |
-| *Cache leeren* | verwirft die zwischengespeicherte Katalogantwort |
+| *API Schlüssel hinzufügen* (Sprachfassung *Deutsch (Förmlich: Sie)*: *API Key hinzufügen*) | Schlüssel für Apps, die nur mit API-Schlüssel sichtbar sind, siehe [Apps mit API-Schlüssel](#apps-mit-api-schlussel) |
+| *Cache leeren* (förmlich: *Zwischenspeicher leeren*) | verwirft die zwischengespeicherte Katalogantwort |
 
-![Die Übersicht „Installierte Apps" im Markt](../assets/screenshots/owncloud-online-apps.png)
+<figure markdown="span">
+  ![Market-App, Ansicht Entdecken mit App-Kacheln und Kategorien](../assets/screenshots/de/market.png)
+  <figcaption>In der Market-App suchen und installieren Sie Apps aus dem Marketplace.</figcaption>
+</figure>
 
-Eine App wird über ihre Detailseite installiert. Nach der Installation liegt sie
-im beschreibbaren App-Verzeichnis (siehe
+Eine App wird über ihre Detailseite installiert (*Details*, dann
+*Installieren*). Danach liegt sie im beschreibbaren App-Verzeichnis (siehe
 [Schreibrechte](#schreibrechte-auf-das-app-verzeichnis)) und ist aktiviert.
 
 Der Katalog, den der Markt abfragt, steht in `appstoreurl`. Ohne Eintrag ist das
@@ -81,46 +93,113 @@ Ein `file://`-Pfad oder das Schlüsselwort `local` schalten den Markt auf einen
 örtlichen Katalog um; jeder andere Wert wird als Adresse eines
 Katalog-Servers behandelt.
 
-## Weg 2: Paket von Hand nach `apps/`
+## Apps mit API-Schlüssel {#apps-mit-api-schlussel}
+
+Einige Apps liefert der Marketplace nur an Instanzen aus, die einen
+API-Schlüssel mitsenden. Ohne Schlüssel fehlen sie im Katalog, und der Download
+wird mit HTTP 401 abgewiesen. Den Schlüssel erhalten Sie auf Anfrage von der
+BW-Tech GmbH.
+
+Mit owncloud.online 11.0.25 betrifft das diese Apps:
+
+| App-ID | Name im Markt |
+| --- | --- |
+| `audit_log` | Audit Log |
+| `bwtalk` | BWTalk |
+| `calendar` | Calendar |
+| `file_firewall` | BW-Tech File Firewall |
+| `oco_expire` | Auto Expire |
+| `oco_office` | Office (Collabora Online) |
+| `schwarzes_brett` | Schwarzes Brett |
+| `theme-owncloudonline` | owncloud.online Theme |
+| `user_shibboleth` | SAML/SSO Integration |
+| `wnd` | Windows Network Drive (Custom) |
+| `workflow` | Workflow |
+
+Schlüssel in der Weboberfläche eintragen:
+
+1. Im App-Menü **Markt** öffnen.
+2. In der linken Spalte unter *Einstellungen* auf **API Schlüssel
+   hinzufügen** klicken (förmlich: **API Key hinzufügen**).
+3. Im Dialog **Marketplace-API-Key** den Schlüssel in das Feld **Dein
+   persönlicher API-Key** einfügen und **Speichern** klicken.
+
+Nach dem Speichern lädt der Markt den Katalog neu, und die zusätzlichen Apps
+erscheinen in der Liste. Bei einem falschen Schlüssel meldet der Dialog „Der
+API-Key ist ungültig!“. Ist ein Schlüssel hinterlegt, heißt der Eintrag
+**Bearbeite API Schlüssel** (förmlich: **API Key bearbeiten**). Erscheinen die
+Apps nicht, hilft *Cache leeren*.
+
+<figure markdown="span">
+  ![Market-App mit geöffnetem Dialog Marketplace-API-Key und Eingabefeld](../assets/screenshots/de/market-api-key.png)
+  <figcaption>Apps, die nur mit API-Schlüssel sichtbar sind, erscheinen erst nach Eingabe des Schlüssels. „API Schlüssel hinzufügen“ öffnet diesen Dialog, den Schlüssel erhalten Sie von der BW-Tech GmbH.</figcaption>
+</figure>
+
+Auf der Kommandozeile setzen Sie den Schlüssel als App-Wert oder in
+`config/config.php`:
+
+```bash
+sudo -u www-data php8.4 occ config:app:set market key --value '<SCHLÜSSEL>'
+```
+
+```php
+'marketplace.key' => '<SCHLÜSSEL>',
+```
+
+Der Eintrag in der `config.php` hat Vorrang. Steht er dort, lässt sich der
+Schlüssel in der Oberfläche nicht mehr ändern; der Markt meldet dann, dass er in
+der `config.php` gesetzt ist. Nach dem Setzen auf der Kommandozeile im Markt
+*Cache leeren* aufrufen, damit der Katalog neu geladen wird.
+
+Danach installieren Sie die Apps wie jede andere über ihre Detailseite oder mit
+`occ market:install <app_id>`.
+
+## Weg 2: Paket von Hand ablegen
 
 Dieser Weg braucht weder Netzzugang noch die Markt-App und ist der einzige, der
-auch in einer Instanz mit schreibgeschütztem App-Verzeichnis funktioniert — die
+auch in einer Instanz mit schreibgeschütztem App-Verzeichnis funktioniert. Die
 Dateien legt dann nicht der Webserver ab, sondern Sie selbst.
 
 Ein App-Paket ist ein `.tar.gz`, das ein einzelnes Verzeichnis mit der Datei
 `appinfo/info.xml` enthält. **Der Verzeichnisname muss der `<id>` aus dieser
-Datei entsprechen** — der Server sucht eine App ausschließlich unter einem
+Datei entsprechen**, denn der Server sucht eine App ausschließlich unter einem
 Verzeichnis mit ihrem Bezeichner.
 
 ```bash
-cd /var/www/owncloud.online/apps
+cd /var/www/owncloud.online/apps-external
 sudo tar -xzf /pfad/zum/paket.tar.gz
-sudo chown -R www-data:www-data /var/www/owncloud.online/apps/<app_id>
+sudo chown -R www-data:www-data /var/www/owncloud.online/apps-external/<app_id>
 sudo -u www-data php8.4 /var/www/owncloud.online/occ app:enable <app_id>
 ```
 
+Fehlt `apps-external/` in Ihrer Instanz, richten Sie es wie im Abschnitt
+[Apps außerhalb von `apps/` ablegen](#apps-ausserhalb-von-apps-ablegen) ein.
+Pakete unter `apps/` überschreibt das nächste Server-Update.
+
 Das Aktivieren erledigt die Einrichtung mit: Datenbankmigrationen der App,
 `appinfo/install.php`, Registrierung ihrer Hintergrund-Jobs und die
-Install-Reparaturschritte laufen dabei. Vorher prüft der Server die
+Reparaturschritte für die Installation laufen dabei. Vorher prüft der Server die
 Abhängigkeiten und bricht ab, wenn eine nicht erfüllt ist.
 
 Wird eine bereits vorhandene App durch eine neuere Fassung ersetzt, genügt
-`app:enable` nicht — die Migrationen der neuen Version laufen erst mit:
+`app:enable` nicht. Die Migrationen der neuen Version laufen erst mit:
 
 ```bash
 sudo -u www-data php8.4 occ upgrade
 ```
 
 Verglichen wird dabei die Version aus `appinfo/info.xml` mit dem in der
-Datenbank vermerkten `installed_version`. Unterscheiden sich nur die letzten
-Stellen der Versionsnummer, wird der Vermerk stillschweigend nachgezogen, ohne
-Migrationen auszuführen.
+Datenbank vermerkten Wert `installed_version`. Bleiben Haupt- und Nebenversion
+gleich (etwa 1.3.10 und 1.3.11), trägt der Server nur die neue Nummer ein und
+führt keine Migrationen aus.
 
-### Apps außerhalb von `apps/` ablegen
+### Apps außerhalb von `apps/` ablegen {#apps-ausserhalb-von-apps-ablegen}
 
 Ein Server-Update ersetzt den Codebaum und damit alles, was unter `apps/`
 liegt. Damit nachinstallierte Apps das überstehen, sieht die Konfiguration ein
-zweites Verzeichnis vor. In `config/config.php`:
+zweites Verzeichnis vor. Neuinstallationen tragen beide Verzeichnisse bei der
+Einrichtung selbst in `config/config.php` ein, `apps-external/` als
+beschreibbar. In älteren Instanzen ergänzen Sie den Eintrag von Hand:
 
 ```php
 'apps_paths' => [
@@ -140,12 +219,12 @@ zweites Verzeichnis vor. In `config/config.php`:
 Jeder Eintrag braucht alle drei Schlüssel: `path` als absoluter Pfad im
 Dateisystem, `url` als Pfad relativ zum Web-Wurzelverzeichnis mit führendem
 Schrägstrich, und `writable`. Neue Apps landen ausschließlich in dem
-Verzeichnis, dessen `writable` auf `true` steht — gibt es mehrere, gewinnt das
+Verzeichnis, dessen `writable` auf `true` steht; gibt es mehrere, gewinnt das
 erste. Ist `apps_paths` gar nicht gesetzt, benutzt der Server `apps/` und
 behandelt es als beschreibbar.
 
 Das Verzeichnis muss existieren, bevor Sie es eintragen; andernfalls startet
-der Server nicht mehr, sondern meldet „App directory … not found!".
+der Server nicht mehr, sondern meldet „App directory … not found!“.
 
 ## Weg 3: über `occ`
 
@@ -156,7 +235,7 @@ Verfügung, solange diese App aktiviert ist.
 # Bezeichner aller Apps im Katalog
 sudo -u www-data php8.4 occ market:list
 
-# App aus dem Katalog installieren
+# App aus dem Katalog installieren und aktivieren
 sudo -u www-data php8.4 occ market:install <app_id>
 
 # mehrere auf einmal
@@ -166,10 +245,11 @@ sudo -u www-data php8.4 occ market:install <app_id> <app_id>
 sudo -u www-data php8.4 occ market:install --local /pfad/zum/paket.tar.gz
 ```
 
-`market:install` auf eine bereits vorhandene App spielt ein verfügbares
-Minor-Update ein. Liegt im Katalog nur eine neue Hauptversion, passiert nichts;
+`market:install` auf eine bereits vorhandene App spielt ein verfügbares Update
+innerhalb derselben Hauptversion ein. Liegt im Katalog nur eine neue
+Hauptversion, passiert nichts;
 stattdessen erscheint der Hinweis „Major update is available, use
-market:upgrade --major".
+market:upgrade --major <app_id>.“
 
 Updates:
 
@@ -197,16 +277,16 @@ verändern und gehört auf einen Zeitpunkt, an dem eine Sicherung vorliegt.
 `market:install`, `market:upgrade` und `market:uninstall` prüfen zuerst, ob das
 App-Verzeichnis beschreibbar ist. `market:install` und `market:upgrade` brechen
 sonst mit „Installing apps is not supported because the app folder is not
-writable." ab, `market:uninstall` mit „Un-Installing apps is not supported
-because the app folder is not writable.".
+writable.“ ab, `market:uninstall` mit „Un-Installing apps is not supported
+because the app folder is not writable.“.
 
-Die mitgelieferten Apps kommen mit dem Server. Sie stecken im Release-Archiv
+Die Apps unter `apps/` kommen mit dem Server. Sie stecken im Release-Archiv
 `owncloud-online-<version>.tar.gz` beziehungsweise `.zip` unter
 [github.com/BWTECH-github/owncloud.online/releases](https://github.com/BWTECH-github/owncloud.online/releases)
 und werden nicht einzeln nachinstalliert, sondern mit dem Server aktualisiert.
 Zu jedem Release gehören außerdem `SHA256SUMS.txt` zur Prüfung der Archive,
 `sbom-owncloud-online-<version>.cdx.json`, `release-manifest.json` und
-`removed-release-files.txt`. Aktuelle Fassung ist 11.0.25.
+`removed-release-files.txt`. Diese Seite beschreibt den Stand 11.0.25.
 
 ## Aktivieren und abschalten
 
@@ -222,52 +302,61 @@ für Mitglieder dieser Gruppen vorhanden:
 sudo -u www-data php8.4 occ app:enable <app_id> --groups buchhaltung -g vertrieb
 ```
 
-In der Weboberfläche stehen unter *Einstellungen → Administration → Apps* an
-jeder App die Knöpfe *Aktivieren* beziehungsweise *Deaktivieren* und die
+In der Weboberfläche stehen unter **Einstellungen → Administration → Apps** an
+jeder App die Schaltflächen *Aktivieren* beziehungsweise *Deaktivieren* und die
 Auswahl *Nur für bestimmte Gruppen aktivieren*.
+
+<figure markdown="span">
+  ![Administration, Apps: App-Kacheln mit Version, Autor und der Schaltfläche Deaktivieren](../assets/screenshots/de/admin-apps.png)
+  <figcaption>Unter „Apps“ schalten Sie installierte Apps ein und aus. Manche Apps lassen sich auf bestimmte Gruppen beschränken.</figcaption>
+</figure>
 
 Zwei Punkte, die regelmäßig überraschen:
 
 * Eine App bringt ihre `occ`-Befehle nur mit, solange sie aktiviert ist. Nach
   `app:disable files_external` verschwinden alle `files_external:*`-Befehle aus
   `occ list`, nach `app:disable market` alle `market:*`-Befehle.
-* Die Uninstall-Reparaturschritte einer App laufen nur beim Abschalten über die
-  Weboberfläche. `occ app:disable` setzt den Zustand direkt und überspringt sie.
+* Die Reparaturschritte einer App für die Deinstallation laufen nur beim
+  Abschalten über die Weboberfläche. `occ app:disable` setzt den Zustand direkt und überspringt sie.
   Die Daten der App bleiben in beiden Fällen erhalten, siehe
   [unten](#eine-app-wieder-loswerden).
 
 Apps mit dem Typ `filesystem`, `prelogin`, `authentication`, `logging`,
 `prevent_group_restriction` oder `theme` lassen sich nicht auf Gruppen
-beschränken — `app:enable --groups` bricht bei ihnen mit „can't be enabled for
-groups." ab. Von den Theme-Apps kann immer nur eine aktiv sein: Das Aktivieren
-einer zweiten scheitert mit „… can't be enabled until … is disabled."
+beschränken; `app:enable --groups` bricht bei ihnen mit „can't be enabled for
+groups.“ ab. Von den Theme-Apps kann immer nur eine aktiv sein: Das Aktivieren
+einer zweiten scheitert mit „… can't be enabled until … is disabled.“
 
 ## Version und Verträglichkeit prüfen
 
 Jede App erklärt in `appinfo/info.xml`, mit welchen Server- und PHP-Versionen
-sie zusammenarbeitet. Vor dem Aktivieren wird das geprüft; schlägt die Prüfung
-fehl, nennt die Meldung die unerfüllte Bedingung:
+sie zusammenarbeitet. Beim Aktivieren über `occ app:enable` und über
+**Einstellungen → Administration → Apps** wird das geprüft. `occ market:install`
+prüft vor dem Einschalten nur, ob die App zur Serverversion passt; fehlende
+PHP-Erweiterungen oder Programme fallen dann erst im Betrieb auf. Schlägt die
+Prüfung fehl, nennt die Meldung die unerfüllte Bedingung:
 
 | Meldung | Bedeutung |
 | --- | --- |
-| „Server version %s or higher is required." | Die App verlangt eine neuere Serverversion |
-| „Server version %s or lower is required." | Die App ist für diese Serverversion nicht freigegeben |
-| „PHP %s or higher is required." | Die PHP-Version des Servers ist zu alt |
-| „PHP with a version lower than %s is required." | Die App verträgt diese PHP-Version nicht |
-| „The library %s is not available." | Eine PHP-Erweiterung fehlt |
-| „The command line tool %s could not be found" | Ein vorausgesetztes Programm fehlt auf dem Server |
-| „Following databases are supported: %s" | Die App unterstützt das eingesetzte Datenbanksystem nicht |
+| „Server version %s or higher is required.“ | Die App verlangt eine neuere Serverversion |
+| „Server version %s or lower is required.“ | Die App ist für diese Serverversion nicht freigegeben |
+| „PHP %s or higher is required.“ | Die PHP-Version des Servers ist zu alt |
+| „PHP with a version lower than %s is required.“ | Die App verträgt diese PHP-Version nicht |
+| „The library %s is not available.“ | Eine PHP-Erweiterung fehlt |
+| „The command line tool %s could not be found“ | Ein vorausgesetztes Programm fehlt auf dem Server |
+| „Following databases are supported: %s“ | Die App unterstützt das eingesetzte Datenbanksystem nicht |
 
 Im Markt steht das Ergebnis unter *Installierte Apps* in der Spalte
 *Kompatibilität*: entweder *OK* oder *Fehlende Abhängigkeiten* samt Aufzählung
-des Fehlenden. Unter *Einstellungen → Administration → Apps* ist der
-*Aktivieren*-Knopf in diesem Fall ausgegraut, darüber steht „Die App kann nicht
-installiert werden, weil die folgenden Abhängigkeiten nicht erfüllt sind:".
+des Fehlenden. Unter **Einstellungen → Administration → Apps** ist die
+Schaltfläche *Aktivieren* in diesem Fall ausgegraut, darüber steht „Die App
+kann nicht installiert werden, weil die folgenden Abhängigkeiten nicht erfüllt
+sind:“.
 
 Zwei weitere Hinweise erscheinen dort, ohne die Installation zu verhindern:
 Fehlt in der `info.xml` die minimale oder die maximale Serverversion, meldet die
-Oberfläche das ausdrücklich. Solche Apps sind ungeprüft gegen diese
-Serverversion.
+Oberfläche das ausdrücklich. Solche Apps wurden nicht gegen diese
+Serverversion geprüft.
 
 Zwei Werkzeuge auf der Kommandozeile:
 
@@ -287,8 +376,8 @@ Unsignierte Pakete werden ohne diese Prüfung installiert.
 ## Schreibrechte auf das App-Verzeichnis
 
 Steht im Markt oben der Kasten **„Installieren und Updaten von Apps nicht
-unterstützt!"** mit dem Zusatz „Dies ist ein geclustertes Setup oder der
-Web-Server hat keine Berechtigung in das apps Verzeichnis zu schreiben.", dann
+unterstützt!“** mit dem Zusatz „Dies ist ein geclustertes Setup oder der
+Web-Server hat keine Berechtigung in das apps Verzeichnis zu schreiben.“, dann
 trifft eine von zwei Bedingungen nicht zu:
 
 1. `operation.mode` steht auf `single-instance`. Beim Wert
@@ -297,18 +386,18 @@ trifft eine von zwei Bedingungen nicht zu:
 2. Das Verzeichnis, dessen `writable` in `apps_paths` auf `true` steht, ist für
    den Webserver-Benutzer les- **und** schreibbar. Ist kein Verzeichnis als
    beschreibbar markiert, vermerkt das Protokoll „No application directories
-   are marked as writable."
+   are marked as writable.“
 
 Der Hinweis bedeutet nicht, dass die Instanz keine Apps bekommen kann. Er
-bedeutet nur, dass der Webserver sie nicht selbst ablegen darf. Der Weg über
-[Weg 2](#weg-2-paket-von-hand-nach-apps) bleibt offen — dort schreibt Ihr
-eigenes Konto die Dateien, nicht der Webserver.
+bedeutet nur, dass der Webserver sie nicht selbst ablegen darf.
+[Weg 2](#weg-2-paket-von-hand-ablegen) bleibt offen: Dort schreibt Ihr eigenes
+Konto die Dateien, nicht der Webserver.
 
 Beide Bedingungen prüfen:
 
 ```bash
 sudo -u www-data php8.4 occ config:system:get operation.mode
-sudo -u www-data test -w /var/www/owncloud.online/apps && echo beschreibbar
+sudo -u www-data test -w /var/www/owncloud.online/apps-external && echo beschreibbar
 ```
 
 ## Eine App wieder loswerden
@@ -327,8 +416,8 @@ sudo -u www-data php8.4 occ app:disable <app_id>
 sudo -u www-data php8.4 occ market:uninstall <app_id>
 ```
 
-In der Weboberfläche entspricht dem der Knopf *App deinstallieren* unter
-*Einstellungen → Administration → Apps*. Er erscheint nur an Apps, die nicht
+In der Weboberfläche entspricht dem die Schaltfläche *App deinstallieren* unter
+**Einstellungen → Administration → Apps**. Sie erscheint nur an Apps, die nicht
 mitgeliefert sind und gerade nicht aktiv sind.
 
 Was dabei mit den Daten geschieht:
@@ -336,14 +425,14 @@ Was dabei mit den Daten geschieht:
 | Bestandteil | Beim Abschalten | Beim Entfernen |
 | --- | --- | --- |
 | Verzeichnis der App | bleibt | wird gelöscht |
-| Uninstall-Reparaturschritte der App | laufen nur beim Abschalten über die Weboberfläche | laufen nicht (`market:uninstall` schaltet die App nur ab und löscht das Verzeichnis) |
+| Reparaturschritte der App für die Deinstallation | laufen nur beim Abschalten über die Weboberfläche | laufen nicht (`market:uninstall` schaltet die App nur ab und löscht das Verzeichnis) |
 | Datenbanktabellen der App | bleiben | bleiben |
 | Einstellungen in `oc_appconfig` | bleiben | bleiben |
 | Einstellungen einzelner Benutzer | bleiben | bleiben |
 | Dateien der Benutzer | bleiben | bleiben |
 
 Das Entfernen räumt also nur den Code weg. Der Server löscht ausdrücklich keine
-Tabellen, keine Einstellungen und keine Benutzervorgaben — wird dieselbe App
+Tabellen, keine Einstellungen und keine Benutzervorgaben. Wird dieselbe App
 später wieder installiert, findet sie ihren alten Zustand vor. Das ist meist
 erwünscht; wer wirklich aufräumen will, muss die Reste von Hand entfernen:
 
@@ -352,42 +441,46 @@ erwünscht; wer wirklich aufräumen will, muss die Reste von Hand entfernen:
 sudo -u www-data php8.4 occ config:list <app_id>
 
 # einzelnen Wert löschen
-sudo -u www-data php8.4 occ config:app:delete <app_id> <schluessel>
+sudo -u www-data php8.4 occ config:app:delete <app_id> <schlüssel>
 ```
 
-Datenbanktabellen einer entfernten App bleiben bestehen und müssen, wenn
-gewünscht, direkt in der Datenbank gelöscht werden — nach einer Sicherung, siehe
+Datenbanktabellen einer entfernten App bleiben bestehen. Wer sie loswerden will,
+löscht sie nach einer Sicherung direkt in der Datenbank, siehe
 [Datenbank](database.md).
 
 Drei Fälle, in denen das Entfernen abgelehnt wird:
 
-* Mitgelieferte Apps: „Shipped apps cannot be uninstalled". Für sie gibt es nur
-  `app:disable`.
-* Die Markt-App selbst: „Market app can not uninstall itself."
+* Mitgelieferte Apps, auch `encryption` und `configreport`: „Shipped apps
+  cannot be uninstalled“. Für sie gibt es nur `app:disable`.
+* Die Markt-App selbst: „Market app can not uninstall itself.“
 * Apps, deren Verzeichnis ein `.git` enthält: „App … is a git clone - it will
-  not be deleted." Ein solches Verzeichnis wird nie automatisch gelöscht.
+  not be deleted.“ Ein solches Verzeichnis wird nie automatisch gelöscht.
 
 ## Fehlersuche
 
 | Symptom | Ursache | Abhilfe |
 | --- | --- | --- |
-| Markt zeigt „Installieren und Updaten von Apps nicht unterstützt!" | App-Verzeichnis für den Webserver nicht beschreibbar, oder `operation.mode` steht auf `clustered-instance` | Rechte setzen; sonst das Paket von Hand entpacken, siehe [Weg 2](#weg-2-paket-von-hand-nach-apps) |
+| Markt zeigt „Installieren und Updaten von Apps nicht unterstützt!“ | App-Verzeichnis für den Webserver nicht beschreibbar, oder `operation.mode` steht auf `clustered-instance` | Rechte setzen; sonst das Paket von Hand entpacken, siehe [Weg 2](#weg-2-paket-von-hand-ablegen) |
 | Kein Eintrag *Markt* im App-Menü | Markt-App abgeschaltet, oder das Konto ist kein Administrator | `occ app:enable market`; der Eintrag ist Administratoren vorbehalten |
-| `occ market:…` meldet „Command … is not defined" | Die Markt-App ist abgeschaltet und bringt ihre Befehle deshalb nicht mit | `occ app:enable market` |
+| `occ market:…` meldet „Command … is not defined“ | Die Markt-App ist abgeschaltet und bringt ihre Befehle deshalb nicht mit | `occ app:enable market` |
+| Eine App aus der Dokumentation fehlt im Markt | Sie ist nur mit API-Schlüssel sichtbar | Schlüssel eintragen, siehe [Apps mit API-Schlüssel](#apps-mit-api-schlussel) |
+| Der Dialog meldet „Der API-Key ist ungültig!“ | Der Schlüssel ist falsch oder unvollständig kopiert | Schlüssel erneut einfügen; bei Bedarf bei der BW-Tech GmbH nachfragen |
+| Der API-Schlüssel lässt sich in der Oberfläche nicht ändern | Er steht als `marketplace.key` in `config/config.php` | Den Wert in der `config.php` ändern |
 | Entpackte App erscheint nicht in `app:list` | Verzeichnisname weicht von der `<id>` in `appinfo/info.xml` ab, oder `info.xml` fehlt | Verzeichnis exakt auf den Bezeichner umbenennen |
-| `occ app:enable` antwortet „&lt;app_id&gt; not found" | Die App liegt in keinem der Verzeichnisse aus `apps_paths` | Ablageort prüfen, `occ app:getpath <app_id>` nutzen |
-| „App … cannot be installed because the following dependencies are not fulfilled" | Server- oder PHP-Version passt nicht, oder eine Bibliothek fehlt | Meldung lesen, passende App-Fassung wählen oder die fehlende Erweiterung nachinstallieren |
+| `occ app:enable` antwortet „&lt;app_id&gt; not found“ | Die App liegt in keinem der Verzeichnisse aus `apps_paths` | Ablageort prüfen, `occ app:getpath <app_id>` nutzen |
+| `occ app:enable encryption` antwortet „encryption not found“ | Die App liegt nicht im Release-Archiv | `occ market:install encryption` |
+| „App … cannot be installed because the following dependencies are not fulfilled“ | Server- oder PHP-Version passt nicht, oder eine Bibliothek fehlt | Meldung lesen, passende App-Fassung wählen oder die fehlende Erweiterung nachinstallieren |
 | *Aktivieren* ist ausgegraut, oder der Markt meldet *Fehlende Abhängigkeiten* | dieselbe Ursache, nur in der Oberfläche statt auf der Konsole | siehe vorige Zeile |
-| „Es wurden keine Apps für deine Version gefunden" | Zur Serverversion passt keine der aufgeführten Apps | Katalog auf eine für diese Serverversion freigegebene Fassung prüfen |
-| Neue App-Dateien liegen an Ort und Stelle, es läuft weiter die alte Fassung | Der in der Datenbank vermerkte `installed_version` ist noch der alte, die Migrationen fehlen | `sudo -u www-data php8.4 occ upgrade` |
+| „Es wurden keine Apps für deine Version gefunden“ unter **Einstellungen → Administration → Apps** | Die gewählte Liste (*Aktiviert* oder *Nicht aktiviert*) ist leer, etwa weil alle vorhandenen Apps aktiviert sind; die Meldung bezieht sich nicht auf den Katalog | Die andere Liste wählen; neue Apps kommen über den Markt |
+| Neue App-Dateien liegen an Ort und Stelle, es läuft weiter die alte Fassung | Der Wert `installed_version` in der Datenbank ist noch der alte, die Migrationen fehlen | `sudo -u www-data php8.4 occ upgrade` |
 | Nach einem Server-Update fehlen nachinstallierte Apps | Sie lagen unter `apps/` und wurden vom neuen Codebaum überschrieben | Zweites Verzeichnis über `apps_paths` einrichten und Apps dorthin installieren |
-| Fehler „can't be disabled" | `files`, `dav` und `federatedfilesharing` sind fest eingeschaltet | Diese drei Apps lassen sich nicht abschalten |
-| Fehler „can't be enabled for groups." | Die App ist vom Typ `filesystem`, `prelogin`, `authentication`, `logging`, `prevent_group_restriction` oder `theme` | Solche Apps nur für die ganze Instanz aktivieren |
-| „Shipped apps cannot be uninstalled" | Die App gehört zum Server | Nur `app:disable`; entfernt wird sie nicht |
-| „App … is a git clone - it will not be deleted." | Im App-Verzeichnis liegt ein `.git` | Verzeichnis bewusst von Hand entfernen |
+| Fehler „can't be disabled.“ | `files`, `dav` und `federatedfilesharing` sind fest eingeschaltet | Diese drei Apps lassen sich nicht abschalten |
+| Fehler „can't be enabled for groups.“ | Die App ist vom Typ `filesystem`, `prelogin`, `authentication`, `logging`, `prevent_group_restriction` oder `theme` | Solche Apps nur für die ganze Instanz aktivieren |
+| „Shipped apps cannot be uninstalled“ | Die App steht in `core/shipped.json` | Nur `app:disable`; entfernt wird sie nicht |
+| „App … is a git clone - it will not be deleted.“ | Im App-Verzeichnis liegt ein `.git` | Verzeichnis bewusst von Hand entfernen |
 | App startet nicht, Protokoll meldet Rechte- oder Lesefehler | Dateien gehören nach dem Entpacken `root` | `sudo chown -R www-data:www-data` auf das App-Verzeichnis |
 | Markt zeigt eine veraltete Katalogliste | Die Katalogantwort ist zwischengespeichert | Im Markt *Cache leeren* aufrufen |
 
 Bleibt die Ursache unklar, hilft das Serverprotokoll weiter, siehe
 [Serverprotokoll und Fehlermeldungen](logging.md). Eine Übersicht aller
-`occ`-Befehle steht unter [occ — die Kommandozeile](occ-reference.md).
+`occ`-Befehle steht unter [occ – die Kommandozeile](occ-reference.md).

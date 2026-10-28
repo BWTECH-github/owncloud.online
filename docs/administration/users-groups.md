@@ -1,18 +1,22 @@
 # Benutzer und Gruppen
 
-owncloud.online verwaltet Konten und Gruppen in der Weboberfläche unter
-*Einstellungen → Benutzer* und auf der Kommandozeile über `occ`. Beide Wege
-schreiben in dieselben Tabellen, es gibt keine getrennten Datenbestände. Diese
-Seite beschreibt, was ein Konto ausmacht, wie Gruppen und
-Gruppen-Administratoren wirken, wie Speicherkontingente aufgelöst werden und was
-beim Löschen eines Kontos tatsächlich passiert.
+owncloud.online verwaltet Konten und Gruppen in der Weboberfläche über den
+Eintrag *Benutzer* im Benutzermenü rechts oben und auf der Kommandozeile über
+`occ`. Beide Wege schreiben in dieselben Tabellen, es gibt keine getrennten
+Datenbestände.
+
+Die `occ`-Befehle auf dieser Seite werden im Installationsverzeichnis
+ausgeführt, zum Beispiel nach `cd /var/www/owncloud.online`.
 
 ## Die Verwaltungsseite
 
+![Benutzerverwaltung mit ausgewählter Gruppe Marketing und drei Konten](../assets/screenshots/de/admin-users.png)
+
 Der Menüpunkt *Benutzer* (`/settings/users`) erscheint für Administratoren und
 für Gruppen-Administratoren (`lib/private/legacy/app.php`). Links steht die
-Gruppenliste mit den Einträgen *Jeder*, *Administratoren*, den vorhandenen
-Gruppen und *Gruppe hinzufügen*; rechts das Anlegeformular und die Kontenliste.
+Gruppenliste mit *Gruppe hinzufügen*, *Jeder*, *Administratoren* und den
+vorhandenen Gruppen. Ein Klick auf eine Gruppe filtert die Kontenliste. Rechts
+stehen das Anlegeformular und die Kontenliste.
 
 *Jeder* ist keine Gruppe, sondern ein Filter über alle Konten
 (`data-gid="_everyone"` in `settings/templates/users/part.grouplist.php`).
@@ -33,8 +37,8 @@ App-Konfigurationswert der App `core`:
 | Passwortfeld anzeigen | `umgmt_show_password` | `true` |
 | Kontingent-Feld anzeigen | `umgmt_show_quota` | `true` |
 
-Die Werte gelten instanzweit, nicht pro Administrator. Sie lassen sich auch
-direkt setzen:
+Die Werte gelten für die ganze Instanz, nicht pro Administrator. Sie lassen
+sich auch direkt setzen:
 
 ```bash
 sudo -u www-data php8.4 occ config:app:set core umgmt_show_last_login --value true
@@ -52,25 +56,25 @@ Ein Konto hat zwei Namen, die oft verwechselt werden.
 | Eindeutig | ja | nein |
 
 Der Anmeldename wird beim Anlegen geprüft (`lib/private/User/Manager.php`):
-erlaubt sind `a-z`, `A-Z`, `0-9` sowie `+_.@-'`, mindestens 3 und höchstens 64
-Zeichen; führende oder abschließende Leerzeichen werden abgewiesen. Umlaute und
-andere Sonderzeichen sind nicht zulässig. Die Zeichenklasse lässt zusätzlich das
-Leerzeichen innerhalb des Namens durch, obwohl die Fehlermeldung es nicht nennt
-— vermeiden Sie es trotzdem.
+Erlaubt sind `a-z`, `A-Z`, `0-9` sowie `+_.@-'`, und der Name muss 3 bis 64
+Zeichen lang sein. Führende oder abschließende Leerzeichen werden abgewiesen, ebenso
+Umlaute und andere Sonderzeichen. Ein Leerzeichen innerhalb des Namens lässt
+die Prüfung durch, obwohl die Fehlermeldung es nicht nennt. Vermeiden Sie es
+trotzdem.
 
 Reserviert und damit als Anmeldename gesperrt sind die Namen, die im
 Datenverzeichnis neben den Konten liegen (`lib/public/User/Constants.php`):
 `avatars`, `meta`, `files_external`, `files_encryption`, `.htaccess`,
 `.ocdata`, `htaccesstest.txt`, `owncloud.db`, `owncloud.log`, `index.html`.
 
-Es gibt keinen Weg, den Anmeldenamen später zu ändern — weder in der Oberfläche
-noch als `occ`-Befehl. Wer umbenennen muss, legt ein neues Konto an und zieht
+Den Anmeldenamen können Sie später nicht ändern, weder in der Oberfläche noch
+mit einem `occ`-Befehl. Wer umbenennen muss, legt ein neues Konto an und zieht
 die Daten mit `files:transfer-ownership` um (siehe unten).
 
-Anzeigenamen sind nicht eindeutig: zwei Konten dürfen denselben vollständigen
+Anzeigenamen sind nicht eindeutig: Zwei Konten dürfen denselben vollständigen
 Namen tragen. Steht `allow_user_to_change_display_name` in `config/config.php`
-auf `false`, dürfen nur Administratoren und Gruppen-Administratoren den
-Anzeigenamen ändern, normale Konten nicht mehr
+auf `false`, dürfen nur noch Administratoren und Gruppen-Administratoren den
+Anzeigenamen ändern, die Konten selbst nicht mehr
 (`lib/private/User/User.php`, `canChangeDisplayName`).
 
 ## Konten anlegen
@@ -84,7 +88,7 @@ Bleibt das Passwort leer und ist eine E-Mail-Adresse angegeben, erzeugt der
 Server ein Zufallspasswort und verschickt eine Einladung mit einem Link zum
 Setzen des Passworts (`settings/Controller/UsersController.php`, `create`).
 Ohne funktionierenden Mailversand kommt diese Nachricht nicht an, und das Konto
-bleibt unbenutzbar.
+bleibt unbenutzbar. Siehe [E-Mail-Versand](email.md).
 
 Auf der Kommandozeile:
 
@@ -92,13 +96,17 @@ Auf der Kommandozeile:
 # interaktiv, mit Passwortabfrage
 sudo -u www-data php8.4 occ user:add jdoe
 
-# nicht-interaktiv, Passwort aus der Umgebung
-OC_PASS='Beispielpasswort' sudo -u www-data php8.4 occ user:add jdoe \
+# nicht interaktiv, Passwort aus der Umgebungsvariablen OC_PASS
+sudo -u www-data env OC_PASS='Beispielpasswort' php8.4 occ user:add jdoe \
   --password-from-env \
   --display-name "Jane Doe" \
   --email jane.doe@example.com \
   --group projekt-a --group vertrieb
 ```
+
+`OC_PASS` gehört hinter `sudo`, wie oben über `env`. Steht die Variable vor
+`sudo`, verwirft sudo sie in der Standardeinstellung (`env_reset`), und `occ`
+meldet „--password-from-env given, but OC_PASS is empty!“.
 
 `user:add` legt in `--group` genannte Gruppen an, falls sie noch nicht
 existieren. Ohne `--password-from-env` und ohne interaktive Sitzung bricht der
@@ -124,7 +132,7 @@ Passwort zurücksetzen:
 
 ```bash
 # neues Passwort direkt setzen
-OC_PASS='NeuesPasswort' sudo -u www-data php8.4 occ user:resetpassword jdoe \
+sudo -u www-data env OC_PASS='NeuesPasswort' php8.4 occ user:resetpassword jdoe \
   --password-from-env
 
 # stattdessen einen Rücksetz-Link erzeugen und anzeigen
@@ -160,20 +168,20 @@ war; `--default-value` liefert beim Lesen einen Ersatzwert statt eines Fehlers.
 
 ## Konten deaktivieren
 
-Ein deaktiviertes Konto kann sich nicht mehr anmelden — weder über die
-Weboberfläche noch über die Authentifizierungsmodule für WebDAV und Clients
+Ein deaktiviertes Konto kann sich nicht mehr anmelden, weder in der
+Weboberfläche noch über die Anmeldewege für WebDAV und Clients
 (`lib/private/User/Session.php`). Dateien, Freigaben und Gruppenmitgliedschaften
 bleiben unverändert bestehen. Das ist der richtige Schritt für Austritte,
-Verdachtsfälle und alles, was reversibel bleiben soll.
+Verdachtsfälle und alles, was umkehrbar bleiben soll.
 
 ```bash
 sudo -u www-data php8.4 occ user:disable jdoe
 sudo -u www-data php8.4 occ user:enable jdoe
 ```
 
-In der Oberfläche geschieht das über die Spalte *Aktiviert*, die zuvor über
-*Option Aktiviert/Deaktiviert anzeigen* eingeblendet werden muss. Das eigene
-Konto lässt sich dort weder deaktivieren noch löschen.
+In der Oberfläche geschieht das über die Spalte *Aktiviert*, die Sie zuvor mit
+*Option Aktiviert/Deaktiviert anzeigen* einblenden. Das eigene Konto lässt sich
+dort weder deaktivieren noch löschen.
 
 Kandidaten finden:
 
@@ -187,20 +195,21 @@ sudo -u www-data php8.4 occ user:lastseen jdoe
 
 ## Konten löschen
 
-Das Löschen ist endgültig. In der Oberfläche fragt vorher ein Dialog nach
-(`settings/js/users/users.js`: „All user data, files and shares will be
-deleted"), `occ user:delete` löscht ohne Rückfrage. `lib/private/User/User.php`
-(`delete`) und die daran hängenden Hooks entfernen:
+Das Löschen ist endgültig. In der Oberfläche fragt vorher der Dialog
+*Benutzer löschen* nach („Alle Benutzerdaten, Dateien und geteilte Daten werden
+gelöscht.“, `settings/js/users/users.js`); `occ user:delete` löscht ohne
+Rückfrage. `lib/private/User/User.php` (`delete`) und die daran hängenden Hooks
+entfernen:
 
 | Was | Wirkung |
 | --- | --- |
 | Gruppenmitgliedschaften | Konto wird aus allen Gruppen entfernt |
 | Gruppen-Administratorrechte | Einträge in `group_admin` fallen weg (`lib/private/SubAdmin.php`) |
 | Kontoeinstellungen | alle Werte des Kontos in `preferences` |
-| Externer Speicher | persönliche Einbindungen werden gelöscht; aus globalen Einbindungen wird das Konto ausgetragen — war es der einzige Berechtigte, fällt die Einbindung ganz weg (`lib/private/Files/External/Service/GlobalStoragesService.php`) |
-| Home-Verzeichnis | wird vollständig entfernt — samt Papierkorb und Dateiversionen |
+| Externer Speicher | persönliche Einbindungen werden gelöscht; aus globalen Einbindungen wird das Konto ausgetragen. War es der einzige Berechtigte, fällt die Einbindung ganz weg (`lib/private/Files/External/Service/GlobalStoragesService.php`) |
+| Home-Verzeichnis | wird vollständig entfernt, samt Papierkorb und Dateiversionen |
 | Kommentare | Beiträge und Lesemarken des Kontos |
-| Konto- und Account-Datensatz | zuletzt, damit ein abgebrochener Lauf wiederholbar bleibt |
+| Datensatz im Benutzer-Backend und in der Tabelle `accounts` | zuletzt, damit ein abgebrochener Lauf wiederholbar bleibt |
 
 Bei den Freigaben greift `OC\Share20\Hooks::post_deleteUser`
 (`lib/private/Share20/Hooks.php`). Gelöscht werden:
@@ -226,12 +235,11 @@ sudo -u www-data php8.4 occ user:delete jdoe
 mit; `--path` grenzt auf einen Unterordner ein.
 
 Bleibt nach einem gescheiterten Lauf ein verwaister Datenbestand zurück, räumt
+`--force` auch dann auf, wenn das Konto selbst nicht mehr auffindbar ist:
 
 ```bash
 sudo -u www-data php8.4 occ user:delete jdoe --force
 ```
-
-auch dann auf, wenn das Konto selbst nicht mehr auffindbar ist.
 
 ## Gruppen
 
@@ -246,7 +254,7 @@ sudo -u www-data php8.4 occ group:remove-member projekt-a -m jsmith
 sudo -u www-data php8.4 occ group:delete projekt-a
 ```
 
-Zwei Eigenheiten sind wichtig:
+Zwei Besonderheiten:
 
 - Die Gruppe `admin` ist geschützt und lässt sich nicht löschen
   (`lib/private/Group/Group.php`). Wer in ihr Mitglied ist, ist Administrator
@@ -264,17 +272,17 @@ Zugang dieses einen Kontos verschwindet.
 
 Ein Gruppen-Administrator verwaltet die Konten seiner Gruppen, ohne
 Administrator der Instanz zu sein. Zuweisen können Sie ihn nur in der
-Oberfläche, in der Spalte *Gruppenadministrator für* — die Spalte erscheint nur
-für echte Administratoren.
+Oberfläche, in der Spalte *Gruppenadministrator für*. Diese Spalte sehen nur
+Administratoren der Instanz.
 
 Der Rahmen ergibt sich aus `lib/private/SubAdmin.php` und
 `settings/Controller/UsersController.php`:
 
 | Darf | Darf nicht |
 | --- | --- |
-| Konten in den eigenen Gruppen anlegen, ändern, deaktivieren und löschen | Konten außerhalb der eigenen Gruppen anfassen |
+| Konten in den eigenen Gruppen anlegen, ändern, deaktivieren und löschen | Konten außerhalb der eigenen Gruppen bearbeiten |
 | Speicherkontingente dieser Konten setzen | Administratoren bearbeiten |
-| Anzeigenamen dieser Konten ändern, auch wenn `allow_user_to_change_display_name` auf `false` steht | überhaupt Gruppen-Administratoren ernennen — der Endpunkt `settings/ajax/togglesubadmins.php` verlangt Administratorrechte |
+| Anzeigenamen dieser Konten ändern, auch wenn `allow_user_to_change_display_name` auf `false` steht | Gruppen-Administratoren ernennen; der Endpunkt `settings/ajax/togglesubadmins.php` verlangt Administratorrechte |
 
 Legt ein Gruppen-Administrator ein Konto ohne Gruppenangabe an, landet es
 automatisch in seinen eigenen Gruppen.
@@ -285,8 +293,8 @@ Das ganze Verfahren lässt sich abschalten. Mit
 'allow_subadmins' => false,
 ```
 
-in `config/config.php` gilt niemand mehr als Gruppen-Administrator; nur echte
-Administratoren behalten Zugriff auf die Verwaltungsseite.
+in `config/config.php` gilt niemand mehr als Gruppen-Administrator; nur
+Administratoren der Instanz behalten Zugriff auf die Verwaltungsseite.
 
 Zum Prüfen, wer wo Mitglied ist:
 
@@ -305,7 +313,7 @@ Aufgelöst wird in dieser Reihenfolge (`lib/private/legacy/util.php`,
 
 1. der Wert am Konto, sofern er nicht `default` ist,
 2. sonst `default_quota` der App `files`,
-3. ist auch dieser `none`, gilt kein Limit.
+3. steht der ermittelte Wert auf `none`, gilt kein Limit.
 
 Zwei App-Konfigurationswerte steuern die Auswahllisten:
 
@@ -319,8 +327,8 @@ sudo -u www-data php8.4 occ config:app:set files default_quota --value "10 GB"
 sudo -u www-data php8.4 occ config:app:set files quota_preset --value "1 GB, 5 GB, 10 GB, 100 GB"
 ```
 
-Das Kontingent eines einzelnen Kontos setzen Sie in der Spalte *Quota*: neben
-*Standard* und *Unbegrenzt* stehen die Vorgabewerte und *Andere …* für eine
+Das Kontingent eines einzelnen Kontos setzen Sie in der Spalte *Quota*: Neben
+*Standard* und *Unbegrenzt* stehen die Vorgabewerte und *Andere ...* für eine
 freie Eingabe wie `512 MB` oder `12 GB`. Gespeicherte Werte prüfen Sie mit:
 
 ```bash
@@ -329,18 +337,20 @@ sudo -u www-data php8.4 occ user:list --attributes uid --attributes quota
 
 ## Benutzerdefinierte Gruppen
 
+![Persönliche Einstellungen, Benutzerdefinierte Gruppe: zwei Gruppen, rechts die Mitglieder der Gruppe Messeteam](../assets/screenshots/de/custom-groups.png)
+
 Die App `customgroups` ergänzt die zentral gepflegten Gruppen um Gruppen, die
-Konten selbst anlegen — gedacht zum Teilen, nicht zur Rechtevergabe. Sie liegen
-unter *Einstellungen → Benutzerdefinierte Gruppe*; im Freigabedialog erscheinen
-sie wie normale Gruppen.
+Benutzer selbst anlegen. Sie sind zum Teilen gedacht, nicht zur Rechtevergabe.
+Angelegt werden sie unter *Einstellungen → Persönlich → Benutzerdefinierte
+Gruppe*; im Freigabedialog erscheinen sie wie normale Gruppen.
 
 Innerhalb einer solchen Gruppe gibt es zwei Rollen: *Gruppenbesitzer* darf
 Mitglieder aufnehmen und entfernen, umbenennen, löschen und Rollen vergeben;
 *Mitglied* darf mit der Gruppe teilen, die Mitgliederliste sehen und die Gruppe
 verlassen. Administratoren sehen und ändern alle benutzerdefinierten Gruppen.
 
-Zwei Schalter unter *Einstellungen → Administration → Teilen* (im SaaS-Bundle
-ist dieses Admin-Panel ausgeblendet, dort führt nur der `occ`-Weg zum Ziel):
+Zwei Schalter stehen im Abschnitt *Benutzerdefinierte Gruppe* unter
+*Einstellungen → Administration → Teilen*:
 
 | Ankreuzfeld | Schlüssel (App `customgroups`) | Standard |
 | --- | --- | --- |
@@ -355,13 +365,15 @@ Ist `shareapi_only_share_with_group_members` der App `core` aktiv, kann ein
 Mitglied nur Konten aufnehmen, mit denen es mindestens eine Gruppe teilt
 (`lib/Service/MembershipHelper.php` der App).
 
-Wichtig für die Fehlersuche: Das Gruppen-Backend der App meldet sich nur für den
-Bereich „sharing" zuständig (`isVisibleForScope`). Benutzerdefinierte Gruppen
+Für die Fehlersuche wichtig: Das Gruppen-Backend der App meldet sich nur für den
+Bereich „sharing“ zuständig (`isVisibleForScope`). Benutzerdefinierte Gruppen
 erscheinen deshalb **nicht** in `occ group:list` und **nicht** in
 `occ user:list-groups`, obwohl es echte Gruppen mit dem Kennungspräfix
 `customgroup_` sind.
 
-Das Repository der App: <https://github.com/BWTECH-github/customgroups>.
+Installiert wird die App über den Markt, siehe [Apps verwalten](apps-market.md).
+Mehr zur App steht unter
+[Benutzerdefinierte Gruppen](../plugins/apps/customgroups.md).
 
 ## occ-Befehle im Überblick
 
@@ -370,10 +382,10 @@ Das Repository der App: <https://github.com/BWTECH-github/customgroups>.
 | `user:add` | `uid`; `--password-from-env`, `--display-name`, `--email`, `-g/--group` (mehrfach) |
 | `user:delete` | `uid`; `-f/--force` |
 | `user:disable` / `user:enable` | `uid` |
-| `user:modify` | `uid key value` — Schlüssel: `displayname`, `email` |
+| `user:modify` | `uid key value`, Schlüssel: `displayname`, `email` |
 | `user:resetpassword` | `user`; `--password-from-env`, `--send-email`, `--output-link` |
 | `user:setting` | `uid [app] [key]`; `--value`, `--update-only`, `--delete`, `--error-if-not-exists`, `--default-value`, `--ignore-missing-user` |
-| `user:list` | `[suchmuster]`; `-a/--attributes` (mehrfach), `-s/--show-all-attributes`, `--output` |
+| `user:list` | `[search-pattern]`; `-a/--attributes` (mehrfach), `-s/--show-all-attributes`, `--output` |
 | `user:list-groups` | `uid`; `--output` |
 | `user:lastseen` | `uid` |
 | `user:inactive` | `days`; `--output` |
@@ -386,7 +398,7 @@ Das Repository der App: <https://github.com/BWTECH-github/customgroups>.
 | `group:delete` | `group` |
 | `group:add-member` | `group`; `-m/--member` (mehrfach) |
 | `group:remove-member` | `group`; `-m/--member` (mehrfach) |
-| `group:list` | `[suchmuster]`; `--output` |
+| `group:list` | `[search-pattern]`; `--output` |
 | `group:list-members` | `group`; `--output` |
 
 `--output` versteht `plain` (Vorgabe), `json` und `json_pretty`. Für `user:list`
@@ -404,21 +416,22 @@ sudo -u www-data php8.4 occ user:list --show-all-attributes --output json_pretty
 `user:sync` gleicht die Konten eines Backends mit der `accounts`-Tabelle ab;
 `--list` zeigt die dafür in Frage kommenden Backend-Klassen. Achtung:
 `--missing-account-action remove` löscht Konten samt Daten, sobald sie im
-Backend fehlen — im Zweifel `disable` wählen und die Liste erst prüfen.
+Backend fehlen. Im Zweifel `disable` wählen und die Liste vorher prüfen.
 
 ## Fehlersuche
 
 | Symptom | Ursache | Abhilfe |
 | --- | --- | --- |
-| `occ user:add` bricht mit „Interactive input or --password-from-env is needed" ab | Aufruf ohne Terminal, etwa aus einem Skript | `OC_PASS` setzen und `--password-from-env` angeben |
+| `occ user:add` bricht mit „Interactive input or --password-from-env is needed for entering a password!“ ab | Aufruf ohne Terminal, etwa aus einem Skript | `--password-from-env` angeben und `OC_PASS` hinter `sudo` setzen |
+| `occ` meldet „--password-from-env given, but OC_PASS is empty!“ | `OC_PASS` wurde vor `sudo` gesetzt; sudo gibt die Variable nicht weiter | `sudo -u www-data env OC_PASS='…' php8.4 occ …` |
 | Anmeldename mit Umlaut oder anderem Sonderzeichen wird abgewiesen | Zeichenprüfung in `lib/private/User/Manager.php` | nur `a-z`, `A-Z`, `0-9`, `+_.@-'`, 3 bis 64 Zeichen verwenden |
-| Neues Konto bekommt keine Einladungsmail | bei gesetztem *Passwort für neue Nutzer anlegen* wird das E-Mail-Feld ausgeblendet — oder der Mailversand ist nicht eingerichtet | Ankreuzfeld abwählen; SMTP prüfen, siehe [Linux-Server](../installation/linux-server.md) |
+| Neues Konto bekommt keine Einladungsmail | Bei gesetztem *Passwort für neue Nutzer anlegen* ist das E-Mail-Feld ausgeblendet, oder der Mailversand ist nicht eingerichtet | Ankreuzfeld abwählen; Mailversand prüfen, siehe [E-Mail-Versand](email.md) |
 | Konto gelöscht, Dateien und Freigaben sind weg | `user:delete` entfernt Home-Verzeichnis, Papierkorb, Versionen und alle Freigaben | vorher `files:transfer-ownership`; Wiederherstellung nur aus dem Backup |
-| Benutzerdefinierte Gruppe fehlt in `occ group:list` und `occ user:list-groups` | das Backend ist nur für den Bereich „sharing" sichtbar | über *Einstellungen → Benutzerdefinierte Gruppe* prüfen |
-| Gruppe soll umbenannt werden | Gruppenname ist die Kennung, es gibt keine Umbenennung | neue Gruppe anlegen, Mitglieder und Freigaben umziehen, alte löschen |
-| `occ group:delete admin` schlägt fehl | die Gruppe `admin` ist fest geschützt | Mitglieder einzeln entfernen |
-| Spalte *Gruppenadministrator für* fehlt | die Spalte wird nur für echte Administratoren gerendert (`settings/users.php`, `part.userlist.php`) | als Administrator anmelden |
+| Benutzerdefinierte Gruppe fehlt in `occ group:list` und `occ user:list-groups` | Das Backend ist nur für den Bereich „sharing“ sichtbar | über *Einstellungen → Persönlich → Benutzerdefinierte Gruppe* prüfen |
+| Gruppe soll umbenannt werden | Der Gruppenname ist die Kennung, es gibt keine Umbenennung | neue Gruppe anlegen, Mitglieder und Freigaben umziehen, alte löschen |
+| `occ group:delete admin` schlägt fehl | Die Gruppe `admin` ist fest geschützt | Mitglieder einzeln entfernen |
+| Spalte *Gruppenadministrator für* fehlt | Die Spalte wird nur für Administratoren der Instanz angezeigt (`settings/users.php`, `part.userlist.php`) | als Administrator anmelden |
 | Konto kann seinen Anzeigenamen nicht ändern | `allow_user_to_change_display_name` steht auf `false` | Wert entfernen oder Änderung durch einen Administrator vornehmen |
-| `occ user:setting <uid> files quota --value "5 GB"` bleibt wirkungslos | maßgeblich ist der Wert am Konto in der `accounts`-Tabelle; die Einstellung wird erst bei einem Abgleich des Kontos ausgewertet | Kontingent in der Spalte *Quota* setzen und mit `occ user:list -a uid -a quota` prüfen |
-| Passwort zurückgesetzt, Dateien nicht mehr lesbar | die App `encryption` war aktiv | Wiederherstellungsschlüssel verwenden, siehe [Verschlüsselung](encryption.md) |
+| `occ user:setting <uid> files quota --value "5 GB"` bleibt wirkungslos | Maßgeblich ist der Wert am Konto in der `accounts`-Tabelle; die Einstellung wird erst bei einem Abgleich des Kontos ausgewertet | Kontingent in der Spalte *Quota* setzen und mit `occ user:list -a uid -a quota` prüfen |
+| Passwort zurückgesetzt, Dateien nicht mehr lesbar | Die App `encryption` war aktiv | Wiederherstellungsschlüssel verwenden, siehe [Verschlüsselung](encryption.md) |
 | Deaktiviertes Konto belegt weiter Speicher | Deaktivieren löscht nichts, es sperrt nur die Anmeldung | Daten übertragen und Konto löschen |

@@ -1,48 +1,50 @@
 # Freigaben steuern
 
-owncloud.online bündelt alle Freigabe-Regeln in einem Verwaltungsbereich. Die
-Schalter dort schreiben App-Konfigurationswerte, deshalb lässt sich praktisch
-jede Einstellung genauso gut per `occ config:app:set` setzen — das ist der
-Weg für Erstinstallationen, Skripte und reproduzierbare Kundenkonfigurationen.
-Die einzige Ausnahme auf dieser Seite ist die Liste der vertrauenswürdigen
-Verbund-Server: Sie liegt in einer eigenen Datenbanktabelle, nicht in der
-App-Konfiguration.
+owncloud.online bündelt die Freigabe-Regeln unter *Einstellungen →
+Administration → Teilen*. Die Schalter dort schreiben App-Konfigurationswerte.
+Deshalb lässt sich fast jede Einstellung genauso mit `occ config:app:set`
+setzen, etwa bei der Ersteinrichtung, in Skripten oder für reproduzierbare
+Konfigurationen. Einzige Ausnahme auf dieser Seite ist die Liste der
+vertrauenswürdigen Verbund-Server: Sie liegt in einer eigenen Datenbanktabelle,
+nicht in der App-Konfiguration.
 
-Diese Seite listet zu jedem Schalter den zugehörigen Schlüssel und beschreibt,
-was der Server damit tatsächlich durchsetzt.
+Die `occ`-Befehle auf dieser Seite werden im Installationsverzeichnis
+ausgeführt, zum Beispiel nach `cd /var/www/owncloud.online`.
 
 ## Wo die Einstellungen liegen
 
 Menüpfad: **Einstellungen → Administration → Teilen**.
 
+![Administration, Teilen: Optionen für Freigaben und öffentliche Links](../assets/screenshots/de/admin-sharing.png)
+
 Der Abschnitt wird aus mehreren Panels zusammengesetzt. Welche davon erscheinen,
 hängt davon ab, welche Apps aktiv sind:
 
-| Abschnitt | Herkunft | erscheint |
+| Abschnitt | Herkunft | Erscheint |
 | --- | --- | --- |
 | **Teilen** | Kern (`settings/templates/panels/admin/filesharing.php`) | immer |
 | **Vom Teilen ausgeschlossene Gruppen** | App `files_sharing` | immer (die App ist standardmäßig aktiv) |
 | **Federated-Cloud-Sharing** | App `federatedfilesharing` | nur wenn die App aktiv ist |
 | **Federation** | App `federation` | nur wenn die App aktiv ist |
+| **Benutzerdefinierte Gruppe** | App `customgroups`, siehe [Benutzer und Gruppen](users-groups.md#benutzerdefinierte-gruppen) | nur wenn die App aktiv ist |
 | **Guests** | App `guests` | nur wenn die App aktiv ist |
 
 Fast alle Schlüssel des Hauptabschnitts liegen in der App `core`, nicht in
-`files_sharing`. Die Verbund- und Gruppenlisten-Schlüssel liegen dagegen in
-`files_sharing`. Beim Setzen per `occ` ist der App-Name deshalb genau zu
-beachten.
+`files_sharing`. Die Schlüssel für Verbund-Freigaben, für die
+Empfänger-Sperrliste und für die Gruppen, die öffentliche Links anlegen dürfen,
+liegen dagegen in `files_sharing`. Achten Sie beim Setzen per `occ` deshalb
+genau auf den App-Namen.
 
 Die Ja/Nein-Schalter des Hauptabschnitts **Teilen** speichern die Zeichenketten
-`yes` und `no` — nicht `1` und `0` (`settings/js/admin.js`). Für die Panels der
+`yes` und `no`, nicht `1` und `0` (`settings/js/admin.js`). Für die Panels der
 Apps `guests` und `federation` gilt das nicht, siehe die jeweiligen Abschnitte
 weiter unten.
-
-![Freigabe-Dialog in der Dateien-App](../assets/screenshots/owncloud-online-sharing.png)
 
 ## Freigabe überhaupt erlauben
 
 Der oberste Schalter **Apps die Benutzung der Share-API erlauben** ist der
 Hauptschalter. Steht er auf `no`, blendet die Oberfläche alle weiteren
-Freigabe-Optionen aus und der Server weist Zugriffe auf öffentliche Links ab
+Freigabe-Optionen aus, und der Server weist Zugriffe auf öffentliche Links ab
 (`apps/files_sharing/lib/Middleware/SharingCheckMiddleware.php`).
 
 | Schlüssel | App | Standard |
@@ -61,7 +63,7 @@ wieder die zuvor gespeicherte Konfiguration.
 
 **Benutzern erlauben, Inhalte über Links zu teilen** entscheidet, ob überhaupt
 Link-Freigaben angelegt werden dürfen. Ist der Wert `no`, lehnt der Server das
-Anlegen ab (`lib/private/Share20/Manager.php`, `linkCreateChecks`) und der
+Anlegen ab (`lib/private/Share20/Manager.php`, `linkCreateChecks`), und der
 Zugriff auf bestehende Links wird blockiert.
 
 | Beschriftung | Schlüssel (App `core`) | Standard |
@@ -75,8 +77,8 @@ Zugriff auf bestehende Links wird blockiert.
 `shareapi_allow_public_upload` auf `no` lässt nur noch reine Lese-Links zu: Der
 Server verwirft jede Link-Freigabe, die eine der Berechtigungen Anlegen, Ändern
 oder Löschen enthält. Der Sprachschlüssel nimmt entweder einen Sprachcode oder
-den Sonderwert `owner` — dann wird die Sprache des Eigentümers der Freigabe
-verwendet (Beschriftung *Sprache des Anwenders*).
+den Sonderwert `owner`. Dann gilt die Sprache des Eigentümers der Freigabe
+(Beschriftung *Sprache des Anwenders*).
 
 ```bash
 sudo -u www-data php8.4 occ config:app:set core shareapi_allow_links --value yes
@@ -97,8 +99,8 @@ vergleicht die Berechtigungen der Freigabe mit genau definierten Kombinationen
 | Passwort für Upload-Links (File Drop) erzwingen | `shareapi_enforce_links_password_write_only` | `no` | nur Anlegen |
 
 Die Prüfung greift beim Anlegen und beim Ändern einer Link-Freigabe. Wer alle
-öffentlichen Links absichern will, muss alle vier Schlüssel setzen — ein
-einzelner deckt nur seine Rolle ab:
+öffentlichen Links absichern will, setzt alle vier Schlüssel; jeder deckt nur
+seine Rolle ab:
 
 ```bash
 sudo -u www-data php8.4 occ config:app:set core shareapi_enforce_links_password_read_only --value yes
@@ -114,7 +116,7 @@ stark dieses Passwort sein muss, regelt die Passwortrichtlinie, siehe unten.
 
 Es gibt vier unabhängige Sätze von Ablauf-Einstellungen: für Links, für
 Benutzer-, für Gruppen- und für Verbund-Freigaben. Jeder Satz besteht aus drei
-Schlüsseln — einschalten, Anzahl Tage, erzwingen.
+Schlüsseln: einschalten, Anzahl Tage, erzwingen.
 
 | Freigabetyp | Standardmäßiges Ablaufdatum setzen | Ablauf nach … Tagen | Als spätestes Ablaufdatum erzwingen |
 | --- | --- | --- | --- |
@@ -173,7 +175,7 @@ ausdrücklich zurück.
 | Gruppen denen es erlaubt ist, öffentliche Links zu erstellen | `public_share_sharers_groups_allowlist_enabled` | `files_sharing` | `no` |
 | Gruppen, die öffentliche Links erstellen dürfen | `public_share_sharers_groups_allowlist` | `files_sharing` | `[]` |
 
-Die Unterscheidung ist wichtig:
+Die drei Listen wirken unterschiedlich:
 
 - `shareapi_exclude_groups_list` nimmt den Mitgliedern das Recht, Freigaben zu
   **erstellen**. Empfangen können sie weiterhin.
@@ -196,21 +198,21 @@ sudo -u www-data php8.4 occ config:app:set files_sharing blacklisted_receiver_gr
 Bei `shareapi_exclude_groups_list` verträgt der Server zusätzlich eine alte,
 kommagetrennte Schreibweise: Er wandelt sie beim ersten Lesen selbst nach JSON
 um und schreibt das Ergebnis zurück (`lib/private/Share20/Manager.php`,
-`sharingDisabledForUser`). Verlassen sollte man sich darauf nicht.
+`sharingDisabledForUser`). Verlassen Sie sich nicht darauf.
 
 ## Autovervollständigung der Empfänger
 
 | Beschriftung | Schlüssel (App `core`) | Standard |
 | --- | --- | --- |
-| Die Auto-Vervollständigung von Benutzernamen im Teilen-Dialog erlauben | `shareapi_allow_share_dialog_user_enumeration` | `yes` |
+| Die Auto-Vervollständigung von Benutzernamen im Teilen-Dialog erlauben. Wenn dies deaktiviert ist, muss der vollständige Benutzername eingegeben werden. | `shareapi_allow_share_dialog_user_enumeration` | `yes` |
 | Aufzählung auf Gruppenmitglieder beschränken | `shareapi_share_dialog_user_enumeration_group_members` | `no` |
 | Separates Feld zur Anzeige des Autovervollständigen-Ergebnisses | `user_additional_info_field` | leer |
 
 Steht die Aufzählung auf `no`, liefert die Suche keine Trefferliste mehr; nur
 noch eine exakte Eingabe von Benutzername, Anzeigename oder E-Mail-Adresse
 führt zu einem Ergebnis (`apps/files_sharing/lib/Controller/ShareesController.php`).
-Das ist die wirksamste Maßnahme gegen das Abgrasen des Benutzerverzeichnisses
-über den Teilen-Dialog.
+Das ist die wirksamste Maßnahme gegen das systematische Auslesen der
+Benutzerliste über den Teilen-Dialog.
 
 Für `user_additional_info_field` sind genau drei Werte vorgesehen: leer
 (Beschriftung *Nichts*), `id` (*Benutzer-ID*) und `email` (*E-Mail-Adresse*).
@@ -222,9 +224,11 @@ sudo -u www-data php8.4 occ config:app:set core user_additional_info_field --val
 ```
 
 Einzelne Benutzer können sich zusätzlich selbst aus der Autovervollständigung
-nehmen. Das ist eine Benutzereinstellung der App `files_sharing`, kein
-appconfig-Wert, und sie ist nur sichtbar, solange die globale Aufzählung aktiv
-ist (`apps/files_sharing/lib/Panels/Personal/PersonalPanel.php`):
+nehmen, unter *Einstellungen → Persönlich → Teilen* („Ermögliche die Suche nach
+dir über die Autovervollständigung im Freigabedialog …“). Das ist eine
+Benutzereinstellung der App `files_sharing`, kein App-Konfigurationswert, und
+sie ist nur sichtbar, solange die globale Aufzählung aktiv ist
+(`apps/files_sharing/lib/Panels/Personal/PersonalPanel.php`):
 
 ```bash
 sudo -u www-data php8.4 occ user:setting maxine files_sharing allow_share_dialog_user_enumeration --value no
@@ -243,14 +247,14 @@ sudo -u www-data php8.4 occ user:setting maxine files_sharing allow_share_dialog
 
 | Recht | Beschriftung | Wert |
 | --- | --- | --- |
-| Lesen | — (immer gesetzt) | 1 |
+| Lesen | (immer gesetzt) | 1 |
 | Ändern | Ändern | 2 |
 | Anlegen | Anlegen | 4 |
 | Löschen | Löschen | 8 |
 | Teilen | Teilen | 16 |
 
-Das Leserecht wird von der Oberfläche immer hinzugefügt, unabhängig von der
-Auswahl. Der Wert wird nur verwendet, wenn beim Anlegen einer Benutzer- oder
+Das Leserecht fügt die Oberfläche immer hinzu, unabhängig von der Auswahl. Der
+Wert wird nur verwendet, wenn beim Anlegen einer Benutzer- oder
 Gruppenfreigabe keine Berechtigungen mitgegeben werden; Link-Freigaben nutzen
 ihn nicht (`apps/files_sharing/lib/Controller/Share20OcsController.php`).
 
@@ -270,9 +274,12 @@ sudo -u www-data php8.4 occ user:setting maxine files_sharing auto_accept_share 
 
 `shareapi_allow_mail_notification` betrifft die Benachrichtigung an interne
 Empfänger und ist unabhängig von `shareapi_allow_public_notification`, das für
-öffentliche Links gilt. Beide setzen einen funktionierenden Mailversand voraus.
+öffentliche Links gilt. Beide setzen einen funktionierenden Mailversand voraus,
+siehe [E-Mail-Versand](email.md).
 
 ## Freigaben über Verbund
+
+![Administration, Federation und Federated-Cloud-Sharing mit Optionen für vertrauenswürdige Server](../assets/screenshots/de/admin-federation.png)
 
 Der Abschnitt **Federated-Cloud-Sharing** stammt aus der App
 `federatedfilesharing`, die Schlüssel liegen jedoch überwiegend in der App
@@ -299,8 +306,8 @@ Schlüssel, der abweichend `0` und `1` speichert
 | --- | --- | --- | --- |
 | Füge einen mit owncloud.online Federation verbundenen Server automatisch hinzu, sobald die Verbindung einmal erfolgreich erstellt wurde | `autoAddServers` | `federation` | `0` |
 
-Verwaiste Speicher aus abgeräumten Verbund-Freigaben lassen sich mit einem
-eigenen Befehl entfernen:
+Verwaiste Speicher, die gelöschte Verbund-Freigaben hinterlassen, entfernt ein
+eigener Befehl:
 
 ```bash
 sudo -u www-data php8.4 occ sharing:cleanup-remote-storages
@@ -311,7 +318,7 @@ sudo -u www-data php8.4 occ sharing:cleanup-remote-storages
 Die App `password_policy` hängt sich in die Passwortprüfung des Kerns ein. Der
 Kern löst beim Setzen eines Link-Passworts das Ereignis
 `OCP\Share::validatePassword` aus (`lib/private/Share20/Manager.php`,
-`verifyPassword`), die App prüft das Passwort und lehnt es gegebenenfalls mit
+`verifyPassword`). Die App prüft das Passwort und lehnt es gegebenenfalls mit
 einer Meldung ab.
 
 Damit ergibt sich eine klare Arbeitsteilung:
@@ -321,17 +328,21 @@ Damit ergibt sich eine klare Arbeitsteilung:
 - Die Richtlinie entscheidet, **wie** dieses Passwort aussehen muss.
 
 Ist die App `password_policy` nicht installiert, findet keine Stärkeprüfung
-statt — der Kern selbst bringt keine mit.
+statt. Der Kern selbst bringt keine mit.
 
-Die Mindestanforderungen gelten laut Abschnitt *Passwort-Mindestanforderungen
-für Benutzerkonten und öffentliche Links* gemeinsam für Konten und Link-
-Passwörter. Die Schlüssel liegen alle in der App `password_policy` und folgen
-dem Muster `<name>_checked` und `<name>_value`. Der Wert, den die Oberfläche für
-einen gesetzten Haken schreibt, ist `on`; ein abgewählter Haken wird als leerer
-Wert gespeichert. Beim Setzen per `occ` deshalb ausschließlich `on` verwenden:
+![Administration, Sicherheit: Richtlinien für Passwörter und öffentliche Links mit Mindestanforderungen und Ablaufregeln](../assets/screenshots/de/admin-password-policy.png)
+
+Das Panel *Richtlinien für Passwörter und öffentliche Links* liegt nicht unter
+*Teilen*, sondern unter **Einstellungen → Administration → Sicherheit**. Die
+Mindestanforderungen gelten laut Abschnitt *Passwort-Mindestanforderungen für
+Benutzerkonten und öffentliche Links* gemeinsam für Konten und Link-Passwörter.
+Die Schlüssel liegen alle in der App `password_policy` und folgen dem Muster
+`<name>_checked` und `<name>_value`. Der Wert, den die Oberfläche für einen
+gesetzten Haken schreibt, ist `on`; ein abgewählter Haken wird als leerer Wert
+gespeichert. Verwenden Sie beim Setzen per `occ` deshalb ausschließlich `on`:
 Die Ablaufregeln vergleichen strikt gegen `on` (`lib/HooksHandler.php`),
 während die Passwortprüfung jeden nicht leeren Wert als eingeschaltet ansieht
-(`lib/Engine.php`, `yes`). Zum Abschalten den Schlüssel löschen.
+(`lib/Engine.php`, `yes`). Zum Abschalten löschen Sie den Schlüssel.
 
 | Beschriftung | Schlüssel-Paar | Standardwert |
 | --- | --- | --- |
@@ -353,9 +364,8 @@ vom Passwort abhängen:
 Ist eine dieser Regeln aktiv, verlangt die App für Link-Freigaben zwingend ein
 Ablaufdatum und lehnt jedes Datum ab, das über der eingestellten Zahl von Tagen
 liegt (`lib/HooksHandler.php`, `updateLinkExpiry`). Das ist ein zweiter,
-unabhängiger Mechanismus neben `shareapi_enforce_expire_date` — die schärfere
-der beiden Regeln setzt sich durch. Diese Panels liegen in der Oberfläche nicht
-unter *Teilen*, sondern unter **Einstellungen → Administration → Sicherheit**.
+unabhängiger Mechanismus neben `shareapi_enforce_expire_date`; die schärfere
+der beiden Regeln setzt sich durch.
 
 ```bash
 sudo -u www-data php8.4 occ config:app:set password_policy spv_min_chars_checked --value on
@@ -363,6 +373,8 @@ sudo -u www-data php8.4 occ config:app:set password_policy spv_min_chars_value -
 ```
 
 ## Zusammenspiel mit Gästen
+
+![Administration, Abschnitt Guests mit Gruppenname, gesperrten Domains und App-Whitelist für Gäste](../assets/screenshots/de/admin-guests.png)
 
 Ist die App `guests` aktiv, erscheint im Abschnitt *Teilen* zusätzlich das
 Panel **Guests**. Gäste sind eigene Benutzerkonten, die über die
@@ -375,18 +387,18 @@ E-Mail-Adresse.
 | Gruppenname | `group` | `guest_app` |
 | Diese Domain ist für Gäste Einladungen blockiert | `blockdomains` | leer |
 | Gastzugriff auf eine App-Whitelist beschränken | `usewhitelist` | `true` |
-| Eingabefeld unter dem Whitelist-Schalter (ohne deutsche Beschriftung) | `whitelist` | Liste in `lib/AppWhitelist.php` |
+| Eingabefeld unter dem Whitelist-Schalter (ohne sichtbare Beschriftung; Screenreader lesen den unübersetzten Text „App whitelist for guest access“ vor) | `whitelist` | Liste in `lib/AppWhitelist.php` |
 
 Der Schalter für die Whitelist speichert abweichend die Zeichenketten `true`
 und `false`, nicht `yes` und `no`.
 
 Die Domain-Sperrliste ist eine kommagetrennte Aufzählung und wird beim Anlegen
-eines Gastes ausgewertet; der Vergleich erfolgt auf die vollständige Domain
-hinter dem `@` und ohne Beachtung der Groß- und Kleinschreibung
+eines Gastes ausgewertet; verglichen wird die vollständige Domain hinter dem
+`@`, ohne Beachtung der Groß- und Kleinschreibung
 (`lib/Controller/UsersController.php`, `isDomainBlocked`).
 
 ```bash
-sudo -u www-data php8.4 occ config:app:set guests blockdomains --value 'example.com,konkurrenz.de'
+sudo -u www-data php8.4 occ config:app:set guests blockdomains --value 'example.com,example.net'
 ```
 
 Zwei Wechselwirkungen mit den Freigabe-Regeln sind zu beachten:
@@ -426,7 +438,7 @@ in einer späteren Version ändert.
 | Abgelaufene Freigaben bleiben sichtbar | Der Aufräum-Job läuft einmal täglich und braucht einen funktionierenden Cron | Cron prüfen, siehe [Hintergrund-Jobs (Cron)](background-jobs.md) |
 | Ausgeschlossene Gruppe darf weiter freigeben | `shareapi_exclude_groups_list` steht nicht als JSON-Array in der Konfiguration, oder `shareapi_exclude_groups` steht auf `no` | Liste als `'["gruppe"]'` setzen und den Schalter aktivieren |
 | Gruppe kann weiter Freigaben erstellen, obwohl sie auf der Empfänger-Sperrliste steht | `blacklisted_receiver_groups` sperrt nur den Empfang, nicht das Freigeben | Zusätzlich `shareapi_exclude_groups_list` verwenden |
-| Der Schalter für öffentliche Links ist gesetzt, trotzdem legt niemand Links an | `public_share_sharers_groups_allowlist_enabled` steht auf `yes` und die Gruppe des Benutzers fehlt in `public_share_sharers_groups_allowlist` | Gruppe in die Allowlist aufnehmen oder den Schalter deaktivieren |
+| Der Schalter für öffentliche Links ist gesetzt, trotzdem legt niemand Links an | `public_share_sharers_groups_allowlist_enabled` steht auf `yes`, und die Gruppe des Benutzers fehlt in `public_share_sharers_groups_allowlist` | Gruppe in `public_share_sharers_groups_allowlist` aufnehmen oder den Schalter deaktivieren |
 | Desktop- oder Mobil-Client meldet eine Gruppenbeschränkung, die der Server nicht durchsetzt | Die Fähigkeitsauskunft meldet für `shareapi_only_share_with_group_members` und `shareapi_only_share_with_membership_groups` den Vorgabewert `yes`, während die Durchsetzung im Kern von `no` ausgeht | Beide Schlüssel ausdrücklich setzen, statt sich auf den Standard zu verlassen |
 | Link-Passwort wird trotz erfüllter Länge abgelehnt | Die App `password_policy` prüft zusätzlich Zeichenklassen | Meldung im Dialog lesen und die Richtlinie unter *Administration → Sicherheit* anpassen |
 | Link lässt sich nicht speichern, es fehle ein Ablaufdatum | Eine Ablaufregel der App `password_policy` ist aktiv und verlangt zwingend ein Datum | Ablaufdatum setzen oder `spv_expiration_password_checked` bzw. `spv_expiration_nopassword_checked` abschalten |
@@ -439,3 +451,6 @@ in einer späteren Version ändert.
 - [Sicherheit und Setup-Warnungen](security-hardening.md)
 - [Hintergrund-Jobs (Cron)](background-jobs.md)
 - [Dateien und Freigaben](../user/files-sharing.md)
+- Apps: [Passwortrichtlinie](../plugins/apps/password_policy.md),
+  [Guests](../plugins/apps/guests.md),
+  [Benutzerdefinierte Gruppen](../plugins/apps/customgroups.md)

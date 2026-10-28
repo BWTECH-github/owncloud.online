@@ -1,75 +1,77 @@
 # Performance
 
-Maintained by BW-Tech GmbH.
+Gepflegt von der BW-Tech GmbH.
 
-Performance-Änderungen werden immer mit identischem Datenbestand, identischer
-Hardware und denselben Benchmark-Parametern verglichen. Einzelne Messwerte aus
-SQLite-Entwicklungsinstanzen sind keine Produktionsaussage.
+Vergleichen Sie Messwerte vor und nach einer Änderung immer mit identischem
+Datenbestand, identischer Hardware und denselben Benchmark-Parametern. Einzelne Messwerte aus
+SQLite-Entwicklungsinstanzen sind keine Aussage über den Produktivbetrieb.
 
 ## Stufenplan
 
-1. Baseline mit API-, WebDAV-, Upload- und Download-Messungen erfassen.
+1. Ausgangswerte mit API-, WebDAV-, Upload- und Download-Messungen erfassen.
 2. PHP-FPM, OPcache, MariaDB, Redis-Locking, APCu, System-Cron und begrenzte
-   Retention auf einer isolierten Staging-Instanz validieren.
+   Aufbewahrung (Retention) auf einer isolierten Staging-Instanz prüfen.
 3. Einen anonymisierten Produktionsdatenbestand mit mindestens einer Million
    Filecache-Einträgen messen. Erst danach zusätzliche Indizes anhand von
    `EXPLAIN` und Slow-Query-Log bewerten.
-4. Desktop-Sync mit unverändertem Testbestand profilieren. Server- und
+4. Den Desktop-Sync mit unverändertem Testbestand profilieren. Server- und
    Client-Änderungen getrennt messen.
-5. Änderungen per Canary-Instanz ausrollen und Fehlerquote, Datenbanklatenz,
-   Lock-Wartezeiten, PHP-FPM-Auslastung und Sync-Dauer überwachen.
+5. Änderungen zuerst auf einer Canary-Instanz ausrollen und dabei Fehlerquote,
+   Datenbanklatenz, Wartezeiten auf Sperren, Auslastung von PHP-FPM und
+   Sync-Dauer überwachen.
 
-Jede Stufe hat einen eigenen Vorher-Nachher-Vergleich und eine dokumentierte
-Rollback-Möglichkeit.
+Jede Stufe hat einen eigenen Vorher-Nachher-Vergleich und einen dokumentierten
+Weg zurück.
 
-## Validierte Referenzmessung
+## Referenzmessung
 
-Die Stufen 1 bis 3 wurden mit PHP 8.4, Nginx, PHP-FPM, MariaDB, Redis und APCu
-auf einer isolierten Instanz geprüft. Der Stufe-3-Datensatz enthielt 1.000
-Ordner mit jeweils 1.000 Dateien und damit mehr als eine Million
+Die Stufen 1 bis 3 wurden mit PHP 8.4, nginx, PHP-FPM, MariaDB, Redis und APCu
+auf einer isolierten Instanz gemessen. Der Datensatz für Stufe 3 enthielt
+1.000 Ordner mit jeweils 1.000 Dateien und damit mehr als eine Million
 Filecache-Einträge.
 
-| Messung | SQLite/PHP-Server | MariaDB/Redis/Nginx | Mit 1 Mio. Filecache-Einträgen |
+| Messung | SQLite/PHP-Server | MariaDB/Redis/nginx | Mit 1 Mio. Filecache-Einträgen |
 | --- | ---: | ---: | ---: |
 | 100 kleine Uploads | 41,07 s | 7,53 s | 7,45 s |
 | Upload 16 MiB | 26,12 MiB/s | 34,95 MiB/s | 33,99 MiB/s |
 | Download 16 MiB | 42,83 MiB/s | 54,84 MiB/s | 44,62 MiB/s |
 | PROPFIND p95 | 350,43 ms | 338,89 ms | 322,47 ms |
 
-`files:cleanup` benötigte mit einer Million gültigen Einträgen und 10.000
-verwaisten Einträgen vorher 9,33 Sekunden. Die Storage-basierte Bereinigung
-reduzierte den Lauf auf 0,81 Sekunden.
+`files:cleanup` brauchte mit einer Million gültigen und 10.000 verwaisten
+Einträgen zunächst 9,33 Sekunden. Seit der Befehl verwaiste Einträge je Speicher
+löscht, dauert derselbe Lauf 0,81 Sekunden.
 
 Die Messung rechtfertigt keine zusätzlichen Standardindizes:
 
-- `(storage, path_hash)` bedient exakte Pfadauflösung.
-- `(parent, name)` bedient Ordnerlisten inklusive Namenssortierung.
-- Ein alleiniger `parent`-Index wäre redundant.
-- Core-Sync-Abfragen sortieren nicht global nach `mtime`. Ein zusätzlicher
-  `mtime`-Index würde Schreibkosten erhöhen, ohne den gemessenen Sync-Pfad zu
-  beschleunigen.
+- `(storage, path_hash)` bedient die exakte Pfadauflösung.
+- `(parent, name)` bedient Ordnerlisten einschließlich der Sortierung nach
+  Namen.
+- Ein eigener Index nur auf `parent` wäre überflüssig.
+- Die Sync-Abfragen des Kerns sortieren nicht global nach `mtime`. Ein
+  zusätzlicher `mtime`-Index würde Schreibkosten erhöhen, ohne den gemessenen
+  Sync-Pfad zu beschleunigen.
 - Suchen mit führendem Platzhalter wie `%begriff%` können keinen normalen
-  B-Tree-Index effizient nutzen. Eine Volltextsuche wäre eine eigene,
-  datenbankübergreifend zu entwickelnde Funktion.
+  B-Tree-Index effizient nutzen. Eine Volltextsuche wäre eine eigene Funktion,
+  die für alle unterstützten Datenbanken entwickelt werden müsste.
 
 ## Empfohlene Produktionsbasis
 
 - PHP 8.4 FPM mit aktiviertem OPcache
 - MariaDB oder MySQL statt SQLite
-- Redis für transaktionales File-Locking
-- APCu als lokaler Cache
-- System-Cron statt AJAX- oder Web-Cron
-- ausreichend RAM für Datenbank und PHP-FPM ohne Swap
-- niedrige Latenz zwischen Webserver, Datenbank, Redis und Storage
+- Redis für transaktionale Dateisperren
+- APCu als lokaler Zwischenspeicher
+- System-Cron statt AJAX- oder Webcron
+- genug RAM für Datenbank und PHP-FPM, ohne dass das System auslagert
+- niedrige Latenz zwischen Webserver, Datenbank, Redis und Speicher
 
-Redis-Verfügbarkeit prüfen:
+Redis und PHP-Erweiterungen prüfen:
 
 ```bash
 redis-cli ping
 php8.4 -m | grep -E 'apcu|redis|Zend OPcache'
 ```
 
-owncloud.online-Konfiguration prüfen:
+Konfiguration von owncloud.online prüfen:
 
 ```bash
 sudo -u www-data php8.4 occ config:system:get dbtype
@@ -81,38 +83,56 @@ sudo -u www-data php8.4 occ background:queue:status
 ## OPcache-Dimensionierung
 
 Der Standardwert `opcache.max_accelerated_files=10000` reicht für
-owncloud.online nicht: die Installation umfasst inklusive aller Apps und
-Vendor-Bibliotheken über 14.000 PHP-Dateien. Wird das Limit überschritten,
-verdrängt OPcache Einträge und kompiliert unter wechselnder Last laufend Dateien
-neu. Dateizahl prüfen und das Limit darüber setzen:
+owncloud.online nicht. Das Release-Paket 11.0.25 bringt allein 5.878
+PHP-Dateien mit, jede App aus dem Marktplatz weitere, einzelne Apps samt ihren
+Bibliotheken über 1.000. Mit allen Apps sind es über 14.000. Wird das Limit
+überschritten, verdrängt OPcache Einträge und kompiliert unter wechselnder Last
+laufend Dateien neu. Zählen Sie die Dateien und setzen Sie das Limit darüber:
 
 ```bash
-find /pfad/zum/webroot -name '*.php' | wc -l
+find /var/www/owncloud.online -name '*.php' | wc -l
 ```
 
-Empfohlene `php.ini`- bzw. FPM-Pool-Werte:
+Empfohlene Werte für `php.ini` bzw. den FPM-Pool:
 
 ```ini
 opcache.enable=1
 opcache.memory_consumption=256      ; MB, 512 bei sehr vielen Apps
 opcache.interned_strings_buffer=32
 opcache.max_accelerated_files=24000 ; muss die Dateizahl übersteigen
-opcache.validate_timestamps=0       ; nur mit OPcache-Reset im Deploy
-opcache.enable_cli=0                 ; CLI/Cron braucht keinen persistenten OPcache
+opcache.validate_timestamps=0       ; nur mit OPcache-Reset beim Update
+opcache.enable_cli=0                ; CLI/Cron braucht keinen persistenten OPcache
 ```
 
-`validate_timestamps=0` macht Code-Änderungen erst nach FPM-Reload oder
-OPcache-Reset sichtbar. Das Deploy-Werkzeug muss den Reset auslösen, sonst laufen
-alte Klassen weiter.
+Mit `validate_timestamps=0` werden Code-Änderungen erst nach einem Neuladen von
+PHP-FPM oder einem OPcache-Reset sichtbar. Laden Sie PHP-FPM deshalb nach jedem
+Update neu (`systemctl reload php8.4-fpm`), sonst laufen alte Klassen weiter.
 
 ## OPcache-Preloading (PHP 8.4)
 
 Aufbauend auf der Dimensionierung oben kann OPcache den stabilen Server-Code
-bereits beim FPM-Start kompilieren und verlinken (Preloading). Worker sparen
-sich damit das Klassen-Linking pro Request und die Warmup-Phase nach jedem
-Reload. Das mitgelieferte Script `build/preload.php` lädt `lib/private`,
-`lib/public`, `core/` und den Composer-Vendor-Baum — App-Verzeichnisse bewusst
-nicht, da Apps zur Laufzeit (de)aktiviert und aktualisiert werden.
+schon beim Start von PHP-FPM kompilieren und verlinken (Preloading). Die
+Worker sparen sich damit das Verlinken der Klassen bei jeder Anfrage und die
+Aufwärmphase nach jedem Neuladen. Das Skript `build/preload.php` lädt
+`lib/private`, `lib/public`, `core/` und die Composer-Bibliotheken unter
+`lib/composer`. App-Verzeichnisse lädt es bewusst nicht, weil Apps im laufenden
+Betrieb aktiviert, deaktiviert und aktualisiert werden.
+
+Das Skript liegt im Quellcode-Repository, nicht im Release-Paket. Für eine
+Installation aus dem Release-Paket legen Sie es passend zur installierten
+Version unter `build/` im Installationsverzeichnis ab. Es bestimmt das
+Installationsverzeichnis über seinen eigenen Ablageort und muss deshalb genau
+dort liegen:
+
+```bash
+sudo -u www-data mkdir -p /var/www/owncloud.online/build
+sudo -u www-data curl -fLo /var/www/owncloud.online/build/preload.php \
+  https://raw.githubusercontent.com/BWTECH-github/owncloud.online/v11.0.25/build/preload.php
+```
+
+Von außen ist die Datei nicht abrufbar: Die `.htaccess` und die
+nginx-Konfiguration aus der [Installationsanleitung](../installation/linux-server.md)
+sperren `build/`.
 
 Aktivierung in der FPM-Pool-Konfiguration bzw. `php.ini`:
 
@@ -123,55 +143,68 @@ opcache.preload_user=www-data
 
 Hinweise:
 
-- Preloading setzt die Deploy-Disziplin von `validate_timestamps=0` voraus:
-  nach jedem Deploy FPM neu laden, sonst läuft alter Code weiter.
-- Meldungen wie `Can't preload unlinked class` beim Start sind harmlos — die
-  Klassen werden ungelinkt gecacht und beim ersten Zugriff verlinkt.
-- Das Script ist fehlertolerant: einzelne nicht kompilierbare Dateien werden
-  übersprungen und verhindern den FPM-Start nicht. Ins Error-Log wird eine
-  Zeile `owncloud.online preload: compiled N of M files` geschrieben.
-- Erst auf einer Staging-Instanz aktivieren und den FPM-Start prüfen
-  (`systemctl restart php8.4-fpm && systemctl status php8.4-fpm`).
+- Preloading setzt dieselbe Disziplin wie `validate_timestamps=0` voraus: nach
+  jedem Update PHP-FPM neu laden, sonst läuft alter Code weiter.
+- Ein Update ersetzt das Programmverzeichnis, `build/preload.php` fehlt danach.
+  Legen Sie die Datei in der Version des neuen Release wieder ab, bevor PHP-FPM
+  neu startet. Fehlt sie, bricht PHP schon beim Start mit „Failed opening
+  required …“ ab.
+- Meldungen wie `Can't preload unlinked class` beim Start sind harmlos. Diese
+  Klassen liegen unverlinkt im Zwischenspeicher und werden beim ersten Zugriff
+  verlinkt.
+- Das Skript ist fehlertolerant: Einzelne Dateien, die sich nicht kompilieren
+  lassen, überspringt es, sie verhindern den Start von PHP-FPM nicht. Ins
+  Fehlerprotokoll von PHP schreibt es eine Zeile
+  `owncloud.online preload: compiled N of M files`.
+- Aktivieren Sie Preloading zuerst auf einer Staging-Instanz und prüfen Sie den
+  Start (`systemctl restart php8.4-fpm && systemctl status php8.4-fpm`).
 
 ## Frontend-Auslieferung
 
-Die Weboberfläche lädt JavaScript und CSS als viele einzelne, unkomprimierte
-Dateien. Bis diese gebündelt und minifiziert werden, senkt der TLS-Terminator die
-wahrgenommene Ladezeit am wirksamsten:
+Die Weboberfläche lädt JavaScript und CSS als viele einzelne Dateien. Seit
+11.0.12 sind die Dateien des Kerns und der mitgelieferten Apps minifiziert, und
+unter Apache komprimiert die mitgelieferte `.htaccess` sie mit `mod_brotli` oder
+`mod_deflate`. Gebündelt werden die Dateien nicht. Am TLS-Terminator senken
+deshalb diese Punkte die Ladezeit am stärksten:
 
-- HTTP/2 aktivieren; das Multiplexing spart die Round-Trips der vielen Einzeldateien
+- HTTP/2 einschalten: Per Multiplexing laufen die vielen Einzeldateien
+  gleichzeitig über eine Verbindung, statt nacheinander auf Antworten zu warten
 - Keepalive zum PHP-FPM-Upstream
-- gzip oder brotli für `text/*`, `application/javascript` und `application/json`
+- gzip oder brotli für `text/*`, `application/javascript` und
+  `application/json`, wenn die Dateien nicht von Apache mit der mitgelieferten
+  `.htaccess` ausgeliefert werden
 
 ## Grenzen einzelner Server-Optimierungen
 
-Auf einer Instanz mit warmem OPcache bewegt der kompilierte Route-Cache
-(`route.cache`) die Antwortzeit messbar nicht: OPcache hält die Routen-Dateien
+Auf einer Instanz mit warmem OPcache bewegt der kompilierte Routen-Cache
+(`route.cache`) die Antwortzeit nicht messbar: OPcache hält die Routen-Dateien
 bereits vor, und der Router baut ohnehin nur die Routen bereits geladener Apps.
-Der Route-Cache hilft vor allem bei kaltem oder deaktiviertem OPcache und frisch
-gestarteten FPM-Workern.
+Der Routen-Cache hilft vor allem bei kaltem oder abgeschaltetem OPcache und
+frisch gestarteten FPM-Workern.
 
-Der dominierende Kostenblock eines authentifizierten Requests ist die
-Wiederholung von Passwort-Hashing (bcrypt) und Session- sowie Filesystem-Setup.
-Ein Client, der seine Session-Cookie über Requests hält, erreicht ein Vielfaches
-der Geschwindigkeit gegenüber einem Client, der bei jedem Request erneut per
-Basic-Auth authentifiziert. Sync- und API-Clients sollten die Session-Cookie
-wiederverwenden.
+Den größten Teil der Kosten einer angemeldeten Anfrage verursachen das
+wiederholte Passwort-Hashing (bcrypt) und der Aufbau von Sitzung und
+Dateisystem. Ein Client, der sein Sitzungs-Cookie über mehrere Anfragen hält,
+ist um ein Vielfaches schneller als einer, der sich bei jeder Anfrage erneut
+per HTTP-Basic anmeldet. Sync- und API-Clients sollten das Sitzungs-Cookie
+deshalb wiederverwenden.
 
-Für den Desktop- und Mobil-Client ist das bcrypt-Problem bereits gelöst: er
-authentifiziert mit einem Geräte-Token (`oc_authtoken`, App-Passwort), nicht mit
-dem Kontopasswort. `OC\User\Session::checkTokenCredentials()` prüft bcrypt nur,
-wenn die `last_check`-Spalte des Tokens älter als `last_check_timeout` (Standard
-5 Minuten) ist — nicht bei jedem Request. Ein per Plaintext-Passwort geschlüsselter
-Hash-Cache darf NICHT ergänzt werden: er würde Passwort-Material speichern und
-Brute-Force-Drosselung, Rate-Limiting sowie Token-Widerruf aushebeln. Der
-verbleibende Per-Request-bcrypt betrifft nur Nicht-Token-Clients, die das rohe
-Kontopasswort ohne persistente Session senden (z. B. fremde WebDAV-Integrationen).
+Für Desktop- und Mobil-Client ist das bcrypt-Problem bereits gelöst: Sie melden
+sich mit einem Geräte-Token an (`oc_authtoken`, App-Passwort), nicht mit dem
+Passwort des Kontos. `OC\User\Session::checkTokenCredentials()` prüft bcrypt
+nur, wenn die Spalte `last_check` des Tokens älter als `last_check_timeout`
+(Vorgabe 5 Minuten) ist, nicht bei jeder Anfrage. Einen Zwischenspeicher für
+Passwortprüfungen, der auf dem Klartext-Passwort beruht, legt owncloud.online
+bewusst nicht an: Er müsste Passwortdaten speichern und würde die Bremse gegen
+Passwort-Raten, die Begrenzung der Anfragerate und den Widerruf von Tokens
+aushebeln. Das verbleibende bcrypt pro Anfrage betrifft nur Clients ohne Token,
+die das Passwort des Kontos ohne dauerhafte Sitzung senden (etwa fremde
+WebDAV-Integrationen).
 
-## Retention
+## Aufbewahrung (Retention)
 
-Alte Aktivitäten, Papierkorbobjekte und Versionen erhöhen langfristig
-Datenbank- und Storage-Last. Die folgenden Werte sind ein Ausgangspunkt für
+Alte Aktivitäten, Objekte im Papierkorb und Versionen erhöhen auf Dauer die
+Last für Datenbank und Speicher. Die folgenden Werte sind ein Ausgangspunkt für
 Installationen ohne abweichende Aufbewahrungspflichten:
 
 ```bash
@@ -185,11 +218,10 @@ sudo -u www-data php8.4 occ config:system:set \
   versions_retention_obligation --value 'auto, 30'
 ```
 
-Vor dem Setzen müssen vertragliche und gesetzliche Aufbewahrungsregeln geprüft
-werden. Die Werte löschen nicht sofort während des Befehls. Die Bereinigung
-erfolgt durch Hintergrundjobs.
+Prüfen Sie vorher vertragliche und gesetzliche Aufbewahrungsregeln. Die Befehle
+löschen nichts sofort. Die Bereinigung übernehmen die Hintergrund-Jobs.
 
-Rollback auf die Standardautomatik:
+Zurück zur Standardautomatik:
 
 ```bash
 sudo -u www-data php8.4 occ config:system:delete activity_expire_days
@@ -201,14 +233,16 @@ sudo -u www-data php8.4 occ config:system:set \
 
 ## Filecache-Wartung
 
-Vor Wartungsbefehlen Datenbank und Datenverzeichnis sichern:
+Sichern Sie vor Wartungsbefehlen Datenbank und Datenverzeichnis, siehe
+[Backups und Updates](backups-updates.md).
 
 ```bash
 sudo -u www-data php8.4 occ files:cleanup
 ```
 
-`files:cleanup` entfernt ausschließlich Filecache-Einträge, deren Storage nicht
-mehr existiert. Es ersetzt keine Papierkorb- oder Versionsbereinigung.
+`files:cleanup` entfernt ausschließlich Filecache-Einträge, deren Speicher
+nicht mehr existiert. Es ersetzt keine Bereinigung von Papierkorb oder
+Versionen.
 
 Tabellengrößen beobachten:
 
@@ -218,18 +252,20 @@ SELECT COUNT(*) FROM oc_activity;
 SELECT COUNT(*) FROM oc_file_locks;
 ```
 
-Zusätzliche Indizes nicht blind anlegen. Vorher und nachher müssen
-`EXPLAIN`, Schreiblast, Speicherverbrauch und realer Desktop-Sync gemessen
-werden. Der vorhandene Index auf `(parent, name)` kann reine
-`parent`-Abfragen bereits bedienen.
+Legen Sie zusätzliche Indizes nicht blind an. Messen Sie vorher und nachher
+`EXPLAIN`, Schreiblast, Speicherverbrauch und einen echten Desktop-Sync. Der
+vorhandene Index auf `(parent, name)` bedient reine `parent`-Abfragen bereits.
 
 ## Reproduzierbarer Benchmark
 
-Der mitgelieferte Benchmark liegt unter:
+Der Benchmark liegt im Quellcode-Repository, nicht im Release-Paket:
 
 ```text
 tests/performance/benchmark.py
 ```
+
+Er braucht nur Python 3 ohne weitere Pakete. Er legt im Konto einen eigenen
+Ordner an und löscht ihn nach der Messung wieder (außer mit `--keep-data`).
 
 Beispiel:
 
@@ -246,6 +282,6 @@ python3 tests/performance/benchmark.py \
   --output build/performance/staging.json
 ```
 
-Der Testbenutzer darf keine produktiven Daten enthalten. Für einen
+Das Testkonto darf keine produktiven Daten enthalten. Für einen
 Vorher-Nachher-Vergleich müssen Datenmenge, App-Liste, Netzwerklatenz,
 Parallelität und Serverkonfiguration unverändert bleiben.

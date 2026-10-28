@@ -2,44 +2,43 @@
 
 Die meisten Produktivinstallationen von owncloud.online stehen hinter einem
 Reverse-Proxy, der TLS terminiert. Der Anwendungsserver sieht dann nicht mehr
-den Client, sondern den Proxy — Client-Adresse, Protokoll und Hostname stehen
-nur noch in HTTP-Kopfzeilen, denen der Server erst ausdrücklich vertrauen muss.
-Diese Seite beschreibt, welche Schlüssel dafür gesetzt sein müssen, wie eine
-passende nginx- und Apache-Konfiguration aussieht und woran typische
-Fehlkonfigurationen erkennbar sind.
+den Client, sondern den Proxy. Client-Adresse, Protokoll und Hostname kommen
+nur noch über HTTP-Kopfzeilen an, und diesen Kopfzeilen vertraut der Server
+erst, wenn Sie es ausdrücklich einstellen. Unten stehen die nötigen
+Schlüssel, Beispiele für nginx und Apache und die typischen
+Fehlkonfigurationen.
 
 ## Wie die Client-Adresse ermittelt wird
 
 Maßgeblich ist `OC\AppFramework\Http\Request::getRemoteAddress()` in
-`lib/private/AppFramework/Http/Request.php`. Der Ablauf ist kurz:
+`lib/private/AppFramework/Http/Request.php`:
 
-1. Ausgangswert ist `$_SERVER['REMOTE_ADDR']` — die Adresse der Gegenstelle,
-   hinter einem Proxy also die des Proxys.
-2. Steht diese Adresse in `trusted_proxies`, werden die in
-   `forwarded_for_headers` genannten Server-Variablen gelesen.
-3. Diese Variablen werden der Reihe nach durchgegangen; übernommen wird die
-   erste syntaktisch gültige IP-Adresse, die dabei auftaucht. Findet sich in
-   keiner eine gültige Adresse, bleibt es bei `REMOTE_ADDR`.
+1. Ausgangswert ist `$_SERVER['REMOTE_ADDR']`, die Adresse der Gegenstelle.
+   Hinter einem Proxy ist das die Adresse des Proxys.
+2. Steht diese Adresse in `trusted_proxies`, liest der Server die in
+   `forwarded_for_headers` genannten Server-Variablen.
+3. Er geht diese Variablen der Reihe nach durch und übernimmt die erste
+   syntaktisch gültige IP-Adresse. Findet er keine, bleibt es bei
+   `REMOTE_ADDR`.
 
 Drei Eigenheiten dieser Auswertung entscheiden über Erfolg oder Misserfolg:
 
 - Der Abgleich mit `trusted_proxies` ist ein **exakter Vergleich** der
   Zeichenkette (`in_array`). CIDR-Notation wie `10.0.0.0/24` wird nicht
-  aufgelöst und trifft nie zu. Jede Proxy-Adresse einzeln eintragen, IPv6 genau
-  in der Schreibweise, in der sie in `REMOTE_ADDR` ankommt.
-- `forwarded_for_headers` enthält Namen von `$_SERVER`-Variablen, nicht
-  Kopfzeilennamen: aus `X-Forwarded-For` wird `HTTP_X_FORWARDED_FOR`. Ist der
-  Schlüssel nicht gesetzt, gilt ausschließlich `HTTP_X_FORWARDED_FOR` als
-  Standard.
-- Innerhalb der Kopfzeile gewinnt der **linke** Eintrag. Hängt der Proxy seine
-  Peer-Adresse nur an einen vom Client mitgeschickten Wert an, bleibt der
-  Client-Wert links stehen und wird übernommen. Der Proxy muss die Kopfzeile
-  deshalb **setzen** und nicht ergänzen (siehe Beispiele weiter unten).
+  aufgelöst und trifft nie zu. Tragen Sie jede Proxy-Adresse einzeln ein,
+  IPv6 genau in der Schreibweise, in der sie in `REMOTE_ADDR` ankommt.
+- `forwarded_for_headers` enthält Namen von `$_SERVER`-Variablen, keine
+  Kopfzeilennamen: Aus `X-Forwarded-For` wird `HTTP_X_FORWARDED_FOR`. Ist der
+  Schlüssel nicht gesetzt, gilt nur `HTTP_X_FORWARDED_FOR`.
+- Innerhalb der Kopfzeile gewinnt der **linke** Eintrag. Hängt der Proxy die
+  Adresse seiner Gegenstelle nur an einen vom Client mitgeschickten Wert an,
+  bleibt der Client-Wert links stehen und wird übernommen. Der Proxy muss die
+  Kopfzeile deshalb **setzen**, nicht ergänzen (siehe Beispiele unten).
 
 ## Warum trusted_proxies sicherheitsrelevant ist
 
-Die ermittelte Adresse ist kein reiner Protokollwert. Sie ist der Schlüssel,
-über den mehrere Schutzmechanismen zählen:
+Die ermittelte Adresse ist kein reiner Protokollwert. Mehrere Schutzmechanismen
+zählen über sie:
 
 | Verwendung | Fundstelle |
 | --- | --- |
@@ -47,36 +46,38 @@ Die ermittelte Adresse ist kein reiner Protokollwert. Sie ist der Schlüssel,
 | Bremse für Passwörter öffentlicher Links, gezählt pro (IP, Freigabe-Token) | `lib/private/Share20/Manager.php` → `'share_password'` |
 | Bremse am MCP-Endpunkt | `apps/oco_mcp/lib/Controller/McpController.php` → `'oco_mcp'` |
 | Feld `remoteAddr` in jeder Protokollzeile | `lib/private/Log/Owncloud.php`, `lib/private/Log/Syslog.php` |
-| Warnung „Trusted domain error" beim Zugriff über einen unbekannten Hostnamen | `lib/base.php` |
+| Protokollwarnung „Trusted domain error“ beim Zugriff über einen unbekannten Hostnamen | `lib/base.php` |
 
 Die Bremse in `lib/private/OCO/Security/Bruteforce/Throttler.php` zählt in drei
 Dimensionen und wendet die strengste an: pro (Adresse, Kennung), pro Adresse über
-alle Kennungen hinweg und pro Subnetz-Bucket (`/24` bei IPv4, `/64` bei IPv6),
-um Passwort-Sprühen über viele Adressen zu erkennen. Eine falsche Adressquelle
-wirkt sich damit nicht punktuell, sondern über alle drei Dimensionen aus.
+alle Kennungen hinweg und pro Subnetz (`/24` bei IPv4, `/64` bei IPv6). Die
+Subnetz-Zählung erkennt Angriffe, die Passwörter von vielen Adressen aus
+durchprobieren (Password Spraying). Eine falsche Adressquelle wirkt sich damit
+auf alle drei Dimensionen aus.
 
 | Konstellation | Folge |
 | --- | --- |
-| `trusted_proxies` korrekt gesetzt | Gezählt wird die echte Client-Adresse — der Schutz wirkt, und im Protokoll steht eine verwertbare Adresse |
-| `trusted_proxies` nicht gesetzt | Alle Anfragen zählen auf die Proxy-Adresse. Nutzer bremsen sich gegenseitig aus, und jede Protokollzeile nennt dieselbe Adresse |
-| Der Proxy hängt `X-Forwarded-For` nur an, statt es zu setzen | Der vom Client mitgeschickte Wert steht links und wird übernommen — ein Angreifer bekommt pro Anfrage eine neue „Adresse", die Bremse greift nicht |
-| In `trusted_proxies` steht eine Adresse, die nicht ausschließlich der Proxy belegt | Wer von dort aus Anfragen stellt, bestimmt seine Adresse über die Kopfzeile selbst — mit derselben Folge |
-| Anwendungsserver direkt aus dem Netz erreichbar | Anfragen umgehen den Proxy. Die Client-Adresse bleibt zwar echt, weil `REMOTE_ADDR` dann nicht in `trusted_proxies` steht, aber `X-Forwarded-Proto` und `X-Forwarded-Host` werden ohne diesen Abgleich ausgewertet — Protokoll und Hostname erzeugter Links sind von außen setzbar |
+| `trusted_proxies` korrekt gesetzt | Gezählt wird die echte Client-Adresse. Der Schutz wirkt, und im Protokoll steht eine verwertbare Adresse |
+| `trusted_proxies` nicht gesetzt | Alle Anfragen zählen auf die Proxy-Adresse. Benutzer bremsen sich gegenseitig aus, und jede Protokollzeile nennt dieselbe Adresse |
+| Der Proxy hängt `X-Forwarded-For` nur an, statt es zu setzen | Der vom Client mitgeschickte Wert steht links und wird übernommen. Ein Angreifer bekommt pro Anfrage eine neue „Adresse“, die Bremse greift nicht |
+| In `trusted_proxies` steht eine Adresse, die nicht ausschließlich der Proxy belegt | Wer von dort aus Anfragen stellt, bestimmt seine Adresse über die Kopfzeile selbst, mit derselben Folge |
+| Anwendungsserver direkt aus dem Netz erreichbar | Anfragen umgehen den Proxy. Die Client-Adresse bleibt echt, weil `REMOTE_ADDR` dann nicht in `trusted_proxies` steht. `X-Forwarded-Proto` und `X-Forwarded-Host` wertet der Server aber ohne diesen Abgleich aus: Das Protokoll erzeugter Links ist von außen setzbar, der Hostname auf jeden Namen aus `trusted_domains` |
 
 Daraus folgen zwei Pflichten für die Inbetriebnahme:
 
-1. `trusted_proxies` auf die **tatsächlichen** Adressen der Proxys setzen — keine
-   Bereiche „auf Verdacht", kein `0.0.0.0/0` (das ohnehin nicht ausgewertet
+1. `trusted_proxies` auf die **tatsächlichen** Adressen der Proxys setzen. Keine
+   Bereiche „auf Verdacht“, kein `0.0.0.0/0` (das ohnehin nicht ausgewertet
    würde). Jede dort eingetragene Adresse darf die Client-Adresse frei
    behaupten.
-2. Den Anwendungsserver (PHP-FPM oder das Backend-HTTP) niemals direkt
-   exponieren: Bindung an `127.0.0.1` oder eine Firewallregel, die nur den Proxy
-   durchlässt.
+2. Den Anwendungsserver (PHP-FPM oder den HTTP-Server hinter dem Proxy) nie direkt
+   erreichbar machen: Bindung an `127.0.0.1` oder eine Firewallregel, die nur
+   den Proxy durchlässt.
 
-Ist die App `brute_force_protection` installiert und aktiv, überlässt ihr die
-eingebaute Bremse die Richtlinie für Anmeldung und Link-Passwörter; die übrigen
-Wege bleiben von der eingebauten Bremse geschützt. An der Bedeutung der
-Client-Adresse ändert das nichts.
+Ist die App „Brute-Force-Schutz“ (`brute_force_protection`) installiert und
+aktiv, überlässt ihr die eingebaute Bremse seit 11.0.14 die Regeln für
+Anmeldung und Link-Passwörter. Die übrigen Wege schützt weiter die eingebaute
+Bremse. Auch die App zählt nach der Client-Adresse, an der Bedeutung von
+`trusted_proxies` ändert sich also nichts.
 
 ## Werte setzen
 
@@ -87,9 +88,9 @@ sudo -u www-data php8.4 occ config:system:set overwrite.cli.url \
   --value https://cloud.example.com
 ```
 
-Der zweite Positionsparameter (`0`) ist der Index im Array — `config:system:set`
-nimmt mehrere Namensteile entgegen und baut daraus verschachtelte Werte. Für
-einen zweiten Proxy folgt entsprechend Index `1`.
+Der zweite Positionsparameter (`0`) ist der Index im Array. `config:system:set`
+nimmt mehrere Namensteile entgegen und baut daraus verschachtelte Werte. Ein
+zweiter Proxy bekommt entsprechend den Index `1`.
 
 Gleichwertig direkt in `config/config.php`:
 
@@ -110,22 +111,22 @@ Gleichwertig direkt in `config/config.php`:
 | `overwritecondaddr` | Regulärer Ausdruck auf `REMOTE_ADDR`; begrenzt im ausgelieferten Code nur `overwriteprotocol` | `'^10\.0\.0\.5$'` |
 | `overwrite.cli.url` | Basis-URL für Aufrufe ohne Request, also Cron und `occ` | `'https://cloud.example.com'` |
 
-Zum Protokoll: Ist `overwriteprotocol` leer, wertet `getServerProtocol()`
-`X-Forwarded-Proto` aus — und zwar **ohne** Abgleich mit `trusted_proxies`.
-Dasselbe gilt für `X-Forwarded-Host` in `getInsecureServerHost()`. Beide
-Kopfzeilen muss der Proxy deshalb selbst setzen und einen vom Client
-mitgeschickten Wert dabei überschreiben.
+Zum Protokoll: Ist `overwriteprotocol` leer, wertet `getServerProtocol()` die
+Kopfzeile `X-Forwarded-Proto` aus, und zwar **ohne** Abgleich mit
+`trusted_proxies`. Dasselbe gilt für `X-Forwarded-Host` in
+`getInsecureServerHost()`. Beide Kopfzeilen muss der Proxy deshalb selbst
+setzen und dabei einen vom Client mitgeschickten Wert überschreiben.
 
-Zum Host: Ohne `overwritehost` wird der Name aus `X-Forwarded-Host` bzw. `Host`
-gegen `trusted_domains` geprüft. Passt er nicht, verwendet der Server den ersten
-Eintrag aus `trusted_domains` — Links zeigen dann auf einen anderen Hostnamen,
-als der Benutzer aufgerufen hat.
+Zum Host: Ohne `overwritehost` prüft der Server den Namen aus
+`X-Forwarded-Host` bzw. `Host` gegen `trusted_domains`. Passt er nicht,
+verwendet der Server den ersten Eintrag aus `trusted_domains`. Links zeigen
+dann auf einen anderen Hostnamen, als der Benutzer aufgerufen hat.
 
 Zu `overwritecondaddr` drei Punkte, die in der Praxis Zeit kosten:
 
 - Geprüft wird `REMOTE_ADDR`, also die Adresse des **Proxys**, nicht die des
   Clients. Dort gehört die Proxy-Adresse hinein.
-- Der Ausdruck wird ungeschützt zwischen zwei Schrägstriche gesetzt. Punkte
+- Der Server setzt den Ausdruck ungeschützt zwischen zwei Schrägstriche. Punkte
   maskieren, Anker verwenden, keine Schrägstriche im Muster.
 - `config/config.sample.php` schreibt, die Bedingung gelte für
   `overwritewebroot`, `overwriteprotocol` und `overwritehost`. Im Code trifft
@@ -138,9 +139,9 @@ Zu `overwritecondaddr` drei Punkte, die in der Praxis Zeit kosten:
 ## nginx als TLS-Terminator
 
 Die Kopfzeilen werden hier mit `proxy_set_header` gesetzt und überschreiben
-damit alles, was der Client mitgeschickt hat. `X-Forwarded-For` bewusst auf
-`$remote_addr` statt auf `$proxy_add_x_forwarded_for`: Letzteres hängt an einen
-vom Client gesetzten Wert an, und ausgewertet wird der linke Eintrag.
+damit alles, was der Client mitgeschickt hat. `X-Forwarded-For` steht bewusst
+auf `$remote_addr` statt auf `$proxy_add_x_forwarded_for`: Letzteres hängt an
+einen vom Client gesetzten Wert an, und ausgewertet wird der linke Eintrag.
 
 ```nginx
 server {
@@ -152,14 +153,14 @@ server {
     ssl_certificate     /etc/letsencrypt/live/cloud.example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/cloud.example.com/privkey.pem;
 
-    # Die .htaccess wird von nginx nicht gelesen; HSTS gehoert hierher
+    # nginx liest keine .htaccess; HSTS gehört deshalb hierher
     add_header Strict-Transport-Security "max-age=15552000; includeSubDomains" always;
 
     # WebDAV-Umleitungen, siehe Abschnitt ".well-known"
     location ^~ /.well-known/carddav { return 301 /remote.php/dav/; }
     location ^~ /.well-known/caldav  { return 301 /remote.php/dav/; }
 
-    # Grenzen fuer grosse Uploads
+    # Grenzen für große Uploads
     client_max_body_size 0;
     client_body_timeout  300s;
 
@@ -181,8 +182,8 @@ server {
 ```
 
 Liefert nginx die Instanz selbst über PHP-FPM aus, gelten dieselben Punkte für
-den FastCGI-Block. Wichtig ist dort zusätzlich, dass die `Authorization`-Kopfzeile
-bei PHP ankommt: `lib/base.php` baut `PHP_AUTH_USER`/`PHP_AUTH_PW` aus
+den FastCGI-Block. Dort muss zusätzlich die `Authorization`-Kopfzeile bei PHP
+ankommen: `lib/base.php` baut `PHP_AUTH_USER` und `PHP_AUTH_PW` aus
 `HTTP_AUTHORIZATION` bzw. `REDIRECT_HTTP_AUTHORIZATION` nach. Ohne diese
 Kopfzeile scheitert jede Basic-Auth-Anmeldung von WebDAV-Clients.
 
@@ -198,8 +199,8 @@ location ~ \.php(?:$|/) {
 ## Apache als TLS-Terminator
 
 `RequestHeader unset X-Forwarded-For` entfernt zuerst einen vom Client
-mitgeschickten Wert; mod_proxy trägt danach die tatsächliche Peer-Adresse als
-einzigen Eintrag ein.
+mitgeschickten Wert. mod_proxy trägt danach die tatsächliche Adresse der
+Gegenstelle als einzigen Eintrag ein.
 
 ```apache
 <VirtualHost *:443>
@@ -228,24 +229,30 @@ einzigen Eintrag ein.
 </VirtualHost>
 ```
 
-Terminiert Apache das TLS und führt owncloud.online in derselben Instanz aus,
-ist kein Reverse-Proxy im Spiel: `mod_ssl` setzt dann die Umgebungsvariable
+Terminiert Apache das TLS und führt owncloud.online selbst aus, ist kein
+Reverse-Proxy im Spiel. `mod_ssl` setzt dann die Umgebungsvariable
 `HTTPS`, und die mitgelieferte `.htaccess` setzt den HSTS-Header selbst
-(`env=HTTPS`). In diesem Fall darf HSTS nicht zusätzlich im VirtualHost gesetzt
-werden, sonst geht der Header doppelt hinaus. Voraussetzung bleibt
-`AllowOverride All` für das Verzeichnis, sonst wirken weder die Umleitungen noch
-die Sicherheits-Kopfzeilen aus der `.htaccess`.
+(`env=HTTPS`). Setzen Sie HSTS in diesem Fall nicht zusätzlich im VirtualHost,
+sonst steht der Header je nach Konfiguration doppelt in der Antwort.
+Voraussetzung bleibt `AllowOverride All` für das Verzeichnis, sonst wirken
+weder die Umleitungen noch die Sicherheits-Kopfzeilen aus der `.htaccess`.
 
 ## Zeitgrenzen für große Uploads
 
 Große Dateien laden die Clients in Teilstücken nach
 `/remote.php/dav/uploads/…` hoch und schließen den Vorgang mit einem `MOVE` ab.
-Erst dieses `MOVE` setzt die Teile serverseitig zusammen
+Erst dieses `MOVE` setzt die Teile auf dem Server zusammen
 (`apps/dav/lib/Upload/AssemblyStream.php`) und schreibt die Datei an ihren
-Zielort. Der Abschluss ist damit eine einzelne, lange laufende Anfrage ohne
-Datenverkehr — genau das Muster, das Proxys nach der Standard-Zeitgrenze
-abbrechen. Der Client meldet dann einen Fehler, obwohl alle Teile bereits
-übertragen sind.
+Zielort. Der Abschluss ist damit eine einzelne, lange Anfrage ohne
+Datenverkehr. Genau dieses Muster brechen Proxys nach ihrer Standard-Zeitgrenze
+ab. Der Client meldet dann einen Fehler, obwohl alle Teile bereits übertragen
+sind.
+
+Seit 11.0.20 schließt die Weboberfläche große Uploads asynchron ab: Der Server
+antwortet sofort mit `202` und setzt die Datei danach zusammen. Sync-Clients
+nutzen diesen Weg nur, wenn `dav.enable.async` eingeschaltet ist (Vorgabe:
+`false`). Für sie bleibt der abschließende `MOVE` eine lange Anfrage, und die
+Zeitgrenzen in der folgenden Tabelle müssen dazu passen.
 
 | Ebene | Stellschraube |
 | --- | --- |
@@ -258,8 +265,10 @@ abbrechen. Der Client meldet dann einen Fehler, obwohl alle Teile bereits
 Ein Stolperstein: Die mitgelieferte `.htaccess` enthält zwar
 `php_value upload_max_filesize 513M` und `php_value post_max_size 513M`, aber
 nur innerhalb von `<IfModule mod_php5.c>` und `<IfModule mod_php7.c>`. Unter
-PHP-FPM — der für owncloud.online empfohlenen Betriebsart — wird dieser Block
-nie ausgeführt. Die Werte gehören dort in `php.ini` oder die Pool-Konfiguration.
+PHP-FPM, der für owncloud.online empfohlenen Betriebsart, greifen diese Zeilen
+nie. Dort setzt die mitgelieferte `.user.ini` 513 MB. Höhere Werte gehören in
+die `php.ini` oder die Pool-Konfiguration, denn die `.user.ini` wird bei jedem
+Update mit dem Programmverzeichnis ersetzt.
 
 ## .well-known-Umleitungen
 
@@ -272,25 +281,25 @@ RewriteRule ^\.well-known/carddav /remote.php/dav/ [R=301,L]
 RewriteRule ^\.well-known/caldav  /remote.php/dav/ [R=301,L]
 ```
 
-`/remote.php/dav` ist in `remote.php` fest verdrahtet und ebenso `webdav`,
-`caldav`, `carddav` und `files` — die Umleitungen zeigen also auf einen
+`/remote.php/dav` ist in `remote.php` fest verdrahtet, ebenso `webdav`,
+`caldav`, `carddav` und `files`. Die Umleitungen zeigen also auf einen
 Endpunkt, den keine App-Registrierung erst herstellen muss.
 
 Zwei Punkte dazu:
 
 - nginx liest keine `.htaccess`. Ohne die beiden `location`-Blöcke aus dem
-  nginx-Beispiel fehlen die Umleitungen ersatzlos.
-- Die `.htaccess` sperrt Pfade, die mit einem Punkt beginnen, per 404 —
-  ausgenommen sind ausdrücklich `/.well-known/acme-challenge/` und
+  nginx-Beispiel fehlen die Umleitungen.
+- Die `.htaccess` sperrt Pfade, die mit einem Punkt beginnen, per 404.
+  Ausgenommen sind ausdrücklich `/.well-known/acme-challenge/` und
   `/.well-known/pki-validation/`. Wer die Zertifikatsausstellung über einen
   eigenen Pfad abwickelt, muss ihn selbst freigeben.
 
 Die Weboberfläche prüft beide Umleitungen nach: **Einstellungen →
 Administration → Allgemein** sendet ein `PROPFIND` auf
 `/.well-known/caldav/` und `/.well-known/carddav/` und erwartet den Status 207.
-Andernfalls erscheint der Hinweis „Ihr Webserver ist nicht richtig konfiguriert,
-um … aufzulösen". Wird die Umleitung bewusst nicht bereitgestellt, lässt sich
-die Prüfung abschalten:
+Andernfalls erscheint der Hinweis „Ihr Webserver ist nicht richtig
+konfiguriert, um … aufzulösen“. Stellen Sie die Umleitung bewusst nicht bereit,
+lässt sich die Prüfung abschalten:
 
 ```bash
 sudo -u www-data php8.4 occ config:system:set \
@@ -315,8 +324,9 @@ curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' \
 
 Erwartet wird `301` mit dem Ziel `/remote.php/dav/`.
 
-Welche Adresse tatsächlich ankommt, verrät das Protokoll: Nach einer
-fehlgeschlagenen Anmeldung steht sie im Feld `remoteAddr`, siehe
+Welche Adresse tatsächlich ankommt, verrät das Protokoll. Nach einer
+fehlgeschlagenen Anmeldung steht sie im Feld `remoteAddr` und in der Meldung
+selbst: `Login failed: '<konto>' (Remote IP: '<adresse>')`, siehe
 [Serverprotokoll und Fehlermeldungen](logging.md). Erscheint dort die
 Proxy-Adresse statt der Client-Adresse, stimmt `trusted_proxies` nicht.
 
@@ -326,17 +336,18 @@ Proxy-Adresse statt der Client-Adresse, stimmt `trusted_proxies` nicht.
 | --- | --- | --- |
 | Alle Protokollzeilen zeigen dieselbe Adresse in `remoteAddr` | `trusted_proxies` fehlt oder enthält nicht die Adresse, mit der der Proxy den Server anspricht | Adresse aus `REMOTE_ADDR` ermitteln und exakt eintragen |
 | `trusted_proxies` ist gesetzt, wirkt aber nicht | Eintrag in CIDR-Notation; der Vergleich ist ein exakter Zeichenkettenvergleich | Jede Proxy-Adresse einzeln eintragen |
-| Legitime Benutzer werden gegenseitig ausgebremst | Die Bremse zählt auf die Proxy-Adresse statt auf den Client | `trusted_proxies` korrigieren |
+| Setup-Warnung „Die Einstellung der Reverse Proxy Kopfzeile …“ | Die ermittelte Client-Adresse steht selbst in `trusted_proxies`: Der Proxy setzt kein `X-Forwarded-For`, `forwarded_for_headers` nennt eine Variable, die nicht ankommt, oder Sie rufen die Seite vom Proxy aus auf | Kopfzeile im Proxy setzen, `forwarded_for_headers` prüfen |
+| Normale Benutzer bremsen sich gegenseitig aus | Die Bremse zählt auf die Proxy-Adresse statt auf den Client | `trusted_proxies` korrigieren |
 | Erzeugte Links und Weiterleitungen beginnen mit `http://`, der Browser blockiert Inhalte | `overwriteprotocol` fehlt, der Proxy setzt kein `X-Forwarded-Proto` | `overwriteprotocol` auf `https` setzen |
-| „Sie greifen auf den Server über eine nicht vertrauenswürdige Domain zu." | Der Proxy reicht `Host` bzw. `X-Forwarded-Host` nicht durch, oder der Name fehlt in `trusted_domains` | Kopfzeile setzen und den Namen in `trusted_domains` aufnehmen |
+| „Sie greifen auf den Server über eine nicht vertrauenswürdige Domain zu.“ | Der Proxy reicht `Host` bzw. `X-Forwarded-Host` nicht durch, oder der Name fehlt in `trusted_domains` | Kopfzeile setzen und den Namen in `trusted_domains` aufnehmen |
 | Links zeigen auf einen anderen Hostnamen als den aufgerufenen | Host nicht in `trusted_domains`; der Server fällt auf den ersten Eintrag zurück | Hostnamen ergänzen oder `overwritehost` setzen |
 | Bei Installation in einem Unterpfad fehlen Teile der Oberfläche | `overwritewebroot` nicht gesetzt | `overwritewebroot` auf den externen Pfad setzen |
 | `overwritecondaddr` begrenzt `overwritehost` nicht | Der Code wertet die Bedingung nur für `overwriteprotocol` aus | Auf die Begrenzung verzichten oder die Unterscheidung im Proxy treffen |
 | Setup-Warnung zu `/.well-known/caldav/` | nginx liest die `.htaccess` nicht, die Umleitungen fehlen | `location`-Blöcke ergänzen |
 | WebDAV- oder Desktop-Client erhält 401 trotz richtiger Zugangsdaten | Die `Authorization`-Kopfzeile erreicht PHP nicht | Kopfzeile durchreichen, bei FastCGI `HTTP_AUTHORIZATION` setzen |
 | Großer Upload bricht kurz vor dem Ende mit 504 ab | Das abschließende `MOVE` setzt die Teile zusammen und überschreitet die Zeitgrenze des Proxys | `proxy_read_timeout` bzw. `ProxyTimeout` und `request_terminate_timeout` erhöhen |
-| Upload bricht bei fester Größe ab | Grenze im Proxy oder in PHP; die `php_value`-Zeilen der `.htaccess` gelten nur unter mod_php | `client_max_body_size`/`LimitRequestBody` und `php.ini` prüfen |
-| Cron erzeugt Links mit falschem Host | `overwrite.cli.url` fehlt — ohne Request gibt es keine Kopfzeilen | `overwrite.cli.url` auf die externe Basis-URL setzen |
+| Upload bricht bei fester Größe ab | Grenze im Proxy oder in PHP; die `php_value`-Zeilen der `.htaccess` gelten nur unter mod_php 5 und 7 | `client_max_body_size` bzw. `LimitRequestBody` sowie `php.ini` prüfen |
+| Cron erzeugt Links mit falschem Host | `overwrite.cli.url` fehlt; ohne Request gibt es keine Kopfzeilen | `overwrite.cli.url` auf die externe Basis-URL setzen |
 
 Weiterführend: [Sicherheit und Setup-Warnungen](security-hardening.md),
 [Konfiguration (config.php)](config-reference.md) und

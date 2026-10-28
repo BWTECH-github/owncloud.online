@@ -1,353 +1,541 @@
 # Installation auf einem Linux-Server
 
-Diese Seite führt von einem leeren Linux-Server bis zu einer laufenden
-owncloud.online-Instanz: Voraussetzungen prüfen, Release herunterladen und
-gegen die Prüfsumme abgleichen, auspacken, Rechte setzen, Datenbank anlegen,
-über `occ maintenance:install` installieren und anschließend Webserver,
-`trusted_domains`, Cron, Zwischenspeicher und HTTPS einrichten. Am Ende steht
-eine Liste der Punkte, die nach der Installation geprüft werden.
+Nach diesen zwölf Schritten läuft owncloud.online mit HTTPS auf Ihrem Server.
+Sie brauchen dafür nur einen SSH-Zugang mit Administratorrechten. Jeder Befehl
+lässt sich kopieren und einfügen.
 
-Alle Beispiele verwenden den Hostnamen `cloud.example.com`, das
-Installationsverzeichnis `/var/www/owncloud.online`, das Datenverzeichnis
-`/var/oco-data` und den Webserver-Benutzer `www-data`. Passen Sie diese Werte
-an Ihre Umgebung an.
+Die Befehle gelten für **Ubuntu 24.04 LTS**. Wo **Debian 12** abweicht, steht
+ein Hinweis. Geprüft wurde die Anleitung mit owncloud.online 11.0.25 auf
+frischen Installationen beider Systeme.
 
-## Voraussetzungen
+Ersetzen Sie in den Befehlen diese Platzhalter:
 
-### Betriebssystem
+| Im Text | Bedeutung | Was Sie tun |
+| --- | --- | --- |
+| `cloud.example.com` | Adresse Ihrer Cloud | durch Ihre Adresse ersetzen |
+| `DATENBANK_PASSWORT` | Passwort des Datenbankkontos | durch das Passwort aus [Schritt 4](#datenbank) ersetzen |
+| `/var/www/owncloud.online` | Programmverzeichnis | so lassen |
+| `/var/oco-data` | Datenverzeichnis mit allen hochgeladenen Dateien | so lassen oder einen eigenen Pfad wählen, etwa auf einer zweiten Platte |
 
-Eine aktuelle 64-Bit-Linux-Distribution mit Paketverwaltung, systemd und
-System-Cron. Die Beispiele nutzen `apt` und die Debian-üblichen Pfade
-(`/etc/apache2`, `/run/php`); auf anderen Distributionen ändern sich nur die
-Paketnamen und Pfade, nicht der Ablauf.
+Die Schritte im Überblick:
 
-### PHP 8.4
+1. [Server vorbereiten](#server-vorbereiten)
+2. [Programme installieren](#programme)
+3. [PHP einstellen](#php-einstellen)
+4. [Datenbank anlegen](#datenbank)
+5. [owncloud.online herunterladen und prüfen](#herunterladen)
+6. [Auspacken und Rechte setzen](#auspacken)
+7. [Installieren](#installieren)
+8. [Webserver einrichten](#webserver)
+9. [HTTPS einschalten](#https)
+10. [Hintergrund-Jobs einrichten](#hintergrund-jobs)
+11. [Zwischenspeicher einschalten](#zwischenspeicher)
+12. [Anmelden und prüfen](#erste-anmeldung)
 
-owncloud.online setzt **PHP 8.4** voraus (`composer.json`: `"php": ">=8.4"`).
-Ältere Versionen werden nicht unterstützt. Enthält Ihre Distribution PHP 8.4
-nicht in den Standard-Paketquellen, muss die Version aus einer zusätzlichen
-Paketquelle stammen.
+Die Installation in Schritt 7 läuft über die Kommandozeile, bevor der
+Webserver die Seite ausliefert. So ist der Einrichtungsassistent zu keinem
+Zeitpunkt offen im Internet erreichbar.
 
-Empfohlene Betriebsart ist **PHP-FPM**, nicht mod_php.
+## 1. Server vorbereiten {#server-vorbereiten}
 
-Diese Erweiterungen prüft der Server bei jedem Start selbst
-(`OC_Util::checkServer()` in `lib/private/legacy/util.php`) und verweigert
-ohne sie den Dienst:
+??? note "Debian 12: sudo fehlt"
+    Debian richtet `sudo` nur ein, wenn Sie bei der Installation kein
+    root-Passwort vergeben haben. Meldet der erste Befehl unten
+    `sudo: command not found`, melden Sie sich mit `su -` als root an und
+    richten es ein. Ersetzen Sie `IHR_BENUTZER` durch Ihren Anmeldenamen,
+    danach ab- und wieder anmelden:
 
-| Geprüft wird | Erweiterung |
-| --- | --- |
-| `ZipArchive` | zip |
-| `DOMDocument` | dom |
-| `XMLWriter`, `XMLReader` | xml |
-| `Collator` | intl |
-| `xml_parser_create` | libxml |
-| `mb_strcut` | mbstring |
-| `ctype_digit` | ctype |
-| `json_encode` | json |
-| `gd_info` | gd |
-| `gzencode` | zlib |
-| `iconv` | iconv |
-| `simplexml_load_string` | simplexml |
-| `hash` | hash |
-| `curl_init` | curl |
-| `PDO::ATTR_DRIVER_NAME` | pdo (plus Treiber, z. B. pdo_mysql) |
+    ```bash
+    apt install -y sudo
+    usermod -aG sudo IHR_BENUTZER
+    ```
 
-Zusätzlich fordert `composer.json` `apcu`, `exif`, `fileinfo`, `imagick`,
-`memcached` und `posix`. `posix` ist nicht optional: `console.php` bricht ohne
-die Erweiterung ab, `occ` ist dann nicht benutzbar. Der Release-Build lädt
-darüber hinaus `openssl` sowie die PDO-Treiber `pdo_mysql` und `pdo_sqlite`
-(`.github/workflows/release-owncloud-online.yml`).
+### Updates einspielen
 
-Ebenfalls geprüft wird die INI-Einstellung `default_charset` — sie muss
-`UTF-8` sein.
-
-Auf Debian und Ubuntu deckt das folgende Auswahl ab:
+Bringen Sie das System auf den neuesten Stand, bevor Sie etwas installieren:
 
 ```bash
-sudo apt install -y php8.4-fpm php8.4-cli php8.4-common php8.4-mysql \
-  php8.4-curl php8.4-gd php8.4-intl php8.4-mbstring php8.4-xml \
-  php8.4-zip php8.4-bcmath php8.4-imagick php8.4-apcu php8.4-redis \
-  php8.4-opcache
+sudo apt update
+sudo apt full-upgrade -y
+sudo reboot
 ```
 
-Empfohlene PHP-Werte (in der `php.ini` von FPM **und** CLI):
+Erscheint während der Aktualisierung ein Fenster mit einer Frage zu Diensten
+oder zum Kernel, bestätigen Sie mit der Eingabetaste. Nach dem Neustart melden
+Sie sich wieder per SSH an.
 
-```ini
-memory_limit = 512M
-upload_max_filesize = 513M
-post_max_size = 513M
+### Adresse einrichten
+
+Browser und Let's Encrypt finden den Server über seinen Namen. Dafür braucht
+er einen Eintrag im DNS.
+
+1. Ermitteln Sie die öffentliche IP-Adresse des Servers. Sie steht im
+   Kundenmenü Ihres Anbieters. Auf den meisten Servern zeigt dieser Befehl sie
+   auch an, die erste Adresse ist die IPv4-Adresse:
+
+    ```bash
+    hostname -I
+    ```
+
+2. Legen Sie bei Ihrem Domain-Anbieter einen A-Eintrag an, zum Beispiel mit dem
+   Namen `cloud` und der IPv4-Adresse als Ziel. Einen AAAA-Eintrag für IPv6
+   legen Sie nur an, wenn der Server unter dieser IPv6-Adresse erreichbar ist.
+3. Prüfen Sie den Eintrag auf Ihrem eigenen Rechner:
+
+    ```bash
+    nslookup cloud.example.com
+    ```
+
+    Die Antwort nennt die IP-Adresse des Servers. Neue Einträge brauchen
+    manchmal bis zu einer Stunde, bis sie überall bekannt sind.
+
+### Firewall einschalten
+
+Die Firewall lässt nur SSH, HTTP und HTTPS durch. Der erste Befehl installiert
+sie, falls sie fehlt:
+
+```bash
+sudo apt install -y ufw
+sudo ufw allow 22/tcp
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
+```
+
+Die Rückfrage `Command may disrupt existing ssh connections. Proceed with
+operation (y|n)?` beantworten Sie mit `y`. Prüfen Sie das Ergebnis:
+
+```bash
+sudo ufw status
+```
+
+Die Ausgabe beginnt mit `Status: active` und nennt `22/tcp`, `80/tcp` und
+`443/tcp` mit `ALLOW`.
+
+!!! warning "Port 22 zuerst freigeben"
+    Geben Sie den SSH-Port frei, bevor Sie `ufw enable` ausführen. Läuft SSH
+    bei Ihnen auf einem anderen Port als 22, setzen Sie diesen ein. Hat Ihr
+    Anbieter zusätzlich eine Firewall im Kundenmenü, öffnen Sie dort dieselben
+    drei Ports.
+
+??? warning "Wenn es nicht klappt"
+    | Was Sie sehen | Ursache | Lösung |
+    | --- | --- | --- |
+    | `nslookup` meldet `NXDOMAIN` oder eine fremde Adresse | Eintrag fehlt, ist falsch geschrieben oder noch nicht verteilt | Eintrag beim Domain-Anbieter prüfen, eine Stunde warten |
+    | Nach `ufw enable` reißt die SSH-Verbindung ab | Port 22 war nicht freigegeben | über die Web-Konsole des Anbieters anmelden und `sudo ufw allow 22/tcp` ausführen |
+
+## 2. Programme installieren {#programme}
+
+### Paketquelle für PHP 8.4 hinzufügen
+
+Ubuntu 24.04 bringt PHP 8.3 mit. PHP 8.4 kommt aus der Paketquelle
+`ondrej/php`. Ondřej Surý betreut auch die PHP-Pakete von Debian.
+
+```bash
+sudo apt install -y software-properties-common
+sudo add-apt-repository -y ppa:ondrej/php
+```
+
+Der zweite Befehl zeigt eine Beschreibung der Paketquelle. Darin steht, dass
+sie nach `packages.sury.org` umzieht. Für Ubuntu 24.04 gilt sie weiter.
+
+Prüfen Sie, ob PHP 8.4 jetzt angeboten wird:
+
+```bash
+apt-cache policy php8.4-fpm
+```
+
+In der Zeile `Candidate:` steht eine Version, die mit `8.4.` beginnt.
+
+??? note "Debian 12 und Debian 13"
+    Unter **Debian 12** kommt PHP 8.4 aus der Paketquelle
+    `packages.sury.org`. Ersetzen Sie die beiden Befehle oben durch:
+
+    ```bash
+    sudo apt install -y lsb-release ca-certificates curl
+    curl -sSLo /tmp/debsuryorg-archive-keyring.deb https://packages.sury.org/debsuryorg-archive-keyring.deb
+    sudo dpkg -i /tmp/debsuryorg-archive-keyring.deb
+    echo "deb [signed-by=/usr/share/keyrings/debsuryorg-archive-keyring.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/php.list
+    sudo apt update
+    ```
+
+    **Debian 13** enthält PHP 8.4 bereits. Dort lassen Sie diesen Schritt weg,
+    die Paketnamen im nächsten Schritt sind dieselben.
+
+!!! warning "Nicht Ubuntu 26.04"
+    Ubuntu 26.04 enthält nur PHP 8.5, und die Paketquelle `ondrej/php` gibt
+    es für 26.04 nicht. PHP 8.4 für 26.04 bietet nur `packages.sury.org` an
+    (Stand Oktober 2026). Mit dieser Kombination ist die Anleitung nicht
+    geprüft. Installieren Sie Ubuntu 24.04 LTS.
+
+### Pakete installieren
+
+Ein Befehl installiert den Webserver Apache, die Datenbank MariaDB, Redis, PHP
+mit allen nötigen Erweiterungen, Certbot für das HTTPS-Zertifikat und die
+Werkzeuge cron, curl und nano, falls sie fehlen:
+
+```bash
+sudo apt install -y apache2 mariadb-server redis-server \
+  php8.4-fpm php8.4-cli php8.4-mysql php8.4-curl php8.4-gd php8.4-intl \
+  php8.4-mbstring php8.4-xml php8.4-zip php8.4-bcmath php8.4-imagick \
+  php8.4-apcu php8.4-redis certbot python3-certbot-apache cron curl nano
+```
+
+Zwischendurch erscheinen Zeilen mit `NOTICE`, die `a2enconf php8.4-fpm`
+empfehlen. Das ist nicht nötig: Schritt 8 bindet PHP-FPM in der Konfiguration
+der Website ein.
+
+Prüfen Sie das Ergebnis:
+
+```bash
+php8.4 -v
+systemctl is-active apache2 mariadb redis-server php8.4-fpm
+```
+
+Die erste Zeile beginnt mit `PHP 8.4`. Der zweite Befehl gibt viermal `active`
+aus.
+
+!!! warning "Immer die Paketnamen mit 8.4"
+    Pakete ohne Versionsnummer wie `php-apcu` oder `php-redis` holen aus der
+    Paketquelle `ondrej/php` die Erweiterungen für PHP 8.5 und damit PHP 8.5
+    selbst. owncloud.online läuft nicht mit PHP 8.5.
+
+!!! tip "nginx statt Apache"
+    Wer nginx verwenden möchte, ersetzt im Befehl oben `apache2` durch `nginx`
+    und `python3-certbot-apache` durch `python3-certbot-nginx`. Die Schritte 8
+    und 9 sehen dann anders aus, siehe [nginx statt Apache](#nginx).
+
+??? note "Hintergrund: welche Erweiterung wofür"
+    owncloud.online prüft bei jedem Start diese PHP-Erweiterungen und startet
+    ohne sie nicht: zip, dom, XMLWriter, XMLReader, intl, libxml, mbstring,
+    ctype, JSON, GD, zlib, iconv, SimpleXML, hash, cURL und PDO. Außerdem muss
+    `default_charset` auf `UTF-8` stehen.
+
+    | Paket | Zweck |
+    | --- | --- |
+    | `php8.4-fpm` | PHP für den Webserver |
+    | `php8.4-cli` | PHP für die Kommandozeile `occ` und die Hintergrund-Jobs |
+    | `php8.4-mysql` | Zugriff auf MariaDB und MySQL |
+    | `php8.4-curl`, `php8.4-gd`, `php8.4-intl`, `php8.4-mbstring`, `php8.4-xml`, `php8.4-zip` | Pflichterweiterungen, siehe oben |
+    | `php8.4-bcmath` | schnellere Rechnungen mit großen Zahlen |
+    | `php8.4-imagick` | Vorschaubilder für weitere Dateitypen |
+    | `php8.4-apcu` | lokaler Zwischenspeicher, siehe [Schritt 11](#zwischenspeicher) |
+    | `php8.4-redis` | Dateisperren über Redis, siehe [Schritt 11](#zwischenspeicher) |
+    | `cron`, `curl`, `nano` | Zeitplan für die Hintergrund-Jobs, Download des Release, Editor. Auf den meisten Servern schon vorhanden, nicht aber bei minimal installiertem Ubuntu. |
+
+    ctype, exif, fileinfo, iconv, PDO, posix und OPcache kommen mit den
+    Paketen `php8.4-common` und `php8.4-opcache`, die automatisch mit
+    installiert werden.
+
+??? warning "Wenn es nicht klappt"
+    | Was Sie sehen | Ursache | Lösung |
+    | --- | --- | --- |
+    | `Unable to locate package php8.4-fpm` oder `Candidate: (none)` | Paketquelle fehlt | ersten Teil dieses Schritts wiederholen, dann `sudo apt update` |
+    | Ein Dienst meldet `failed` oder `inactive` statt `active` | Start fehlgeschlagen | `sudo systemctl status <dienst>` zeigt den Grund, etwa einen belegten Port |
+
+## 3. PHP einstellen {#php-einstellen}
+
+owncloud.online braucht für große Uploads und für Aktualisierungen längere
+Zeitgrenzen und mehr Platz im OPcache, als PHP vorgibt. Diese Befehle legen je
+eine kleine Einstellungsdatei für PHP-FPM und für die Kommandozeile an:
+
+```bash
+sudo tee /etc/php/8.4/fpm/conf.d/90-owncloud-online.ini > /dev/null <<'EOF'
 max_execution_time = 3600
 max_input_time = 3600
-default_charset = UTF-8
-output_buffering = 0
+opcache.memory_consumption = 256
+opcache.interned_strings_buffer = 32
+opcache.max_accelerated_files = 24000
+EOF
+echo 'apc.enable_cli = 1' | sudo tee /etc/php/8.4/cli/conf.d/90-owncloud-online.ini > /dev/null
+sudo systemctl restart php8.4-fpm
 ```
 
-Das Installationsverzeichnis enthält eine `.user.ini`, die `upload_max_filesize`,
-`post_max_size`, `memory_limit`, `default_charset` und `output_buffering` auf
-dieselben Werte setzt; die beiden Zeitgrenzen stehen dort nicht.
-PHP-FPM liest diese Datei aus, die CLI dagegen nicht — `occ` und `cron.php`
-richten sich ausschließlich nach der CLI-`php.ini`. Die `php_value`-Zeilen der
-mitgelieferten `.htaccess` stehen in `<IfModule mod_php5.c>` bzw.
-`<IfModule mod_php7.c>` und greifen unter PHP-FPM nie.
+Prüfen Sie, ob PHP-FPM die Werte übernommen hat:
 
-Zur OPcache-Dimensionierung siehe [Performance](../administration/performance.md);
-der Standardwert `opcache.max_accelerated_files=10000` reicht für
-owncloud.online nicht aus.
+```bash
+sudo php-fpm8.4 -i | grep max_execution_time
+```
 
-### Webserver
+Die Ausgabe lautet `max_execution_time => 3600 => 3600`.
 
-Apache 2.4 oder nginx, jeweils mit PHP-FPM. Beispielkonfigurationen stehen
-weiter unten unter [Webserver einrichten](#webserver-einrichten).
+??? note "Hintergrund: welche PHP-Werte woher kommen"
+    Das Release bringt im Programmverzeichnis eine Datei `.user.ini` mit.
+    PHP-FPM liest sie bei jeder Anfrage und setzt damit:
 
-### Datenbank
+    | Einstellung | Wert |
+    | --- | --- |
+    | `upload_max_filesize`, `post_max_size` | `513M` |
+    | `memory_limit` | `512M` |
+    | `default_charset` | `UTF-8` |
+    | `output_buffering` | `0` |
+    | `session.upload_progress.enabled` | `0` |
 
-MariaDB oder MySQL ist die für den produktiven Betrieb getestete Variante.
-Unterstützt sind laut `OC\Setup::getSupportedDatabases()` außerdem PostgreSQL
-(`pgsql`) und SQLite (`sqlite`); SQLite eignet sich nur für lokale Tests und
-bricht bei mehreren gleichzeitigen Zugriffen ein. Näheres unter
-[Datenbank](../administration/database.md).
+    Die Grenze von 513 MB gilt für eine einzelne Anfrage. Die Weboberfläche und
+    der Desktop-Client laden große Dateien in Teilen hoch und sind davon nicht
+    betroffen. Die Kommandozeile liest `.user.ini` nicht. `occ` und die
+    Hintergrund-Jobs richten sich nach den Einstellungen für die
+    Kommandozeile, unter Ubuntu und Debian ohne Speichergrenze.
 
-### Weitere Dienste
+    `apc.enable_cli = 1` erlaubt `occ` und den Hintergrund-Jobs, APCu zu
+    nutzen. Die `php_value`-Zeilen in der mitgelieferten `.htaccess` gelten nur
+    für das alte Apache-Modul mod_php und wirken unter PHP-FPM nicht.
 
-| Dienst | Zweck | Pflicht |
-| --- | --- | --- |
-| System-Cron | Hintergrund-Jobs | ja, siehe [Hintergrund-Jobs](../administration/background-jobs.md) |
-| APCu | lokaler Zwischenspeicher | dringend empfohlen |
-| Redis | transaktionales File-Locking | für Mehrbenutzerbetrieb empfohlen |
-| TLS-Zertifikat | HTTPS | für produktive Nutzung Pflicht |
-| SMTP-Zugang | Mailversand | siehe [E-Mail-Versand](../administration/email.md) |
+    Mehr zur Größe des OPcache unter
+    [Performance](../administration/performance.md).
 
-## 1. Release herunterladen und Prüfsumme vergleichen
+## 4. Datenbank anlegen {#datenbank}
 
-Die Releases liegen unter
-<https://github.com/BWTECH-github/owncloud.online/releases>. Der Tag eines
-Release lautet `v<Version>`, aktuell **11.0.25**.
+owncloud.online speichert Konten, Freigaben und die Dateiliste in MariaDB. Es
+bekommt eine eigene Datenbank und ein eigenes Datenbankkonto.
 
-Ein Release enthält:
+Erzeugen Sie zuerst ein zufälliges Passwort für das Datenbankkonto:
 
-| Datei | Inhalt |
-| --- | --- |
-| `owncloud-online-<version>.tar.gz` | vollständige Instanz |
-| `owncloud-online-<version>.zip` | derselbe Inhalt als ZIP |
-| `SHA256SUMS.txt` | SHA-256-Prüfsummen der beiden Archive, des Manifests und der Stückliste |
-| `sbom-owncloud-online-<version>.cdx.json` | Stückliste im CycloneDX-Format |
-| `release-manifest.json` | Version, Commit, PHP-Version des Builds |
-| `removed-release-files.txt` | im Build entfernte Entwicklungsdateien |
+```bash
+openssl rand -hex 20
+```
 
-Archiv und Prüfsummendatei herunterladen:
+Notieren Sie die Ausgabe. Sie brauchen sie gleich und in Schritt 7. Öffnen
+Sie dann die Konsole von MariaDB:
+
+```bash
+sudo mariadb
+```
+
+Ersetzen Sie in diesen Zeilen `DATENBANK_PASSWORT` durch das notierte Passwort.
+Die Anführungszeichen bleiben stehen. Fügen Sie die Zeilen dann ein:
+
+```sql
+CREATE DATABASE owncloud_online CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+CREATE USER 'owncloud'@'localhost' IDENTIFIED BY 'DATENBANK_PASSWORT';
+GRANT ALL PRIVILEGES ON owncloud_online.* TO 'owncloud'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+Jede Zeile antwortet mit `Query OK`, `EXIT` mit `Bye`.
+
+??? note "Hintergrund: Zeichensatz"
+    `utf8mb4` ist nötig, damit Dateinamen mit Emojis und seltenen Zeichen
+    funktionieren. Die Installation erkennt das selbst und trägt
+    `'mysql.utf8mb4' => true` in die `config/config.php` ein. Die Isolationsstufe `READ COMMITTED` setzt
+    owncloud.online bei jeder Verbindung selbst, an MariaDB müssen Sie dafür
+    nichts ändern. Mehr unter [Datenbank](../administration/database.md).
+
+??? warning "Wenn es nicht klappt"
+    | Was Sie sehen | Ursache | Lösung |
+    | --- | --- | --- |
+    | `ERROR 1007 (HY000): Can't create database 'owncloud_online'; database exists` | Datenbank stammt aus einem früheren Versuch | nur auf einem neuen Server ohne Daten: `DROP DATABASE owncloud_online;` und die Zeilen erneut einfügen |
+    | `ERROR 1396 (HY000): Operation CREATE USER failed` | Datenbankkonto gibt es schon | `DROP USER 'owncloud'@'localhost';` und die Zeilen erneut einfügen |
+
+## 5. owncloud.online herunterladen und prüfen {#herunterladen}
+
+Laden Sie das Release und die Prüfsummen herunter und kontrollieren Sie, dass
+die Datei unverändert angekommen ist:
 
 ```bash
 cd /tmp
 curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.25/owncloud-online-11.0.25.tar.gz
 curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.25/SHA256SUMS.txt
-```
-
-Prüfsumme vergleichen — der Befehl muss `OK` ausgeben:
-
-```bash
 sha256sum --ignore-missing -c SHA256SUMS.txt
 ```
 
-`--ignore-missing` überspringt die Einträge der nicht heruntergeladenen
-Dateien. Ohne diese Option meldet `sha256sum` für jede fehlende Datei einen
-Fehler. Schlägt der Vergleich fehl, ist der Download unvollständig oder
-verändert — dann nicht weiterarbeiten, sondern erneut laden.
+Die letzte Zeile lautet `owncloud-online-11.0.25.tar.gz: OK`.
 
-## 2. Auspacken und Rechte setzen
+Steht unter <https://github.com/BWTECH-github/owncloud.online/releases> eine
+neuere Version, ersetzen Sie `11.0.25` in diesem und im nächsten Schritt
+überall durch die neue Nummer.
 
-Das Archiv enthält ein einziges Verzeichnis `owncloud/`. Beim Auspacken
-entsteht es unterhalb des Zielpfades und wird danach umbenannt:
+??? note "Hintergrund: Prüfsumme"
+    `SHA256SUMS.txt` enthält die Prüfsummen beider Archive und zweier weiterer
+    Dateien des Release. `--ignore-missing` überspringt die Dateien, die Sie
+    nicht heruntergeladen haben. Ohne diese Option meldet `sha256sum` für jede
+    davon einen Fehler.
+
+??? warning "Wenn es nicht klappt"
+    | Was Sie sehen | Ursache | Lösung |
+    | --- | --- | --- |
+    | `curl: (22) The requested URL returned error: 404` | Versionsnummer falsch geschrieben | Nummer mit der Release-Seite vergleichen |
+    | `owncloud-online-11.0.25.tar.gz: FAILED` | Datei unvollständig oder verändert | Datei nicht verwenden, mit `rm /tmp/owncloud-online-11.0.25.tar.gz` löschen und neu herunterladen |
+
+## 6. Auspacken und Rechte setzen {#auspacken}
+
+Das Archiv enthält einen einzigen Ordner `owncloud`. Er wird nach `/var/www`
+ausgepackt und umbenannt. Das Datenverzeichnis liegt außerhalb davon, damit
+der Webserver es nie ausliefert. Beide gehören dem Benutzer `www-data`, unter
+dem Webserver und PHP laufen:
 
 ```bash
-sudo mkdir -p /var/www
 sudo tar -xzf /tmp/owncloud-online-11.0.25.tar.gz -C /var/www
 sudo mv /var/www/owncloud /var/www/owncloud.online
-```
-
-Das Datenverzeichnis gehört **außerhalb** des Webroots. Andernfalls hängt seine
-Absicherung allein an der `.htaccess`, die nginx gar nicht liest:
-
-```bash
 sudo mkdir -p /var/oco-data
-```
-
-Eigentümer und Rechte:
-
-```bash
 sudo chown -R www-data:www-data /var/www/owncloud.online /var/oco-data
-sudo find /var/www/owncloud.online -type d -exec chmod 750 {} \;
-sudo find /var/www/owncloud.online -type f -exec chmod 640 {} \;
 sudo chmod 750 /var/oco-data
 ```
 
-Drei Verzeichnisse müssen für `www-data` beschreibbar bleiben:
+Prüfen Sie das Ergebnis:
 
-| Verzeichnis | Grund |
-| --- | --- |
-| `config/` | die Installation schreibt `config/config.php` |
-| `apps-external/` | Ablage für Apps aus dem Markt (`OC\Setup::install()` legt es an und prüft es auf Schreibrecht) |
-| `/var/oco-data` | Benutzerdateien, Protokoll, Vorschaubilder |
+```bash
+ls /var/www/owncloud.online
+```
 
-`occ` muss immer als der Benutzer laufen, dem `config/config.php` gehört —
-`console.php` bricht sonst mit „Console has to be executed with the user that
-owns the file config/config.php" ab. Deshalb in dieser Anleitung durchgehend
-`sudo -u www-data php8.4 occ …`.
+Die Liste enthält unter anderem `apps`, `config`, `core`, `index.php` und
+`occ`.
 
-Alle folgenden `occ`-Aufrufe erwarten das Installationsverzeichnis als
-Arbeitsverzeichnis:
+??? note "Hintergrund: Rechte und Verzeichnisse"
+    Drei Orte muss `www-data` beschreiben können:
+
+    | Ort | Grund |
+    | --- | --- |
+    | `config/` | die Installation schreibt `config/config.php` |
+    | `apps-external/` | hier landen Apps aus dem Marketplace |
+    | `/var/oco-data` | hochgeladene Dateien, Protokoll, Vorschaubilder |
+
+    Läge das Datenverzeichnis im Programmverzeichnis, hinge sein Schutz allein
+    an der `.htaccess`, und die liest nginx nicht.
+
+    Strengere Rechte für das Programmverzeichnis setzen Sie erst nach der
+    Installation, siehe [Schritt 12](#strengere-rechte).
+
+## 7. Installieren {#installieren}
+
+Die Installation legt die Tabellen an, erstellt das Administratorkonto und
+schreibt die Konfiguration nach `config/config.php`:
 
 ```bash
 cd /var/www/owncloud.online
-```
-
-## 3. Datenbank anlegen
-
-Die Datenbank muss `utf8mb4` verwenden, sonst scheitern Dateinamen mit Emojis
-oder seltenen Zeichen:
-
-```sql
-CREATE DATABASE owncloud_online
-  CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-CREATE USER 'owncloud'@'localhost' IDENTIFIED BY 'HIER_EIN_STARKES_PASSWORT';
-GRANT ALL PRIVILEGES ON owncloud_online.* TO 'owncloud'@'localhost';
-FLUSH PRIVILEGES;
-```
-
-Die Installation erkennt selbst, ob der Server 4-Byte-Zeichen unterstützt, und
-setzt in diesem Fall `mysql.utf8mb4` auf `true` (`lib/private/Setup/MySQL.php`).
-Legt sie die Datenbank selbst an — das geschieht mit `CREATE DATABASE IF NOT
-EXISTS` —, verwendet sie die Kollation `utf8mb4_bin`. Eine wie oben von Hand
-angelegte Datenbank behält ihre eigene Kollation.
-
-## 4. Installation über occ maintenance:install
-
-```bash
 sudo -u www-data php8.4 occ maintenance:install \
   --database mysql \
   --database-name owncloud_online \
-  --database-host localhost \
   --database-user owncloud \
-  --database-pass 'HIER_EIN_STARKES_PASSWORT' \
   --admin-user admin \
-  --admin-pass 'HIER_EIN_STARKES_ADMINPASSWORT' \
   --data-dir /var/oco-data
 ```
 
-Bei Erfolg gibt der Befehl `owncloud.online was successfully installed` aus.
-Alle Optionen stammen aus `core/Command/Maintenance/Install.php`:
+Der Befehl fragt zwei Passwörter ab. Die Eingabe bleibt unsichtbar.
 
-| Option | Vorgabe | Anmerkung |
-| --- | --- | --- |
-| `--database` | `sqlite` | `mysql`, `pgsql`, `sqlite`; `oci` nur mit geladener `oci8`-Erweiterung |
-| `--database-name` | — | bei allem außer `sqlite` erforderlich |
-| `--database-host` | `localhost` | |
-| `--database-user` | — | bei allem außer `sqlite` erforderlich |
-| `--database-pass` | — | fehlt die Option, wird verdeckt abgefragt |
-| `--database-table-prefix` | `oc_` | |
-| `--admin-user` | `admin` | |
-| `--admin-pass` | — | fehlt die Option, wird verdeckt abgefragt |
-| `--data-dir` | `<Installationspfad>/data` | unbedingt setzen |
+1. `What is the password to access the database with user <owncloud>?`:
+   das Datenbank-Passwort aus Schritt 4.
+2. `What is the password you like to use for the admin account <admin>?`:
+   ein neues, langes Passwort für das Administratorkonto. Notieren Sie es.
 
-Werden `--database-pass` und `--admin-pass` weggelassen, fragt der Befehl beide
-verdeckt ab. Das ist der sauberere Weg, weil die Passwörter dann nicht in der
-Shell-Historie und nicht in der Prozessliste stehen.
+Nach kurzer Zeit erscheint `owncloud.online was successfully installed`.
 
-Der Befehl prüft vor der Installation die Umgebung und bricht mit einer
-Fehlerliste ab, wenn eine Erweiterung fehlt oder ein Verzeichnis nicht
-beschreibbar ist.
+!!! tip "Eigener Name für das Administratorkonto"
+    `admin` ist der Name, den Angreifer zuerst probieren. Mit einem anderen
+    Wert bei `--admin-user` machen Sie es ihnen schwerer.
 
-Was die Installation erledigt (`OC\Setup::install()`):
-
-- schreibt `config/config.php` samt Datenbankzugang und `datadirectory`
-- legt die Tabellen an und installiert die mitgelieferten Apps; Apps mit
-  `<default_enable/>` in der `info.xml` werden dabei aktiviert — dazu gehört
-  die im Release enthaltene Markt-App
-- legt `apps_paths` an: `apps/` als nicht beschreibbar, `apps-external/` als
-  beschreibbar
-- setzt `logtimezone` auf die Zeitzone des Systems
-- legt im Datenverzeichnis die Markierungsdatei `.ocdata` an und schreibt eine
-  `.htaccess`, die den Zugriff über Apache verbietet
-
-Ein Punkt, der bei der Installation über die Kommandozeile leicht übersehen
-wird: `Setup::updateHtaccess()` bricht im CLI-Betrieb sofort ab, solange
-`overwrite.cli.url` leer ist. Die `.htaccess` bleibt dann ohne die
-`ErrorDocument`-Zeilen und ohne den Front-Controller-Block unterhalb der Zeile
-`#### DO NOT CHANGE ANYTHING ABOVE THIS LINE ####`. Der nächste Abschnitt holt
-das nach.
-
-## 5. Grundkonfiguration
-
-### trusted_domains
-
-`trusted_domains` legt fest, unter welchen Hostnamen die Instanz aufgerufen
-werden darf. Die Installation trägt dort den beim Aufruf erkannten Namen ein —
-auf der Kommandozeile ist das nicht Ihr späterer Hostname. Deshalb den ersten
-Eintrag setzen:
+Die Installation kennt Ihre Adresse noch nicht. Tragen Sie sie ein und schalten
+Sie Adressen ohne `index.php` ein:
 
 ```bash
-sudo -u www-data php8.4 occ config:system:set trusted_domains 0 \
-  --value cloud.example.com
-```
-
-Die Zahl nach dem Schlüsselnamen ist der Index im Array; `config:system:set`
-nimmt mehrere Namensteile entgegen und baut daraus verschachtelte Werte. Ein
-zweiter Name bekommt entsprechend den Index `1`. Passt der aufgerufene Name zu
-keinem Eintrag, erscheint statt der Oberfläche die Meldung „Sie greifen auf den
-Server über eine nicht vertrauenswürdige Domain zu.".
-
-### Basis-URL für Cron und occ
-
-Ohne HTTP-Anfrage kennt der Server seinen eigenen Namen nicht. Mails und Links
-aus Hintergrund-Jobs verwenden deshalb `overwrite.cli.url`:
-
-```bash
-sudo -u www-data php8.4 occ config:system:set overwrite.cli.url \
-  --value https://cloud.example.com
-```
-
-### Kurze URLs ohne index.php
-
-Ist `htaccess.RewriteBase` gesetzt, schreibt `occ maintenance:update:htaccess`
-den Rewrite-Block in die `.htaccess` und setzt darin
-`SetEnv front_controller_active true`. Erst diese Umgebungsvariable lässt
-`OC\URLGenerator` und `OC\Route\Router` URLs ohne `index.php` erzeugen.
-
-```bash
+sudo -u www-data php8.4 occ config:system:set trusted_domains 0 --value cloud.example.com
+sudo -u www-data php8.4 occ config:system:set overwrite.cli.url --value https://cloud.example.com
 sudo -u www-data php8.4 occ config:system:set htaccess.RewriteBase --value /
 sudo -u www-data php8.4 occ maintenance:update:htaccess
 ```
 
-Der Befehl gibt `.htaccess has been updated` aus. Er wirkt nur bei Apache mit
-`AllowOverride All`. Unter nginx entsteht dieselbe Wirkung über
-`fastcgi_param front_controller_active true;` (siehe Beispiel unten);
-`htaccess.RewriteBase` bleibt dort ohne Bedeutung.
+Jeder `config:system:set`-Befehl bestätigt mit einer Zeile, die mit
+`System config value` beginnt. Der letzte meldet `.htaccess has been updated`.
 
-## 6. Webserver einrichten
+??? note "Hintergrund: was die Befehle einstellen"
+    | Einstellung | Bedeutung |
+    | --- | --- |
+    | `trusted_domains` | Liste der Adressen, unter denen die Instanz antwortet. Die Installation über die Kommandozeile trägt `localhost` ein. Index `0` ersetzt diesen Eintrag, eine weitere Adresse bekommt Index `1`. |
+    | `overwrite.cli.url` | Adresse für Links in Mails, die Hintergrund-Jobs verschicken. Ohne Anfrage aus dem Browser kennt der Server seinen Namen nicht. |
+    | `htaccess.RewriteBase` | Mit dieser Einstellung schreibt `maintenance:update:htaccess` Umleitungsregeln in die `.htaccess`. Danach erzeugt owncloud.online Adressen ohne `index.php`. Das wirkt nur unter Apache. |
 
-### Apache
+    Weitere Optionen von `occ maintenance:install`:
 
-Benötigte Module:
+    | Option | Vorgabe | Anmerkung |
+    | --- | --- | --- |
+    | `--database` | `sqlite` | `mysql` für MariaDB und MySQL, `pgsql` für PostgreSQL |
+    | `--database-host` | `localhost` | Name oder Adresse des Datenbankservers |
+    | `--database-pass` | – | ohne diese Option fragt der Befehl verdeckt nach |
+    | `--database-table-prefix` | `oc_` | |
+    | `--admin-pass` | – | ohne diese Option fragt der Befehl verdeckt nach |
+    | `--data-dir` | `<Programmverzeichnis>/data` | immer angeben |
+
+    Die verdeckte Abfrage ist der sicherere Weg: Die Passwörter landen dann
+    weder im Verlauf der Shell noch in der Prozessliste.
+
+    Die Installation schreibt `config/config.php`, legt die Tabellen an und
+    schaltet die mitgelieferten Apps ein, darunter die App „Market“. Sie trägt
+    `apps/` als festes und `apps-external/` als beschreibbares
+    App-Verzeichnis ein, setzt die Zeitzone des Protokolls auf die des Systems
+    und legt im Datenverzeichnis die Markierungsdatei `.ocdata` und eine
+    schützende `.htaccess` an.
+
+    Im Programmverzeichnis legt die Installation außerdem einen fast leeren
+    Ordner `data/` an, um den Schutz durch die `.htaccess` zu prüfen. Er bleibt
+    gesperrt und wird nicht benutzt. Das kurze Protokoll darin enthält die
+    Meldung `Specific user creation failed`. Sie ist harmlos: Die Installation
+    prüft, ob sie ein eigenes Datenbankkonto anlegen darf, und verwendet danach
+    das Konto `owncloud`.
+
+??? note "Alternative: Einrichtung im Browser"
+    Statt mit `occ` können Sie owncloud.online auch im Browser einrichten.
+    Lassen Sie dann diesen Schritt aus, erledigen Sie die Schritte 8 und 9 und
+    rufen Sie danach `https://cloud.example.com` auf.
+
+    | Feld | Eingabe |
+    | --- | --- |
+    | *Administrator-Konto anlegen*: *Benutzername*, *Passwort* | Ihr künftiges Administratorkonto |
+    | *Speicher & Datenbank* (zum Aufklappen anklicken), *Datenverzeichnis* | `/var/oco-data`. Vorgeschlagen ist `/var/www/owncloud.online/data`, das ändern Sie. |
+    | *Datenbank einrichten* | Es steht nur MySQL/MariaDB zur Wahl. |
+    | *Datenbank-Benutzer*, *Datenbank-Passwort*, *Datenbank-Name*, *Datenbank-Host* | `owncloud`, das Passwort aus Schritt 4, `owncloud_online`, `localhost` |
+
+    Ein Klick auf *Installation abschließen* startet die Einrichtung. Der
+    Assistent trägt die aufgerufene Adresse selbst in `trusted_domains` und
+    `overwrite.cli.url` ein. Für Adressen ohne `index.php` führen Sie danach
+    die letzten beiden Befehle von oben aus.
+
+    Bis Sie auf *Installation abschließen* klicken, kann jeder, der die Adresse
+    aufruft, die Installation übernehmen. Richten Sie die Instanz deshalb
+    direkt nach Schritt 9 ein.
+
+??? warning "Wenn es nicht klappt"
+    | Was Sie sehen | Ursache | Lösung |
+    | --- | --- | --- |
+    | `PHP module … not installed.` | Eine Erweiterung fehlt | Paket aus Schritt 2 nachinstallieren, `sudo systemctl restart php8.4-fpm` |
+    | `Console has to be executed with the user that owns the file config/config.php` | `sudo -u www-data` vergessen | Befehl mit `sudo -u www-data` am Anfang wiederholen |
+    | `Can't create or write into the data directory /var/oco-data` | Rechte fehlen | Schritt 6 wiederholen |
+    | `Failed to connect to the database` oder `Access denied for user 'owncloud'@'localhost'` | MariaDB läuft nicht oder das Passwort stimmt nicht | `systemctl is-active mariadb` prüfen, Passwort vergleichen |
+
+    Bricht die Installation mittendrin ab, beginnen Sie sauber neu. Diese
+    Befehle löschen die Konfiguration und legen die Datenbank leer wieder an.
+    Das Datenbankkonto und seine Rechte bleiben erhalten:
+
+    ```bash
+    sudo rm /var/www/owncloud.online/config/config.php
+    sudo mariadb -e "DROP DATABASE owncloud_online; CREATE DATABASE owncloud_online CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"
+    ```
+
+    Wiederholen Sie danach diesen Schritt.
+
+## 8. Webserver einrichten {#webserver}
+
+Apache liefert owncloud.online unter Ihrer Adresse aus und gibt PHP-Dateien an
+PHP-FPM weiter. Schalten Sie zuerst die nötigen Module ein:
 
 ```bash
-sudo a2enmod rewrite headers env dir mime setenvif ssl proxy_fcgi
-sudo systemctl restart apache2
+sudo a2enmod rewrite headers env dir mime setenvif proxy_fcgi ssl
 ```
 
-VirtualHost:
+Öffnen Sie dann eine neue Konfigurationsdatei im Editor nano:
+
+```bash
+sudo nano /etc/apache2/sites-available/owncloud-online.conf
+```
+
+Fügen Sie diesen Inhalt ein und ersetzen Sie `cloud.example.com` durch Ihre
+Adresse. Speichern Sie mit Strg+O und der Eingabetaste, beenden Sie nano mit
+Strg+X.
 
 ```apache
 <VirtualHost *:80>
     ServerName cloud.example.com
-    Redirect permanent / https://cloud.example.com/
-</VirtualHost>
-
-<VirtualHost *:443>
-    ServerName cloud.example.com
     DocumentRoot /var/www/owncloud.online
-
-    SSLEngine on
-    SSLCertificateFile    /etc/letsencrypt/live/cloud.example.com/fullchain.pem
-    SSLCertificateKeyFile /etc/letsencrypt/live/cloud.example.com/privkey.pem
 
     <Directory /var/www/owncloud.online>
         Require all granted
@@ -359,7 +547,7 @@ VirtualHost:
         SetHandler "proxy:unix:/run/php/php8.4-fpm.sock|fcgi://localhost"
     </FilesMatch>
 
-    # Das abschliessende MOVE eines Chunk-Uploads laeuft lange ohne Datenverkehr
+    # Große Uploads: keine Größengrenze, Zeit für das Zusammensetzen
     TimeOut 3600
     LimitRequestBody 0
 
@@ -368,338 +556,390 @@ VirtualHost:
 </VirtualHost>
 ```
 
-`AllowOverride All` ist Pflicht. Ohne diese Zeile wirkt die mitgelieferte
-`.htaccess` nicht: es fehlen die Sicherheits-Kopfzeilen, die 404-Sperren für
-`config/`, `lib/` und `templates/`, die `.well-known`-Umleitungen und die
-kurzen URLs.
-
-Setzt Apache selbst das TLS um, setzt `mod_ssl` die Umgebungsvariable `HTTPS`,
-und die `.htaccess` sendet den HSTS-Header eigenständig
-(`Header always set Strict-Transport-Security … env=HTTPS`). Er darf dann nicht
-zusätzlich im VirtualHost gesetzt werden.
-
-### nginx
-
-nginx liest keine `.htaccess`. Alles, was dort steht — Sicherheits-Kopfzeilen,
-Sperren, Umleitungen, kurze URLs —, muss hier ausdrücklich stehen.
-
-```nginx
-upstream php-handler {
-    server unix:/run/php/php8.4-fpm.sock;
-}
-
-server {
-    listen 80;
-    listen [::]:80;
-    server_name cloud.example.com;
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl;
-    listen [::]:443 ssl;
-    http2 on;
-    server_name cloud.example.com;
-
-    ssl_certificate     /etc/letsencrypt/live/cloud.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/cloud.example.com/privkey.pem;
-
-    root  /var/www/owncloud.online;
-    index index.php index.html;
-
-    # Ersatz fuer die Kopfzeilen der .htaccess
-    add_header Strict-Transport-Security "max-age=15552000; includeSubDomains" always;
-    add_header X-Content-Type-Options             "nosniff"  always;
-    add_header X-Frame-Options                    "SAMEORIGIN" always;
-    add_header X-Robots-Tag                       "none"     always;
-    add_header X-Download-Options                 "noopen"   always;
-    add_header X-Permitted-Cross-Domain-Policies  "none"     always;
-
-    # Grosse Uploads: keine Groessengrenze, grosszuegige Zeitgrenzen
-    client_max_body_size 0;
-    client_body_timeout  300s;
-
-    # Ersatz fuer die .well-known-RewriteRules der .htaccess
-    location = /.well-known/host-meta      { rewrite ^ /public.php?service=host-meta      last; }
-    location = /.well-known/host-meta.json { rewrite ^ /public.php?service=host-meta-json last; }
-    location ^~ /.well-known/carddav { return 301 /remote.php/dav/; }
-    location ^~ /.well-known/caldav  { return 301 /remote.php/dav/; }
-    location ^~ /.well-known/acme-challenge/ { }
-    location ^~ /.well-known/pki-validation/ { }
-
-    # Ersatz fuer die 404-Sperren der .htaccess
-    location ~ ^/(?:build|tests|config|lib|3rdparty|templates|changelog)/ { return 404; }
-    location ~ ^/(?:\.|autotest|occ|issue|indie|db_|console)  { return 404; }
-    location = /core/signature.json { return 404; }
-    location ^~ /core/skeleton/     { return 404; }
-    location ^~ /data/             { return 404; }
-
-    # Apps liefern ihre Abhaengigkeiten und Tests mit; keines davon gehoert
-    # ins Web. Die Sperren oben greifen nur auf oberster Ebene, nicht in
-    # apps/<name>/. Die Apps bringen dafuer eigene .htaccess-Dateien mit -
-    # die liest nginx nicht, deshalb steht dieselbe Aussage hier.
-    location ~ ^/apps/[^/]+/(?:vendor|tests)/ { return 404; }
-    location ~ ^/apps/[^/]+/composer[.](json|lock)$ { return 404; }
-
-    location / {
-        rewrite ^/remote/(.*) /remote.php last;
-        try_files $uri $uri/ /index.php$request_uri;
-    }
-
-    location ~ \.php(?:$|/) {
-        fastcgi_split_path_info ^(.+?\.php)(/.*)$;
-        try_files $fastcgi_script_name =404;
-        include fastcgi_params;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        fastcgi_param PATH_INFO       $fastcgi_path_info;
-        fastcgi_param HTTPS on;
-        # Ohne diese Zeile scheitert jede Basic-Auth-Anmeldung von WebDAV-Clients
-        fastcgi_param HTTP_AUTHORIZATION $http_authorization;
-        # Entspricht SetEnv front_controller_active true aus der .htaccess
-        fastcgi_param front_controller_active true;
-        fastcgi_param modHeadersAvailable    true;
-        fastcgi_pass php-handler;
-        fastcgi_read_timeout 3600s;
-        fastcgi_request_buffering off;
-    }
-
-    location ~ \.(?:css|js|woff2?|svg|gif|png|jpg|jpeg|ico|map)$ {
-        try_files $uri /index.php$request_uri;
-        access_log off;
-        expires 7d;
-    }
-}
-```
-
-Zwei Punkte zu diesem Beispiel:
-
-- `HTTP_AUTHORIZATION` muss durchgereicht werden. `lib/base.php` baut
-  `PHP_AUTH_USER` und `PHP_AUTH_PW` aus dieser Variablen nach; fehlt sie,
-  erhalten WebDAV- und Desktop-Clients trotz richtiger Zugangsdaten 401.
-- Die Sperre `location ~ ^/(?:\.|…)` würde auch `/.well-known/…` treffen. Die
-  vier `location ^~`-Blöcke davor haben Vorrang vor regulären Ausdrücken und
-  halten die Umleitungen und die Zertifikatsausstellung frei.
-
-Steht owncloud.online hinter einem eigenständigen Reverse-Proxy, gelten
-zusätzlich `trusted_proxies`, `overwriteprotocol` und die dortigen
-Kopfzeilenregeln — siehe
-[Reverse-Proxy und TLS](../administration/reverse-proxy.md).
-
-## 7. Cron einrichten
-
-Ohne Cron laufen Papierkorb- und Versionsbereinigung, Freigabe-Abläufe,
-Benachrichtigungen und Aktivitäts-Mails nie. Die Instanz wirkt zunächst normal
-und wächst unbegrenzt.
+Schalten Sie die neue Konfiguration ein und die Standardseite von Apache aus:
 
 ```bash
-sudo crontab -u www-data -e
+sudo a2ensite owncloud-online
+sudo a2dissite 000-default
+sudo apache2ctl configtest
+sudo systemctl restart apache2
 ```
 
-Eintrag:
-
-```
-*/15  *  *  *  * /usr/bin/php8.4 -f /var/www/owncloud.online/cron.php
-```
-
-Danach den Modus umstellen:
+`configtest` meldet `Syntax OK`. Eine Warnung, die mit `AH00558` beginnt,
+können Sie ignorieren. Prüfen Sie dann, ob owncloud.online antwortet:
 
 ```bash
-sudo -u www-data php8.4 occ background:cron
+curl -s http://cloud.example.com/status.php
 ```
 
-Der Cron-Auftrag muss als `www-data` laufen. Läuft er als `root`, gehören neu
-erzeugte Dateien danach `root`, und der Webserver kann sie nicht mehr
-schreiben. Einzelheiten unter
-[Hintergrund-Jobs (Cron)](../administration/background-jobs.md).
+Die Antwort beginnt mit `{"installed":true`. Melden Sie sich noch nicht im
+Browser an. Ohne HTTPS ginge Ihr Passwort unverschlüsselt über das Netz.
 
-## 8. Zwischenspeicher und File-Locking
+??? note "Hintergrund: Apache"
+    `AllowOverride All` ist Pflicht. Ohne diese Zeile liest Apache die
+    mitgelieferte `.htaccess` nicht. Dann fehlen die Sicherheits-Kopfzeilen,
+    die Sperren für `config/`, `lib/` und andere interne Ordner, die
+    Umleitungen unter `/.well-known/` und die Adressen ohne `index.php`.
 
-Ist `memcache.local` nicht gesetzt, fällt die Cache-Factory auf `NullCache`
-zurück (`lib/private/Memcache/Factory.php`): jede Sprachdatei und jede
-`info.xml` wird dann bei jeder Anfrage neu geparst.
+    Den Header `Strict-Transport-Security` (HSTS) setzt die `.htaccess` selbst,
+    sobald Apache HTTPS ausliefert. Setzen Sie ihn nicht zusätzlich in der
+    Konfiguration.
+
+    Steht vor owncloud.online ein eigener Reverse-Proxy, lesen Sie
+    [Reverse-Proxy und TLS](../administration/reverse-proxy.md).
+
+??? warning "Wenn es nicht klappt"
+    | Was Sie sehen | Ursache | Lösung |
+    | --- | --- | --- |
+    | `Invalid command 'Header'` oder `Invalid command 'RewriteEngine'` | Modul nicht eingeschaltet | `a2enmod`-Befehl von oben wiederholen |
+    | Die Apache-Standardseite „It works“ statt owncloud.online | Standardseite noch aktiv oder Adresse falsch geschrieben | `sudo a2dissite 000-default`, `ServerName` prüfen, `sudo systemctl reload apache2` |
+    | `Service Unavailable` | PHP-FPM läuft nicht | `sudo systemctl restart php8.4-fpm`, Grund mit `sudo systemctl status php8.4-fpm` |
+    | „Sie greifen auf den Server über eine nicht vertrauenswürdige Domain zu.“ (bei Du-Anrede „Du greifst …“) | Adresse fehlt in `trusted_domains` | ersten Befehl des zweiten Blocks aus Schritt 7 mit der richtigen Adresse wiederholen |
+
+## 9. HTTPS einschalten {#https}
+
+Certbot holt ein kostenloses Zertifikat von Let's Encrypt, trägt es in Apache
+ein und leitet HTTP auf HTTPS um:
 
 ```bash
-sudo -u www-data php8.4 occ config:system:set memcache.local \
-  --value '\OC\Memcache\APCu'
+sudo certbot --apache --redirect -d cloud.example.com
 ```
 
-Damit auch `occ` und `cron.php` nicht ohne Zwischenspeicher laufen, muss APCu
-in der CLI-`php.ini` aktiv sein:
+Beim ersten Aufruf stellt Certbot drei Fragen:
 
-```ini
-apc.enable_cli=1
-```
+1. nach einer E-Mail-Adresse für Hinweise zum Zertifikat,
+2. ob Sie den Nutzungsbedingungen von Let's Encrypt zustimmen: `Y`,
+3. ob Certbot Ihre Adresse an die Electronic Frontier Foundation weitergeben
+   darf. Das ist freiwillig, `N` genügt.
 
-Für das transaktionale File-Locking ist Redis die empfohlene Ablage — andere
-Backends können Werte ohne Vorwarnung verwerfen, was hier Datenverlust bedeuten
-kann:
+Am Ende steht `Congratulations! You have successfully enabled HTTPS on
+https://cloud.example.com`.
+
+Certbot erneuert das Zertifikat danach selbst. Ob das klappen wird, prüft
+dieser Probelauf:
 
 ```bash
-sudo apt install -y redis-server php8.4-redis
-sudo systemctl enable --now redis-server
-
-sudo -u www-data php8.4 occ config:system:set memcache.locking \
-  --value '\OC\Memcache\Redis'
-sudo -u www-data php8.4 occ config:system:set redis host --value 127.0.0.1
-sudo -u www-data php8.4 occ config:system:set redis port --value 6379 \
-  --type integer
-sudo systemctl reload php8.4-fpm
+sudo certbot renew --dry-run
 ```
 
-`filelocking.enabled` steht ohne Zutun auf `true`; es muss nicht gesetzt
-werden.
+Er endet mit `Congratulations, all simulated renewals succeeded`.
 
-## 9. HTTPS
+??? warning "Wenn es nicht klappt"
+    | Was Sie sehen | Ursache | Lösung |
+    | --- | --- | --- |
+    | `Timeout during connect (likely firewall problem)` | Port 80 ist von außen nicht erreichbar | Firewall aus Schritt 1 und die Firewall im Kundenmenü des Anbieters prüfen |
+    | `DNS problem: NXDOMAIN looking up A for cloud.example.com` | DNS-Eintrag fehlt oder ist noch nicht verteilt | Schritt 1 prüfen, später erneut versuchen |
+    | Fehler beim Zugriff über IPv6 | AAAA-Eintrag zeigt auf eine Adresse, unter der der Server nicht antwortet | AAAA-Eintrag korrigieren oder löschen |
 
-Produktive Instanzen laufen über HTTPS. Mit Let's Encrypt und Apache:
+    Nach mehreren Fehlversuchen in kurzer Zeit lehnt Let's Encrypt weitere
+    Versuche vorübergehend ab. Beheben Sie zuerst die Ursache.
+
+## 10. Hintergrund-Jobs einrichten {#hintergrund-jobs}
+
+owncloud.online erledigt alle 15 Minuten Arbeiten im Hintergrund: Papierkorb
+und alte Versionen aufräumen, abgelaufene Freigaben entfernen,
+Benachrichtigungen und Mails verschicken. Ohne diesen Zeitplan wächst die
+Instanz unbegrenzt und verschickt keine Mails.
 
 ```bash
-sudo apt install -y certbot python3-certbot-apache
-sudo certbot --apache -d cloud.example.com
+echo '*/15 * * * * /usr/bin/php8.4 /var/www/owncloud.online/occ system:cron' | sudo crontab -u www-data -
+sudo -u www-data php8.4 /var/www/owncloud.online/occ background:cron
 ```
 
-Mit nginx entsprechend `python3-certbot-nginx` und `certbot --nginx`.
-
-Danach die Basis-URL auf `https://` setzen, falls noch nicht geschehen:
+Der zweite Befehl antwortet mit `Set mode for background jobs to 'cron'`. Der
+erste ersetzt einen vorhandenen Zeitplan des Benutzers `www-data`. Auf einem
+neuen Server gibt es keinen. Prüfen Sie den Eintrag:
 
 ```bash
-sudo -u www-data php8.4 occ config:system:set overwrite.cli.url \
-  --value https://cloud.example.com
+sudo crontab -u www-data -l
 ```
 
-Die Zertifikatsausstellung über HTTP benötigt den Pfad
-`/.well-known/acme-challenge/`. Die mitgelieferte `.htaccess` sperrt Pfade, die
-mit einem Punkt beginnen, per 404 — ausgenommen sind ausdrücklich
-`/.well-known/acme-challenge/` und `/.well-known/pki-validation/`. Im
-nginx-Beispiel oben stehen dafür die beiden `location ^~`-Blöcke.
+Nach spätestens 15 Minuten zeigt *Einstellungen → Administration → Allgemein*
+im Abschnitt *Cron* die Zeile „Letzte Cron-Job-Ausführung: …“ mit einem grünen
+Punkt.
 
-## 10. Apps aus dem Markt
+![Administration, Allgemein: Cron mit den Optionen AJAX, Webcron und Cron, darunter das Log](../assets/screenshots/de/admin-background-jobs.png)
 
-Die Markt-App ist im Release enthalten (`apps-external/market`) und wird bei der
-Installation aktiviert. Sie erscheint für Administratoren im App-Menü oben links
-als **Markt**.
+Ausgewählt ist die Option *Cron*. Sie bedeutet, dass der Cron-Dienst des
+Systems die Hintergrund-Jobs startet.
 
-![Markt mit installierten Apps](../assets/screenshots/owncloud-online-apps.png)
+??? note "Hintergrund: Cron"
+    Der Zeitplan muss als `www-data` laufen. Liefe er als `root`, gehörten neu
+    angelegte Dateien danach `root`, und der Webserver könnte sie nicht mehr
+    schreiben. Die Einstellungsseite nennt die Datei `cron.php`. Sie ruft
+    intern denselben Befehl `occ system:cron` auf, gibt dabei aber bei jedem
+    Lauf eine Zeile aus, die Cron als Mail zustellen will. Einzelheiten unter
+    [Hintergrund-Jobs (Cron)](../administration/background-jobs.md).
 
-Über die Kommandozeile stehen dieselben Funktionen zur Verfügung:
+??? warning "Wenn es nicht klappt"
+    Steht dort nach 30 Minuten noch „Cron wurde bis jetzt noch nicht
+    ausgeführt!“, starten Sie den Lauf einmal von Hand und lesen Sie die
+    Fehlermeldung:
 
-```bash
-sudo -u www-data php8.4 occ market:list
-sudo -u www-data php8.4 occ market:install <app_id>
-sudo -u www-data php8.4 occ market:upgrade <app_id>
-sudo -u www-data php8.4 occ market:uninstall <app_id>
-```
+    ```bash
+    sudo -u www-data php8.4 /var/www/owncloud.online/occ system:cron
+    ```
 
-Eine App lässt sich auch von Hand einspielen. Das Paket wird dazu nach
-`apps-external/` ausgepackt — das ist der als beschreibbar eingetragene
-App-Pfad — und anschließend aktiviert:
+    Gibt der Befehl nichts aus, ist er erfolgreich gelaufen. Prüfen Sie dann,
+    ob der Cron-Dienst läuft: `systemctl is-active cron`.
 
-```bash
-sudo -u www-data tar -xzf /tmp/<app_id>-<version>.tar.gz \
-  -C /var/www/owncloud.online/apps-external
-sudo -u www-data php8.4 occ app:enable <app_id>
-sudo -u www-data php8.4 occ app:list
-```
+## 11. Zwischenspeicher einschalten {#zwischenspeicher}
 
-Die Adresse des Katalogs steht in `appstoreurl`. Näheres unter
-[Apps und Marketplace](../administration/apps-market.md).
-
-## 11. Nach der Installation prüfen
-
-Erster Aufruf im Browser unter `https://cloud.example.com` — es erscheint die
-Anmeldung mit dem bei der Installation angelegten Administratorkonto.
-
-![Anmeldung](../assets/screenshots/owncloud-online-login.png)
-
-Diese Prüfungen gehören zu jeder Inbetriebnahme:
+APCu hält häufig gelesene Daten im Arbeitsspeicher von PHP. Redis verwaltet
+die Dateisperren, damit sich gleichzeitige Zugriffe auf dieselbe Datei nicht
+in die Quere kommen:
 
 ```bash
 cd /var/www/owncloud.online
+sudo -u www-data php8.4 occ config:system:set memcache.local --value '\OC\Memcache\APCu'
+sudo -u www-data php8.4 occ config:system:set memcache.locking --value '\OC\Memcache\Redis'
+sudo -u www-data php8.4 occ config:system:set redis host --value 127.0.0.1
+sudo -u www-data php8.4 occ config:system:set redis port --value 6379 --type integer
+```
 
-# 1. Umgebung: gibt bei fehlenden Erweiterungen eine Liste aus, sonst nichts
-sudo -u www-data php8.4 occ check
+Jeder Befehl bestätigt mit einer Zeile, die mit `System config value` beginnt.
+Prüfen Sie, ob Redis antwortet:
 
-# 2. Zustand der Instanz (installed, version, versionstring, edition)
+```bash
+redis-cli ping
+```
+
+Die Antwort lautet `PONG`.
+
+??? note "Hintergrund: Zwischenspeicher"
+    Ohne `memcache.local` liest owncloud.online bei jeder Anfrage alle Sprach-
+    und App-Dateien neu ein, und die Einstellungsseite meldet „Es wurde kein
+    PHP Memory Cache konfiguriert.“ Ohne Redis laufen die Dateisperren über die
+    Datenbank, was langsamer ist und ebenfalls eine Warnung erzeugt. Die
+    Dateisperren selbst sind ohne weiteres Zutun eingeschaltet. Mehr unter
+    [Performance](../administration/performance.md).
+
+??? warning "Wenn es nicht klappt"
+    | Was Sie sehen | Ursache | Lösung |
+    | --- | --- | --- |
+    | Fehlerseite `Memcache \OC\Memcache\APCu not available for local cache` | APCu fehlt oder PHP-FPM wurde nicht neu gestartet | `sudo apt install -y php8.4-apcu`, dann `sudo systemctl restart php8.4-fpm` |
+    | `redis-cli ping` meldet `Connection refused` | Redis läuft nicht | `sudo systemctl restart redis-server` |
+
+## 12. Anmelden und prüfen {#erste-anmeldung}
+
+Öffnen Sie `https://cloud.example.com` im Browser. Geben Sie unter
+*Benutzername oder E-Mail* den Namen des Administratorkontos aus Schritt 7 ein,
+darunter das *Passwort*, und klicken Sie auf *Anmelden*.
+
+![Anmeldeseite von owncloud.online mit den Feldern für Benutzername oder E-Mail und Passwort](../assets/screenshots/de/login.png)
+
+Öffnen Sie danach oben rechts über Ihren Namen *Einstellungen* und links
+*Administration → Allgemein*. Im Abschnitt *Sicherheits- &
+Einrichtungswarnungen* steht nach dieser Anleitung keine Warnung, sondern nur
+„Alle Checks bestanden.“ oder, bei der Anrede mit Du, „Alle Überprüfungen
+bestanden.“ Was eine andere Meldung bedeutet, steht unter
+[Sicherheit und Setup-Warnungen](../administration/security-hardening.md).
+
+Zum Schluss prüfen Sie den Zustand auf der Kommandozeile:
+
+```bash
+cd /var/www/owncloud.online
 sudo -u www-data php8.4 occ status
-
-# 3. aktive und inaktive Apps
-sudo -u www-data php8.4 occ app:list
-
-# 4. Cron: Modus muss cron sein, lastcron darf nicht alt sein
-sudo -u www-data php8.4 occ config:app:get core backgroundjobs_mode
-sudo -u www-data php8.4 occ config:app:get core lastcron
-sudo -u www-data php8.4 occ background:queue:status
-
-# 5. Grundwerte
-sudo -u www-data php8.4 occ config:system:get trusted_domains
-sudo -u www-data php8.4 occ config:system:get overwrite.cli.url
-sudo -u www-data php8.4 occ config:system:get datadirectory
-sudo -u www-data php8.4 occ config:system:get memcache.local
-sudo -u www-data php8.4 occ config:system:get memcache.locking
+sudo -u www-data php8.4 occ check
 ```
 
-Von außen:
+`occ status` zeigt `installed: true` und `versionstring: 11.0.25`. `occ check`
+gibt nichts aus, wenn alle Voraussetzungen erfüllt sind.
+
+??? warning "Wenn es nicht klappt"
+    Haben Sie das Passwort des Administratorkontos vergessen, setzen Sie ein
+    neues. Der Befehl fragt es verdeckt ab:
+
+    ```bash
+    sudo -u www-data php8.4 /var/www/owncloud.online/occ user:resetpassword admin
+    ```
+
+### Strengere Rechte (freiwillig) {#strengere-rechte}
+
+Wer andere Benutzer des Servers ganz aussperren will, setzt jetzt strengere
+Rechte. Nach jedem Update sind die beiden Befehle zu wiederholen:
 
 ```bash
-# Statusendpunkt: installed=true, maintenance=false, productname owncloud.online
-curl -s https://cloud.example.com/status.php
-
-# .well-known-Umleitung: erwartet 301 auf /remote.php/dav/
-curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' \
-  https://cloud.example.com/.well-known/caldav/
-
-# Datenverzeichnis darf nicht erreichbar sein: erwartet 403 oder 404
-curl -s -o /dev/null -w '%{http_code}\n' https://cloud.example.com/data/.ocdata
+sudo find /var/www/owncloud.online -type d -exec chmod 750 {} \;
+sudo find /var/www/owncloud.online -type f -exec chmod 640 {} \;
 ```
 
-Zusätzlich prüfen:
-
-- **Setup-Warnungen** unter *Einstellungen → Administration → Allgemein*. Sie
-  zeigen fehlende Produktionskonfiguration an und dürfen nicht stehen bleiben,
-  siehe [Sicherheit und Setup-Warnungen](../administration/security-hardening.md).
-- **Mailversand** einrichten und testen. Ohne SMTP fallen Passwort-Reset,
-  Freigabe-Einladungen und Kontoanlage still aus, siehe
-  [E-Mail-Versand](../administration/email.md).
-- **Protokollrotation**: `log_rotate_size` steht ohne Zutun auf `104857600`
-  (100 MB). `owncloud.log` wird also bereits rotiert, sobald der Cron-Lauf
-  eingerichtet ist — zusammen mit `owncloud.log.1` belegen die Protokolle
-  damit höchstens 200 MB. Eine abweichende Größe:
+Danach öffnet nur noch `www-data` das Programmverzeichnis. Ihr eigenes Konto
+erhält bei `cd /var/www/owncloud.online` die Meldung `Permission denied`.
+Rufen Sie `occ` deshalb mit vollem Pfad auf:
 
 ```bash
-sudo -u www-data php8.4 occ config:system:set log_rotate_size \
-  --value 524288000 --type integer
+sudo -u www-data php8.4 /var/www/owncloud.online/occ status
 ```
 
-  Wer die Dateien lieber über das `logrotate` des Systems behandelt, schaltet
-  die eingebaute Rotation mit `--value 0 --type integer` ab. Siehe
-  [Serverprotokoll und Fehlermeldungen](../administration/logging.md).
+## Wie es weitergeht {#wie-es-weitergeht}
 
-- **Sicherung** einrichten, bevor die Instanz produktiv genutzt wird.
-  Datenverzeichnis und Datenbank gehören zum selben Zeitpunkt gesichert, siehe
-  [Backups und Updates](../administration/backups-updates.md).
+| Aufgabe | Seite |
+| --- | --- |
+| Mailversand einrichten, damit Passwort-Links und Einladungen ankommen | [E-Mail-Versand](../administration/email.md) |
+| Sicherung einrichten und owncloud.online aktualisieren | [Backups und Updates](../administration/backups-updates.md) |
+| Apps aus dem Marketplace installieren | [Apps und Marketplace](../administration/apps-market.md) |
+| Konten und Gruppen anlegen | [Benutzer und Gruppen](../administration/users-groups.md) |
+| Den Desktop-Client verteilen | [Desktop Client](../user/desktop-client.md) |
+| Fehlermeldungen lesen | [Serverprotokoll und Fehlermeldungen](../administration/logging.md) |
 
-## Fehlersuche
+## nginx statt Apache {#nginx}
 
-| Symptom | Ursache | Abhilfe |
-| --- | --- | --- |
-| `maintenance:install` bricht mit „PHP module … not installed" ab | Eine der von `OC_Util::checkServer()` geprüften Erweiterungen fehlt | Paket nachinstallieren, `systemctl reload php8.4-fpm`, dann `occ check` |
-| „Console has to be executed with the user that owns the file config/config.php" | `occ` läuft als falscher Benutzer | Aufruf mit `sudo -u www-data php8.4 occ …` wiederholen |
-| „The posix extensions are required" | Erweiterung `posix` fehlt | `posix` nachinstallieren; ohne sie ist `occ` nicht benutzbar |
-| „Can't create or write into the data directory …" | Datenverzeichnis gehört nicht `www-data` oder ist nicht beschreibbar | `chown -R www-data:www-data` auf das Datenverzeichnis |
-| „Can't create or write into the apps-external directory …" | `apps-external/` fehlt oder ist nicht beschreibbar | Verzeichnis anlegen und `www-data` als Eigentümer setzen |
-| „Sie greifen auf den Server über eine nicht vertrauenswürdige Domain zu." | Aufgerufener Hostname steht nicht in `trusted_domains` | `occ config:system:set trusted_domains 0 --value cloud.example.com` |
-| Oberfläche lädt, aber alle URLs enthalten `index.php` | `htaccess.RewriteBase` nicht gesetzt bzw. `front_controller_active` fehlt | Bei Apache Schlüssel setzen und `occ maintenance:update:htaccess`; bei nginx `fastcgi_param front_controller_active true;` |
-| `occ maintenance:update:htaccess` ändert nichts | Auf der Kommandozeile bricht `updateHtaccess()` ab, solange `overwrite.cli.url` leer ist | Erst `overwrite.cli.url` setzen, dann den Befehl erneut ausführen |
-| Sicherheits-Kopfzeilen und Sperren fehlen unter Apache | `AllowOverride All` fehlt, die `.htaccess` wird nicht gelesen | Im `<Directory>`-Block ergänzen und Apache neu laden |
-| Sicherheits-Kopfzeilen und `.well-known`-Umleitungen fehlen unter nginx | nginx liest keine `.htaccess` | Die `add_header`- und `location`-Blöcke aus dem Beispiel übernehmen |
-| WebDAV- oder Desktop-Client erhält 401 trotz richtiger Zugangsdaten | Die `Authorization`-Kopfzeile erreicht PHP nicht | Unter nginx `fastcgi_param HTTP_AUTHORIZATION $http_authorization;` setzen |
-| Datenverzeichnis ist über den Browser erreichbar | Es liegt im Webroot, und die schützende `.htaccess` greift nicht | Datenverzeichnis außerhalb des Webroots legen und `datadirectory` anpassen |
-| „Letzte Cron-Job-Ausführung: … Möglicherweise liegt ein Fehler vor." | Cron-Eintrag fehlt oder läuft unter dem falschen Benutzer | Eintrag als `www-data` anlegen, danach `occ background:cron` |
-| Dateinamen mit Emojis schlagen fehl | Datenbank nicht auf `utf8mb4` | Zeichensatz prüfen, siehe [Datenbank](../administration/database.md) |
-| Großer Upload bricht kurz vor dem Ende ab | Das abschließende `MOVE` setzt die Teile zusammen und überschreitet eine Zeitgrenze | `TimeOut` bzw. `fastcgi_read_timeout` und `request_terminate_timeout` erhöhen |
-| Upload bricht bei fester Größe ab | Grenze in PHP; die `php_value`-Zeilen der `.htaccess` gelten nur unter mod_php, die `.user.ini` nicht für die CLI | `upload_max_filesize` und `post_max_size` in der `php.ini` von FPM und CLI setzen |
-| Keine Passwort-Reset- und Freigabe-Mails | Kein Mailversand eingerichtet | SMTP setzen, siehe [E-Mail-Versand](../administration/email.md) |
+nginx liest keine `.htaccess`. Alles, was dort steht, muss deshalb in der
+Konfiguration von nginx stehen. Der Ablauf weicht an vier Stellen ab:
 
-Bleibt die Ursache unklar, steht sie meist im Protokoll unter
-`/var/oco-data/owncloud.log`, siehe
+1. **Schritt 2:** Installieren Sie `nginx` statt `apache2` und
+   `python3-certbot-nginx` statt `python3-certbot-apache`.
+2. **Schritt 7:** Die letzten beiden Befehle zu `htaccess.RewriteBase` und
+   `maintenance:update:htaccess` entfallen. Kurze Adressen schaltet unter nginx
+   die Zeile `fastcgi_param front_controller_active true;` ein.
+3. **Schritt 8:** Legen Sie statt der Apache-Konfiguration diese Datei an:
+
+    ```bash
+    sudo nano /etc/nginx/sites-available/owncloud-online
+    ```
+
+    Inhalt, wieder mit Ihrer Adresse statt `cloud.example.com`:
+
+    ```nginx
+    upstream php-handler {
+        server unix:/run/php/php8.4-fpm.sock;
+    }
+
+    server {
+        listen 80;
+        listen [::]:80;
+        server_name cloud.example.com;
+
+        root /var/www/owncloud.online;
+        index index.php index.html;
+
+        # Ersatz für die Kopfzeilen der .htaccess
+        add_header Strict-Transport-Security "max-age=15552000; includeSubDomains" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-XSS-Protection "0" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Robots-Tag "none" always;
+        add_header X-Download-Options "noopen" always;
+        add_header X-Permitted-Cross-Domain-Policies "none" always;
+
+        # Große Uploads
+        client_max_body_size 0;
+        client_body_timeout 300s;
+
+        # Umleitungen unter /.well-known
+        location = /.well-known/host-meta      { rewrite ^ /public.php?service=host-meta last; }
+        location = /.well-known/host-meta.json { rewrite ^ /public.php?service=host-meta-json last; }
+        location ^~ /.well-known/carddav { return 301 /remote.php/dav/; }
+        location ^~ /.well-known/caldav  { return 301 /remote.php/dav/; }
+        location ^~ /.well-known/acme-challenge/ { }
+        location ^~ /.well-known/pki-validation/ { }
+
+        # Gesperrte Pfade wie in der .htaccess
+        location ~ ^/(?:build|tests|config|lib|3rdparty|templates|changelog)/ { return 404; }
+        location ~ ^/(?:\.|autotest|occ|issue|indie|db_|console) { return 404; }
+        location = /core/signature.json { return 404; }
+        location ^~ /core/skeleton/ { return 404; }
+        location ^~ /data/ { return 404; }
+        location ~ ^/(?:core|apps|apps-external)/.*/(?:package|package-lock|composer|bower|\.bower|installed|testem)\.json$ { return 404; }
+        location ~ ^/(?:core|apps|apps-external)/.*/(?:composer|yarn)\.lock$ { return 404; }
+        location ~ ^/(?:apps|apps-external)/[^/]+/(?:vendor|tests)/ { return 404; }
+
+        # Vorhandene Dateien direkt ausliefern, alles andere über index.php
+        location / {
+            rewrite ^/remote/(.*) /remote.php last;
+            try_files $uri /index.php$request_uri;
+        }
+
+        location ~ \.php(?:$|/) {
+            fastcgi_split_path_info ^(.+?\.php)(/.*)$;
+            try_files $fastcgi_script_name =404;
+            include fastcgi_params;
+            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+            fastcgi_param PATH_INFO $fastcgi_path_info;
+            fastcgi_param PATH /usr/local/bin:/usr/bin:/bin;
+            fastcgi_param HTTPS $https if_not_empty;
+            fastcgi_param HTTP_AUTHORIZATION $http_authorization;
+            fastcgi_param front_controller_active true;
+            fastcgi_param modHeadersAvailable true;
+            fastcgi_pass php-handler;
+            fastcgi_read_timeout 3600s;
+            fastcgi_request_buffering off;
+        }
+
+        # Föderation: diese Ordner liefern ihre eigene index.php aus
+        location ~ ^/(?:ocs-provider|ocm-provider)(?:$|/) {
+            try_files $uri/ =404;
+            index index.php;
+        }
+
+        location ~ \.(?:css|js|mjs|woff2?|svg|gif|png|jpg|jpeg|ico|map)$ {
+            try_files $uri /index.php$request_uri;
+            access_log off;
+            expires 7d;
+        }
+    }
+    ```
+
+    Schalten Sie die Konfiguration ein und die Standardseite aus:
+
+    ```bash
+    sudo ln -s /etc/nginx/sites-available/owncloud-online /etc/nginx/sites-enabled/
+    sudo rm /etc/nginx/sites-enabled/default
+    sudo nginx -t
+    sudo systemctl reload nginx
+    ```
+
+    `nginx -t` meldet `syntax is ok` und `test is successful`.
+
+4. **Schritt 9:** Certbot rufen Sie mit `--nginx` auf:
+
+    ```bash
+    sudo certbot --nginx --redirect -d cloud.example.com
+    ```
+
+??? note "Hintergrund: Was die nginx-Konfiguration erledigt"
+    - Die `add_header`-Zeilen ersetzen die Kopfzeilen aus der `.htaccess`. Die
+      Einstellungsseite prüft jede einzelne. Fehlt zum Beispiel
+      `X-XSS-Protection "0"`, zeigt sie dazu eine Warnung.
+    - `try_files $uri /index.php$request_uri;` liefert vorhandene Dateien
+      direkt aus und gibt alles andere an `index.php`. Ein zusätzliches
+      `$uri/` wäre falsch: Adressen wie `/apps/files/` sind zugleich echte
+      Ordner, nginx antwortete dort mit 403 statt mit der App.
+    - `fastcgi_param HTTP_AUTHORIZATION` reicht die Anmeldedaten an PHP
+      weiter. Fehlt die Zeile, erhalten WebDAV-Programme und der
+      Desktop-Client trotz richtiger Zugangsdaten den Fehler 401.
+    - `fastcgi_param PATH` gibt PHP einen Suchpfad für Programme. Fehlt er,
+      meldet die Einstellungsseite, dass PHP keine Umgebungsvariablen
+      abfragen kann.
+    - `/ocs-provider/` und `/ocm-provider/` brauchen den eigenen Block, damit
+      Freigaben zwischen zwei Servern funktionieren.
+    - Die Sperre `location ~ ^/(?:\.|…)` würde auch `/.well-known/` treffen.
+      Die `location ^~`-Blöcke davor haben Vorrang vor regulären Ausdrücken.
+      So bleiben die Umleitungen und die Zertifikatsausstellung frei.
+    - `fastcgi_split_path_info ^(.+?\.php)(/.*)$;` trennt an der ersten
+      Stelle mit `.php`. Eine gierige Variante ohne `?` bricht Routen von Apps,
+      deren Pfad selbst `.php` enthält.
+    - Die Sperren für `vendor/` und `tests/` gelten auch für
+      `apps-external/`, wo die Apps aus dem Marketplace liegen.
+
+## Fehlersuche {#fehlersuche}
+
+Die meisten Fehler stehen mit Ursache im Protokoll
+`/var/oco-data/owncloud.log`, Fehler des Webservers in
+`/var/log/apache2/owncloud-online-error.log`. Mehr unter
 [Serverprotokoll und Fehlermeldungen](../administration/logging.md).
+
+| Was Sie sehen | Ursache | Lösung |
+| --- | --- | --- |
+| „PHP-Modul … nicht installiert.“ | Eine PHP-Erweiterung fehlt | Paket aus Schritt 2 nachinstallieren, `sudo systemctl restart php8.4-fpm`, dann `occ check` |
+| `This version of owncloud.online requires at least PHP 8.4.0` | `occ` mit `php` statt `php8.4` aufgerufen, oder falsches PHP | immer `php8.4` schreiben |
+| „Sie greifen auf den Server über eine nicht vertrauenswürdige Domain zu.“ (bei Du-Anrede „Du greifst …“) | Aufgerufene Adresse fehlt in `trusted_domains` | `occ config:system:set trusted_domains 1 --value <adresse>` |
+| Alle Adressen enthalten `index.php` | `htaccess.RewriteBase` fehlt (Apache) oder `front_controller_active` (nginx) | Schritt 7 bzw. Abschnitt nginx prüfen |
+| `occ maintenance:update:htaccess` ändert nichts | `overwrite.cli.url` ist leer | erst `overwrite.cli.url` setzen, dann erneut ausführen |
+| Sicherheits-Kopfzeilen fehlen unter Apache | `AllowOverride All` fehlt | im `<Directory>`-Block ergänzen, `sudo systemctl reload apache2` |
+| Desktop-Client oder WebDAV erhält 401 trotz richtiger Daten (nginx) | `HTTP_AUTHORIZATION` wird nicht weitergereicht | Zeile aus der nginx-Konfiguration übernehmen |
+| „Letzte Cron-Job-Ausführung: … Möglicherweise liegt ein Fehler vor.“ | Zeitplan fehlt oder läuft als falscher Benutzer | Schritt 10 wiederholen |
+| Dateinamen mit Emojis schlagen fehl | Datenbank nicht auf `utf8mb4` | siehe [Datenbank](../administration/database.md) |
+| Großer Upload bricht kurz vor dem Ende ab | Das Zusammensetzen der Teile überschreitet eine Zeitgrenze | `TimeOut` (Apache) bzw. `fastcgi_read_timeout` (nginx) erhöhen |
+| Keine Mails für Passwort-Links und Freigaben | Mailversand nicht eingerichtet | [E-Mail-Versand](../administration/email.md) |

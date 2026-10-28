@@ -40,9 +40,9 @@ nav:
   - Start: index.md
   - Installation:
       - installation/index.md
-      - Leerer Linux-Server: installation/linux-server.md
-      - Webhosting: installation/webhosting.md
-      - Lokale Entwicklung mit WSL: installation/local-wsl.md
+      - Linux-Server: installation/linux-server.md
+      - Webhosting mit Plesk: installation/webhosting.md
+      - Windows mit WSL (zum Testen): installation/local-wsl.md
   - Administration:
       - administration/index.md
       - Benutzer und Gruppen: administration/users-groups.md
@@ -74,9 +74,97 @@ nav:
       - Desktop Client: user/desktop-client.md
   - Plugins:
       - plugins/index.md
-      - Plugin-Matrix: plugins/plugin-matrix.md
+      - Sicherheit und Anmeldung:
+          - plugins/apps/twofactor_totp.md
+          - plugins/apps/password_policy.md
+          - plugins/apps/brute_force_protection.md
+          - plugins/apps/oauth2.md
+          - plugins/apps/openidconnect.md
+          - plugins/apps/user_shibboleth.md
+          - plugins/apps/user_ldap.md
+          - plugins/apps/impersonate.md
+      - Daten schützen:
+          - plugins/apps/encryption.md
+          - plugins/apps/files_antivirus.md
+          - plugins/apps/file_firewall.md
+          - plugins/apps/audit_log.md
+      - Dateien und Speicher:
+          - plugins/apps/wnd.md
+          - plugins/apps/files_external_s3.md
+          - plugins/apps/files_primary_s3.md
+          - plugins/apps/oco_expire.md
+          - plugins/apps/workflow.md
+          - plugins/apps/files_texteditor.md
+          - plugins/apps/files_pdfviewer.md
+          - plugins/apps/files_mediaviewer.md
+          - plugins/apps/gallery.md
+      - Zusammenarbeit und Office:
+          - plugins/apps/oco_office.md
+          - plugins/apps/onlyoffice.md
+          - plugins/apps/richdocuments.md
+          - plugins/apps/calendar.md
+          - plugins/apps/bwtalk.md
+          - plugins/apps/guests.md
+          - plugins/apps/customgroups.md
+          - plugins/apps/schwarzes_brett.md
+      - Verwaltung und Werkzeuge:
+          - plugins/apps/market.md
+          - plugins/apps/configreport.md
+          - plugins/apps/theme-owncloudonline.md
+          - plugins/apps/firstrunwizard.md
+          - plugins/apps/announcementcenter.md
+          - plugins/apps/activity.md
+          - plugins/apps/notifications.md
+          - plugins/apps/ai_documents.md
+          - plugins/apps/oco_mcp.md
       - MCP Connector (KI-Anbindung): plugins/mcp-connector.md
   - Entwickler:
       - developer/index.md
       - Release Workflow: developer/release-workflow.md
       - PHP 8.4 Kompatibilität: developer/php84-compat.md
+
+extra:
+  i18n:
+    nav_en:
+      "Start": "Home"
+      "Installation": "Installation"
+      "Linux-Server": "Linux server"
+      "Webhosting mit Plesk": "Web hosting with Plesk"
+      "Windows mit WSL (zum Testen)": "Windows with WSL (for testing)"
+      "Administration": "Administration"
+      "Benutzer und Gruppen": "Users and groups"
+      "Freigaben steuern": "Sharing policies"
+      "E-Mail-Versand": "Email"
+      "Hintergrund-Jobs (Cron)": "Background jobs (cron)"
+      "Konfiguration (config.php)": "Configuration (config.php)"
+      "occ - die Kommandozeile": "occ command line"
+      "Datenbank": "Database"
+      "Externe Speicher": "External storage"
+      "Verzeichnisdienst (LDAP)": "Directory service (LDAP)"
+      "Anmeldung über OAuth2 und OpenID Connect": "Login with OAuth2 and OpenID Connect"
+      "Zwei-Faktor-Anmeldung": "Two-factor authentication"
+      "Verschlüsselung": "Encryption"
+      "Virenprüfung": "Antivirus"
+      "Regeln und Aufbewahrung": "Rules and retention"
+      "Apps und Marketplace": "Apps and Marketplace"
+      "Reverse-Proxy und TLS": "Reverse proxy and TLS"
+      "Sicherheit und Setup-Warnungen": "Security and setup warnings"
+      "Upstream-CVE-Status": "Upstream CVE status"
+      "Performance": "Performance"
+      "Backups und Updates": "Backups and updates"
+      "Umzug auf einen anderen Server": "Moving to another server"
+      "Serverprotokoll und Fehlermeldungen": "Server log and error messages"
+      "Troubleshooting": "Troubleshooting"
+      "Benutzer": "Users"
+      "Dateien und Freigaben": "Files and sharing"
+      "Desktop Client": "Desktop client"
+      "Plugins": "Plugins"
+      "Sicherheit und Anmeldung": "Security and login"
+      "Daten schützen": "Data protection"
+      "Dateien und Speicher": "Files and storage"
+      "Zusammenarbeit und Office": "Collaboration and office"
+      "Verwaltung und Werkzeuge": "Administration and tools"
+      "MCP Connector (KI-Anbindung)": "MCP Connector (AI integration)"
+      "Entwickler": "Developers"
+      "Release Workflow": "Release workflow"
+      "PHP 8.4 Kompatibilität": "PHP 8.4 compatibility"

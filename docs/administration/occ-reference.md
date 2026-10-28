@@ -18,12 +18,12 @@ sudo -u www-data php8.4 /var/www/owncloud.online/occ user:add --help
 ```
 
 Der Aufruf funktioniert aus jedem Arbeitsverzeichnis, solange der vollständige
-Pfad angegeben wird — `console.php` wechselt selbst in das Installationsverzeichnis.
-Auf dieser Seite ist der Pfad in den Beispielen der Kürze halber weggelassen.
+Pfad angegeben ist: `occ` wechselt selbst in das Installationsverzeichnis. Auf
+dieser Seite ist der Pfad in den Beispielen der Kürze halber weggelassen.
 
-Vorausgesetzt werden die PHP-Erweiterungen **posix** (harte Bedingung, ohne sie
-bricht `occ` sofort ab) und **pcntl** (weiche Bedingung, ohne sie lassen sich
-lang laufende Befehle nicht sauber unterbrechen; es erscheint eine Warnung).
+`occ` braucht die PHP-Erweiterung **posix** und sollte **pcntl** haben. Ohne
+`posix` bricht `occ` sofort ab. Ohne `pcntl` läuft `occ` mit einer Warnung,
+lang laufende Befehle lassen sich dann aber nicht sauber unterbrechen.
 
 ## Rechte: immer als Webserver-Benutzer
 
@@ -40,11 +40,11 @@ In der Standardinstallation ist das `www-data`. Deshalb gilt ausnahmslos:
 sudo -u www-data php8.4 /var/www/owncloud.online/occ status
 ```
 
-Ein Aufruf als `root` ist auch dann falsch, wenn er durchläuft: Dateien und
-Verzeichnisse, die dabei entstehen — Logdatei, Vorschaubilder, Dateien im
-Datenverzeichnis — gehören danach `root` und sind für den Webserver nicht mehr
-beschreibbar. Dasselbe gilt für den Cron-Eintrag, siehe
-[Hintergrund-Jobs](background-jobs.md).
+Ein Aufruf als `root` ist auch dann falsch, wenn er durchläuft, etwa weil
+`config/config.php` versehentlich `root` gehört. Dateien und Verzeichnisse, die
+dabei entstehen (Logdatei, Vorschaubilder, Dateien im Datenverzeichnis), gehören
+danach `root` und sind für den Webserver nicht mehr beschreibbar. Dasselbe gilt
+für den Cron-Eintrag, siehe [Hintergrund-Jobs](background-jobs.md).
 
 ## Globale Optionen
 
@@ -52,8 +52,8 @@ beschreibbar. Dasselbe gilt für den Cron-Eintrag, siehe
 | --- | --- |
 | `--help`, `-h` | Hilfe zum Befehl statt Ausführung |
 | `-v`, `-vv`, `-vvv` | Ausführlichere Ausgabe |
-| `--no-warnings` | Unterdrückt globale Hinweise, gibt nur die Befehlsausgabe aus |
-| `--output=plain\|json\|json_pretty` | Maschinenlesbare Ausgabe — nur bei Befehlen, die auf `OC\Core\Command\Base` aufbauen, unter anderem `status`, `check`, `app:list`, `user:list`, `group:list`, `config:list` |
+| `--no-warnings` | Globale Hinweise unterdrücken, nur die Befehlsausgabe zeigen |
+| `--output=plain|json|json_pretty` | Maschinenlesbare Ausgabe. Nicht jeder Befehl kennt die Option, unter anderem `status`, `check`, `app:list`, `user:list`, `group:list` und `config:list` haben sie. `occ <befehl> --help` zeigt, ob sie vorhanden ist. |
 
 ```bash
 sudo -u www-data php8.4 occ status --output=json_pretty
@@ -61,8 +61,8 @@ sudo -u www-data php8.4 occ status --output=json_pretty
 
 ## Wartungsmodus
 
-Der Wartungsmodus wird über `occ` gesetzt und schreibt den Systemwert
-`maintenance` nach `config/config.php`:
+Den Wartungsmodus schalten Sie mit `occ`. Der Befehl schreibt dabei den
+Systemwert `maintenance` in `config/config.php`:
 
 ```bash
 sudo -u www-data php8.4 occ maintenance:mode --on
@@ -72,9 +72,8 @@ sudo -u www-data php8.4 occ maintenance:mode --off
 sudo -u www-data php8.4 occ maintenance:mode
 ```
 
-Entscheidend für die Praxis: **Im Wartungsmodus lädt `occ` keine Apps.** Damit
-verschwinden auch deren Befehle aus der Liste. `occ` weist beim Start darauf
-hin:
+**Im Wartungsmodus lädt `occ` keine Apps.** Damit verschwinden auch deren
+Befehle aus der Liste. `occ` weist beim Start darauf hin:
 
 ```text
 owncloud.online is in maintenance mode - no app have been loaded
@@ -82,11 +81,11 @@ owncloud.online is in maintenance mode - no app have been loaded
 
 | Vorgang | Im Wartungsmodus |
 | --- | --- |
-| Core-Befehle (`user:*`, `group:*`, `config:*`, `db:*`, `migrations:*`, `maintenance:*`, `upgrade`, `log:*`) | verfügbar |
-| App-Befehle (`files:*`, `trashbin:*`, `versions:*`, `dav:*`, `files_external:*`, `market:*`) | **nicht** verfügbar — die Apps werden nicht geladen |
-| `occ system:cron` — und damit auch `cron.php` auf der Kommandozeile, das nur `occ system:cron` aufruft | bricht mit „We are in maintenance mode, skipping cron" ab |
+| Kernbefehle (`user:*`, `group:*`, `config:*`, `db:*`, `migrations:*`, `maintenance:*`, `upgrade`, `log:*`) | verfügbar |
+| App-Befehle (`files:*`, `trashbin:*`, `versions:*`, `dav:*`, `files_external:*`, `market:*`) | **nicht** verfügbar, die Apps werden nicht geladen |
+| `occ system:cron`, auch über `cron.php` auf der Kommandozeile (es ruft nur `occ system:cron` auf) | bricht mit „We are in maintenance mode, skipping cron“ ab |
 | Weboberfläche (`index.php`) | HTTP 503 mit `Retry-After: 120` und Wartungsseite |
-| Sync-Clients (`remote.php`, WebDAV) | HTTP 503 „System in maintenance mode." — ohne `Retry-After` |
+| Sync-Clients (`remote.php`, WebDAV) | HTTP 503 „System in maintenance mode.“ ohne `Retry-After` |
 
 Zwei weitere Zustände schränken den Befehlsvorrat ebenso ein:
 
@@ -94,15 +93,15 @@ Zwei weitere Zustände schränken den Befehlsvorrat ebenso ein:
   die wenigen Befehle, die keine Installation brauchen (`status`, `check`,
   `integrity:*`, `app:check-code`, `l10n:createjs`).
 * **Update ausstehend:** Meldet die Instanz „owncloud.online or one of the apps
-  require upgrade", werden die Apps nicht geladen — der Befehlsvorrat entspricht
-  dem im Wartungsmodus, die Core-Befehle bleiben also vorhanden. Der Weg heraus
+  require upgrade“, werden die Apps nicht geladen. Der Befehlsvorrat entspricht
+  dem im Wartungsmodus, die Kernbefehle bleiben also vorhanden. Der Weg heraus
   ist `occ upgrade`.
 
 Der Einzelbenutzermodus (`maintenance:singleuser`, Systemwert `singleuser`) ist
 davon zu unterscheiden: Er lässt die Apps geladen. `occ system:cron` bricht darin
-mit „We are in admin only mode, skipping cron" ab, die Weboberfläche antwortet
+mit „We are in admin only mode, skipping cron“ ab, die Weboberfläche antwortet
 Konten außerhalb der Gruppe `admin` mit HTTP 503, und der WebDAV-Endpunkt
-verweigert jede Anfrage mit „System in single user mode." — auch die von
+verweigert jede Anfrage mit „System in single user mode.“, auch die von
 Administratoren.
 
 ## Wartung und Update
@@ -122,10 +121,11 @@ Administratoren.
 | `maintenance:mimetype:update-js` | `mimetypelist.js` neu erzeugen |
 | `maintenance:install` | Instanz einrichten (nur vor der Installation vorhanden) |
 | `previews:cleanup` | Vorschaubilder ohne zugehörige Datei entfernen |
-| `integrity:check-core` | Signatur des Core-Codes prüfen |
+| `integrity:check-core` | Signatur des Kerns prüfen |
 | `integrity:check-app` | Signatur einer App prüfen |
 
-Ein Update spielt zuerst den Code ein und lässt danach `occ upgrade` laufen:
+Für ein Update spielen Sie zuerst den neuen Code ein und lassen danach
+`occ upgrade` laufen:
 
 ```bash
 sudo -u www-data php8.4 occ maintenance:mode --on
@@ -133,9 +133,11 @@ sudo -u www-data php8.4 occ upgrade
 sudo -u www-data php8.4 occ maintenance:mode --off
 ```
 
-`integrity:check-core` liefert auf dem ausgelieferten Kanal keine belastbare
-Aussage — die Einzelheiten stehen unter
-[Sicherheit und Setup-Warnungen](security-hardening.md).
+`integrity:check-core` und `integrity:check-app` prüfen in der ausgelieferten
+Version keine Datei und melden immer Erfolg: Der Kern erzwingt die Prüfung für
+den ausgelieferten Kanal nicht, und das Release-Paket enthält keine Signaturen.
+Wie Sie ein Paket stattdessen prüfen, steht unter
+[Integritätsprüfung](security-hardening.md#integritaetspruefung).
 
 Steckengebliebene Dateisperren nach einem Absturz löst dieser Befehl:
 
@@ -143,11 +145,13 @@ Steckengebliebene Dateisperren nach einem Absturz löst dieser Befehl:
 # gefahrlos im laufenden Betrieb: nur abgelaufene Sperren
 sudo -u www-data php8.4 occ maintenance:file-locks --cleanup-expired
 
-# alle Sperren — verlangt aktiven Wartungsmodus
+# alle Sperren, verlangt aktiven Wartungsmodus
 sudo -u www-data php8.4 occ maintenance:file-locks --all
 ```
 
-Mit `--dry-run` zeigt der Befehl nur an, was er löschen würde.
+Mit `--dry-run` zeigt der Befehl nur an, was er löschen würde. Er arbeitet auf
+der Datenbanktabelle `file_locks`. Ist `memcache.locking` gesetzt, etwa auf
+Redis, liegen die Sperren dort, und der Befehl findet keine.
 
 ## Konten und Gruppen
 
@@ -157,7 +161,7 @@ Mit `--dry-run` zeigt der Befehl nur an, was er löschen würde.
 | `user:delete` | Konto löschen |
 | `user:modify` | Angaben eines Kontos ändern |
 | `user:disable` | Konto sperren |
-| `user:enable` | Gesperrtes Konto wieder freigeben |
+| `user:enable` | Gesperrtes Konto entsperren |
 | `user:list` | Konten mit ihren Attributen auflisten |
 | `user:list-groups` | Gruppen eines Kontos auflisten |
 | `user:lastseen` | Letzte Anmeldung eines Kontos anzeigen |
@@ -168,7 +172,7 @@ Mit `--dry-run` zeigt der Befehl nur an, was er löschen würde.
 | `user:sync` | Konten aus einem Backend in die Kontentabelle übernehmen |
 | `user:move-home` | Heimatverzeichnis eines Kontos verschieben |
 | `user:home:list-dirs` | Alle benutzten Wurzelverzeichnisse für Heimatverzeichnisse auflisten |
-| `user:home:list-users` | Alle Konten auflisten, deren Heimat unter einem Pfad liegt |
+| `user:home:list-users` | Alle Konten auflisten, deren Heimatverzeichnis unter einem Pfad liegt |
 | `group:add` | Gruppe anlegen |
 | `group:delete` | Gruppe löschen |
 | `group:list` | Gruppen auflisten |
@@ -188,7 +192,7 @@ sudo -u www-data php8.4 occ user:sync ldap --missing-account-action=disable
 ```
 
 `--missing-account-action` nimmt `disable` oder `remove`. **`remove` löscht mit
-dem Konto auch dessen Daten und Dateien** — im Regelbetrieb gehört dort
+dem Konto auch dessen Daten und Dateien.** Im Regelbetrieb gehört dort
 `disable` hin.
 
 ## Dateien und Dateisystem
@@ -210,15 +214,15 @@ dem Konto auch dessen Daten und Dateien** — im Regelbetrieb gehört dort
 | `files_external:create` | Externen Speicher anlegen |
 | `files_external:delete` | Externen Speicher löschen |
 | `files_external:config` | Backend-Konfiguration eines Speichers verwalten |
-| `files_external:option` | Einbindungsoptionen eines Speichers verwalten |
+| `files_external:option` | Einhängeoptionen eines Speichers verwalten |
 | `files_external:applicable` | Zuständige Konten und Gruppen eines Speichers verwalten |
 | `files_external:backends` | Verfügbare Speicher- und Anmelde-Backends anzeigen |
 | `files_external:verify` | Konfiguration eines Speichers gegen das Ziel prüfen |
 | `files_external:import` | Speicherkonfigurationen einlesen |
 | `files_external:export` | Speicherkonfigurationen ausgeben |
 
-`files:scan` ist der Befehl, den man nach jedem Eingriff direkt im
-Datenverzeichnis braucht — der Dateicache kennt sonst die neuen Dateien nicht:
+Nach jedem Eingriff direkt im Datenverzeichnis brauchen Sie `files:scan`, sonst
+kennt der Dateicache die neuen Dateien nicht:
 
 ```bash
 # ein Konto
@@ -245,7 +249,7 @@ langsamer und gehört in ein Wartungsfenster.
 | `federation:trusted-servers:list` | Vertrauenswürdige Server auflisten |
 | `federation:trusted-servers:remove` | Vertrauenswürdigen Server entfernen |
 
-Beim Übertragen eines Kontos wandern die Freigaben mit — dafür ist
+Beim Übertragen eines Kontos wandern die Freigaben mit. Dafür ist
 `files:transfer-ownership` zuständig, siehe voriger Abschnitt.
 
 ## Konfiguration
@@ -267,16 +271,17 @@ sudo -u www-data php8.4 occ config:system:set loglevel --value 2 --type integer
 ```
 
 `config:list` ersetzt einen fest hinterlegten Satz vertraulicher **Systemwerte**
-durch `***REMOVED SENSITIVE VALUE***` — darunter `dbpassword`, `passwordsalt`,
-`secret`, `mail_smtppassword`, `ldap_agent_password`, `license-key` und die
-Zugangsdaten unter `redis` und `objectstore`. Erst `--private` gibt sie im
-Klartext aus. **Die App-Werte aus der Datenbank filtert der Befehl nicht** — sie
-stehen bei `config:list all` und `config:list <app>` auch ohne `--private`
-unverändert in der Ausgabe. Die Ausgabe gehört deshalb in keinem Fall ungeprüft
-in ein Ticket oder ein Repository. Die einzelnen Schlüssel beschreibt
+durch `***REMOVED SENSITIVE VALUE***`, darunter `dbpassword`, `passwordsalt`,
+`secret`, `mail_smtppassword`, `ldap_agent_password`, `marketplace.key`, das
+Client-Geheimnis unter `openid-connect` und die Zugangsdaten unter `redis` und
+`objectstore`. Erst `--private` gibt sie im Klartext aus. **Die App-Werte aus
+der Datenbank filtert der Befehl nicht.** Sie stehen bei `config:list all` und
+`config:list <app>` auch ohne `--private` unverändert in der Ausgabe. Die
+Ausgabe gehört deshalb in keinem Fall ungeprüft in ein Ticket oder ein
+Repository. Die einzelnen Schlüssel beschreibt
 [Konfiguration (config.php)](config-reference.md).
 
-## Hintergrundaufträge
+## Hintergrund-Jobs
 
 | Befehl | Zweck |
 | --- | --- |
@@ -284,18 +289,18 @@ in ein Ticket oder ein Repository. Die einzelnen Schlüssel beschreibt
 | `background:ajax` | Ausführungsart auf AJAX stellen |
 | `background:webcron` | Ausführungsart auf Webcron stellen |
 | `background:queue:status` | Zustand der Warteschlange anzeigen |
-| `background:queue:execute` | Einen einzelnen Auftrag aus der Warteschlange ausführen |
-| `background:queue:delete` | Einen Auftrag aus der Warteschlange löschen |
-| `system:cron` | Hintergrundaufträge einmal wie ein Cron-Lauf abarbeiten |
+| `background:queue:execute` | Einen einzelnen Job aus der Warteschlange ausführen |
+| `background:queue:delete` | Einen Job aus der Warteschlange löschen |
+| `system:cron` | Hintergrund-Jobs einmal wie ein Cron-Lauf abarbeiten |
 
 Die drei `background:`-Befehle schreiben denselben App-Wert
 `core` / `backgroundjobs_mode`; abfragen lässt er sich mit
-`config:app:get core backgroundjobs_mode`. Empfohlen ist `cron`, Einrichtung
+`config:app:get core backgroundjobs_mode`. Empfohlen ist `cron`. Einrichtung
 und Prüfung stehen unter [Hintergrund-Jobs](background-jobs.md).
 
 `system:cron` bricht ab, wenn ein Update aussteht, der Wartungsmodus oder der
 Einzelbenutzermodus aktiv ist oder die Ausführungsart auf `none` steht. Mit
-`--progress` zeigt es einen Fortschrittsbalken — diese Option gehört
+`--progress` zeigt der Befehl einen Fortschrittsbalken. Diese Option gehört
 ausdrücklich nicht in einen Crontab-Eintrag.
 
 ## Datenbank
@@ -308,9 +313,9 @@ ausdrücklich nicht in einen Crontab-Eintrag.
 | `migrations:migrate` | Migrationen bis zu einer Version oder bis zur neuesten ausführen |
 | `migrations:execute` | Eine einzelne Migration gezielt ausführen |
 
-Vor jedem dieser Eingriffe gehört ein Datenbank-Backup angelegt, siehe
-[Backups und Updates](backups-updates.md). Im Regelbetrieb ruft man
-`migrations:*` nicht direkt auf — `occ upgrade` erledigt das.
+Legen Sie vor jedem dieser Eingriffe ein Datenbank-Backup an, siehe
+[Backups und Updates](backups-updates.md). Im Regelbetrieb rufen Sie
+`migrations:*` nicht direkt auf, das erledigt `occ upgrade`.
 
 ## Protokoll
 
@@ -328,8 +333,8 @@ sudo -u www-data php8.4 occ log:owncloud --enable --rotate-size 100M
 `log:manage` schreibt die Systemwerte `log_type` (`owncloud`, `syslog` oder
 `errorlog`), `loglevel` (`debug`, `info`, `warning`, `error`, `fatal`) und
 `logtimezone`. `log:owncloud` schreibt `logfile` und `log_rotate_size`
-(Standard `104857600`, `0` schaltet die Rotation ab). Zum Lesen und Auswerten siehe
-[Serverprotokoll und Fehlermeldungen](logging.md).
+(Standard `104857600`, `0` schaltet die Rotation ab). Zum Lesen und Auswerten
+siehe [Serverprotokoll und Fehlermeldungen](logging.md).
 
 ## Apps
 
@@ -346,10 +351,10 @@ sudo -u www-data php8.4 occ log:owncloud --enable --rotate-size 100M
 | `market:uninstall` | App entfernen |
 
 Die vier `market:`-Befehle stammen aus der Markt-App und stehen nur zur
-Verfügung, wenn diese aktiviert ist; Katalog und Konfiguration beschreibt
+Verfügung, wenn diese aktiviert ist. Katalog und Konfiguration beschreibt
 [Apps und Marketplace](apps-market.md).
 
-Das gilt allgemein: Eine App bringt ihre Befehle nur mit, solange sie
+Allgemein gilt: Eine App bringt ihre Befehle nur mit, solange sie
 aktiviert ist. Nach `app:disable files_external` verschwinden alle
 `files_external:*`-Befehle aus `occ list`.
 
@@ -377,7 +382,7 @@ aktiviert ist. Nach `app:disable files_external` verschwinden alle
 | `dav:sync-birthday-calendar` | Geburtstagskalender abgleichen |
 | `dav:sync-system-addressbook` | Konten in das System-Adressbuch übernehmen |
 | `federation:sync-addressbooks` | Adressbücher aller föderierten Instanzen abgleichen |
-| `integrity:sign-core` | Core mit einem privaten Schlüssel signieren |
+| `integrity:sign-core` | Kern mit einem privaten Schlüssel signieren |
 | `integrity:sign-app` | App mit einem privaten Schlüssel signieren |
 | `l10n:createjs` | JavaScript-Übersetzungsdateien einer App erzeugen |
 | `migrations:generate` | Gerüst für eine neue Migration erzeugen (Entwicklung) |
@@ -389,16 +394,17 @@ Die Einzelheiten zur Verschlüsselung stehen unter
 
 | Symptom | Ursache | Abhilfe |
 | --- | --- | --- |
-| „Console has to be executed with the user that owns the file config/config.php" | Aufruf als falscher Benutzer, meist als `root` oder als angemeldeter Administrator | Aufruf mit `sudo -u www-data` wiederholen |
-| „The posix extensions are required" | PHP-Erweiterung `posix` fehlt in der CLI-Konfiguration | `posix` in der CLI-`php.ini` bereitstellen |
+| „Console has to be executed with the user that owns the file config/config.php“ | Aufruf als falscher Benutzer, meist als `root` oder unter dem eigenen Benutzerkonto auf dem Server | Aufruf mit `sudo -u www-data` wiederholen |
+| „The posix extensions are required“ | PHP-Erweiterung `posix` fehlt in der CLI-Konfiguration | `posix` in der CLI-`php.ini` bereitstellen |
 | Hinweis auf fehlendes PCNTL | PHP-Erweiterung `pcntl` fehlt | Erweiterung nachrüsten oder den Hinweis mit `--no-warnings` unterdrücken |
 | App-Befehle wie `files:scan` fehlen in `occ list` | Wartungsmodus aktiv, oder die zugehörige App ist deaktiviert | `occ maintenance:mode` prüfen, sonst `occ app:list` |
-| „owncloud.online or one of the apps require upgrade" | Der Code ist neuer als der Datenbankstand | `occ upgrade` ausführen |
-| „owncloud.online is not installed" | Es gibt noch keine Installation | `occ maintenance:install` verwenden |
-| „Environment not properly prepared." | `occ` hat beim Start Umgebungsfehler gefunden und bricht ab | `occ check` aufrufen — dieser Befehl umgeht die Abbruchprüfung und nennt die Fehler einzeln |
-| „Refusing to delete all file locks while maintenance mode is disabled." | `maintenance:file-locks --all` ohne Wartungsmodus | erst `occ maintenance:mode --on`, oder stattdessen `--cleanup-expired` verwenden |
-| „We are in maintenance mode, skipping cron" | `system:cron` bei aktivem Wartungsmodus | Wartungsmodus beenden |
-| „We are in admin only mode, skipping cron" | Einzelbenutzermodus aktiv | `occ maintenance:singleuser --off` |
-| „Background Jobs are disabled!" | `backgroundjobs_mode` steht auf `none` | `occ background:cron` setzen |
+| „owncloud.online or one of the apps require upgrade“ | Der Code ist neuer als der Datenbankstand | `occ upgrade` ausführen |
+| „owncloud.online is not installed“ | Es gibt noch keine Installation | `occ maintenance:install` verwenden |
+| „Environment not properly prepared.“ | `occ` hat beim Start Umgebungsfehler gefunden und bricht ab | `occ check` aufrufen. Dieser Befehl umgeht die Abbruchprüfung und nennt die Fehler einzeln. |
+| „Refusing to delete all file locks while maintenance mode is disabled.“ | `maintenance:file-locks --all` ohne Wartungsmodus | erst `occ maintenance:mode --on`, oder stattdessen `--cleanup-expired` verwenden |
+| `maintenance:file-locks` findet keine Sperren, Dateien bleiben gesperrt | Die Sperren liegen im Cache (`memcache.locking`), nicht in der Datenbank | Die Sperren laufen nach `filelocking.ttl` Sekunden von selbst ab (Vorgabe 3600 oder die höhere `max_execution_time` von PHP). |
+| „We are in maintenance mode, skipping cron“ | `system:cron` bei aktivem Wartungsmodus | Wartungsmodus beenden |
+| „We are in admin only mode, skipping cron“ | Einzelbenutzermodus aktiv | `occ maintenance:singleuser --off` |
+| „Background Jobs are disabled!“ | `backgroundjobs_mode` steht auf `none` | `occ background:cron` setzen |
 | Nach `occ` gehören neue Dateien `root` | Ein früherer Aufruf lief als `root` | Eigentümer zurücksetzen (`chown -R www-data:www-data`) und künftig `sudo -u www-data` verwenden |
 | Neue Dateien im Datenverzeichnis erscheinen nicht in der Weboberfläche | Der Dateicache kennt sie nicht | `occ files:scan` für das betroffene Konto oder den Pfad |

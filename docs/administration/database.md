@@ -1,9 +1,9 @@
 # Datenbank
 
 owncloud.online läuft mit MariaDB/MySQL, PostgreSQL oder SQLite. Für den
-produktiven Betrieb ist **MariaDB** die getestete Standardvariante; SQLite ist
-nur für lokale Tests geeignet und bricht bei mehreren gleichzeitigen Zugriffen
-ein.
+produktiven Betrieb ist **MariaDB** die getestete Standardvariante. SQLite
+eignet sich nur für lokale Tests und bricht bei mehreren gleichzeitigen
+Zugriffen ein.
 
 ## Empfohlene Einstellungen (MariaDB/MySQL)
 
@@ -22,59 +22,65 @@ In `config.php` gehört dazu:
 'mysql.utf8mb4' => true,
 ```
 
-Prüfen, ob eine bestehende Instanz schon umgestellt ist:
+Ob eine bestehende Instanz schon umgestellt ist, zeigt dieser Befehl; die
+erwartete Ausgabe ist `true`:
 
 ```bash
+sudo -u www-data php8.4 /var/www/owncloud.online/occ config:system:get mysql.utf8mb4
+```
+
+Umgestellt wird mit `db:convert-mysql-charset`. Der Befehl prüft zuerst, ob der
+Datenbankserver `utf8mb4` unterstützt, setzt dann `mysql.utf8mb4` in
+`config.php` und stellt alle Tabellen um. Legen Sie vorher eine Sicherung an
+und schalten Sie den Wartungsmodus ein:
+
+```bash
+sudo -u www-data php8.4 /var/www/owncloud.online/occ maintenance:mode --on
 sudo -u www-data php8.4 /var/www/owncloud.online/occ db:convert-mysql-charset
+sudo -u www-data php8.4 /var/www/owncloud.online/occ maintenance:mode --off
 ```
 
 ## Von SQLite auf MariaDB umstellen
 
-Eine mit SQLite aufgesetzte Instanz lässt sich ohne Datenverlust umziehen — die
-Benutzerdateien bleiben unberührt, nur die Metadaten wandern.
+Eine Umwandlung an Ort und Stelle gibt es in dieser Version nicht. Der frühere
+Befehl `db:convert-type` ist entfernt (Changelog: „This experimental command is
+untested and unsupported and therefore removed.“). Planen Sie MariaDB deshalb
+gleich bei der Installation ein.
 
-```bash
-# 1. Backup von Daten UND Datenbank (siehe Backups und Updates)
-
-# 2. Wartungsmodus
-sudo -u www-data php8.4 /var/www/owncloud.online/occ maintenance:mode --on
-
-# 3. Zieldatenbank anlegen (utf8mb4, siehe oben), dann konvertieren
-sudo -u www-data php8.4 /var/www/owncloud.online/occ db:convert-type \
-  --all-apps mysql owncloud_user 127.0.0.1 owncloud_online
-
-# 4. Wartungsmodus aus
-sudo -u www-data php8.4 /var/www/owncloud.online/occ maintenance:mode --off
-```
-
-`db:convert-type` schreibt die neuen Zugangsdaten selbst in `config.php`. Die
-alte SQLite-Datei bleibt liegen — erst löschen, wenn die Instanz nachweislich
-läuft.
-
-Nach dem Umzug prüfen:
-
-```bash
-sudo -u www-data php8.4 /var/www/owncloud.online/occ status
-sudo -u www-data php8.4 /var/www/owncloud.online/occ files:scan --all
-```
+Für eine bestehende SQLite-Instanz bleibt nur, mit MariaDB neu aufzusetzen und
+die Dateien neu einzulesen. Alles, was nur in der Datenbank steht, geht dabei
+verloren, etwa Freigaben, Kommentare, Tags und App-Einstellungen. Den Ablauf und
+die vollständige Liste beschreibt
+[Umzug auf einen anderen Server](migration.md#datenbanktyp-wechseln).
 
 ## Wartung
 
-```bash
-# fehlende Indizes und Constraints nachziehen (nach Updates)
-sudo -u www-data php8.4 /var/www/owncloud.online/occ db:add-missing-indices
-sudo -u www-data php8.4 /var/www/owncloud.online/occ db:add-missing-columns
+Indizes und Spalten legt der Server über Migrationen an. Einen eigenen Befehl
+zum Nachziehen fehlender Indizes gibt es nicht.
 
-# Migrationsstand ansehen
+```bash
+# Migrationsstand ansehen ("New Migrations" sollte 0 sein)
 sudo -u www-data php8.4 /var/www/owncloud.online/occ migrations:status core
+
+# ausstehende Migrationen bis zum neuesten Stand ausführen
+sudo -u www-data php8.4 /var/www/owncloud.online/occ migrations:migrate core
 
 # einzelne Migration nachziehen
 sudo -u www-data php8.4 /var/www/owncloud.online/occ migrations:execute core <Version>
 ```
 
+Nach einem Wechsel auf MariaDB 10.6 oder neuer stellt
+`db:restore-default-row-format` alle Tabellen, deren Zeilenformat vom Standard
+des Servers abweicht (etwa das veraltete `COMPRESSED`), auf das Standardformat
+um:
+
+```bash
+sudo -u www-data php8.4 /var/www/owncloud.online/occ db:restore-default-row-format
+```
+
 !!! warning "Migrationen nach jedem Update"
     Nach einem Code-Update muss `occ upgrade` laufen. Fehlen die Migrationen,
-    erwartet der Code Spalten, die es in der Datenbank noch nicht gibt — die
+    erwartet der Code Spalten, die es in der Datenbank noch nicht gibt. Die
     Instanz antwortet dann an einzelnen Stellen mit Fehler 500. Siehe
     [Serverprotokoll und Fehlermeldungen](logging.md).
 
@@ -82,22 +88,23 @@ sudo -u www-data php8.4 /var/www/owncloud.online/occ migrations:execute core <Ve
 
 ```bash
 # Sicherung
-mysqldump --single-transaction -u root -p owncloud_online > /root/oco-db-$(date +%F).sql
+mkdir -p /var/backups/owncloud.online
+mysqldump --single-transaction -u root -p owncloud_online > /var/backups/owncloud.online/db-$(date +%F).sql
 
 # Wiederherstellung (Instanz vorher in den Wartungsmodus)
-mysql -u root -p owncloud_online < /root/oco-db-2026-08-06.sql
+mysql -u root -p owncloud_online < /var/backups/owncloud.online/db-JJJJ-MM-TT.sql
 ```
 
-Datenbank- und Datensicherung gehören immer zum selben Zeitpunkt — sonst
-verweisen Metadaten auf Dateien, die es nicht (mehr) gibt. Vollständiger Ablauf
-unter [Backups und Updates](backups-updates.md).
+Sichern Sie Datenbank und Datenverzeichnis immer zum selben Zeitpunkt. Sonst
+verweisen Metadaten auf Dateien, die es nicht (mehr) gibt. Den vollständigen
+Ablauf beschreibt [Backups und Updates](backups-updates.md).
 
 ## Häufige Probleme
 
 | Symptom | Ursache und Abhilfe |
 | --- | --- |
-| „Fehler 500" nach einem Update | Migrationen fehlen → `occ upgrade` |
+| „Fehler 500“ nach einem Update | Migrationen fehlen → `occ upgrade` |
 | Dateinamen mit Emojis schlagen fehl | Datenbank nicht auf `utf8mb4` → `db:convert-mysql-charset` |
-| Sehr langsame Dateilisten | Fehlende Indizes → `db:add-missing-indices` |
-| „Database is locked" | SQLite im Mehrbenutzerbetrieb → auf MariaDB umstellen |
+| Sehr langsame Dateilisten | Indizes fehlen, weil Migrationen nicht gelaufen sind → `occ migrations:status core`, dann `occ migrations:migrate core` |
+| „Database is locked“ | SQLite im Mehrbenutzerbetrieb → mit MariaDB neu aufsetzen, siehe oben |
 | Verbindungsabbrüche unter Last | `max_connections` der Datenbank und PHP-FPM-Poolgröße aufeinander abstimmen, siehe [Performance](performance.md) |
