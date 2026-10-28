@@ -80,7 +80,33 @@ $CONFIG = [
 | `appstoreurl`             | `local`   | `local` for the bundled catalog, `file://` for a local directory, or an HTTPS URL of a remote owncloud.online marketplace. |
 | `marketplace.key`         | unset     | API key sent as `Authorization: apikey: …` for remote marketplaces. |
 | `marketplace.ca`          | unset     | Path to a custom CA bundle for remote TLS validation.             |
+| `marketplace.send_host`   | `true`    | If `false`, the instance's host name is not sent to the marketplace (see below). |
 | `has_internet_connection` | `true`    | If `false`, remote calls are blocked. Local catalog mode ignores this. |
+
+### Data sent to the marketplace
+
+When an API key is configured, requests to the marketplace also identify
+the instance:
+
+| Header                 | Value                                                                 |
+| ---------------------- | --------------------------------------------------------------------- |
+| `X-Market-Instance`    | `instanceid` from `config.php`                                        |
+| `X-Market-Server-Host` | host name from `overwrite.cli.url`, otherwise the first usable entry of `trusted_domains` (host only, no scheme, port or path; `localhost` and `127.x.x.x` are skipped); left out with `marketplace.send_host` = `false` |
+| `X-Market-Platform`    | server version, e.g. `11.0.25.0`                                      |
+| `X-Market-Client`      | `market/<version of this app>`                                        |
+| `User-Agent`           | `owncloud.online-market/<version of this app>`                        |
+
+These headers only go to the origin of `appstoreurl` (same scheme, host and
+port), and only together with the key. Nothing of this is sent without a
+key, in local catalog mode, or to download URLs on other hosts. If the
+marketplace redirects to another origin, the key and these headers are
+dropped before the redirect is followed. Values that do not have the
+expected format are left out.
+
+A host name can relate to a person (for example
+`cloud.firstname-lastname.de`). Set `marketplace.send_host` to `false` to
+leave it out; the instance ID is always sent, because without it the
+marketplace cannot tell instances apart.
 
 ### Adding your own app to the local catalog
 

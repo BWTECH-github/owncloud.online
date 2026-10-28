@@ -27,7 +27,11 @@ namespace OCA\Market;
 
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\TransferException;
+use GuzzleHttp\Psr7\Uri;
+use GuzzleHttp\Psr7\UriResolver;
 use OCP\App\AppManagerException;
+use OCP\App\IAppManager;
+use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
 use OCP\ICacheFactory;
@@ -59,6 +63,19 @@ class HttpService {
 	 */
 	public const DEFAULT_STORE_URL = 'https://marketplace.owncloud.online';
 
+	/**
+	 * Angaben zur eigenen Instanz. Mit ihnen ordnet der Marktplatz einen
+	 * API-Schlüssel den Instanzen zu, die ihn benutzen. Gesendet werden sie
+	 * nur zusammen mit dem Schlüssel und nur an die Herkunft von `appstoreurl`.
+	 */
+	public const HEADER_INSTANCE = 'X-Market-Instance';
+	public const HEADER_SERVER_HOST = 'X-Market-Server-Host';
+	public const HEADER_PLATFORM = 'X-Market-Platform';
+	public const HEADER_CLIENT = 'X-Market-Client';
+
+	/** Wie Guzzles Vorgabe für allow_redirects. */
+	private const MAX_REDIRECTS = 5;
+
 	/** @var array<string, string> */
 	private array $urlConfig = [
 		self::APPS => '/api/v1/platform/%s/apps.json',
@@ -73,6 +90,7 @@ class HttpService {
 		private readonly IConfig $config,
 		private readonly ICacheFactory $cacheFactory,
 		private readonly IL10N $l10n,
+		private readonly IAppManager $appManager,
 	) {
 	}
 
@@ -237,7 +255,7 @@ class HttpService {
 	/**
 	 * @throws AppManagerException
 	 */
-	private function httpGet(string $path, array $options, ?string $apiKey): IResponse {
+	private function httpGet(string $url, array $options, ?string $apiKey): IResponse {
 		// Guzzle-Default ist timeout=0 (unendlich): ohne Limit blockiert ein
 		// hängender Marketplace Seitenaufrufe und die serielle Cron-Queue.
 		// Aufrufer-Optionen (z.B. Download-Timeout) haben Vorrang.
@@ -245,19 +263,56 @@ class HttpService {
 			['connect_timeout' => 10, 'timeout' => 30],
 			$options
 		);
-		if (!empty($apiKey)) {
-			$options = \array_merge(
-				['headers' => ['Authorization' => "apikey: $apiKey"]],
-				$options
-			);
-		}
 		$ca = $this->config->getSystemValue('marketplace.ca', null);
 		if ($ca !== null) {
 			$options = \array_merge(['verify' => $ca], $options);
 		}
 		$client = $this->httpClientService->newClient();
+		$sendKey = !empty($apiKey);
+		for ($redirects = 0; ; $redirects++) {
+			$instanceHeaders = $sendKey ? $this->getInstanceHeaders($url) : [];
+			$requestOptions = $options;
+			if ($sendKey) {
+				$requestOptions = \array_merge(
+					['headers' => ['Authorization' => "apikey: $apiKey"] + $instanceHeaders],
+					$requestOptions
+				);
+			}
+			if ($instanceHeaders === []) {
+				// Kein Marktplatz-Ziel: Guzzle folgt Weiterleitungen wie bisher
+				// und lässt den Schlüssel an einer Herkunftsgrenze selbst weg.
+				return $this->send($client, $url, $requestOptions, $apiKey);
+			}
+
+			// Guzzle nimmt bei einer Weiterleitung auf einen fremden Host nur
+			// Authorization und Cookie heraus, eigene Kopfzeilen gingen mit.
+			// Solange die Instanzangaben dabei sind, folgen wir deshalb selbst.
+			$requestOptions['allow_redirects'] = false;
+			$response = $this->send($client, $url, $requestOptions, $apiKey);
+			$next = $this->getRedirectTarget($url, $response);
+			if ($next === null) {
+				return $response;
+			}
+			if ($redirects >= self::MAX_REDIRECTS) {
+				throw new AppManagerException(
+					(string) $this->l10n->t('No marketplace connection: %s', ['too many redirects'])
+				);
+			}
+			// Wie Guzzle: Der Schlüssel geht nicht über eine Herkunftsgrenze mit
+			// (auch nicht von http auf https desselben Hosts).
+			if (self::getOrigin($next) !== self::getOrigin($url)) {
+				$sendKey = false;
+			}
+			$url = $next;
+		}
+	}
+
+	/**
+	 * @throws AppManagerException
+	 */
+	private function send(IClient $client, string $url, array $options, ?string $apiKey): IResponse {
 		try {
-			return $client->get($path, $options);
+			return $client->get($url, $options);
 		} catch (TransferException $e) {
 			if ($e instanceof ClientException) {
 				throw match ($e->getCode()) {
@@ -308,6 +363,153 @@ class HttpService {
 	private function getAbsoluteUrl(string $relativeUrl): string {
 		$storeUrl = $this->config->getSystemValue('appstoreurl', self::DEFAULT_STORE_URL);
 		return \rtrim($storeUrl, '/') . $relativeUrl;
+	}
+
+	/**
+	 * Kopfzeilen mit den Angaben zur eigenen Instanz, wenn $url zur Herkunft
+	 * von `appstoreurl` gehört (Schema, Host und Port), sonst keine. Werte,
+	 * die der Marktplatz nicht annehmen würde, bleiben weg; eine kaputte
+	 * Einstellung darf die Verbindung nicht stören.
+	 *
+	 * @return array<string, string>
+	 */
+	private function getInstanceHeaders(string $url): array {
+		$storeOrigin = self::getOrigin((string) $this->config->getSystemValue('appstoreurl', self::DEFAULT_STORE_URL));
+		if ($storeOrigin === null || self::getOrigin($url) !== $storeOrigin) {
+			return [];
+		}
+
+		$version = $this->getOwnVersion();
+		$headers = ['User-Agent' => 'owncloud.online-market' . ($version !== null ? '/' . $version : '')];
+		if ($version !== null) {
+			$headers[self::HEADER_CLIENT] = 'market/' . $version;
+		}
+		$instanceId = $this->config->getSystemValue('instanceid', '');
+		if (\is_string($instanceId) && \preg_match('/^[a-z0-9]{6,64}$/D', $instanceId) === 1) {
+			$headers[self::HEADER_INSTANCE] = $instanceId;
+		}
+		$platform = $this->versionHelper->getPlatformVersion();
+		if (\preg_match('/^\d+(?:\.\d+){1,3}$/D', $platform) === 1) {
+			$headers[self::HEADER_PLATFORM] = $platform;
+		}
+		$host = $this->getServerHost();
+		if ($host !== null) {
+			$headers[self::HEADER_SERVER_HOST] = $host;
+		}
+		return $headers;
+	}
+
+	/** Eigene Version aus appinfo/info.xml oder null, wenn sie nicht lesbar ist. */
+	private function getOwnVersion(): ?string {
+		$info = $this->appManager->getAppInfo('market');
+		$version = \is_array($info) ? ($info['version'] ?? null) : null;
+		return \is_string($version) && \preg_match('/^\d+\.\d+\.\d+$/D', $version) === 1 ? $version : null;
+	}
+
+	/**
+	 * Hostname dieser Instanz aus `overwrite.cli.url`, sonst der erste
+	 * brauchbare Eintrag in `trusted_domains`; nur der Host, ohne Schema,
+	 * Port und Pfad. Mit `marketplace.send_host` = false bleibt er weg.
+	 */
+	private function getServerHost(): ?string {
+		// Auch Text wie 'false' zählt: occ config:system:set speichert ohne
+		// --type=boolean einen Text, und gemeint ist trotzdem „aus“.
+		$sendHost = $this->config->getSystemValue('marketplace.send_host', true);
+		if (\filter_var($sendHost, \FILTER_VALIDATE_BOOLEAN, \FILTER_NULL_ON_FAILURE) === false) {
+			return null;
+		}
+		$candidates = [$this->config->getSystemValue('overwrite.cli.url', '')];
+		$trustedDomains = $this->config->getSystemValue('trusted_domains', []);
+		if (\is_array($trustedDomains)) {
+			\array_push($candidates, ...\array_values($trustedDomains));
+		}
+		foreach ($candidates as $candidate) {
+			$host = \is_string($candidate) ? self::reportableHost($candidate) : null;
+			if ($host !== null) {
+				return $host;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Host aus einer Adresse oder einem Eintrag wie „cloud.example.de:8443“:
+	 * klein geschrieben, internationale Namen als Punycode. null, wenn dabei
+	 * kein Hostname nach RFC 1123 herauskommt (etwa bei einer IPv6-Adresse
+	 * oder einem Platzhalter wie „*“) oder der Host nur die Maschine selbst
+	 * meint: Nach einer Installation über occ steht in `overwrite.cli.url`
+	 * http://localhost, und das sagt dem Marktplatz nichts.
+	 */
+	private static function reportableHost(string $value): ?string {
+		$value = \trim($value);
+		if ($value === '') {
+			return null;
+		}
+		// Ohne Schema liest parse_url den Host als Pfad.
+		$host = \parse_url(\str_contains($value, '://') ? $value : '//' . $value, \PHP_URL_HOST);
+		if (!\is_string($host) || $host === '') {
+			return null;
+		}
+		$host = \rtrim(\strtolower($host), '.');
+		if (\preg_match('/[^\x00-\x7f]/', $host) === 1) {
+			if (!\function_exists('idn_to_ascii')) {
+				return null;
+			}
+			$host = \idn_to_ascii($host, \IDNA_DEFAULT, \INTL_IDNA_VARIANT_UTS46);
+			if (!\is_string($host)) {
+				return null;
+			}
+		}
+		$label = '[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?';
+		if (\strlen($host) > 253 || \preg_match('/^' . $label . '(?:\.' . $label . ')*$/D', $host) !== 1) {
+			return null;
+		}
+		if ($host === 'localhost' || \str_ends_with($host, '.localhost') || \preg_match('/^127(?:\.\d{1,3}){3}$/D', $host) === 1) {
+			return null;
+		}
+		return $host;
+	}
+
+	/**
+	 * Herkunft einer Adresse (Schema, Host und Port, so wie Guzzle sie
+	 * auflöst) oder null, wenn es keine http(s)-Adresse mit Host ist.
+	 */
+	private static function getOrigin(string $url): ?string {
+		try {
+			$uri = new Uri($url);
+		} catch (\InvalidArgumentException) {
+			return null;
+		}
+		$scheme = $uri->getScheme();
+		if (($scheme !== 'http' && $scheme !== 'https') || $uri->getHost() === '') {
+			return null;
+		}
+		return $scheme . '://' . $uri->getHost() . ':' . ($uri->getPort() ?? ($scheme === 'https' ? 443 : 80));
+	}
+
+	/**
+	 * Ziel einer Weiterleitung, aufgelöst gegen die angefragte Adresse, oder
+	 * null, wenn die Antwort keine Weiterleitung ist.
+	 *
+	 * @throws AppManagerException
+	 */
+	private function getRedirectTarget(string $url, IResponse $response): ?string {
+		$status = (int) $response->getStatusCode();
+		$location = \trim((string) $response->getHeader('Location'));
+		if ($status < 300 || $status > 399 || $location === '') {
+			return null;
+		}
+		try {
+			$target = (string) UriResolver::resolve(new Uri($url), new Uri($location));
+		} catch (\InvalidArgumentException) {
+			$target = '';
+		}
+		if (self::getOrigin($target) === null) {
+			throw new AppManagerException(
+				(string) $this->l10n->t('No marketplace connection: %s', ['redirect to an unsupported location'])
+			);
+		}
+		return $target;
 	}
 
 	/**
