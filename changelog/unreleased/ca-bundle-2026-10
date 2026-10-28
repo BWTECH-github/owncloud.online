@@ -1,0 +1,17 @@
+Security: CA-Bündel auf den Stand vom 20.10.2026 gebracht
+
+Die mitgelieferten Wurzelzertifikate stammen jetzt aus dem Auszug des
+Mozilla-Wurzelspeichers vom 20.10.2026 (bisher 21.10.2025). Damit entfällt
+unter anderem emSign ECC Root CA - G3, unter der eMudhra-Zwischenzertifikate
+hängen, deren private Schlüssel kompromittiert wurden.
+
+Entfernt werden 35 Wurzeln, neu hinzu kommen 7, das Bündel enthält jetzt 118
+statt 146 Wurzeln. Entfernt sind unter anderem DigiCert Global Root CA, DigiCert
+Assured ID Root CA, DigiCert High Assurance EV Root CA, die Entrust-Wurzeln,
+COMODO Certification Authority, QuoVadis Root CA 2 und 3, emSign Root CA - C1
+und emSign ECC Root CA - C3. Ausgehende HTTPS-Verbindungen zu Gegenstellen,
+deren Zertifikatskette nur an einer entfernten Wurzel endet, scheitern ab jetzt
+an der Prüfung. Wer einer solchen Wurzel weiter vertrauen muss, importiert sie
+mit `occ security:certificates:import`.
+
+Übernommen aus dem Upstream-Projekt (PR 41908).
