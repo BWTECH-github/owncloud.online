@@ -1,0 +1,11 @@
+Enhancement: Apps can skip the version of the next write to a file
+
+Editors that save a document automatically while it is open, such as
+Collabora Online in the office app oco_office, created a new version of the
+file with every automatic save. With the new method
+OCA\Files_Versions\Storage::skipNextVersion($path) an app tells the versions
+app that the next write to the given path creates no version. This applies
+once and only within the current request: the following write creates a
+version as before, so a save requested by the user still does. The path is
+the one in the file tree of the user, as the filesystem hooks pass it, for
+example /Documents/Report.odt. Writes without this call are not affected.
