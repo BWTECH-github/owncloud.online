@@ -1,4 +1,4 @@
-Bugfix: Revoked access ends the session of a sync client
+Security: Revocation and password change end the session of a sync client
 
 Sync clients send their session cookie along with every request. After an app
 password was revoked in the personal settings, a client that used it kept
@@ -19,11 +19,13 @@ These sessions are now checked before every request, like browser sessions:
   core/last_check_timeout minutes (default 5) the password the app password
   was created with is checked, as a login with the app password does; after a
   password change the app password becomes invalid and the session ends.
-  Accounts from LDAP are exempt, as on login.
+  Accounts from LDAP are exempt, as on login, and so are app passwords
+  without a stored password, for example ones created in a session without a
+  stored password: they stay valid and have to be revoked.
 - Password: when the client sends only the cookie, the password stored with
   the session is checked every core/last_check_timeout minutes; after a
-  password change the session ends. Requests that send the password are
-  checked by the HTTP Basic login as before.
+  password change the session ends. Requests with an HTTP Basic header are
+  left to the HTTP Basic login as before.
 - Session removed in the settings: the session ends with the next request. A
   client with valid credentials signs in again and gets a new session.
 - OAuth2 and OpenID Connect: every request has to carry an Authorization
@@ -46,6 +48,20 @@ an OAuth2 token are no longer accepted; the desktop and mobile clients send
 their token with every request. Sessions started before the update are taken
 over with their first request; if that request sends only the cookie and the
 session was not started with an app password, the client signs in once more.
+Every check with an outdated password is logged as "Login failed" and counts
+for the brute force protection. Behind a shared address (NAT), many such checks
+after a password change can trigger the protection for all logins from that
+address.
+
+Known limitation: a password change ends the sessions of clients that sign in
+with the password as usual, but it does not reliably lock out someone who holds
+a session (its cookie). A password session that got its session token with a
+request carrying only the cookie has no password stored, and a password change
+never ends it. After a lost device or leaked credentials, change the password
+and also remove all other sessions under "Sessions", check and revoke the app
+passwords and, if needed, disable the account for the time being. The
+documentation describes this in the section "Gerät verloren oder Zugangsdaten
+abgegriffen".
 
 The check reads the session token from the database as before, for app
 passwords also the app password token, which the HTTP Basic login of the same

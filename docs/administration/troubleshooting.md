@@ -110,20 +110,27 @@ vor jeder Anfrage:
 - **App-Passwort entzogen** (Persönlich → Sicherheit → App-Passwörter / Token):
   Die nächste Anfrage des Geräts bekommt 401, auch wenn es nur das Cookie
   schickt. Der Client muss mit einem neuen App-Passwort eingerichtet werden.
-- **Kennwort geändert**: Sitzungen, die mit dem Kennwort begannen, enden
-  spätestens `last_check_timeout` Minuten (App-Wert `core`, Vorgabe 5) nach der
-  Änderung, auch wenn das Gerät nur das Cookie schickt. App-Passwörter, die vor
-  der Änderung entstanden, werden mit ihrer nächsten Prüfung ungültig (wie
-  bisher bei einer Anmeldung damit), ihre Sitzungen enden; der Client braucht
-  ein neues App-Passwort. Ausgenommen sind Konten aus LDAP: Deren App-Passwörter
-  prüft der Server nicht gegen das Kennwort, sie müssen entzogen werden. Jede
+- **Kennwort geändert**: Ein Client, der sich mit dem Kennwort anmeldet, verliert
+  seine Sitzung spätestens `last_check_timeout` Minuten (App-Wert `core`,
+  Vorgabe 5) nach der Änderung: Schickt er das alte Kennwort mit, weist es die
+  Anmeldung mit HTTP-Basic ab; schickt er nur das Cookie, prüft der Server das
+  in der Sitzung hinterlegte Kennwort. Ist in der Sitzung kein Kennwort
+  hinterlegt, beendet ein Kennwortwechsel sie nicht. App-Passwörter, in denen
+  das alte Kennwort hinterlegt ist, werden mit ihrer nächsten Prüfung ungültig
+  (wie bisher bei einer Anmeldung damit), ihre Sitzungen enden; der Client
+  braucht ein neues App-Passwort. Gültig bleiben App-Passwörter ohne
+  hinterlegtes Kennwort, etwa solche, die in einer Sitzung ohne hinterlegtes
+  Kennwort angelegt wurden, und die App-Passwörter von Konten aus LDAP, die der
+  Server nicht gegen das Kennwort prüft: Sie müssen entzogen werden. Jede
   dieser Prüfungen mit dem alten Kennwort steht als „Login failed“ im Protokoll
   und zählt wie ein Fehlversuch für die Bremse gegen Passwort-Raten.
+  Ein Kennwortwechsel allein sperrt deshalb niemanden verlässlich aus, der eine
+  Sitzung hält (siehe
+  [Gerät verloren oder Zugangsdaten abgegriffen](#gerat-verloren-oder-zugangsdaten-abgegriffen)).
 - **Sitzung unter „Sitzungen“ entfernt**: Die Sitzung endet mit der nächsten
   Anfrage. Hat das Gerät noch gültige Zugangsdaten (App-Passwort, OAuth2-Token,
   Kennwort), meldet es sich damit sofort neu an. Um ein Gerät auszusperren,
-  dessen Zugang entziehen oder das Kennwort ändern, nicht nur die Sitzung
-  entfernen.
+  deshalb zusätzlich dessen Zugang entziehen, nicht nur die Sitzung entfernen.
 - **Desktop-Freigabe (OAuth2) widerrufen**: WebDAV- und OCS-Anfragen mit dem
   Token werden sofort abgewiesen. Die Sitzung lässt sich danach nicht mehr
   nutzen: Sie gilt nur zusammen mit einem Token, das die OAuth2-App für ihr
@@ -145,6 +152,35 @@ OAuth2 begonnenen Sitzung nur das Cookie ohne Token schicken, werden nicht mehr
 angenommen; Desktop- und Mobil-Clients senden das Token immer mit. Sitzungen,
 die vor dem Update begannen und danach ohne App-Passwort nur das Cookie
 schicken, müssen sich einmal neu anmelden.
+
+### Gerät verloren oder Zugangsdaten abgegriffen
+
+Ein Kennwortwechsel beendet die Sitzungen von Clients, die sich regulär mit dem
+Kennwort anmelden, spätestens nach `last_check_timeout` Minuten. Wer eine
+Sitzung hält, also ihr Cookie hat, ist damit aber nicht verlässlich
+ausgesperrt. Wirksam sind dagegen das Entfernen der Sitzung unter „Sitzungen“
+und der Widerruf des App-Passworts, mit dem sie begann (die Sitzung endet mit
+ihrer nächsten Anfrage), der Widerruf der OAuth2-Freigabe (die Sitzung lässt
+sich danach nicht mehr nutzen) und, solange es deaktiviert ist, ein
+deaktiviertes Konto. Bei Verdacht deshalb alles zusammen:
+
+1. Das Kennwort ändern.
+2. Unter Persönlich → Sicherheit → „Sitzungen“ alle übrigen Sitzungen
+   entfernen. Dort steht eine Sitzung erst, sobald sie ein Sitzungstoken hat;
+   manche Clients bekommen es erst mit ihrer zweiten Anfrage. Die Liste
+   deshalb später noch einmal prüfen.
+3. Die App-Passwörter prüfen und jedes entziehen, das nicht sicher zu einem
+   eigenen, weiter vertrauenswürdigen Gerät gehört, ebenso Desktop-Freigaben
+   (OAuth2) widerrufen. Betroffene Geräte neu einrichten.
+4. Lässt sich das nicht sofort erledigen, das Konto bis dahin deaktivieren
+   (Benutzerverwaltung oder `occ user:disable <konto>`): Solange es deaktiviert
+   ist, lässt sich keine seiner Sitzungen nutzen. Das Deaktivieren
+   entfernt aber weder Sitzungen noch App-Passwörter; eine Sitzung, die
+   währenddessen keine Anfrage schickt, kann nach dem Wiedereinschalten weiter
+   gelten. Die Schritte 2 und 3 deshalb in jedem Fall nachholen.
+
+Öffentliche Links und Freigaben, die in dieser Zeit angelegt wurden, beendet
+keiner dieser Schritte; sie gesondert prüfen.
 
 ## JavaScript-Fehler: jQuery ist nicht definiert
 

@@ -102,9 +102,11 @@ admins and users.
    der nächsten Anfrage, auch wenn der Client nur das Cookie schickt, ebenso
    das Entfernen der Sitzung unter „Sitzungen“. Alle `last_check_timeout`
    Minuten (App-Wert `core`, Vorgabe 5) prüft der Server das Kennwort, das
-   in der Sitzung oder im App-Passwort hinterlegt ist; gilt es nicht mehr,
-   endet die Sitzung. Bei OAuth2 und OpenID Connect braucht jede Anfrage
-   einen Authorization-Kopf, den das Anmeldemodul für den Nutzer der Sitzung
+   im App-Passwort oder, bei Anfragen nur mit dem Cookie, in der Sitzung
+   hinterlegt ist; gilt es nicht mehr, endet die Sitzung. Anfragen mit
+   HTTP-Basic-Kopf überlässt er wie bisher der Anmeldung mit HTTP-Basic.
+   Bei OAuth2 und OpenID Connect braucht jede Anfrage einen
+   Authorization-Kopf, den das Anmeldemodul für den Nutzer der Sitzung
    bestätigt: Einen anderen oder fehlenden Kopf prüft es sofort, denselben
    wieder nach `last_check_timeout` Minuten. Ein abgelaufenes Token beendet
    die Sitzung bei WebDAV nicht, und Token-Erneuerung sowie
@@ -112,18 +114,20 @@ admins and users.
 
    Verhaltensänderungen nach dem Update: Sitzungen von vor dem Update, die
    ohne App-Passwort nur das Cookie schicken, melden sich einmal neu an.
-   App-Passwörter, die vor einem Kennwortwechsel entstanden, prüft der
-   Server jetzt auch in laufenden Sitzungen; sie werden mit der nächsten
-   Prüfung ungültig, wie bisher schon bei einer neuen Anmeldung damit, und
-   die Geräte brauchen ein neues App-Passwort. Ausgenommen sind Konten aus
-   LDAP, deren App-Passwörter widerrufen werden müssen. Anfragen, die zu
-   einer per OAuth2 begonnenen Sitzung nur das Cookie ohne Token schicken,
-   bekommen 401; Desktop- und Mobil-Clients senden das Token immer mit. Jede
-   Prüfung mit einem veralteten Kennwort steht als „Login failed“ im
-   Protokoll und zählt für die Bremse gegen Passwort-Raten. Hinter einer
-   gemeinsamen Adresse (NAT) können viele solcher Prüfungen nach einem
-   Kennwortwechsel die Bremse für alle Anmeldungen von dieser Adresse
-   auslösen.
+   App-Passwörter, in denen ein Kennwort von vor einem Kennwortwechsel
+   hinterlegt ist, prüft der Server jetzt auch in laufenden Sitzungen; sie
+   werden mit der nächsten Prüfung ungültig, wie bisher schon bei einer
+   neuen Anmeldung damit, und die Geräte brauchen ein neues App-Passwort.
+   Ausgenommen sind Konten aus LDAP und App-Passwörter ohne hinterlegtes
+   Kennwort, etwa solche, die in einer Sitzung ohne hinterlegtes Kennwort
+   angelegt wurden: Sie bleiben gültig und müssen widerrufen werden.
+   Anfragen, die zu einer per OAuth2 begonnenen Sitzung nur das Cookie ohne
+   Token schicken, bekommen 401; Desktop- und Mobil-Clients senden das Token
+   immer mit. Jede Prüfung mit einem veralteten Kennwort steht als
+   „Login failed“ im Protokoll und zählt für die Bremse gegen Passwort-Raten.
+   Hinter einer gemeinsamen Adresse (NAT) können viele solcher Prüfungen
+   nach einem Kennwortwechsel die Bremse für alle Anmeldungen von dieser
+   Adresse auslösen.
 
    Eine beendete Sitzung wird abgemeldet und ihr Sitzungstoken gelöscht; das
    Protokoll meldet auf Stufe info „Client session of `<konto>` ended:
@@ -132,10 +136,17 @@ admins and users.
    Doku beschreibt das Verhalten unter Fehlersuche im Abschnitt „Client nach
    Widerruf abgemeldet“.
 
-   Bekannte Einschränkung: Hat eine Sitzung mit Kennwort ihr Sitzungstoken
-   mit einer Anfrage bekommen, die nur das Cookie trug, ist darin kein
-   Kennwort hinterlegt, und ein Kennwortwechsel beendet sie nicht. Dann
-   hilft „Sitzung entfernen“ unter „Sitzungen“.
+   Bekannte Einschränkung: Ein Kennwortwechsel beendet die Sitzungen von
+   Clients, die sich regulär mit dem Kennwort anmelden, sperrt aber
+   niemanden verlässlich aus, der eine Sitzung (ihr Cookie) hält. Hat eine
+   Sitzung mit Kennwort ihr Sitzungstoken mit einer Anfrage bekommen, die
+   nur das Cookie trug, ist darin kein Kennwort hinterlegt, und ein
+   Kennwortwechsel beendet sie nie. Bei Verdacht auf ein verlorenes Gerät
+   oder abgegriffene Zugangsdaten deshalb das Kennwort ändern und
+   zusätzlich alle übrigen Sitzungen unter „Sitzungen“ entfernen, die
+   App-Passwörter prüfen und widerrufen und bei Bedarf das Konto
+   vorübergehend deaktivieren. Die Doku beschreibt das im Abschnitt „Gerät
+   verloren oder Zugangsdaten abgegriffen“.
 
 * Enhancement - Apps können die Version des nächsten Schreibvorgangs auslassen
 
