@@ -112,17 +112,12 @@ no Explorer integration.
 ### macOS
 
 Open `…-macos-arm64.dmg` and drag the client into the Applications folder. The
-package isn't signed with an Apple certificate and isn't notarized, so on first
-launch macOS reports "Apple could not verify …". On macOS 15 and later, open
-the app through *System Settings → Privacy & Security → Open Anyway*; on
-macOS 14, right-click the app and choose *Open*. Or use the command line:
+package is signed with the Developer ID of BW-Tech GmbH and notarized by Apple.
+On first launch, macOS only asks whether you want to open an app downloaded from
+the internet.
 
-```bash
-xattr -dr com.apple.quarantine /Applications/owncloud.online.app
-```
-
-Virtual files aren't available on macOS yet. The client syncs the classic way
-there, and you can choose which folders to sync.
+Virtual files are currently available on Windows. On macOS, the client syncs
+the classic way, and you choose which folders to sync.
 
 ### Linux
 

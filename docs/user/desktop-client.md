@@ -113,18 +113,13 @@ Explorer-Anbindung.
 ### macOS
 
 Öffnen Sie `…-macos-arm64.dmg` und ziehen Sie den Client in den
-Programme-Ordner. Das Paket ist nicht mit einem Apple-Zertifikat signiert und
-nicht notarisiert; beim ersten Start meldet macOS deshalb „Apple konnte nicht
-überprüfen …“. Ab macOS 15 öffnen Sie das Programm über *Systemeinstellungen →
-Datenschutz & Sicherheit → Dennoch öffnen*, unter macOS 14 genügt ein
-Rechtsklick auf das Programm und *Öffnen*. Wahlweise auf der Kommandozeile:
+Programme-Ordner. Das Paket ist mit der Developer ID der BW-Tech GmbH signiert
+und von Apple notarisiert. Beim ersten Start fragt macOS nur nach, ob Sie das
+aus dem Internet geladene Programm öffnen möchten.
 
-```bash
-xattr -dr com.apple.quarantine /Applications/owncloud.online.app
-```
-
-Virtuelle Dateien gibt es unter macOS noch nicht; der Client gleicht dort im
-klassischen Verfahren ab, die Ordnerauswahl steht zur Verfügung.
+Virtuelle Dateien gibt es derzeit unter Windows. Unter macOS gleicht der Client
+im klassischen Verfahren ab; welche Ordner synchronisiert werden, wählen Sie
+selbst.
 
 ### Linux
 
