@@ -735,6 +735,22 @@ var OC = {
 			$toggle.focus();
 		});
 
+		// Safari (macOS und iOS) fokussiert Links und Knöpfe beim Klicken nicht:
+		// Beim Drücken fällt der Fokus vom Eintrag auf den Rumpf, und focusout
+		// schlösse das Menü, bevor der Klick ankommt - Einträge wie
+		// Einstellungen oder Benutzer reagierten dann nicht. Solange ein Zeiger
+		// im Menü oder am Umschalter gedrückt ist, gilt der Fokusverlust darum
+		// nicht als Verlassen des Menüs.
+		var pointerInside = false;
+		$menuEl.add($toggle).on('mousedown.menu touchstart.menu', function () {
+			pointerInside = true;
+			$(document).one('mouseup touchend touchcancel', function () {
+				window.setTimeout(function () {
+					pointerInside = false;
+				}, 0);
+			});
+		});
+
 		// Der Tabulator fuehrt aus dem Menue heraus - dann schliesst es mit.
 		// Ohne diesen Handler bleibt es offen, ueberdeckt als position: fixed
 		// mit z-index 2000 den naechsten Tab-Stopp (SC 2.4.11) und meldet
@@ -750,6 +766,10 @@ var OC = {
 			window.setTimeout(function () {
 				if (!$menuEl.is(OC._currentMenu)) {
 					// in der Zwischenzeit anderweitig geschlossen
+					return;
+				}
+				if (pointerInside) {
+					// Zeiger im Menü gedrückt (Safari): kein Verlassen
 					return;
 				}
 				if ($menuEl[0].contains(document.activeElement) ||
@@ -795,11 +815,11 @@ var OC = {
 		if ($menuEl.is(OC._currentMenu)) {
 			this.hideMenus();
 		}
-		$toggle.off('click.menu keydown.menu focusout.menu').removeClass('menutoggle');
+		$toggle.off('click.menu keydown.menu focusout.menu mousedown.menu touchstart.menu').removeClass('menutoggle');
 		// Symmetrie zu registerMenu: die Fokus- und ARIA-Zutaten mit abraeumen,
 		// sonst bleibt ein abgemeldeter Umschalter als aufklappbar angesagt.
 		$toggle.removeAttr('aria-haspopup aria-expanded aria-controls');
-		$menuEl.off('beforeHide.menu afterHide.menu keydown.menu focusout.menu').removeClass('menu');
+		$menuEl.off('beforeHide.menu afterHide.menu keydown.menu focusout.menu mousedown.menu touchstart.menu').removeClass('menu');
 	},
 
 	/**

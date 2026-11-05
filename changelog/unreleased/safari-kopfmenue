@@ -1,0 +1,5 @@
+Bugfix: Menüs oben rechts reagieren in Safari wieder auf Klicks
+
+In Safari unter macOS und iOS öffneten die Einträge im Menü oben rechts, zum
+Beispiel Einstellungen und Benutzer, beim Anklicken nichts. Das Menü schloss sich,
+bevor der Klick ankam, weil Safari Links beim Klicken keinen Fokus gibt.
