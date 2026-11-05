@@ -7,7 +7,7 @@ wird es nicht von Hand: Ein Git-Tag stößt den Workflow
 legt Prüfsummen, eine Stückliste (SBOM) und ein Manifest daneben und
 veröffentlicht alles als GitHub-Release. Fertige Releases stehen unter
 <https://github.com/BWTECH-github/owncloud.online/releases>; die aktuelle
-Version ist 11.0.25.
+Version ist 11.0.26.
 
 Wer nichts baut, sondern nur ein heruntergeladenes Archiv prüfen will, braucht
 nur den Abschnitt [Echtheit prüfen](#echtheit-pruefen).
@@ -22,7 +22,7 @@ Version startet.
 | Feld | Bedeutung |
 | --- | --- |
 | `$OC_Version` | Versionsnummer mit vier Stellen, etwa `[11, 0, 25, 0]`. Die vierte Stelle ist laut Kommentar in der Datei **nicht** Teil der öffentlichen Versionsnummer, sondern löst Datenbank-Aktualisierungen zwischen Vorabversionen und der fertigen Version aus |
-| `$OC_VersionString` | Die lesbare Version, etwa `11.0.25`. Diesen Wert liest der Release-Workflow, wenn er auf `main` ohne Tag und ohne eingetragene Version läuft |
+| `$OC_VersionString` | Die lesbare Version, etwa `11.0.26`. Diesen Wert liest der Release-Workflow, wenn er auf `main` ohne Tag und ohne eingetragene Version läuft |
 | `$OC_VersionCanBeUpgradedFrom` | Älteste Stände, von denen aus eine Aktualisierung erlaubt ist |
 | `$OC_Channel` | Auslieferungskanal, im Repository `bwtech`. Der Bau überschreibt ihn mit dem Wert von `RELEASE_CHANNEL` |
 | `$OC_Build` | Im Repository leer. Der Bau trägt hier Zeitstempel und Commit ein |
@@ -42,7 +42,7 @@ beschreibender Absatz, zuletzt die zugehörigen Verweise. Als Typ sind `Bugfix`,
 
 `CHANGELOG.md` fasst die Einträge je Version zusammen. Die Datei beginnt mit
 einem Inhaltsverzeichnis; darunter folgt je Version ein Abschnitt, die neueste
-zuerst, etwa „Changelog for owncloud.online [11.0.25] (2026-10-28)“ mit den
+zuerst, etwa „Changelog for owncloud.online [11.0.26] (2026-11-05)“ mit den
 Teilen *Summary* und *Details*. Beim Release kommt der Abschnitt der neuen
 Version oben hinzu. `changelog/README.md` beschreibt außerdem, die Einträge aus
 `unreleased/` in einen Ordner nach dem Schema `<version>_<jjjj-mm-tt>` zu
@@ -84,8 +84,8 @@ den letzten Lauf.
 Der Workflow reagiert auf jeden Tag, der mit `v` beginnt:
 
 ```bash
-git tag -a v11.0.25 -m "owncloud.online 11.0.25"
-git push origin v11.0.25
+git tag -a v11.0.26 -m "owncloud.online 11.0.26"
+git push origin v11.0.26
 ```
 
 Damit ist der Bau angestoßen. Die Version ermittelt der Workflow aus dem
@@ -170,7 +170,7 @@ OIDC), die der Workflow für die Archive und die SBOM ausstellt. Prüfen lässt
 sie sich mit der GitHub CLI:
 
 ```bash
-gh attestation verify owncloud-online-11.0.25.tar.gz \
+gh attestation verify owncloud-online-11.0.26.tar.gz \
   --repo BWTECH-github/owncloud.online
 ```
 

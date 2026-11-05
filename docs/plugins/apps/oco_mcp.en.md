@@ -9,7 +9,7 @@ account, and the connection is read-only by default.
 !!! note "Availability"
     Included in the core. The server ships the app in `apps/oco_mcp`, and it is
     disabled by default. App ID `oco_mcp`, version 1.0.3 in owncloud.online
-    11.0.25. It is not in the Marketplace.
+    11.0.26. It is not in the Marketplace.
 
 ## Requirements
 

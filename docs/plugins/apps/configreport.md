@@ -96,7 +96,7 @@ und verlässt den Server nur, wenn Sie ihn weitergeben.
 - Ein Bericht über die Weboberfläche nennt Hostname und Anzeigename des
   angemeldeten Kontos. Auf der Kommandozeile fehlen diese beiden Angaben.
 - Persönliche externe Speicher einzelner Konten fehlen im Abschnitt `mounts`.
-- In owncloud.online 11.0.25 steht die App in der Liste der mitgelieferten
+- In owncloud.online 11.0.26 steht die App in der Liste der mitgelieferten
   Apps (`core/shipped.json`). `occ market:uninstall configreport` lehnt das
   Entfernen deshalb ab („Mitgelieferte Apps können nicht deinstalliert
   werden“). Abschalten geht wie gewohnt mit

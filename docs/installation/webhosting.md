@@ -96,7 +96,7 @@ Speichern Sie die Einstellungen.
 Laden Sie von <https://github.com/BWTECH-github/owncloud.online/releases> auf
 Ihren eigenen Rechner:
 
-- `owncloud-online-11.0.25.zip`, rund 65 MB, oder die neuere Version, die dort
+- `owncloud-online-11.0.26.zip`, rund 65 MB, oder die neuere Version, die dort
   angeboten wird,
 - `SHA256SUMS.txt` mit den Prüfsummen.
 
@@ -104,13 +104,13 @@ Prüfen Sie, ob die ZIP-Datei unverändert angekommen ist. Unter Windows öffnen
 Sie PowerShell im Download-Ordner und geben ein:
 
 ```powershell
-(Get-FileHash .\owncloud-online-11.0.25.zip -Algorithm SHA256).Hash -eq ((Select-String 'owncloud-online-11.0.25.zip' .\SHA256SUMS.txt).Line -split '\s+')[0]
+(Get-FileHash .\owncloud-online-11.0.26.zip -Algorithm SHA256).Hash -eq ((Select-String 'owncloud-online-11.0.26.zip' .\SHA256SUMS.txt).Line -split '\s+')[0]
 ```
 
 Die Antwort lautet `True`. Unter Linux lautet der Befehl
 `sha256sum --ignore-missing -c SHA256SUMS.txt`, die Antwort
-`owncloud-online-11.0.25.zip: OK`. Unter macOS zeigt
-`shasum -a 256 owncloud-online-11.0.25.zip` die Prüfsumme an. Vergleichen Sie
+`owncloud-online-11.0.26.zip: OK`. Unter macOS zeigt
+`shasum -a 256 owncloud-online-11.0.26.zip` die Prüfsumme an. Vergleichen Sie
 sie mit der Zeile für die ZIP-Datei in `SHA256SUMS.txt`.
 
 Lautet die Antwort `False` oder weicht die Prüfsumme ab, ist die Datei

@@ -6,7 +6,7 @@ built for PHP 8.4 and maintained by BW-Tech GmbH.
 The source code is at <https://github.com/BWTECH-github/owncloud.online>, the
 release packages at
 <https://github.com/BWTECH-github/owncloud.online/releases>. The current
-version is 11.0.25 (`version.php`).
+version is 11.0.26 (`version.php`).
 
 ## Repository layout
 

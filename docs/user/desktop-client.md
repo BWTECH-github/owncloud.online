@@ -6,14 +6,14 @@ geschieht, kommt auf den Rechner zurück. Er läuft unter Windows, macOS und
 Linux. Die Anmeldung findet im Browser statt, deshalb wird auch ein zweiter
 Faktor dort abgefragt und im Client selbst kein Passwort hinterlegt.
 
-Diese Seite beschreibt den Desktop-Client 7.11.1 mit owncloud.online 11.0.25.
+Diese Seite beschreibt den Desktop-Client 7.11.1 mit owncloud.online 11.0.26.
 
 ## Voraussetzungen
 
 | Punkt | Anforderung |
 | --- | --- |
 | Adresse der Instanz | Muss über **https** erreichbar sein. Der Client lehnt `http://` mit „Ungültiges URL-Schema. Nur https wird akzeptiert.“ ab |
-| Serverversion | 10.0.0 oder neuer. 11.0.25 erfüllt das; bei älteren Versionen warnt der Client mit „nicht unterstützte Server Version“ |
+| Serverversion | 10.0.0 oder neuer. 11.0.26 erfüllt das; bei älteren Versionen warnt der Client mit „nicht unterstützte Server Version“ |
 | Anmeldeverfahren | Die Instanz muss OAuth2 anbieten, also die App `oauth2` oder `openidconnect` aktiviert haben |
 | Betriebssystem | Windows 64 Bit, macOS auf Apple Silicon, Linux x86_64 |
 

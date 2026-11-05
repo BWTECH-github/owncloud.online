@@ -123,7 +123,7 @@ installation directory from its own location, so it must be exactly there:
 ```bash
 sudo -u www-data mkdir -p /var/www/owncloud.online/build
 sudo -u www-data curl -fLo /var/www/owncloud.online/build/preload.php \
-  https://raw.githubusercontent.com/BWTECH-github/owncloud.online/v11.0.25/build/preload.php
+  https://raw.githubusercontent.com/BWTECH-github/owncloud.online/v11.0.26/build/preload.php
 ```
 
 The file cannot be fetched from outside: `.htaccess` and the nginx

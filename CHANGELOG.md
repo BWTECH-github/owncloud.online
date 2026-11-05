@@ -1,5 +1,6 @@
 # Table of Contents
 
+* [Changelog for owncloud.online 11.0.26](#changelog-for-owncloudonline-11026-2026-11-05)
 * [Changelog for owncloud.online 11.0.25](#changelog-for-owncloudonline-11025-2026-10-28)
 * [Changelog for owncloud.online 11.0.24](#changelog-for-owncloudonline-11024-2026-10-21)
 * [Changelog for owncloud.online 11.0.23](#changelog-for-owncloudonline-11023-2026-10-16)
@@ -42,6 +43,42 @@
 * [Changelog for 10.4.1](#changelog-for-owncloud-core-1041-2020-03-30)
 * [Changelog for 10.4.0](#changelog-for-owncloud-core-1040-2020-02-10)
 * [Changelog for 10.3.2](#changelog-for-owncloud-core-1032-2019-12-04)
+# Changelog for owncloud.online [11.0.26] (2026-11-05)
+
+The following sections list the changes in owncloud.online 11.0.26 relevant to
+admins and users.
+
+[11.0.26]: https://github.com/BWTECH-github/owncloud.online
+
+## Summary
+
+* Bugfix - Menüs oben rechts reagieren in Safari wieder auf Klicks: [#80c5a96](https://github.com/BWTECH-github/owncloud.online/commit/80c5a96)
+* Bugfix - Keine Source-Map-Fehler mehr in der Safari-Konsole: [#0bc88a2](https://github.com/BWTECH-github/owncloud.online/commit/0bc88a2)
+* Change - Market-App 0.10.11: [#54f869c](https://github.com/BWTECH-github/owncloud.online/commit/54f869c)
+
+## Details
+
+* Bugfix - Menüs oben rechts reagieren in Safari wieder auf Klicks
+
+   In Safari unter macOS und iOS öffneten die Einträge im Menü oben rechts,
+   zum Beispiel Einstellungen und Benutzer, beim Anklicken nichts. Das Menü
+   schloss sich, bevor der Klick ankam, weil Safari Links beim Klicken keinen
+   Fokus gibt. Dasselbe galt für das App-Menü oben links. Ein Klick oder
+   Tippen in ein Menü schließt es jetzt nicht mehr vorzeitig; Tabulator und
+   Escape schließen es wie bisher.
+
+* Bugfix - Keine Source-Map-Fehler mehr in der Safari-Konsole
+
+   Mitgelieferte Bibliotheken verwiesen auf .map-Dateien, die fehlen oder die
+   Safari ablehnt (backbone, moment, underscore, showdown, zxcvbn, jQuery).
+   Die Verweise sind entfernt, die Bibliotheken selbst bleiben unverändert.
+   jQuery Migrate meldet sich nicht mehr bei jedem Seitenaufruf in der
+   Konsole.
+
+* Change - Market-App 0.10.11
+
+   Sicherheit verbessert.
+
 # Changelog for owncloud.online [11.0.25] (2026-10-28)
 
 The following sections list the changes in owncloud.online 11.0.25 relevant to

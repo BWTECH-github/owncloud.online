@@ -100,7 +100,7 @@ API-Schlüssel mitsenden. Ohne Schlüssel fehlen sie im Katalog, und der Downloa
 wird mit HTTP 401 abgewiesen. Den Schlüssel erhalten Sie auf Anfrage von der
 BW-Tech GmbH.
 
-Mit owncloud.online 11.0.25 betrifft das diese Apps:
+Mit owncloud.online 11.0.26 betrifft das diese Apps:
 
 | App-ID | Name im Markt |
 | --- | --- |
@@ -286,7 +286,7 @@ Die Apps unter `apps/` kommen mit dem Server. Sie stecken im Release-Archiv
 und werden nicht einzeln nachinstalliert, sondern mit dem Server aktualisiert.
 Zu jedem Release gehören außerdem `SHA256SUMS.txt` zur Prüfung der Archive,
 `sbom-owncloud-online-<version>.cdx.json`, `release-manifest.json` und
-`removed-release-files.txt`. Diese Seite beschreibt den Stand 11.0.25.
+`removed-release-files.txt`. Diese Seite beschreibt den Stand 11.0.26.
 
 ## Aktivieren und abschalten
 

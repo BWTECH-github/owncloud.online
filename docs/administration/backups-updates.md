@@ -60,8 +60,8 @@ Ohne SSH-Zugang beschreibt [Webhosting](../installation/webhosting.md) den Weg
 
 ```bash
 cd /tmp
-curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.25/owncloud-online-11.0.25.tar.gz
-curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.25/SHA256SUMS.txt
+curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.26/owncloud-online-11.0.26.tar.gz
+curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.26/SHA256SUMS.txt
 sha256sum --ignore-missing -c SHA256SUMS.txt
 ```
 
@@ -73,7 +73,7 @@ bleiben angehalten, der Wartungsmodus bleibt an.
 
 ```bash
 mv /var/www/owncloud.online /var/www/owncloud.online.alt
-tar -xzf /tmp/owncloud-online-11.0.25.tar.gz -C /var/www
+tar -xzf /tmp/owncloud-online-11.0.26.tar.gz -C /var/www
 mv /var/www/owncloud /var/www/owncloud.online
 ```
 

@@ -6,14 +6,14 @@ happens on the server comes back to your computer. It runs on Windows, macOS,
 and Linux. You log in through the browser, so a second factor is requested
 there as well, and the client itself doesn't store a password.
 
-This page describes desktop client 7.11.1 with owncloud.online 11.0.25.
+This page describes desktop client 7.11.1 with owncloud.online 11.0.26.
 
 ## Requirements
 
 | Item | Requirement |
 | --- | --- |
 | Instance address | Must be reachable over **https**. The client rejects `http://` with "Invalid URL scheme. Only https is accepted." |
-| Server version | 10.0.0 or later. 11.0.25 meets this; with older versions, the client warns "Unsupported Server Version" |
+| Server version | 10.0.0 or later. 11.0.26 meets this; with older versions, the client warns "Unsupported Server Version" |
 | Login method | The instance must offer OAuth2, that is, the `oauth2` or `openidconnect` app must be enabled |
 | Operating system | 64-bit Windows, macOS on Apple silicon, Linux x86_64 |
 

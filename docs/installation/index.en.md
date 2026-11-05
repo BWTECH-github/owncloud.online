@@ -83,7 +83,7 @@ Open `https://cloud.example.com/status.php` in your browser, with your own
 address. A running installation answers like this:
 
 ```json
-{"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"11.0.25","versionstring":"11.0.25","edition":"Community","productname":"owncloud.online","product":"owncloud.online"}
+{"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"11.0.26","versionstring":"11.0.26","edition":"Community","productname":"owncloud.online","product":"owncloud.online"}
 ```
 
 `installed` must be `true`, `maintenance` and `needsDbUpgrade` must be

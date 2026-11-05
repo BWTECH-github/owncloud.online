@@ -6,7 +6,7 @@ Server, gebaut für PHP 8.4 und gepflegt von der BW-Tech GmbH.
 Der Quelltext liegt unter
 <https://github.com/BWTECH-github/owncloud.online>, fertige Pakete unter
 <https://github.com/BWTECH-github/owncloud.online/releases>. Die aktuelle
-Version ist 11.0.25 (`version.php`).
+Version ist 11.0.26 (`version.php`).
 
 ## Aufbau des Repositorys
 

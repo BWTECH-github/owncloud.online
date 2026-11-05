@@ -8,7 +8,7 @@ can set up a catalog in the file system instead. The app also provides the
 
 !!! note "Availability"
     Included in the core. The server archive ships the app and enables it during
-    installation. App ID `market`, version 0.10.10 in owncloud.online 11.0.25.
+    installation. App ID `market`, version 0.10.11 in owncloud.online 11.0.26.
     The Marketplace also lists it as a public app.
 
 ## Requirements
