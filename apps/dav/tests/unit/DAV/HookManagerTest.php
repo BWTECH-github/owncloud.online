@@ -29,6 +29,7 @@ use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\DAV\CardDAV\CardDavBackend;
 use OCA\DAV\CardDAV\SyncService;
 use OCA\DAV\HookManager;
+use OCA\DAV\JobStatus\Entity\JobStatusMapper;
 use OCP\IUser;
 use OCP\IUserManager;
 use Test\TestCase;
@@ -36,10 +37,13 @@ use Test\TestCase;
 class HookManagerTest extends TestCase {
 	/** @var L10N */
 	private $l10n;
+	/** @var JobStatusMapper | \PHPUnit\Framework\MockObject\MockObject */
+	private $jobStatusMapper;
 
 	public function setUp(): void {
 		parent::setUp();
 
+		$this->jobStatusMapper = $this->createMock(JobStatusMapper::class);
 		$this->l10n = $this->getMockBuilder('OC\L10N\L10N')
 			->disableOriginalConstructor()->getMock();
 		$this->l10n
@@ -91,7 +95,7 @@ class HookManagerTest extends TestCase {
 			['{DAV:}displayname' => $this->l10n->t('Contacts')]
 		);
 
-		$hm = new HookManager($userManager, $syncService, $cal, $card, $this->l10n);
+		$hm = new HookManager($userManager, $syncService, $cal, $card, $this->l10n, $this->jobStatusMapper);
 		$hm->firstLogin($user);
 	}
 
@@ -129,7 +133,7 @@ class HookManagerTest extends TestCase {
 		]);
 		$card->expects($this->never())->method('createAddressBook');
 
-		$hm = new HookManager($userManager, $syncService, $cal, $card, $this->l10n);
+		$hm = new HookManager($userManager, $syncService, $cal, $card, $this->l10n, $this->jobStatusMapper);
 		$hm->firstLogin($user);
 	}
 
@@ -176,7 +180,7 @@ class HookManagerTest extends TestCase {
 			['{DAV:}displayname' => $this->l10n->t('Contacts')]
 		);
 
-		$hm = new HookManager($userManager, $syncService, $cal, $card, $this->l10n);
+		$hm = new HookManager($userManager, $syncService, $cal, $card, $this->l10n, $this->jobStatusMapper);
 		$hm->firstLogin($user);
 	}
 
@@ -217,8 +221,10 @@ class HookManagerTest extends TestCase {
 			['id' => 'personal']
 		]);
 		$card->expects($this->once())->method('deleteAddressBook')->with('personal');
+		// Der Auftragsstatus asynchroner MOVE-Anfragen geht mit dem Konto.
+		$this->jobStatusMapper->expects($this->once())->method('deleteByUserId')->with('newUser');
 
-		$hm = new HookManager($userManager, $syncService, $cal, $card, $this->l10n);
+		$hm = new HookManager($userManager, $syncService, $cal, $card, $this->l10n, $this->jobStatusMapper);
 		$hm->preDeleteUser(['uid' => 'newUser']);
 		$hm->postDeleteUser(['uid' => 'newUser']);
 	}
@@ -252,7 +258,7 @@ class HookManagerTest extends TestCase {
 		$card = $this->createMock(CardDavBackend::class);
 		$card->method('getUsersOwnAddressBooks')->willReturn([]);
 
-		$hm = new HookManager($userManager, $syncService, $cal, $card, $this->l10n);
+		$hm = new HookManager($userManager, $syncService, $cal, $card, $this->l10n, $this->jobStatusMapper);
 		$hm->preDeleteUser(['uid' => 'newUser']);
 		$hm->postDeleteUser(['uid' => 'newUser']);
 	}

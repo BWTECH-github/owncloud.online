@@ -22,6 +22,7 @@
 namespace OCA\DAV\JobStatus\Entity;
 
 use OCP\AppFramework\Db\Mapper;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 class JobStatusMapper extends Mapper {
@@ -43,5 +44,29 @@ class JobStatusMapper extends Mapper {
 			->where($query->expr()->eq('uuid', $query->createNamedParameter($jobId)))
 			->andWhere($query->expr()->eq('user_id', $query->createNamedParameter($userId)));
 		return $this->mapRowToEntity($this->findOneQuery($query->getSQL(), $query->getParameters()));
+	}
+
+	/**
+	 * Löscht die Aufträge, die seit $before nicht mehr geändert wurden.
+	 *
+	 * @param int $before Unix-Zeit
+	 */
+	public function deleteUnchangedSince(int $before): void {
+		$query = $this->db->getQueryBuilder();
+		$query->delete($this->getTableName())
+			->where($query->expr()->lt('updated_at', $query->createNamedParameter($before, IQueryBuilder::PARAM_INT)));
+		$query->execute();
+	}
+
+	/**
+	 * Löscht alle Aufträge eines Kontos.
+	 *
+	 * @param string $userId
+	 */
+	public function deleteByUserId(string $userId): void {
+		$query = $this->db->getQueryBuilder();
+		$query->delete($this->getTableName())
+			->where($query->expr()->eq('user_id', $query->createNamedParameter($userId)));
+		$query->execute();
 	}
 }

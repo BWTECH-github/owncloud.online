@@ -101,6 +101,12 @@ class LazyOpsPlugin extends ServerPlugin {
 		if (!$request->getHeader('OC-LazyOps')) {
 			return true;
 		}
+		// Erst die Quelle, dann der Auftrag: Gibt es sie nicht oder ist sie
+		// nicht zugänglich, meldet die normale MOVE-Behandlung das sofort.
+		// Sonst legte jede solche Anfrage eine Zeile im Auftragsstatus an.
+		if (!$this->server->tree->nodeExists($request->getPath())) {
+			return true;
+		}
 
 		$this->jobId = UUIDUtil::getUUID();
 		$this->setJobStatus([
@@ -190,9 +196,11 @@ class LazyOpsPlugin extends ServerPlugin {
 			$this->entity->setStatusInfo(\json_encode($status));
 			$this->entity->setUserId($userId);
 			$this->entity->setUuid($this->jobId);
+			$this->entity->setUpdatedAt(\time());
 			$this->mapper->insert($this->entity);
 		} else {
 			$this->entity->setStatusInfo(\json_encode($status));
+			$this->entity->setUpdatedAt(\time());
 			$this->mapper->update($this->entity);
 		}
 	}

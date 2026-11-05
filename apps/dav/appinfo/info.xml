@@ -5,7 +5,7 @@
 	<description>ownCloud WebDAV endpoint</description>
 	<licence>AGPL</licence>
 	<author>ownCloud, modified by BW-Tech GmbH</author>
-	<version>0.8.0</version>
+	<version>0.9.0</version>
 	<default_enable/>
 	<use-migrations>true</use-migrations>
 	<types>
@@ -21,6 +21,7 @@
 	<background-jobs>
 		<job>OCA\DAV\CardDAV\SyncJob</job>
 		<job>OCA\DAV\BackgroundJob\CleanProperties</job>
+		<job>OCA\DAV\BackgroundJob\CleanJobStatus</job>
 	</background-jobs>
 	<commands>
 		<command>OCA\DAV\Command\CreateAddressBook</command>

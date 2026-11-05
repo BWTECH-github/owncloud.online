@@ -23,6 +23,7 @@ namespace OCA\DAV\Tests\Unit\JobStatus\Entity;
 
 use OCA\DAV\JobStatus\Entity\JobStatus;
 use OCA\DAV\JobStatus\Entity\JobStatusMapper;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use Sabre\DAV\UUIDUtil;
 use Test\TestCase;
@@ -85,5 +86,46 @@ class JobStatusMapperTest extends TestCase {
 		$this->assertEquals($this->testJobStatus->getUserId(), $entity->getUserId());
 		$this->assertEquals($this->testJobStatus->getUuid(), $entity->getUuid());
 		$this->assertEquals($this->testJobStatus->getStatusInfo(), $entity->getStatusInfo());
+	}
+
+	private function insertJob(string $userId, int $updatedAt): JobStatus {
+		$job = new JobStatus();
+		$job->setUserId($userId);
+		$job->setUuid(UUIDUtil::getUUID());
+		$job->setStatusInfo(\json_encode(['status' => 'finished']));
+		$job->setUpdatedAt($updatedAt);
+		return $this->mapper->insert($job);
+	}
+
+	private function jobExists(JobStatus $job): bool {
+		try {
+			$this->mapper->findByUserIdAndJobId($job->getUserId(), $job->getUuid());
+			return true;
+		} catch (DoesNotExistException $e) {
+			return false;
+		}
+	}
+
+	public function testDeleteUnchangedSince() {
+		$old = $this->insertJob('job-status-old', 1000);
+		$recent = $this->insertJob('job-status-old', 3000);
+
+		$this->mapper->deleteUnchangedSince(2000);
+
+		$this->assertFalse($this->jobExists($old));
+		$this->assertTrue($this->jobExists($recent));
+		$this->assertSame(3000, $this->mapper->findByUserIdAndJobId('job-status-old', $recent->getUuid())->getUpdatedAt());
+		$this->mapper->delete($recent);
+	}
+
+	public function testDeleteByUserId() {
+		$own = $this->insertJob('job-status-gone', \time());
+		$other = $this->insertJob('job-status-stays', \time());
+
+		$this->mapper->deleteByUserId('job-status-gone');
+
+		$this->assertFalse($this->jobExists($own));
+		$this->assertTrue($this->jobExists($other));
+		$this->mapper->delete($other);
 	}
 }

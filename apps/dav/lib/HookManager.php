@@ -30,6 +30,7 @@ use OCA\DAV\CalDAV\BirthdayService;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\DAV\CardDAV\CardDavBackend;
 use OCA\DAV\CardDAV\SyncService;
+use OCA\DAV\JobStatus\Entity\JobStatusMapper;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -63,18 +64,23 @@ class HookManager {
 	/** @var array */
 	private $subscriptionsToDelete = [];
 
+	/** @var JobStatusMapper */
+	private $jobStatusMapper;
+
 	public function __construct(
 		IUserManager $userManager,
 		SyncService $syncService,
 		CalDavBackend $calDav,
 		CardDavBackend $cardDav,
-		IL10N $l10n
+		IL10N $l10n,
+		JobStatusMapper $jobStatusMapper
 	) {
 		$this->userManager = $userManager;
 		$this->syncService = $syncService;
 		$this->calDav = $calDav;
 		$this->cardDav = $cardDav;
 		$this->l10n = $l10n;
+		$this->jobStatusMapper = $jobStatusMapper;
 	}
 
 	public function setup() {
@@ -142,6 +148,8 @@ class HookManager {
 		foreach ($this->addressBooksToDelete as $addressBook) {
 			$this->cardDav->deleteAddressBook($addressBook['id']);
 		}
+
+		$this->jobStatusMapper->deleteByUserId($uid);
 	}
 
 	public function changeUser($params) {

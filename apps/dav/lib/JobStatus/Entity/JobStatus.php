@@ -32,6 +32,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUserId(string $userId)
  * @method string getStatusInfo()
  * @method void setStatusInfo(string $statusInfo)
+ * @method int getUpdatedAt()
+ * @method void setUpdatedAt(int $updatedAt)
  *
  * @package OCA\DAV\JobStatus\Entity
  */
@@ -39,4 +41,10 @@ class JobStatus extends Entity {
 	protected $uuid;
 	protected $userId;
 	protected $statusInfo;
+	/** @var int Unix-Zeit der letzten Änderung, danach räumt CleanJobStatus auf */
+	protected $updatedAt;
+
+	public function __construct() {
+		$this->addType('updatedAt', 'integer');
+	}
 }

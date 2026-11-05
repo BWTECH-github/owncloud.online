@@ -1,0 +1,9 @@
+Bugfix: Auftragsstatus asynchroner MOVE-Anfragen wird aufgeräumt
+
+Jede MOVE-Anfrage mit OC-LazyOps legte eine Zeile in oc_dav_job_status an,
+auch für nicht vorhandene Quellen, und keine Zeile wurde je gelöscht. Damit
+konnte jedes angemeldete Konto die Tabelle beliebig wachsen lassen. Ohne
+vorhandene Quelle wird jetzt kein Auftrag mehr angelegt, eine neue Spalte
+updated_at (dav 0.9.0) hält die letzte Änderung fest, der Hintergrundjob
+CleanJobStatus löscht stündlich alles, was seit einem Tag unverändert ist,
+und beim Löschen eines Kontos gehen seine Aufträge mit.

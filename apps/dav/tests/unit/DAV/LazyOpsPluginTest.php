@@ -32,6 +32,7 @@ use OCP\IUserSession;
 use OCP\Shutdown\IShutdownManager;
 use Sabre\DAV\Exception\NotFound;
 use Sabre\DAV\Server;
+use Sabre\DAV\Tree;
 use Sabre\HTTP\RequestInterface;
 use Sabre\HTTP\ResponseInterface;
 use Test\TestCase;
@@ -84,9 +85,37 @@ class LazyOpsPluginTest extends TestCase {
 		$this->plugin->httpMove($request, $response);
 	}
 
-	public function testMoveWithLazyOpsHeader() {
+	private function initializeWithSource(bool $exists) {
+		$tree = $this->createMock(Tree::class);
+		$tree->expects(self::once())->method('nodeExists')
+			->with('uploads/alice/upload-1/.file')->willReturn($exists);
+		$server = $this->createMock(Server::class);
+		$server->tree = $tree;
+		$this->plugin->initialize($server);
+	}
+
+	/**
+	 * Ohne Quelle kein Auftrag: Die Anfrage geht an die normale
+	 * MOVE-Behandlung weiter, und im Auftragsstatus entsteht keine Zeile.
+	 */
+	public function testMoveWithLazyOpsHeaderAndMissingSource() {
+		$this->initializeWithSource(false);
 		$request = $this->createMock(RequestInterface::class);
 		$request->method('getHeader')->with('OC-LazyOps')->willReturn(true);
+		$request->method('getPath')->willReturn('uploads/alice/upload-1/.file');
+		$response = $this->createMock(ResponseInterface::class);
+		$response->expects($this->never())->method('setStatus');
+		$this->jobStatusMapper->expects($this->never())->method('insert');
+		$this->shutdownManager->expects($this->never())->method('register');
+
+		self::assertTrue($this->plugin->httpMove($request, $response));
+	}
+
+	public function testMoveWithLazyOpsHeader() {
+		$this->initializeWithSource(true);
+		$request = $this->createMock(RequestInterface::class);
+		$request->method('getHeader')->with('OC-LazyOps')->willReturn(true);
+		$request->method('getPath')->willReturn('uploads/alice/upload-1/.file');
 		$response= $this->createMock(ResponseInterface::class);
 		$response->expects($this->once())->method('setStatus')->with(202);
 		$response->expects($this->exactly(3))->method('setHeader')->withConsecutive(
@@ -101,6 +130,7 @@ class LazyOpsPluginTest extends TestCase {
 			->method('insert')->willReturnCallback(function (JobStatus $entity) {
 				self::assertEquals('alice', $entity->getUserId());
 				self::assertEquals('{"status":"init"}', $entity->getStatusInfo());
+				self::assertEqualsWithDelta(\time(), $entity->getUpdatedAt(), 5);
 			});
 
 		$this->shutdownManager->expects(self::once())->method('register');
