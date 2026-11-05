@@ -1,0 +1,4 @@
+Security: symfony/mime und symfony/routing aktualisiert
+
+symfony/mime 7.4.22 schließt CVE-2026-45070 (Kopfzeilen-Einschleusung in Mails),
+symfony/routing 7.4.23 schließt CVE-2026-118516 (Host-Platzhalter im Routing).
