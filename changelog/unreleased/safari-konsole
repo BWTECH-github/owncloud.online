@@ -1,0 +1,5 @@
+Bugfix: Keine Source-Map-Fehler mehr in der Safari-Konsole
+
+Mitgelieferte Bibliotheken verwiesen auf .map-Dateien, die fehlen oder die Safari
+ablehnt (backbone, moment, underscore, showdown, zxcvbn, jQuery). Die Verweise sind
+entfernt, und jQuery Migrate meldet sich nicht mehr bei jedem Seitenaufruf in der Konsole.
