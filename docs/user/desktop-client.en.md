@@ -4,9 +4,11 @@ The desktop client keeps a folder on your computer in sync with
 owncloud.online: what you change locally ends up on the server, and what
 happens on the server comes back to your computer. It runs on Windows, macOS,
 and Linux. You log in through the browser, so a second factor is requested
-there as well, and the client itself doesn't store a password.
+there as well, and the client itself doesn't store a password. Only on
+instances without OAuth2 and OpenID Connect does the client ask for a username
+and password itself.
 
-This page describes desktop client 7.11.1 with owncloud.online 11.0.26.
+This page describes desktop client 11.0.1 with owncloud.online 11.0.26.
 
 ## Requirements
 
@@ -14,11 +16,12 @@ This page describes desktop client 7.11.1 with owncloud.online 11.0.26.
 | --- | --- |
 | Instance address | Must be reachable over **https**. The client rejects `http://` with "Invalid URL scheme. Only https is accepted." |
 | Server version | 10.0.0 or later. 11.0.26 meets this; with older versions, the client warns "Unsupported Server Version" |
-| Login method | The instance must offer OAuth2, that is, the `oauth2` or `openidconnect` app must be enabled |
-| Operating system | 64-bit Windows, macOS on Apple silicon, Linux x86_64 |
+| Login method | With the `oauth2` or `openidconnect` app, you log in through the browser. Without either app, the client asks for a username and password |
+| Operating system | 64-bit Windows, macOS 13 or later on Apple silicon, Linux x86_64 |
 
-Without one of these two login apps, setup doesn't get past the browser step.
-Your administrator can check for them and enable one with:
+The client detects which method applies once you enter the address. Logging in
+through the browser is recommended. Your administrator can check for the apps
+and enable one with:
 
 ```bash
 sudo -u www-data php8.4 occ app:list
@@ -44,12 +47,7 @@ All packages are on the client's release page:
 | `owncloud.online-client-<version>-linux-x86_64.AppImage` | Linux x86_64 |
 | `SHA256SUMS.txt` | Checksums of all packages for this version |
 
-Up to 7.11.0, the page also had `…-win-x64.exe`, an installer without restart
-handling and without Explorer integration. Since 7.11.1, the setup is the only
-Windows installer.
-
-The same page lists pre-releases of the 11.0 series, most recently 11.0.0-beta4
-from October 21, 2026. They are marked as beta and are not meant for
+The same page lists pre-releases. They are marked as beta and are not meant for
 production use.
 
 To verify a download, put the package and `SHA256SUMS.txt` in the same
@@ -64,22 +62,34 @@ messages about files you didn't download. On Windows, PowerShell shows the
 checksum:
 
 ```powershell
-Get-FileHash .\owncloud.online-client-7.11.1-win-x64-Setup.exe -Algorithm SHA256
+Get-FileHash .\owncloud.online-client-11.0.1-win-x64-Setup.exe -Algorithm SHA256
 ```
 
 Compare the value with the line for the same file in `SHA256SUMS.txt`. Case
 doesn't matter.
 
 To install a new version, run the new package the same way as the first time.
-Your accounts and folders stay in place.
+Your accounts and folders stay in place. The client also tells you about new
+versions itself:
+
+| System | What happens |
+| --- | --- |
+| Windows | The client downloads the new setup in the background and checks its signature. *Restart and update* installs it |
+| macOS | *Get update* opens the download page. Replace the app in the Applications folder with the new one from the disk image; settings, accounts, and the Finder integration stay in place |
+| Linux | The client reports the new version. Download the new AppImage from the release page |
+
+Under *More → About*, you can start the check yourself with *Check for updates
+now* and choose the *Update channel*. An older version is never installed: if
+you switch from Beta back to Stable, you get the next stable version that is
+newer than the installed one.
 
 ## Installation
 
 ### Windows
 
 Run `…-win-x64-Setup.exe`. The setup closes a running client, installs the new
-version, sets up the Explorer integration, and offers to restart Windows at the
-end. The restart is needed for the status display in Explorer to work reliably.
+version to `C:\Program Files\owncloud.online`, sets up the Explorer integration,
+and offers to restart Windows at the end. The restart is needed for the status display in Explorer to work reliably.
 
 If you postpone the restart, the client reminds you the first time the new
 version starts: "owncloud.online has been installed or updated. To complete
@@ -97,17 +107,17 @@ For unattended deployment, the setup supports these switches:
 | `/S /norestart` | Same as `/S`, still accepted for existing deployment jobs |
 | `/S /forcerestart` | Installs and restarts Windows right away |
 
-Up to 7.11.0, `/S` restarted Windows on its own after the installation, and
-`/S /norestart` suppressed that. Schedule the restart in your software
-deployment so that Windows loads the Explorer integration.
-
-If the computer has a desktop client from another vendor that uses the same
-Explorer integration (for example version 6.0.x), uninstall it first. Both
-programs register the same Explorer extension and the same uninstall ID and get
-in each other's way.
+Schedule the restart in your software deployment so that Windows loads the
+Explorer integration. Up to 7.11.0, `/S` still restarted Windows on its own.
 
 `…-win-x64.7z` contains the client as an archive to unpack: no installation and
 no Explorer integration.
+
+When you uninstall, the client asks what to remove besides the program: settings,
+accounts, and credentials (selected by default), and sync databases and logs in
+the sync folders (not selected). Your files in the sync folders stay in place;
+only online-only placeholders disappear. A silent uninstall with `/S` keeps
+settings, accounts, and credentials; `/S /purge` removes them.
 
 ### macOS
 
@@ -116,8 +126,8 @@ package is signed with the Developer ID of BW-Tech GmbH and notarized by Apple.
 On first launch, macOS only asks whether you want to open an app downloaded from
 the internet.
 
-Virtual files are currently available on Windows. On macOS, the client syncs
-the classic way, and you choose which folders to sync.
+Start the client from the Applications folder: macOS finds the extension for
+[virtual files](#virtual-files) only there.
 
 ### Linux
 
@@ -128,38 +138,57 @@ chmod +x owncloud.online-client-<version>-linux-x86_64.AppImage
 ./owncloud.online-client-<version>-linux-x86_64.AppImage
 ```
 
-On Linux, too, the client syncs the classic way, without virtual files.
+On Linux, the client syncs the classic way, without virtual files.
+
+### Moving from another desktop client
+
+If a desktop client of the 2.x to 6.x series is already set up on the computer,
+the client offers to take over its accounts and sync folders on first start.
+Later, you find this under *More → Import from official client*. The old
+client's data is only read. Every account signs in again. Folders synced the
+classic way stay where they are and are not downloaded again; folders with
+virtual files are set up again.
+
+Quit the old client first and turn off its autostart. Otherwise both programs
+sync the same folders.
 
 ## Set up an account
 
 ![owncloud.online login page with fields for username or email and password](../assets/screenshots/en/login.png)
 
 1. Start the client. *Welcome to owncloud.online* appears with the note "Enter
-   your server address to get started. Your web browser will be opened to
-   complete sign in."
+   your server address to get started."
 2. Enter the address of your instance, starting with `https://`.
 3. The client opens the browser with the login page of your instance. Log in
    as usual (with two-factor authentication turned on, the browser also asks
    for the code) and confirm access; with the OAuth2 app, click *Authorize*.
    The client window stays open in the meantime. If the browser doesn't open,
-   copy the sign-in address with *Copy URL* and open it yourself.
-4. Back in the client, choose under *Advanced settings* how to sync (see the
-   table below) and pick the local folder under *Download location*. The
-   default is `owncloud.online` in your home folder; the home folder itself
-   can't be the target.
+   copy the sign-in address with *Copy URL* and open it yourself. If the
+   instance offers neither OAuth2 nor OpenID Connect, a page for username and
+   password appears instead of the browser; preferably enter an
+   [app password](#zwei-faktor-und-app-passwoerter) there.
+4. Back in the client, choose under *Advanced* how to sync (see the table below)
+   and pick the local folder under *Download location*. The default is
+   `owncloud.online` in your home folder; the home folder itself can't be the
+   target. On macOS, the folder must be on an APFS drive, and with virtual files
+   it isn't used, because the files appear in the Finder instead.
 
 The three sync options:
 
 | Option | Effect |
 | --- | --- |
-| *Use virtual files (download on demand)* | Default on Windows: all files are visible, and a file is downloaded when you open it |
-| *Download and sync all files* | Everything is stored locally |
-| *Choose folders to sync manually* | You pick the folders yourself (see the next section) |
+| *Sync and download files as you use them (saves hard drive space)* | Virtual files, the default on Windows and macOS: all files are visible, and a file is downloaded when you open it |
+| *Automatically sync and download folders and files* | Everything is stored locally; the default on Linux |
+| *Sync and download folders manually* | You pick the folders yourself (see the next section) |
 
 Then the first sync starts. Later, you reach the client window through the
 icon in the notification area (Windows) or in the menu bar (macOS) and *Show
-owncloud.online*. The window's navigation bar shows your account plus
-*Activity*, *Settings*, *Add Account*, and *Quit*.
+owncloud.online*. The window's navigation bar shows your accounts, *Activity*,
+and *More*; *More* holds *Add account*, *Settings*, *About*, and *Quit*.
+
+Below the connection status of each account, a bar shows the storage space in
+use. Above 90 percent it turns red, and the client warns once with "Storage
+space almost full".
 
 ## Choose folders to sync
 
@@ -173,14 +202,30 @@ Folders you deselect are no longer synced and are removed locally; on the
 server, they stay untouched. If you select a folder again later, it is
 downloaded again.
 
+You can do the same directly in the folder list: expand a folder's row, select
+or clear the checkboxes of its subfolders, and confirm with *Apply*; *Discard*
+reverts your changes. Expanded folders also show their files, at most 500 per
+folder, followed by "… and N more files". You always deselect folders, not
+single files.
+
+You can also have new folders from the server put to you for confirmation.
+*Settings* has the checkboxes *Ask for confirmation before synchronizing folders
+larger than* (500 MB by default) and *Ask for confirmation before synchronizing
+external storages*. Such folders are left out of the sync at first, and the
+client asks whether they should come to this computer.
+
 This selection is only available as long as virtual files are **not** turned
 on for the folder. Both methods solve the same problem in different ways.
 
-## Virtual files on Windows
+## Virtual files
 
-With virtual files, Explorer shows everything, but disk space is only used for
-what you actually open. This is available only on Windows and only under these
-conditions:
+With virtual files, Explorer or the Finder shows everything, but disk space is
+only used for what you actually open. This is available on Windows and on macOS
+13 or later, not on Linux.
+
+### On Windows
+
+The folder must meet these conditions:
 
 * The folder must be on an **NTFS** file system. Otherwise the client reports
   "The Virtual filesystem feature requires a NTFS file system".
@@ -195,9 +240,25 @@ files* and *Deactivate virtual files*. When you turn it off, the client asks
 downloaded, and a running sync is aborted. In return, folder
 selection becomes available again.
 
-To control what is kept locally, use *Manage availability* in the same menu.
-In the tree view, the *Availability* column shows the state. Right-click a
-folder for these options:
+### On macOS
+
+The account appears in the Finder sidebar under *Locations*. The files are there
+as placeholders and are downloaded when you open them. New, changed, renamed,
+moved, and deleted files go to the server, and changes on the server reach the
+Finder within about 30 seconds.
+
+The first time, macOS needs your permission. Until then, the client reports "The
+files are not shown in the Finder yet: macOS needs your permission." Open *System
+Settings → General → Login Items & Extensions*, click the info button next to
+owncloud.online under *Extensions*, and turn on *File Provider*.
+
+Unlike on Windows, you can't turn virtual files on or off for an existing folder.
+You choose the method when you set up the account or a new folder.
+
+### Control availability
+
+Expand the folder in the client's folder list. The rows show what is available
+locally. Right-click a folder or file for these options:
 
 | Entry | Effect |
 | --- | --- |
@@ -205,12 +266,23 @@ folder for these options:
 | *Free up space (online only)* | The local copy is discarded, the entry stays visible |
 | *Reset to default* | The setting of the parent folder applies again |
 
-To make the folders show up in Explorer's navigation pane, select *Show sync
-folders in the Explorer navigation pane* under *Settings → General Settings*.
+On Windows, *Manage availability* in the folder's action menu opens the same view
+in its own window, and the Explorer context menu offers this choice as well. On
+macOS, a choice for a folder applies to everything in it; in the Finder, the
+entries are called *Download Now* and *Remove Download*.
+
+## Explorer integration
+
+On Windows, every sync folder gets its own entry in Explorer's navigation pane,
+with or without virtual files. To turn this off, clear *Show sync folders in the
+Explorer navigation pane* under *Settings*.
 
 In Explorer, the client also adds its own *Share with owncloud.online* submenu
 with *Share…*, *Copy private link to clipboard*, and *Show file versions in web
-browser*.
+browser*. *Share…* opens a dialog of the client: there you share with users or
+groups and create public links, optionally with a password and an expiration
+date. A new link goes straight to the clipboard. If sharing through the server's
+interface is turned off, the page opens in the browser instead.
 
 ## When a file was changed in two places
 
@@ -231,22 +303,24 @@ issue resolves itself.
 
 If conflict copies keep appearing for the same files, usually two devices are
 working on them at the same time, or a program keeps writing to a working file.
-Exclude such files from syncing under *Settings → General Settings → Edit
-Ignored Files*.
+Exclude such files from syncing under *Settings → Advanced → Edit Ignored
+Files*.
 
 ## Pause and resume syncing
 
 For all accounts at once: right-click the icon in the notification area and
-choose *Pause synchronization*, with the options *For 30 minutes*, *For 1
-hour*, and *Until I resume*. Resume with *Resume synchronization*; for a timed
-pause, the entry also shows the time until which syncing is paused.
+choose *Pause synchronization*, with the options *For 1 hour*, *For 2 hours*,
+*For 4 hours*, *Until tomorrow*, and *Until I resume*. Resume with *Resume
+synchronization*; for a timed pause, the entry also shows the time until which
+syncing is paused. In an account's submenu, the same entry pauses only that
+account until you resume it.
 
 For a single folder, the folder's action menu has *Pause sync* and then *Resume
 sync*. *Sync now* starts a run right away instead of waiting for the next
 check. If a sync is running, the client asks for confirmation under "Sync
 Running" before it pauses.
 
-Under *Settings → General Settings → Network*, you can also select *Pause
+Under *Settings → Network*, you can also select *Pause
 synchronization when the Internet connection is metered*, which is useful on
 mobile data connections. When the client pauses for this reason, the account
 shows "Sync is paused due to metered internet connection". If you click *Sync
@@ -260,7 +334,10 @@ while it isn't running.
 
 The client logs in through the browser. The second factor is requested there
 and doesn't get in the client's way; you **don't** need an app password for
-the desktop client.
+the desktop client. This applies as long as the instance
+offers OAuth2 or OpenID Connect. Without either, the client asks for a username
+and password itself: create an app password and enter it there. The client keeps
+it in the system keychain.
 
 It's different for access you set up with a username and password: a WebDAV
 folder mapped as a network drive, command-line tools, or older applications.
@@ -309,7 +386,7 @@ with each file.
 **The detailed log** is **off** by default. Turn it on before you reproduce an
 error:
 
-1. Open *Settings → General Settings → Log Settings*. The *Log Output* window
+1. Open *Settings → Advanced → Log Settings*. The *Log Output* window
    appears.
 2. Select *Enable logging to temporary folder*. Above it, under *If enabled,
    logs will be written to:*, you see the path the log goes to; the *Open
@@ -337,14 +414,18 @@ revoke the desktop client's authorization (see
 The settings of the client itself are in `%APPDATA%\owncloud.online` on
 Windows, in `~/.config/owncloud.online` on Linux, and in
 `~/Library/Preferences/owncloud.online` on macOS. Your own exclude list,
-`sync-exclude.lst`, is there too.
+`sync-exclude.lst`, is there too. For everyone on the computer, your
+administrator can place a list of the same name in the installation folder on
+Windows, in `/etc/owncloud.online/` on Linux, and in `/Library/Application
+Support/owncloud.online/` on macOS. Its entries are shown in the ignored files
+editor but can't be changed there.
 
 ## What to send when something goes wrong
 
 So that your administrator doesn't have to guess:
 
-* Client version and operating system. Both are in the client under *Settings*
-  in the *About* section.
+* Client version and operating system. Both are in the client under *More →
+  About*.
 * The address of the instance and your account name.
 * The exact wording of the message, ideally as a screenshot of the client
   window.
@@ -363,22 +444,27 @@ On the server side, the matching part of the server log is needed as well; see
 | --- | --- | --- |
 | "Invalid URL scheme. Only https is accepted." | The address was entered with `http://` | Enter the address with `https://`. If the instance is only reachable over HTTP, set up TLS first |
 | "OAuth2 authentication requires a secured connection." | The login would run over an unsecured connection | Same as the previous row; a reverse proxy must also pass HTTPS through |
-| The browser opens, then the client reports "Error while trying to log in to OAuth2-enabled server." | Neither `oauth2` nor `openidconnect` is enabled, or the registered redirect URI doesn't match | Administrator: `sudo -u www-data php8.4 occ app:enable oauth2`, then [Login with OAuth2 and OpenID Connect](../administration/single-sign-on.en.md) |
+| The browser opens, then the client reports "Error while trying to log in to OAuth2-enabled server." | The login app isn't fully set up, or the registered redirect URI doesn't match | Administrator: [Login with OAuth2 and OpenID Connect](../administration/single-sign-on.en.md) |
+| "Signing in requires the "OAuth2" app on this server, but it is not installed or not enabled." | The server offers neither OAuth2 nor OpenID Connect and doesn't accept a username and password either | Administrator: `sudo -u www-data php8.4 occ app:enable oauth2` |
+| "The user name or password is not correct." | On an instance without OAuth2 and OpenID Connect, the credentials are wrong, or a second factor applies to the account | Check what you entered; with a second factor, use an app password |
 | "Unable to retrieve capabilities from server." | The instance can't be reached from this computer, a proxy blocks the connection, or the certificate isn't trusted | Open the address in a browser on the same computer; check the certificate chain and the proxy |
 | "The server is not supported by this client." or the note "Unsupported Server Version" | The instance is older than 10.0.0 | Update the server; until then, work in the browser |
 | "You are already connected to an account with these credentials." | The same account is already set up in the client | Use the existing account or remove it first |
-| The *Use virtual files* option is missing or rejected | The target folder isn't on NTFS, is a whole drive, or is a network drive; macOS and Linux don't support virtual files | Choose a folder on a local NTFS disk, not the drive itself |
+| The virtual files option is missing or rejected | Windows: the target folder isn't on NTFS, is a whole drive, or is a network drive. macOS: the system is older than macOS 13, or the client isn't in the Applications folder. Linux doesn't support virtual files | Windows: choose a folder on a local NTFS disk, not the drive itself. macOS: update the system, or move the client to the Applications folder and restart it |
+| The files don't appear in the Finder | macOS hasn't allowed the extension yet | *System Settings → General → Login Items & Extensions*, click the info button next to owncloud.online under *Extensions*, and turn on *File Provider* |
+| "path is not located on a supported Apple File System." | On macOS, the sync folder isn't on APFS | Choose a folder on an APFS drive |
 | "your user directory may not be chosen as the sync root." | The home folder itself was chosen as the sync folder | Choose a subfolder, such as `owncloud.online` in your home folder |
 | *Manage subfolder sync* can't be selected | Virtual files are turned on for this folder | Use *Manage availability* instead, or deactivate virtual files |
-| No status icons in Explorer, no entry in the navigation pane | The Windows restart required after installation is still pending, or the navigation pane checkbox isn't selected | Restart Windows; select *Show sync folders in the Explorer navigation pane* |
+| No status icons in Explorer, no entry in the navigation pane | The Windows restart required after installation is still pending, or the navigation pane checkbox was cleared | Restart Windows; select *Show sync folders in the Explorer navigation pane* |
 | New "(conflicted copy …)" files keep appearing | The same file is edited in two places, or a program keeps writing to it | Edit the file in one place only; exclude working files with *Edit Ignored Files* |
 | "File … is currently in use" | An open program has locked the file | Close the program; the client retries on its own |
 | Nothing syncs anymore, the icon shows a pause | Syncing is paused, or the connection was detected as metered | Choose *Resume synchronization*; if needed, clear the checkbox for metered connections |
-| A file changed on the server takes a long time to arrive on the computer | Client 7.11 only learns about server changes at the next full sync (about once an hour) or after your next local change | Choose *Sync now* in the folder's action menu |
+| A file changed on the server takes a long time to arrive on the computer | The client checks the server every 30 seconds, but not while a sync is running | Wait for the running sync, or choose *Sync now* in the folder's action menu |
 | A program is rejected even though the password is correct | A second factor applies to the account, or `token_auth_enforced` is set | Create an app password and enter it in the program |
 | Files placed on the server don't show up in the client | The files were put into storage bypassing the server and aren't in the file index | Administrator: `sudo -u www-data php8.4 occ files:scan <account>` |
 | "Storage space almost full" | The account's quota is almost used up | Clean up, including the trash bin in the web interface; otherwise ask for a larger quota |
 | Files deleted locally are also gone on the server | The client synced the deletion like any other change | Restore the file from the trash bin in the web interface |
+| The client asks "Remove all files?" | A sync would delete all files of a folder, or at least 200 files and at the same time half of the known files, for example because the local folder is empty or a drive isn't mounted | Check the cause. *Keep files* brings the files back, *Delete files* lets the sync go ahead. The folder stays paused until you answer |
 
 If the cause is still unclear, turn on the detailed log, reproduce the error,
 and pass on the details from the previous section.
