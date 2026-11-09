@@ -652,6 +652,95 @@ class DecryptAllTest extends TestCase {
 	}
 
 	/**
+	 * Versionen dürfen nicht per View::copy() entschlüsselt werden: der
+	 * Verschlüsselungs-Wrapper kopiert innerhalb von files_versions 1:1, der
+	 * Inhalt bliebe verschlüsselt. Erwartet wird entschlüsseltes Lesen und
+	 * unverschlüsseltes Schreiben über Streams.
+	 */
+	public function testDecryptFileStreamsVersionsInsteadOfCopy() {
+		$path = '/user1/files_versions/test.txt.v1234';
+		$target = $path . '.decrypted.42.part';
+
+		/** @var DecryptAll | \PHPUnit\Framework\MockObject\MockObject  $instance */
+		$instance = $this->getMockBuilder(DecryptAll::class)
+			->setConstructorArgs(
+				[
+					$this->encryptionManager,
+					$this->userManager,
+					$this->view,
+					$this->logger
+				]
+			)
+			->setMethods(['getTimestamp'])
+			->getMock();
+		$instance->expects($this->any())->method('getTimestamp')->willReturn(42);
+
+		$in = \fopen('php://memory', 'w+');
+		\fwrite($in, 'klartext der version');
+		\rewind($in);
+		$tmpFile = \OC::$server->getTempManager()->getTemporaryFile();
+		$out = \fopen($tmpFile, 'w');
+		$closedOnRename = null;
+
+		$this->view->expects($this->never())->method('copy');
+		$this->view->expects($this->exactly(2))
+			->method('fopen')
+			->willReturnCallback(function ($file, $mode) use ($path, $target, $in, $out) {
+				if ($file === $path && $mode === 'r') {
+					return $in;
+				}
+				if ($file === $target && $mode === 'w') {
+					return $out;
+				}
+				return false;
+			});
+		$this->view->expects($this->once())
+			->method('rename')
+			->with($target, $path)
+			->willReturnCallback(function () use ($out, &$closedOnRename) {
+				// erst nach dem Schließen umbenennen, sonst ist der
+				// Dateicache des Ziels noch nicht fortgeschrieben
+				$closedOnRename = !\is_resource($out);
+				return true;
+			});
+		$storage = $this->createMock('\OC\Files\Storage\Storage');
+		$fileCache = $this->createMock(Cache::class);
+		$fileCache->expects($this->once())
+			->method('put')
+			->with('files_versions/test.txt.v1234', ['encrypted' => 0]);
+		$storage->expects($this->once())
+			->method('getCache')
+			->willReturn($fileCache);
+		$this->view->expects($this->once())
+			->method('resolvePath')
+			->willReturn([$storage, 'files_versions/test.txt.v1234']);
+
+		$this->assertTrue(
+			self::invokePrivate($instance, 'decryptFile', [$path])
+		);
+		$this->assertTrue($closedOnRename);
+		$this->assertSame('klartext der version', \file_get_contents($tmpFile));
+	}
+
+	/**
+	 * Versionen im Papierkorb behandelt der Wrapper nicht als Version, dort
+	 * bleibt es beim normalen Kopieren.
+	 */
+	public function testIsVersion() {
+		$instance = new DecryptAll(
+			$this->encryptionManager,
+			$this->userManager,
+			$this->view,
+			$this->logger
+		);
+		$this->assertTrue(self::invokePrivate($instance, 'isVersion', ['/user1/files_versions/a.txt.v1']));
+		$this->assertTrue(self::invokePrivate($instance, 'isVersion', ['/user1/files_versions/sub/a.txt.v1']));
+		$this->assertFalse(self::invokePrivate($instance, 'isVersion', ['/user1/files/files_versions/a.txt']));
+		$this->assertFalse(self::invokePrivate($instance, 'isVersion', ['/user1/files_trashbin/versions/a.txt.v1.d2']));
+		$this->assertFalse(self::invokePrivate($instance, 'isVersion', ['/user1/files_versions']));
+	}
+
+	/**
 	 * Test to verify the fileid after the decryptFile method should be same
 	 */
 	public function testDecryptFileForFileId() {

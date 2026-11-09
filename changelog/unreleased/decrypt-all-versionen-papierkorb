@@ -8,6 +8,10 @@ Verschlüsselung trotzdem von Hand abgeschaltet, ließen sich diese Versionen
 und Papierkorbeinträge nicht mehr lesen oder wiederherstellen.
 
 decrypt-all entschlüsselt jetzt auch "files_versions" und "files_trashbin".
+Versionen werden dabei entschlüsselt gelesen und unverschlüsselt neu
+geschrieben: ein bloßes Kopieren innerhalb von files_versions übernimmt den
+Inhalt 1:1, er bliebe verschlüsselt, während der Dateicache schon
+"unverschlüsselt" meldet.
 "occ encryption:disable" nennt bei Resten die noch als verschlüsselt
 markierten Pfade (höchstens 20, dazu die Restanzahl) und wie sie zu
 entschlüsseln sind.

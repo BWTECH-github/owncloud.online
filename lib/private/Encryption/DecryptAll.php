@@ -276,8 +276,15 @@ class DecryptAll {
 
 		try {
 			\OC\Files\Storage\Wrapper\Encryption::setDisableWriteEncryption(true);
-			$this->rootView->copy($source, $target);
-			\OC\Files\Storage\Wrapper\Encryption::setDisableWriteEncryption(false);
+			try {
+				if ($this->isVersion($source)) {
+					$this->copyDecrypted($source, $target);
+				} else {
+					$this->rootView->copy($source, $target);
+				}
+			} finally {
+				\OC\Files\Storage\Wrapper\Encryption::setDisableWriteEncryption(false);
+			}
 			View::setIgnorePartFile(true);
 			$this->rootView->rename($target, $source);
 			View::setIgnorePartFile(false);
@@ -292,6 +299,60 @@ class DecryptAll {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Liegt der Pfad unter /<uid>/files_versions/? Versionen im Papierkorb
+	 * (files_trashbin/versions) zählen nicht dazu, der Verschlüsselungs-
+	 * Wrapper behandelt nur files_versions als Version.
+	 *
+	 * @param string $path
+	 * @return bool
+	 */
+	protected function isVersion($path) {
+		$parts = \explode('/', \ltrim($path, '/'), 3);
+		return isset($parts[2]) && $parts[1] === 'files_versions';
+	}
+
+	/**
+	 * Datei entschlüsselt lesen und unverschlüsselt schreiben.
+	 *
+	 * Für Versionen nötig: View::copy() kopiert innerhalb von files_versions
+	 * absichtlich 1:1 (Versionen nutzen den Schlüssel der Originaldatei), der
+	 * Inhalt bliebe also verschlüsselt, obwohl der Dateicache danach
+	 * "unverschlüsselt" meldet.
+	 *
+	 * @param string $source
+	 * @param string $target
+	 * @throws \Exception wenn Lesen oder Schreiben scheitert
+	 */
+	protected function copyDecrypted($source, $target) {
+		$in = $this->rootView->fopen($source, 'r');
+		if (!\is_resource($in)) {
+			throw new \Exception("Could not open <$source> for reading");
+		}
+		$out = $this->rootView->fopen($target, 'w');
+		if (!\is_resource($out)) {
+			\fclose($in);
+			throw new \Exception("Could not open <$target> for writing");
+		}
+		try {
+			$copied = \stream_copy_to_stream($in, $out);
+			if ($copied === false) {
+				throw new \Exception("Could not copy <$source> decrypted to <$target>");
+			}
+		} catch (\Throwable $e) {
+			\fclose($in);
+			\fclose($out);
+			// halbe Kopie nicht liegen lassen
+			if ($this->rootView->file_exists($target)) {
+				$this->rootView->unlink($target);
+			}
+			throw $e;
+		}
+		\fclose($in);
+		// erst beim Schließen schreibt die View den Dateicache fort
+		\fclose($out);
 	}
 
 	/**
