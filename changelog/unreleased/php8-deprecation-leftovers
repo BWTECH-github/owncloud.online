@@ -1,0 +1,16 @@
+Bugfix: Letzte PHP-8-Meldungen in Kommentaren, PostgreSQL-Migration und Google Drive beseitigt
+
+Drei Stellen schrieben unter PHP 8 unnötige Warnungen und Deprecation-Meldungen
+ins Log:
+
+- Ein PROPFIND auf einen Kommentar mit einer unbekannten Eigenschaft las einen
+  nicht vorhandenen Schlüssel und übergab null an method_exists(). Unbekannte
+  Eigenschaften werden jetzt still übergangen.
+- Der PostgreSQL-Migrator übergab einen fehlenden Spaltenvorgabewert (null) an
+  trim(). Gekürzt werden jetzt nur noch Zeichenketten.
+- Die Google-Drive-Anbindung übergab bei der Änderungsprüfung eines Ordners eine
+  fehlende Änderungszeit als null an strtotime(). Wie schon bei stat() gilt eine
+  fehlende Zeit jetzt als „jetzt“, der Ordner also als geändert.
+
+Übernommen aus dem Upstream-Projekt (PR 41656 und 41694), für Google Drive
+in unserer bisherigen Form.

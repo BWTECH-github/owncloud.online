@@ -775,7 +775,8 @@ class Google extends \OCP\Files\Storage\StorageAdapter {
 			}
 
 			foreach ($children->getFiles() as $child) {
-				$childMTime = \strtotime($child->getModifiedTime());
+				// Fehlt die Zeit, als geändert werten (wie bei stat() oben)
+				$childMTime = \strtotime($child->getModifiedTime() ?? 'now');
 				if ($childMTime > $time) {
 					// a child has changed since that time, no need to keep on going
 					return true;

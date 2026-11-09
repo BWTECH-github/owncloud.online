@@ -470,4 +470,35 @@ class CommentsNodeTest extends \Test\TestCase {
 		$this->assertArrayHasKey(CommentNode::PROPERTY_NAME_UNREAD, $properties);
 		$this->assertSame($properties[CommentNode::PROPERTY_NAME_UNREAD], $expected);
 	}
+
+	public function testGetPropertiesIgnoresUnknownProperty() {
+		// Ein PROPFIND darf beliebige Eigenschaften anfragen; eine unbekannte
+		// darf weder eine Warnung (undefinierter Schlüssel) noch null an
+		// method_exists() auslösen, sondern fehlt einfach im Ergebnis.
+		$this->comment->expects($this->once())
+			->method('getId')
+			->will($this->returnValue('19'));
+
+		// tests/phpunit-autotest.xml wandelt Warnungen nicht in Ausnahmen um,
+		// deshalb hier selbst mitschreiben
+		$errors = [];
+		\set_error_handler(function ($errno, $errstr) use (&$errors) {
+			$errors[] = $errstr;
+			return true;
+		});
+		try {
+			$properties = $this->node->getProperties([
+				'{http://example.com/ns}unknown',
+				'{http://owncloud.org/ns}id',
+			]);
+		} finally {
+			\restore_error_handler();
+		}
+
+		$this->assertSame([], $errors);
+		$this->assertSame([
+			'{http://owncloud.org/ns}id' => '19',
+			CommentNode::PROPERTY_NAME_UNREAD => null,
+		], $properties);
+	}
 }

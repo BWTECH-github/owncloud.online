@@ -233,8 +233,9 @@ class CommentNode implements \Sabre\DAV\INode, \Sabre\DAV\IProperties {
 
 		$result = [];
 		foreach ($properties as $property) {
-			$getter = $this->properties[$property];
-			if (\method_exists($this->comment, $getter)) {
+			// Unbekannte Eigenschaft (PROPFIND fragt beliebige an): kein Getter
+			$getter = $this->properties[$property] ?? null;
+			if (($getter !== null) && \method_exists($this->comment, $getter)) {
 				$result[$property] = $this->comment->$getter();
 			}
 		}
