@@ -1,0 +1,8 @@
+Bugfix: Toten Fremdlink aus den Einstellungen zur föderierten Cloud-ID entfernt
+
+Unter „Zur Webseite hinzufügen“ und bei den Teilen-Knöpfen in den
+persönlichen Einstellungen wurde ein Link auf eine externe Seite erzeugt,
+die es nicht mehr gibt. Stattdessen wird jetzt die föderierte Cloud-ID
+selbst weitergegeben.
+
+Upstream: 0489d0cb7c
