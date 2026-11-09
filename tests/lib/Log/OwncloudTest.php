@@ -63,6 +63,26 @@ class OwncloudTest extends TestCase {
 		$this->assertSame('/remote.php/dav/files/u/a.txt', Owncloud::sanitizeUrl('/remote.php/dav/files/u/a.txt'));
 	}
 
+	/**
+	 * Signatur signierter Adressen und Rücksetz-Token im Pfad dürfen nicht im
+	 * Protokoll landen - mit beiden ließe sich handeln, solange sie gelten.
+	 */
+	public function testSanitizeUrlMasksSignatureAndResetToken(): void {
+		$this->assertSame(
+			'/remote.php/dav/files/u/a.txt?OC-Credential=u&OC-Date=2026-11-09T10:00:00.000Z&OC-Expires=1200&OC-Verb=GET&OC-Signature=***',
+			Owncloud::sanitizeUrl('/remote.php/dav/files/u/a.txt?OC-Credential=u&OC-Date=2026-11-09T10:00:00.000Z&OC-Expires=1200&OC-Verb=GET&OC-Signature=9f2b6c1e')
+		);
+		$this->assertSame(
+			'/index.php/lostpassword/reset/form/***/alice',
+			Owncloud::sanitizeUrl('/index.php/lostpassword/reset/form/Ab3dEf9GhIjKlMn0pQrS/alice')
+		);
+		$this->assertSame(
+			'/index.php/lostpassword/set/***/alice?x=1',
+			Owncloud::sanitizeUrl('/index.php/lostpassword/set/Ab3dEf9GhIjKlMn0pQrS/alice?x=1')
+		);
+		$this->assertSame('/index.php/lostpassword/email', Owncloud::sanitizeUrl('/index.php/lostpassword/email'));
+	}
+
 	public function testMicrosecondsLogTimestamp() {
 		$config = \OC::$server->getConfig();
 		# delete old logfile

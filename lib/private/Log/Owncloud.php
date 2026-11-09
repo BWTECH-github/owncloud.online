@@ -33,6 +33,10 @@
  *   - make request/DB metadata gathering non-fatal in bootstrap (OC-CI-01)
  *   - PHP 8.4 compatibility and owncloud.online design integration
  *   - php8.3 (#41449)
+ *
+ * Modified by BW-Tech GmbH on 2026-11-09.
+ * Changes:
+ *   - mask OC-Signature and the password reset token in logged URLs
  */
 
 namespace OC\Log;
@@ -78,9 +82,15 @@ class Owncloud {
 	 * Geheimnisse aus der protokollierten Adresse entfernen: WOPI-Zugriffstoken
 	 * (Collabora hängt access_token an jede Anfrage), CSRF-Token und Kennwörter
 	 * stünden sonst im Klartext in jedem Protokolleintrag dieser Anfrage.
+	 *
+	 * Dazu kommen die Signatur signierter Adressen (OC-Signature) und das
+	 * Rücksetz-Token im Pfad von /lostpassword/reset/form/{token}/{userId} und
+	 * /lostpassword/set/{token}/{userId}: wer das Protokoll liest, könnte damit
+	 * sonst das Passwort des Kontos neu setzen, solange das Token gilt.
 	 */
 	public static function sanitizeUrl(string $url): string {
-		return (string)\preg_replace('/([?&](?:access_token|requesttoken|password)=)[^&#]*/i', '$1***', $url);
+		$url = (string)\preg_replace('/([?&](?:access_token|requesttoken|password|OC-Signature)=)[^&#]*/i', '$1***', $url);
+		return (string)\preg_replace('#(/lostpassword/(?:reset/form|set)/)[^/?&\#]+#i', '$1***', $url);
 	}
 
 	public static function writeExtra($app, $message, $level, $conditionalLogFile, $extraFields = []) {

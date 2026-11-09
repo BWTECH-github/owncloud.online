@@ -1,0 +1,5 @@
+Security: Rücksetz-Token und OC-Signature im Protokoll maskiert
+
+Das Protokoll ersetzt jetzt auch das Token im Pfad der Passwort-Rücksetzung
+(/lostpassword/reset/form/… und /lostpassword/set/…) sowie die Signatur
+signierter Adressen (OC-Signature) durch ***.
