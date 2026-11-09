@@ -1,0 +1,7 @@
+Security: Impressum- und Datenschutz-Adresse nur als http/https
+
+Die Adressen für Impressum und Datenschutz werden nur noch gespeichert, wenn sie
+mit http:// oder https:// beginnen und einen Host haben. In der Fußzeile der
+Anmeldeseite und öffentlicher Freigaben sowie im persönlichen Profil erscheinen
+sie nur noch geprüft und escaped; früher gespeicherte unsichere Werte werden
+nicht mehr als Link ausgegeben.

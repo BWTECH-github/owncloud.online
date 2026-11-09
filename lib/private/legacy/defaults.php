@@ -9,6 +9,10 @@
  *   - map the remaining doc keys, drop the hardcoded upstream manual link
  *   - point in-product help links at docs.owncloud.online, document the log
  *   - owncloud.online links + valid Android app id
+ *
+ * Modified by BW-Tech GmbH on 2026-11-09.
+ * Changes:
+ *   - only http/https imprint and privacy URLs, escaped in the footer
  */
 
 use OCP\IConfig;
@@ -268,12 +272,16 @@ class OC_Defaults {
 			$footer  = '<a href="' . $this->getBaseUrl() . '" target="_blank" rel="noreferrer">' . $this->getEntity() . '</a>';
 			$footer .= ' &ndash; ' . $this->getSlogan();
 
-			if ($this->getImprintUrl() !== '') {
-				$footer .= '<span class="nowrap"> | <a href="' . $this->getImprintUrl() . '" target="_blank">' . $this->l->t('Imprint') . '</a></span>';
+			// Rechtslinks prüfen und escapen: die Fußzeile steht ungefiltert auf
+			// der Anmeldeseite und auf öffentlichen Freigaben.
+			$imprintUrl = self::sanitizeLegalUrl($this->getImprintUrl());
+			if ($imprintUrl !== '') {
+				$footer .= '<span class="nowrap"> | <a href="' . \htmlspecialchars($imprintUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener noreferrer">' . $this->l->t('Imprint') . '</a></span>';
 			}
 
-			if ($this->getPrivacyPolicyUrl() !== '') {
-				$footer .= '<span class="nowrap"> | <a href="'. $this->getPrivacyPolicyUrl() .'" target="_blank">'. $this->l->t('Privacy Policy') .'</a></span>';
+			$privacyPolicyUrl = self::sanitizeLegalUrl($this->getPrivacyPolicyUrl());
+			if ($privacyPolicyUrl !== '') {
+				$footer .= '<span class="nowrap"> | <a href="' . \htmlspecialchars($privacyPolicyUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener noreferrer">' . $this->l->t('Privacy Policy') . '</a></span>';
 			}
 		}
 
@@ -363,7 +371,7 @@ class OC_Defaults {
 	 */
 	public function getImprintUrl() {
 		try {
-			return $this->config->getAppValue('core', 'legal.imprint_url', '');
+			return self::sanitizeLegalUrl($this->config->getAppValue('core', 'legal.imprint_url', ''));
 		} catch (\Exception $e) {
 			return '';
 		}
@@ -375,10 +383,39 @@ class OC_Defaults {
 	 */
 	public function getPrivacyPolicyUrl() {
 		try {
-			return $this->config->getAppValue('core', 'legal.privacy_policy_url', '');
+			return self::sanitizeLegalUrl($this->config->getAppValue('core', 'legal.privacy_policy_url', ''));
 		} catch (\Exception $e) {
 			return '';
 		}
+	}
+
+	/**
+	 * Impressums- oder Datenschutzadresse nur durchlassen, wenn sie eine
+	 * vollständige http- oder https-Adresse mit Host ist; sonst ''.
+	 *
+	 * Gilt beim Speichern und bei der Ausgabe: Werte, die vor dieser Prüfung
+	 * gespeichert wurden (etwa „javascript:…“), dürfen auch nachträglich nicht
+	 * als Link erscheinen.
+	 *
+	 * @param mixed $url
+	 * @return string die getrimmte Adresse oder ''
+	 */
+	public static function sanitizeLegalUrl($url) {
+		if (!\is_string($url)) {
+			return '';
+		}
+		$url = \trim($url);
+		// Steuerzeichen und Leerzeichen haben in einer Adresse nichts zu suchen;
+		// Browser überspringen manche davon und lesen dann ein anderes Schema.
+		if ($url === '' || \preg_match('/[\x00-\x20\x7f]/', $url)) {
+			return '';
+		}
+		$parts = \parse_url($url);
+		if ($parts === false || empty($parts['host'])
+			|| !\in_array(\strtolower($parts['scheme'] ?? ''), ['http', 'https'], true)) {
+			return '';
+		}
+		return $url;
 	}
 
 	/**

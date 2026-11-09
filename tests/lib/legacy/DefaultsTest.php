@@ -34,15 +34,62 @@ class DefaultsTest extends TestCase {
 		$defaults = $this->getDefaultsMock(
 			['getImprintUrl', 'getPrivacyPolicyUrl']
 		);
-		$defaults->expects($this->exactly(2))
+		$defaults->expects($this->atLeastOnce())
 			->method('getImprintUrl')
 			->willReturn($imprintUrl);
-		$defaults->expects($this->exactly(2))
+		$defaults->expects($this->atLeastOnce())
 			->method('getPrivacyPolicyUrl')
 			->willReturn($privacyPolicyUrl);
 		$footer = $defaults->getShortFooter();
 		$this->assertStringContainsString($privacyPolicyUrl, $footer);
 		$this->assertStringContainsString($imprintUrl, $footer);
+	}
+
+	/**
+	 * Gespeicherte Rechtslinks landen in der Fußzeile der Anmeldeseite. Ein
+	 * „javascript:“-Link darf dort nicht erscheinen, und ein Anführungszeichen
+	 * darf das href-Attribut nicht verlassen.
+	 */
+	public function testFooterDropsUnsafeAndEscapesLegalUrls() {
+		$config = $this->createMock(\OCP\IConfig::class);
+		$config->method('getAppValue')->willReturnMap([
+			['core', 'legal.imprint_url', '', 'javascript:alert(1)'],
+			['core', 'legal.privacy_policy_url', '', 'https://example.org/p?a="><script>x</script>'],
+		]);
+		$defaults = new OC_Defaults();
+		$defaults->setConfig($config);
+
+		$footer = $defaults->getShortFooter();
+		$this->assertStringNotContainsString('javascript:', $footer);
+		$this->assertStringNotContainsString('Imprint', $footer);
+		$this->assertStringNotContainsString('<script>', $footer);
+		$this->assertStringContainsString('href="https://example.org/p?a=&quot;&gt;&lt;script&gt;x&lt;/script&gt;"', $footer);
+	}
+
+	/**
+	 * @dataProvider legalUrlProvider
+	 */
+	public function testSanitizeLegalUrl($input, $expected) {
+		$this->assertSame($expected, OC_Defaults::sanitizeLegalUrl($input));
+	}
+
+	public function legalUrlProvider() {
+		return [
+			['https://example.org/impressum', 'https://example.org/impressum'],
+			['  http://example.org  ', 'http://example.org'],
+			['HTTPS://example.org', 'HTTPS://example.org'],
+			['', ''],
+			[null, ''],
+			['javascript:alert(1)', ''],
+			['JavaScript:alert(1)', ''],
+			["java\tscript:alert(1)", ''],
+			['data:text/html,<script>x</script>', ''],
+			['//example.org/impressum', ''],
+			['example.org/impressum', ''],
+			['https://', ''],
+			["https://example.org/\x00x", ''],
+			['https://exa mple.org', ''],
+		];
 	}
 
 	public function testGetImprintWhenNotInstalled() {

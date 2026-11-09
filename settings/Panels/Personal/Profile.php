@@ -20,6 +20,11 @@
  * You should have received a copy of the GNU Affero General Public License, version 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
+ * @copyright Copyright (c) 2026, BW-Tech GmbH
+ *
+ * Modified by BW-Tech GmbH on 2026-11-09.
+ * Changes:
+ *   - only show http/https imprint and privacy URLs
  */
 
 namespace OC\Settings\Panels\Personal;
@@ -106,8 +111,10 @@ class Profile implements ISettings {
 		$tmpl->assign('groups', $groups);
 		$tmpl->assign('username', $this->userSession->getUser()->getUID());
 		$tmpl->assign('languageSelector', $selector->fetchPage());
-		$tmpl->assign('legal_privacy_policy', $this->config->getAppValue('core', 'legal.privacy_policy_url'));
-		$tmpl->assign('legal_imprint', $this->config->getAppValue('core', 'legal.imprint_url'));
+		// Nur http/https: p() im Template escapt, verhindert aber kein
+		// „javascript:“ im href eines vor der Prüfung gespeicherten Werts.
+		$tmpl->assign('legal_privacy_policy', \OC_Defaults::sanitizeLegalUrl($this->config->getAppValue('core', 'legal.privacy_policy_url')));
+		$tmpl->assign('legal_imprint', \OC_Defaults::sanitizeLegalUrl($this->config->getAppValue('core', 'legal.imprint_url')));
 		return $tmpl;
 	}
 

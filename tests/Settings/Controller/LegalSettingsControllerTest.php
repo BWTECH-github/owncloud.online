@@ -77,6 +77,40 @@ class LegalSettingsControllerTest extends \Test\TestCase {
 	public function linkData() {
 		return [
 			['https://some.url'],
+			[''],
 		];
+	}
+
+	/**
+	 * Nur http/https wird gespeichert, alles andere abgelehnt - die Adresse
+	 * steht als Link in der Fußzeile der Anmeldeseite.
+	 *
+	 * @dataProvider unsafeLinkData
+	 */
+	public function testUnsafeUrlsAreNotStored($link) {
+		$this->container['Config']
+			->expects($this->never())
+			->method('setAppValue');
+
+		$this->assertSame('error', $this->legalSettingsController->setImprintUrl($link)['status']);
+		$this->assertSame('error', $this->legalSettingsController->setPrivacyPolicyUrl($link)['status']);
+	}
+
+	public function unsafeLinkData() {
+		return [
+			['javascript:alert(1)'],
+			['data:text/html,x'],
+			['" onmouseover="alert(1)'],
+			['example.org'],
+		];
+	}
+
+	public function testUrlIsStoredTrimmed() {
+		$this->container['Config']
+			->expects($this->once())
+			->method('setAppValue')
+			->with('core', 'legal.imprint_url', 'https://example.org/impressum');
+
+		$this->assertSame('success', $this->legalSettingsController->setImprintUrl('  https://example.org/impressum ')['status']);
 	}
 }
