@@ -78,4 +78,32 @@ class ProfileTest extends \Test\TestCase {
 		$this->assertStringContainsString('group2', $templateHtml);
 		$this->assertStringContainsString('<select id="languageinput" name="lang"', $templateHtml);
 	}
+
+	/**
+	 * Ein vor der Prüfung gespeicherter „javascript:“-Wert darf im Profil
+	 * nicht als Link erscheinen; eine http/https-Adresse schon.
+	 */
+	public function testGetPanelShowsOnlyHttpLegalLinks() {
+		$user = $this->createMock(IUser::class);
+		$user->method('getEMailAddress')->willReturn('test@example.com');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->groupManager->method('getUserGroups')->willReturn([]);
+		$this->lfactory->method('findLanguage')->willReturn('en');
+		$this->lfactory->method('findAvailableLanguages')->willReturn([]);
+		$this->config->method('getUserValue')->willReturn('');
+		$this->config->method('getAppValue')->willReturnCallback(function ($app, $key, $default = '') {
+			if ($key === 'legal.imprint_url') {
+				return 'javascript:alert(1)';
+			}
+			if ($key === 'legal.privacy_policy_url') {
+				return 'https://example.org/datenschutz';
+			}
+			return $default;
+		});
+
+		$templateHtml = $this->panel->getPanel()->fetchPage();
+		$this->assertStringNotContainsString('javascript:', $templateHtml);
+		$this->assertStringNotContainsString('id="legal_imprint"', $templateHtml);
+		$this->assertStringContainsString('href="https://example.org/datenschutz"', $templateHtml);
+	}
 }
