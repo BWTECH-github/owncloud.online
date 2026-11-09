@@ -1,0 +1,9 @@
+Bugfix: Vorschau bleibt bei nicht lesbaren Dateien aus, statt einen Fehler zu liefern
+
+Ließ sich eine Datei für die Vorschau nicht öffnen, weil der Pfad gesperrt war oder
+kein Speicher dazu gehörte, brachen Bitmap-Vorschauen mit einem Serverfehler ab.
+Warf beim SVG-Vorschaubild das Lesen selbst einen Fehler, etwa bei fehlendem
+Verschlüsselungsschlüssel, blieben Dateihandle und Dateisperre offen.
+
+In beiden Fällen gibt es jetzt einfach keine Vorschau, und die Datei wird wieder
+freigegeben.

@@ -57,11 +57,20 @@ class SVG implements IProvider2 {
 				// stream_get_contents() wäre ein \Error und liefe am catch vorbei
 				return false;
 			}
-			$content = \stream_get_contents($stream);
+			try {
+				$content = \stream_get_contents($stream);
+			} finally {
+				// Das Lesen kann im Wrapper-Stapel werfen (Verschlüsselung bei fehlendem
+				// oder kaputtem Schlüssel); das fängt der catch unten ab. Ohne finally
+				// blieben Dateihandle und Shared-Lock der View offen.
+				\fclose($stream);
+			}
+			if (!\is_string($content)) {
+				return false;
+			}
 			if (\strpos($content, '<?xml') !== 0) {
 				$content = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' . $content;
 			}
-			\fclose($stream);
 
 			# sanitize SVG content
 			$output = self::sanitizeSVGContent($content);
