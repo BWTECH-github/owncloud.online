@@ -3,6 +3,16 @@ define([
 	"../ajax"
 ], function( jQuery ) {
 
+// Prevent auto-execution of scripts when no explicit dataType was provided (See gh-2432)
+// owncloud.online: CVE-2015-9251, zurückportiert aus jQuery 3.0.0. Ohne
+// ausdrücklichen dataType würde eine fremde Antwort mit Skript-Inhaltstyp
+// bei Cross-Domain-Anfragen sonst sofort ausgeführt.
+jQuery.ajaxPrefilter( function( s ) {
+	if ( s.crossDomain ) {
+		s.contents.script = false;
+	}
+} );
+
 // Install script dataType
 jQuery.ajaxSetup({
 	accepts: {

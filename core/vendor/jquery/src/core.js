@@ -156,8 +156,12 @@ jQuery.extend = jQuery.fn.extend = function() {
 				src = target[ name ];
 				copy = options[ name ];
 
+				// Prevent Object.prototype pollution
 				// Prevent never-ending loop
-				if ( target === copy ) {
+				// owncloud.online: CVE-2019-11358, zurückportiert aus jQuery 3.4.0
+				// (753d591). Ein Schlüssel "__proto__" (etwa aus JSON.parse) würde
+				// beim tiefen Kopieren Object.prototype verändern.
+				if ( name === "__proto__" || target === copy ) {
 					continue;
 				}
 

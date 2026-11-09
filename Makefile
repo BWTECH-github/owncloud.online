@@ -225,6 +225,7 @@ test-js-debug: $(nodejs_deps)
 test-js-browser: check-minified
 	node tests/js/select2_xss_test.js
 	node tests/js/jquery_ui_xss_test.js
+	node tests/js/jquery_cve_test.js
 
 .PHONY: test-acceptance-api
 test-acceptance-api: $(acceptance_test_deps)
