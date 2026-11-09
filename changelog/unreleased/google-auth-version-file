@@ -1,0 +1,11 @@
+Bugfix: VERSION-Datei von google/auth bleibt im Paket
+
+Beim Bau entfernt dg/composer-cleaner aus jedem Paket alles außer den
+Autoload-Pfaden, composer.json und LICENSE. Bei google/auth traf das auch die
+Datei VERSION, die die Bibliothek zur Laufzeit liest, um den Kopf
+x-goog-api-client jeder Google-Anfrage zu bilden. Jeder Zugriff auf einen
+Google-Drive-Speicher schrieb deshalb einen Fehler „Failed to open stream“ ins
+Log. Die Datei wird jetzt beim Aufräumen ausgenommen; composer.lock bekommt nur
+einen neuen content-hash, an den Paketen ändert sich nichts.
+
+Übernommen aus dem Upstream-Projekt (PR 41918).
