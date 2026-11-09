@@ -1,0 +1,6 @@
+Security: rhukster/dom-sanitizer auf 1.0.20 aktualisiert
+
+Die Bibliothek, die SVG-Dateien vor dem Erzeugen der Vorschau bereinigt, steht
+jetzt auf 1.0.20 statt 1.0.14. Die Versionen 1.0.16 und 1.0.18 schließen Wege,
+den Filter für CSS-Verweise (url()) zu umgehen, über die beim Erzeugen einer
+Vorschau externe oder lokale Ressourcen nachgeladen werden konnten.
