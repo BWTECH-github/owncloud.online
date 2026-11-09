@@ -509,12 +509,12 @@ class ShareesController extends OCSController {
 
 		if (!$foundRemoteById && \substr_count($search, '@') >= 1
 			&& $this->offset === 0 && $this->userSearch->isSearchable($search)
-			// if an exact local user is found, only keep the remote entry if
-			// its domain does not match the trusted domains
-			// (if it does, it is a user whose local login domain matches the ownCloud
-			// instance domain)
-			&& (empty($this->result['exact']['users'])
-				|| !$this->isInstanceDomain($search))
+			// The search term merely looks like a federated cloud id, so this entry is
+			// only a guess. Skip it when the term already matched a local user or group
+			// exactly - the local account wins - otherwise sharing with an existing
+			// user by email address offers a bogus federated suggestion next to it.
+			&& empty($this->result['exact']['users'])
+			&& empty($this->result['exact']['groups'])
 		) {
 			$this->result['exact']['remotes'][] = [
 				'label' => $search,
@@ -746,34 +746,5 @@ class ShareesController extends OCSController {
 	 */
 	protected function isV2() {
 		return $this->request->getScriptName() === '/ocs/v2.php';
-	}
-
-	/**
-	 * Checks whether the given target's domain part matches one of the server's
-	 * trusted domain entries
-	 *
-	 * @param string $target target
-	 * @return true if one match was found, false otherwise
-	 */
-	protected function isInstanceDomain($target) {
-		if (\strpos($target, '/') !== false) {
-			// not a proper email-like format with domain name
-			return false;
-		}
-		$parts = \explode('@', $target);
-		if (\count($parts) === 1) {
-			// no "@" sign
-			return false;
-		}
-		$domainName = $parts[\count($parts) - 1];
-		$trustedDomains = $this->config->getSystemValue('trusted_domains', []);
-		if (!\is_array($trustedDomains)) {
-			// Wie in TrustedDomainHelper und Request::getServerHost(): Ein Wert,
-			// der keine Liste ist, gilt als nicht gesetzt. in_array() warf sonst
-			// einen TypeError, und die Suche nach Freigabe-Empfängern brach ab.
-			return false;
-		}
-
-		return \in_array($domainName, $trustedDomains, true);
 	}
 }

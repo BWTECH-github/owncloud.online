@@ -1,0 +1,10 @@
+Bugfix: Teilen-Dialog zeigt föderierte Treffer auch neben lokalen
+
+Der Teilen-Dialog hat föderierte Empfänger nur angezeigt, wenn die Suche
+keinen lokalen Benutzer und keine lokale Gruppe fand. Ein einziger lokaler
+Treffer verbarg damit alle föderierten, auch eine exakt eingegebene Cloud-ID.
+Jetzt erscheinen föderierte Treffer immer. Die vom Server geratene Cloud-ID
+für einen Suchbegriff mit „@“ entfällt stattdessen, sobald der Begriff genau
+einem lokalen Benutzer oder einer lokalen Gruppe entspricht.
+
+Upstream: 80580664c2d
