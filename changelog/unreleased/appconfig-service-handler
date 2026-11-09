@@ -1,0 +1,13 @@
+Security: appconfig-Schlüssel public_/remote_ können keinen Code mehr einbinden
+
+Ein Admin konnte über die AppConfig-Endpunkte einen Dienst-Schlüssel
+public_/remote_ der App core mit einem Pfad außerhalb des App-Ordners belegen,
+den public.php oder remote.php danach einband. Die Sperre für core lässt sich
+nicht mehr mit abgewandelten Schreibweisen wie „core “ oder „CORE“ umgehen,
+App-IDs außerhalb von [a-zA-Z0-9_.-] werden beim Schreiben abgelehnt, und die
+ganze core-Konfiguration lässt sich nicht mehr löschen. Eingebunden wird nur
+noch eine PHP-Datei, die tatsächlich im Ordner der App liegt.
+
+Hinweis: Die Endpunkte liefern Dienst-Schlüssel von core auch beim Lesen nicht
+mehr aus; ein Wert lässt sich mit `occ config:app:get` lesen. Ein nicht
+registrierter Dienst unter public.php antwortet jetzt mit 404 statt 500.
