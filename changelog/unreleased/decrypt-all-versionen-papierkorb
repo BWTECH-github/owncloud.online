@@ -15,3 +15,9 @@ Inhalt 1:1, er bliebe verschlüsselt, während der Dateicache schon
 "occ encryption:disable" nennt bei Resten die noch als verschlüsselt
 markierten Pfade (höchstens 20, dazu die Restanzahl) und wie sie zu
 entschlüsseln sind.
+
+Wer decrypt-all schon mit einer älteren Version ausgeführt hat, startet es
+nach dem Update erneut; dabei werden die verbliebenen Versionen und
+Papierkorbeinträge entschlüsselt. Mit Nutzerschlüsseln meldet decrypt-all nach
+einem vollständigen Lauf nur "Nothing to do"; dann vorher
+"occ encryption:enable" ausführen.

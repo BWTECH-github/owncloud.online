@@ -93,6 +93,10 @@ class Disable extends Command {
 			$output->writeln('Run "occ encryption:decrypt-all" to decrypt these. Entries on shared or');
 			$output->writeln('external storage are skipped by decrypt-all and have to be decrypted by');
 			$output->writeln('their owner, e.g. via "occ encryption:decrypt-all <user>".');
+			// Nach einem vollständigen Lauf mit Nutzerschlüsseln steht
+			// encryption_enabled auf "no", decrypt-all meldet dann nur
+			// "Nothing to do" und rührt die Reste nicht an.
+			$output->writeln('If decrypt-all answers "Nothing to do", run "occ encryption:enable" first.');
 			return 1;
 		}
 

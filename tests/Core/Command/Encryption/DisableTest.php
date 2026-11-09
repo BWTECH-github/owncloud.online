@@ -160,6 +160,8 @@ class DisableTest extends TestCase {
 		if ($encryptedCount > 0) {
 			$output = \implode("\n", $writtenLines);
 			$this->assertStringContainsString('The system still has encrypted files.', $output);
+			// Ausweg, wenn decrypt-all nach einem vollständigen Lauf "Nothing to do" meldet
+			$this->assertStringContainsString('run "occ encryption:enable" first', $output);
 			foreach ($reportedPaths as $path) {
 				$this->assertStringContainsString($path, $output);
 			}
