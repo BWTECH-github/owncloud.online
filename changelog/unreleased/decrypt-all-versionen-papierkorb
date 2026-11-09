@@ -1,0 +1,13 @@
+Bugfix: decrypt-all entschlüsselt auch Versionen und Papierkorb
+
+"occ encryption:decrypt-all" ging bisher nur durch den Ordner "files" jedes
+Nutzers. Ältere Versionen (files_versions) und Papierkorbeinträge samt deren
+Versionen (files_trashbin) blieben verschlüsselt, obwohl der Befehl Erfolg
+meldete. "occ encryption:disable" verweigerte danach das Abschalten; wurde die
+Verschlüsselung trotzdem von Hand abgeschaltet, ließen sich diese Versionen
+und Papierkorbeinträge nicht mehr lesen oder wiederherstellen.
+
+decrypt-all entschlüsselt jetzt auch "files_versions" und "files_trashbin".
+"occ encryption:disable" nennt bei Resten die noch als verschlüsselt
+markierten Pfade (höchstens 20, dazu die Restanzahl) und wie sie zu
+entschlüsseln sind.

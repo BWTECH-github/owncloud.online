@@ -33,6 +33,13 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class Disable extends Command {
+	/**
+	 * Höchstzahl der ausgegebenen, noch verschlüsselten Pfade, damit die
+	 * Ausgabe bei vielen Resten auf den Bildschirm passt. Der Rest wird nur
+	 * als Anzahl gemeldet.
+	 */
+	private const MAX_REPORTED_PATHS = 20;
+
 	/** @var IDBConnection */
 	protected $db;
 	/** @var IConfig */
@@ -57,15 +64,35 @@ class Disable extends Command {
 
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->expr()->literal('1'))
+		$qb->select($qb->createFunction('COUNT(*)'))
 			->from('filecache', 'fc')
-			->where($qb->expr()->gte('fc.encrypted', $qb->expr()->literal('1')))
-			->setMaxResults(1);
+			->where($qb->expr()->gte('fc.encrypted', $qb->expr()->literal('1')));
 		$results = $qb->execute();
-		$hasEncryptedFiles = (bool) $results->fetchOne();
+		$encryptedCount = (int) $results->fetchOne();
 		$results->free();
-		if ($hasEncryptedFiles !== false) {
-			$output->writeln('<info>The system still has encrypted files. Please decrypt them all before disabling encryption.</info>');
+		if ($encryptedCount > 0) {
+			$qb = $this->db->getQueryBuilder();
+			$qb->select('fc.path')
+				->from('filecache', 'fc')
+				->where($qb->expr()->gte('fc.encrypted', $qb->expr()->literal('1')))
+				->setMaxResults(self::MAX_REPORTED_PATHS);
+			$results = $qb->execute();
+			$encryptedPaths = $results->fetchFirstColumn();
+			$results->free();
+
+			$output->writeln('<error>The system still has encrypted files. Please decrypt them all before disabling encryption.</error>');
+			$output->writeln('The following paths in the file cache are still flagged as encrypted:');
+			foreach ($encryptedPaths as $path) {
+				$output->writeln("    $path");
+			}
+			$remaining = $encryptedCount - \count($encryptedPaths);
+			if ($remaining > 0) {
+				$output->writeln("    ... and $remaining more still encrypted");
+			}
+			$output->writeln('');
+			$output->writeln('Run "occ encryption:decrypt-all" to decrypt these. Entries on shared or');
+			$output->writeln('external storage are skipped by decrypt-all and have to be decrypted by');
+			$output->writeln('their owner, e.g. via "occ encryption:decrypt-all <user>".');
 			return 1;
 		}
 

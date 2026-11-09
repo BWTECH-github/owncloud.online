@@ -527,7 +527,9 @@ class DecryptAllTest extends TestCase {
 		$this->view->expects($this->any())->method('is_dir')
 			->willReturnCallback(
 				function ($path) {
-					if ($path === '/user1/files/foo') {
+					// "files" ist Startpunkt des Durchlaufs, "files_versions"
+					// und "files_trashbin" gibt es in diesem Fall nicht
+					if ($path === '/user1/files' || $path === '/user1/files/foo') {
 						return true;
 					}
 					return false;
@@ -557,6 +559,55 @@ class DecryptAllTest extends TestCase {
 		$progressBar = new ProgressBar(new NullOutput());
 
 		self::invokePrivate($instance, 'decryptUsersFiles', ['user1', $progressBar, '']);
+	}
+
+	/**
+	 * files_versions und files_trashbin müssen mit entschlüsselt werden, sonst
+	 * blockieren ihre verbliebenen "encrypted"-Kennzeichen encryption:disable.
+	 */
+	public function testDecryptUsersFilesAlsoCoversVersionsAndTrashbin() {
+		/** @var DecryptAll | \PHPUnit\Framework\MockObject\MockObject  $instance */
+		$instance = $this->getMockBuilder(DecryptAll::class)
+			->setConstructorArgs(
+				[
+					$this->encryptionManager,
+					$this->userManager,
+					$this->view,
+					$this->logger
+				]
+			)
+			->setMethods(['decryptFile'])
+			->getMock();
+
+		// alle drei Ordner der obersten Ebene existieren für diesen Nutzer
+		$this->view->expects($this->any())->method('is_dir')
+			->willReturnCallback(function ($path) {
+				return \in_array($path, [
+					'/user1/files',
+					'/user1/files_versions',
+					'/user1/files_trashbin',
+				], true);
+			});
+
+		$storage = $this->createMock(\OC\Files\Storage\Local::class);
+		$storage->expects($this->any())->method('instanceOfStorage')->willReturn(false);
+
+		$visited = [];
+		$this->view->expects($this->exactly(3))
+			->method('getDirectoryContent')
+			->willReturnCallback(function ($root) use (&$visited) {
+				$visited[] = $root;
+				return [];
+			});
+
+		$progressBar = new ProgressBar(new NullOutput());
+		self::invokePrivate($instance, 'decryptUsersFiles', ['user1', $progressBar, '']);
+
+		\sort($visited);
+		$this->assertEquals(
+			['/user1/files', '/user1/files_trashbin', '/user1/files_versions'],
+			$visited
+		);
 	}
 
 	public function testDecryptFile() {
