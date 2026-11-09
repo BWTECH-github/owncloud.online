@@ -317,31 +317,67 @@ class Installer {
 	 */
 	public static function checkAppsIntegrity($data, $extractDir, $path, $isShipped = false) {
 		$l = \OC::$server->getL10N('lib');
-		//load the info.xml file of the app
-		if (!\is_file($extractDir.'/appinfo/info.xml')) {
-			//try to find it in a subdir
-			$dh=\opendir($extractDir);
-			if (\is_resource($dh)) {
-				while (($folder = \readdir($dh)) !== false) {
-					if ($folder[0]!='.' and \is_dir($extractDir.'/'.$folder)) {
-						if (\is_file($extractDir.'/'.$folder.'/appinfo/info.xml')) {
-							$extractDir.='/'.$folder;
-						}
-					}
-				}
-			}
-		}
-		if (!\is_file($extractDir.'/appinfo/info.xml')) {
-			OC_Helper::rmdirr($extractDir);
-			if ($data['source'] === 'http') {
+		$archiveRoot = $extractDir;
+		// Verwirft das entpackte Archiv und ein heruntergeladenes Paket, bevor die
+		// Ausnahme fliegt - sonst bleiben bei jeder Ablehnung Reste im Temp-Ordner.
+		$reject = function ($message) use ($archiveRoot, $data, $path) {
+			OC_Helper::rmdirr($archiveRoot);
+			if (isset($data['source']) && $data['source'] === 'http' && \is_string($path) && \is_file($path)) {
 				\unlink($path);
 			}
-			throw new \Exception($l->t("App does not provide an info.xml file"));
+			throw new \Exception($message);
+		};
+
+		// Das Archiv muss genau einen App-Ordner enthalten. Installiert und
+		// aktualisiert wird später "<Archiv>/<id aus info.xml>"; geprüft (Signatur,
+		// Kompatibilität, shipped) wird aber der Ordner, in dem die info.xml liegt.
+		// Liegt die info.xml im Wurzelverzeichnis, gibt es mehrere App-Ordner oder
+		// heißt der Ordner anders als die id, wäre das, was geprüft wurde, nicht
+		// das, was kopiert wird.
+		if (\is_file($archiveRoot . '/appinfo/info.xml')) {
+			$reject($l->t('App package must contain the app in a single folder named after its app id'));
 		}
+		$appFolders = [];
+		$dh = \opendir($archiveRoot);
+		if (\is_resource($dh)) {
+			while (($folder = \readdir($dh)) !== false) {
+				if ($folder !== '' && $folder[0] !== '.'
+					&& \is_dir($archiveRoot . '/' . $folder)
+					&& \is_file($archiveRoot . '/' . $folder . '/appinfo/info.xml')
+				) {
+					$appFolders[] = $folder;
+				}
+			}
+			\closedir($dh);
+		}
+		if (\count($appFolders) === 0) {
+			$reject($l->t("App does not provide an info.xml file"));
+		}
+		if (\count($appFolders) > 1) {
+			$reject($l->t('App package must contain the app in a single folder named after its app id'));
+		}
+		$extractDir = $archiveRoot . '/' . $appFolders[0];
 
 		$info = OC_App::getAppInfo($extractDir.'/appinfo/info.xml', true);
 		if (!\is_array($info)) {
-			throw new \Exception($l->t('App cannot be installed because appinfo file cannot be read.'));
+			$reject($l->t('App cannot be installed because appinfo file cannot be read.'));
+		}
+
+		// Die id landet in Pfaden (Installationsordner, rmdirr beim Aktualisieren)
+		// und als Schlüssel in der Datenbank. Nur die kanonische Form ist erlaubt,
+		// cleanAppId() muss ein No-op sein (sonst würde aus "co..re" still "core"),
+		// und "core" selbst ist keine installierbare App.
+		$appId = $info['id'] ?? null;
+		if (!\is_string($appId)
+			|| !OC_App::isCanonicalAppId($appId)
+			|| OC_App::cleanAppId($appId) !== $appId
+			|| $appId[0] === '.'
+			|| OC_App::isCoreApp($appId)
+		) {
+			$reject($l->t('App cannot be installed because its app id is not valid'));
+		}
+		if ($appFolders[0] !== $appId) {
+			$reject($l->t('App package must contain the app in a single folder named after its app id'));
 		}
 
 		// We can't trust the parsed info.xml file as it may have been tampered
@@ -355,33 +391,27 @@ class Installer {
 					$extractDir
 				);
 			if ($integrityResult !== []) {
-				$e = new \Exception(
-					$l->t(
-						'Signature could not get checked. Please contact the app developer and check your admin screen.'
-					)
-				);
-				throw $e;
+				$reject($l->t(
+					'Signature could not get checked. Please contact the app developer and check your admin screen.'
+				));
 			}
 		}
 
 		// check if the app is compatible with this version of ownCloud
 		if (!OC_App::isAppCompatible(\OCP\Util::getVersion(), $info)) {
-			OC_Helper::rmdirr($extractDir);
-			throw new \Exception($l->t("App can't be installed because it is not compatible with this version of owncloud.online"));
+			$reject($l->t("App can't be installed because it is not compatible with this version of owncloud.online"));
 		}
 
 		// check if shipped tag is set which is only allowed for apps that are shipped with ownCloud
 		if (!$isShipped && isset($info['shipped']) && ($info['shipped']=='true')) {
-			OC_Helper::rmdirr($extractDir);
-			throw new \Exception($l->t("App can't be installed because it contains the <shipped>true</shipped> tag which is not allowed for non shipped apps"));
+			$reject($l->t("App can't be installed because it contains the <shipped>true</shipped> tag which is not allowed for non shipped apps"));
 		}
 
 		// check if the ocs version is the same as the version in info.xml/version
 		$version = \trim($info['version']);
 
 		if (isset($data['appdata']['version']) && $version<>\trim($data['appdata']['version'])) {
-			OC_Helper::rmdirr($extractDir);
-			throw new \Exception($l->t("App can't be installed because the version in info.xml is not the same as the version reported from the app store"));
+			$reject($l->t("App can't be installed because the version in info.xml is not the same as the version reported from the app store"));
 		}
 
 		return $info;

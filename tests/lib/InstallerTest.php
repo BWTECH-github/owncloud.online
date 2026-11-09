@@ -155,4 +155,61 @@ class InstallerTest extends TestCase {
 		\OC::$APPSROOTS = $oldAppRoots;
 		\OC::$server->getAppManager()->clearAppsCache();
 	}
+
+	/**
+	 * Legt ein entpacktes Archiv an: je Eintrag ein Ordner (relativ zur Wurzel,
+	 * '' für die Wurzel selbst) mit appinfo/info.xml und der angegebenen id.
+	 *
+	 * @param array $folders Ordner => id
+	 * @return string Wurzel des entpackten Archivs
+	 */
+	private function createExtractedPackage(array $folders) {
+		$root = \OC::$server->getTempManager()->getTemporaryFolder();
+		foreach ($folders as $folder => $id) {
+			$dir = $folder === '' ? $root : "$root/$folder";
+			@\mkdir("$dir/appinfo", 0777, true);
+			\file_put_contents(
+				"$dir/appinfo/info.xml",
+				"<?xml version=\"1.0\"?>\n<info><id>$id</id><name>Test app</name>"
+				. "<licence>AGPL</licence><author></author><version>0.9</version></info>"
+			);
+		}
+		return $root;
+	}
+
+	public function testCheckAppsIntegrityAcceptsSingleFolderNamedAfterId() {
+		$root = $this->createExtractedPackage(['testapp' => 'testapp']);
+		$info = Installer::checkAppsIntegrity(['source' => 'path'], $root, $root . '.zip');
+		$this->assertSame('testapp', $info['id']);
+		\OC_Helper::rmdirr($root);
+	}
+
+	public function providesInvalidPackages() {
+		return [
+			'info.xml in der Wurzel' => [['' => 'testapp']],
+			'zwei App-Ordner' => [['testapp' => 'testapp', 'otherapp' => 'otherapp']],
+			'Ordner heißt anders als die id' => [['otherapp' => 'testapp']],
+			'id core' => [['core' => 'core']],
+			'id mit Punktfolge' => [['co..re' => 'co..re']],
+			'id mit Leerzeichen' => [['test app' => 'test app']],
+			'id zu lang' => [[\str_repeat('a', 33) => \str_repeat('a', 33)]],
+			'leere id' => [['testapp' => '']],
+		];
+	}
+
+	/**
+	 * @dataProvider providesInvalidPackages
+	 */
+	public function testCheckAppsIntegrityRejectsInvalidPackage(array $folders) {
+		$root = $this->createExtractedPackage($folders);
+		$rejected = false;
+		try {
+			Installer::checkAppsIntegrity(['source' => 'path'], $root, $root . '.zip');
+		} catch (\Exception $e) {
+			$rejected = true;
+		}
+		$this->assertTrue($rejected, 'Package was accepted');
+		// Bei einer Ablehnung wird das ganze entpackte Archiv entfernt.
+		$this->assertDirectoryDoesNotExist($root);
+	}
 }
