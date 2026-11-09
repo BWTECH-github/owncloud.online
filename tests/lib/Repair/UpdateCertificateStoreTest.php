@@ -30,6 +30,8 @@ use Test\TestCase;
  * @see \OC\Repair\UpdateCertificateStore
  */
 class UpdateCertificateStoreTest extends TestCase {
+	use \Test\Traits\UserTrait;
+
 	/** @var View */
 	private $view;
 	/** @var string */
@@ -93,6 +95,33 @@ class UpdateCertificateStoreTest extends TestCase {
 			\file_get_contents(\OC::$SERVERROOT . '/resources/config/ca-bundle.crt'),
 			$bundle
 		);
+	}
+
+	public function testRunRegeneratesExistingUserBundlesOnly() {
+		// Ein Konto mit veraltetem Bündel, dessen mtime jünger ist als
+		// resources/config/ca-bundle.crt: beim Zugriff würde es nie neu gebaut
+		$withBundle = self::getUniqueID('cert-user-', 10);
+		$withoutBundle = self::getUniqueID('cert-user-', 10);
+		$this->createUser($withBundle);
+		$this->createUser($withoutBundle);
+		$userBundle = "/$withBundle/files_external/rootcerts.crt";
+		$this->view->mkdir("/$withBundle");
+		$this->view->mkdir("/$withBundle/files_external");
+		$this->view->file_put_contents($userBundle, 'stale');
+		$this->view->touch($userBundle, \time() + 10000);
+		$this->view->mkdir("/$withoutBundle");
+
+		$repair = new UpdateCertificateStore(\OC::$server, \OC::$server->getConfig());
+		$repair->run($this->createMock(IOutput::class));
+
+		$bundle = $this->view->file_get_contents($userBundle);
+		$this->assertStringNotContainsString('stale', $bundle);
+		$this->assertStringContainsString(
+			\file_get_contents(\OC::$SERVERROOT . '/resources/config/ca-bundle.crt'),
+			$bundle
+		);
+		// Konten ohne eigenes Bündel bekommen beim Upgrade keines
+		$this->assertFalse($this->view->file_exists("/$withoutBundle/files_external/rootcerts.crt"));
 	}
 
 	public function testRunRemovesPartialSystemBundle() {
