@@ -212,4 +212,31 @@ class InstallerTest extends TestCase {
 		// Bei einer Ablehnung wird das ganze entpackte Archiv entfernt.
 		$this->assertDirectoryDoesNotExist($root);
 	}
+
+	public function testCheckAppsIntegrityRemovesDownloadedPackageOnReject() {
+		$root = $this->createExtractedPackage(['otherapp' => 'testapp']);
+		$download = \OC::$server->getTempManager()->getTemporaryFile('.tar.gz');
+		$rejected = false;
+		try {
+			Installer::checkAppsIntegrity(['source' => 'http'], $root, $download);
+		} catch (\Exception $e) {
+			$rejected = true;
+		}
+		$this->assertTrue($rejected, 'Package was accepted');
+		$this->assertDirectoryDoesNotExist($root);
+		// Ein heruntergeladenes Paket wird bei einer Ablehnung ebenfalls gelöscht.
+		$this->assertFileDoesNotExist($download);
+	}
+
+	public function testCheckAppsIntegrityKeepsLocalPackageOnReject() {
+		$root = $this->createExtractedPackage(['otherapp' => 'testapp']);
+		$local = \OC::$server->getTempManager()->getTemporaryFile('.tar.gz');
+		try {
+			Installer::checkAppsIntegrity(['source' => 'path'], $root, $local);
+		} catch (\Exception $e) {
+		}
+		// Ein lokal angegebenes Paket gehört dem Aufrufer und bleibt liegen.
+		$this->assertFileExists($local);
+		\unlink($local);
+	}
 }

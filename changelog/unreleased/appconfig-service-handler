@@ -11,3 +11,6 @@ noch eine PHP-Datei, die tatsächlich im Ordner der App liegt.
 Hinweis: Die Endpunkte liefern Dienst-Schlüssel von core auch beim Lesen nicht
 mehr aus; ein Wert lässt sich mit `occ config:app:get` lesen. Ein nicht
 registrierter Dienst unter public.php antwortet jetzt mit 404 statt 500.
+Lehnt remote.php eine Anfrage ab (Pfad nicht erlaubt, Dienst nicht erlaubt,
+App nicht installiert), antwortet es jetzt ausdrücklich mit 503; vorher kam
+ohne WebDAV eine ungültige Statuszeile „HTTP/1.1 0“.
