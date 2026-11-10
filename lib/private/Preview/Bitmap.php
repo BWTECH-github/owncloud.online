@@ -24,6 +24,7 @@
  *
  * Modified by BW-Tech GmbH on 2026-03-16.
  * Changes:
+ *   - log a rejected bitmap preview at debug level instead of error
  *   - release the file handle when a bitmap preview cannot be decoded (#41835)
  *   - PHP 8.4 compatibility and owncloud.online design integration
  *   - php8.3 (#41449)
@@ -73,7 +74,12 @@ abstract class Bitmap implements IProvider2 {
 			// escapes the handler below, it would turn a missing preview into a 500.
 			$bp = $this->getResizedPreview($stream, $maxX, $maxY, (string)$file->getMimeType());
 		} catch (\Exception $e) {
-			Util::writeLog('core', 'ImageMagick says: ' . $e->getmessage(), Util::ERROR);
+			// Bewusst nur DEBUG: Jede hochgeladene Datei, deren Endung nicht zum Inhalt
+			// passt (etwa ein PNG namens bild.tiff), landet hier, weil der gepinnte Coder
+			// den Inhalt ablehnt. Das ist erwartetes Verhalten und von jedem Nutzer per
+			// Upload auslösbar – auf ERROR würde es das Log fluten und echte Fehler
+			// verdecken. Ergebnis ist schlicht „keine Vorschau“.
+			Util::writeLog('core', 'ImageMagick says: ' . $e->getMessage(), Util::DEBUG);
 			return false;
 		} finally {
 			// also on the failure path: any content ImageMagick has no coder for lands
