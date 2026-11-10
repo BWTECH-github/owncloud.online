@@ -128,7 +128,7 @@ before you unpack it instead:
   it with the GitHub command line tool `gh`:
 
     ```bash
-    gh attestation verify owncloud-online-11.0.26.tar.gz \
+    gh attestation verify owncloud-online-11.0.27.tar.gz \
       --repo BWTECH-github/owncloud.online
     ```
 

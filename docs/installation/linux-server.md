@@ -335,15 +335,15 @@ die Datei unverändert angekommen ist:
 
 ```bash
 cd /tmp
-curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.26/owncloud-online-11.0.26.tar.gz
-curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.26/SHA256SUMS.txt
+curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.27/owncloud-online-11.0.27.tar.gz
+curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.27/SHA256SUMS.txt
 sha256sum --ignore-missing -c SHA256SUMS.txt
 ```
 
-Die letzte Zeile lautet `owncloud-online-11.0.26.tar.gz: OK`.
+Die letzte Zeile lautet `owncloud-online-11.0.27.tar.gz: OK`.
 
 Steht unter <https://github.com/BWTECH-github/owncloud.online/releases> eine
-neuere Version, ersetzen Sie `11.0.26` in diesem und im nächsten Schritt
+neuere Version, ersetzen Sie `11.0.27` in diesem und im nächsten Schritt
 überall durch die neue Nummer.
 
 ??? note "Hintergrund: Prüfsumme"
@@ -356,7 +356,7 @@ neuere Version, ersetzen Sie `11.0.26` in diesem und im nächsten Schritt
     | Was Sie sehen | Ursache | Lösung |
     | --- | --- | --- |
     | `curl: (22) The requested URL returned error: 404` | Versionsnummer falsch geschrieben | Nummer mit der Release-Seite vergleichen |
-    | `owncloud-online-11.0.26.tar.gz: FAILED` | Datei unvollständig oder verändert | Datei nicht verwenden, mit `rm /tmp/owncloud-online-11.0.26.tar.gz` löschen und neu herunterladen |
+    | `owncloud-online-11.0.27.tar.gz: FAILED` | Datei unvollständig oder verändert | Datei nicht verwenden, mit `rm /tmp/owncloud-online-11.0.27.tar.gz` löschen und neu herunterladen |
 
 ## 6. Auspacken und Rechte setzen {#auspacken}
 
@@ -366,7 +366,7 @@ der Webserver es nie ausliefert. Beide gehören dem Benutzer `www-data`, unter
 dem Webserver und PHP laufen:
 
 ```bash
-sudo tar -xzf /tmp/owncloud-online-11.0.26.tar.gz -C /var/www
+sudo tar -xzf /tmp/owncloud-online-11.0.27.tar.gz -C /var/www
 sudo mv /var/www/owncloud /var/www/owncloud.online
 sudo mkdir -p /var/oco-data
 sudo chown -R www-data:www-data /var/www/owncloud.online /var/oco-data
@@ -743,7 +743,7 @@ sudo -u www-data php8.4 occ status
 sudo -u www-data php8.4 occ check
 ```
 
-`occ status` zeigt `installed: true` und `versionstring: 11.0.26`. `occ check`
+`occ status` zeigt `installed: true` und `versionstring: 11.0.27`. `occ check`
 gibt nichts aus, wenn alle Voraussetzungen erfüllt sind.
 
 ??? warning "Wenn es nicht klappt"

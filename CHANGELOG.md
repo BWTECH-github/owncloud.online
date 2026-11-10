@@ -1,5 +1,6 @@
 # Table of Contents
 
+* [Changelog for owncloud.online 11.0.27](#changelog-for-owncloudonline-11027-2026-11-10)
 * [Changelog for owncloud.online 11.0.26](#changelog-for-owncloudonline-11026-2026-11-05)
 * [Changelog for owncloud.online 11.0.25](#changelog-for-owncloudonline-11025-2026-10-28)
 * [Changelog for owncloud.online 11.0.24](#changelog-for-owncloudonline-11024-2026-10-21)
@@ -43,6 +44,304 @@
 * [Changelog for 10.4.1](#changelog-for-owncloud-core-1041-2020-03-30)
 * [Changelog for 10.4.0](#changelog-for-owncloud-core-1040-2020-02-10)
 * [Changelog for 10.3.2](#changelog-for-owncloud-core-1032-2019-12-04)
+# Changelog for owncloud.online [11.0.27] (2026-11-10)
+
+The following sections list the changes in owncloud.online 11.0.27 relevant to
+admins and users.
+
+[11.0.27]: https://github.com/BWTECH-github/owncloud.online
+
+## Summary
+
+* Security - Vorschaubilder werden nur noch im erwarteten Format erzeugt: [#55112f1](https://github.com/BWTECH-github/owncloud.online/commit/55112f1)
+* Security - Dienst-Schlüssel der App core sind über die App-Einstellungen gesperrt: [#ec04dc6](https://github.com/BWTECH-github/owncloud.online/commit/ec04dc6)
+* Security - App-Pakete müssen genau einen Ordner mit der App-ID enthalten: [#348c005](https://github.com/BWTECH-github/owncloud.online/commit/348c005)
+* Security - CA-Bündel auf den Stand vom 20.10.2026 gebracht: [#d4c3a54](https://github.com/BWTECH-github/owncloud.online/commit/d4c3a54)
+* Security - Impressum- und Datenschutz-Adresse nur als http/https: [#2bed293](https://github.com/BWTECH-github/owncloud.online/commit/2bed293)
+* Security - rhukster/dom-sanitizer auf 1.0.20 aktualisiert: [#83b167d](https://github.com/BWTECH-github/owncloud.online/commit/83b167d)
+* Security - symfony/mime und symfony/routing aktualisiert: [#b916560](https://github.com/BWTECH-github/owncloud.online/commit/b916560)
+* Security - CVE-2019-11358 und CVE-2015-9251 im mitgelieferten jQuery geschlossen: [#2749c96](https://github.com/BWTECH-github/owncloud.online/commit/2749c96)
+* Security - Rücksetz-Token und OC-Signature im Protokoll maskiert: [#099bf2b](https://github.com/BWTECH-github/owncloud.online/commit/099bf2b)
+* Bugfix - decrypt-all entschlüsselt auch Versionen und Papierkorb: [#496a93e](https://github.com/BWTECH-github/owncloud.online/commit/496a93e)
+* Bugfix - Auftragsstatus asynchroner MOVE-Anfragen wird aufgeräumt: [#fe10991](https://github.com/BWTECH-github/owncloud.online/commit/fe10991)
+* Bugfix - Teilen-Dialog zeigt föderierte Treffer auch neben lokalen: [#2dbe604](https://github.com/BWTECH-github/owncloud.online/commit/2dbe604)
+* Bugfix - Föderiertes Adressbuch bleibt beim vertrauenswürdigen Server: [#2db8fde](https://github.com/BWTECH-github/owncloud.online/commit/2db8fde)
+* Bugfix - Zertifikatsbündel werden beim Upgrade neu gebaut: [#f34360b](https://github.com/BWTECH-github/owncloud.online/commit/f34360b)
+* Bugfix - Nutzerbündel folgen Änderungen am System-Zertifikatsbündel: [#c1f6460](https://github.com/BWTECH-github/owncloud.online/commit/c1f6460)
+* Bugfix - Vorschau bleibt bei nicht lesbaren Dateien aus, statt einen Fehler zu liefern: [#d1ec533](https://github.com/BWTECH-github/owncloud.online/commit/d1ec533)
+* Bugfix - Papierkorb meldet den ursprünglichen Ort ohne führenden Schrägstrich: [#a7c6419](https://github.com/BWTECH-github/owncloud.online/commit/a7c6419)
+* Bugfix - Toten Fremdlink aus den Einstellungen zur föderierten Cloud-ID entfernt: [#405373d](https://github.com/BWTECH-github/owncloud.online/commit/405373d)
+* Bugfix - VERSION-Datei von google/auth bleibt im Paket: [#c212342](https://github.com/BWTECH-github/owncloud.online/commit/c212342)
+* Bugfix - occ user:home:list-dirs und user:home:list-users --all brechen nicht mehr ab: [#14a21ed](https://github.com/BWTECH-github/owncloud.online/commit/14a21ed)
+* Bugfix - Letzte PHP-8-Meldungen in Kommentaren, Datenbank-Migration, Freigaben und Google Drive beseitigt: [#ed33c54](https://github.com/BWTECH-github/owncloud.online/commit/ed33c54)
+* Change - Dokumentation auf Deutsch und Englisch aktualisiert: [#48d37b0](https://github.com/BWTECH-github/owncloud.online/commit/48d37b0)
+
+## Details
+
+* Security - Vorschaubilder werden nur noch im erwarteten Format erzeugt
+
+   Die Vorschauen über ImageMagick (PDF, TIFF, PSD, SGI, HEIC, Schriften u. a.)
+   lesen eine Datei nur noch mit dem Decoder, der zu ihrem Typ gehört, und geben
+   Text-, SVG-, XML- und MVG-Inhalte nicht an ImageMagick weiter. Dateien, deren
+   Endung nicht zum Inhalt passt, bekommen deshalb keine Vorschau mehr.
+
+   PDF-, PostScript- und Illustrator-Vorschauen wählen den Decoder am Dateianfang
+   (PDF, PS, bei EPS mit DOS-Kopf EPS). Eine Sperre in der ImageMagick-Policy
+   bleibt damit wirksam. Sperrt die Policy einen Decoder oder scheitert
+   Ghostscript, steht das als Fehler im Log; Dateien mit unpassendem Inhalt nur
+   auf Stufe Debug. Vorschauen, die vor dem Update erzeugt wurden, bleiben im
+   Vorschau-Cache.
+
+* Security - Dienst-Schlüssel der App core sind über die App-Einstellungen gesperrt
+
+   Die Schlüssel public_* und remote_* der App core, über die public.php und
+   remote.php ihre Dienste finden, lassen sich über die AppConfig-Endpunkte weder
+   lesen noch ändern oder löschen, auch nicht in abweichender Schreibweise. App-IDs
+   außerhalb von [a-zA-Z0-9_.-] werden beim Schreiben abgelehnt. Eingebunden wird
+   nur noch eine PHP-Datei, die im Ordner der jeweiligen App liegt.
+
+   Hinweis: Den Wert eines Dienst-Schlüssels zeigt `occ config:app:get core
+   <schlüssel>`. Ein nicht registrierter Dienst unter public.php antwortet mit 404
+   statt 500. Lehnt remote.php eine Anfrage ab, antwortet es mit 503.
+
+* Security - App-Pakete müssen genau einen Ordner mit der App-ID enthalten
+
+   Ein App-Paket wird nur noch installiert oder aktualisiert, wenn es genau einen
+   App-Ordner enthält, der wie die App-ID aus seiner info.xml heißt. Pakete mit
+   einer info.xml im Wurzelverzeichnis, mit mehreren App-Ordnern oder mit einer
+   ungültigen App-ID werden mit einer Fehlermeldung abgelehnt, und das entpackte
+   Paket wird wieder entfernt. Die Pakete im Marktplatz erfüllen diese Regel;
+   selbst gebaute Pakete müssen ihr ebenfalls folgen.
+
+* Security - CA-Bündel auf den Stand vom 20.10.2026 gebracht
+
+   Die mitgelieferten Wurzelzertifikate stammen jetzt aus dem Auszug des
+   Mozilla-Wurzelspeichers vom 20.10.2026 (bisher 21.10.2025). Damit entfällt
+   unter anderem emSign ECC Root CA - G3, unter der eMudhra-Zwischenzertifikate
+   hängen, deren private Schlüssel kompromittiert wurden.
+
+   Entfernt werden 35 Wurzeln, neu hinzu kommen 7, das Bündel enthält jetzt 118
+   statt 146 Wurzeln. Entfernt sind unter anderem DigiCert Global Root CA, DigiCert
+   Assured ID Root CA, DigiCert High Assurance EV Root CA, die Entrust-Wurzeln,
+   COMODO Certification Authority, QuoVadis Root CA 2 und 3, emSign Root CA - C1
+   und emSign ECC Root CA - C3. Ausgehende HTTPS-Verbindungen zu Gegenstellen,
+   deren Zertifikatskette nur an einer entfernten Wurzel endet, scheitern ab jetzt
+   an der Prüfung. Wer einer solchen Wurzel weiter vertrauen muss, importiert sie
+   mit `occ security:certificates:import`.
+
+   Übernommen aus dem Upstream-Projekt (PR 41908).
+
+* Security - Impressum- und Datenschutz-Adresse nur als http/https
+
+   Die Adressen für Impressum und Datenschutz werden nur noch gespeichert, wenn sie
+   mit http:// oder https:// beginnen und einen Host haben. In der Fußzeile der
+   Anmeldeseite und öffentlicher Freigaben sowie im persönlichen Profil erscheinen
+   sie nur noch geprüft.
+
+   Hinweis: Früher gespeicherte Adressen ohne http:// oder https:// (etwa
+   /impressum) werden nicht mehr angezeigt. Bitte als vollständige Adresse neu
+   speichern.
+
+* Security - rhukster/dom-sanitizer auf 1.0.20 aktualisiert
+
+   Die Bibliothek, die SVG-Dateien vor dem Erzeugen der Vorschau bereinigt, steht
+   jetzt auf 1.0.20 statt 1.0.14 und filtert CSS-Verweise (url()) gründlicher.
+
+* Security - symfony/mime und symfony/routing aktualisiert
+
+   symfony/mime 7.4.22 schließt CVE-2026-45070 (Kopfzeilen-Einschleusung in Mails),
+   symfony/routing 7.4.23 schließt CVE-2026-118516 (Host-Platzhalter im Routing).
+
+* Security - CVE-2019-11358 und CVE-2015-9251 im mitgelieferten jQuery geschlossen
+
+   Das mitgelieferte jQuery 2.1.4 enthält jetzt die Korrekturen aus späteren
+   jQuery-Versionen: `$.extend(true, …)` übernimmt keinen Schlüssel `__proto__`
+   mehr (wie jQuery 3.4.0), und Antworten fremder Herkunft ohne ausdrücklichen
+   `dataType` werden nicht mehr als Skript ausgeführt (wie jQuery 3.0.0).
+   Skript-Antworten derselben Herkunft, `dataType: "script"` und JSONP arbeiten
+   unverändert.
+
+   Die Versionsnummer bleibt 2.1.4, Scanner melden die CVEs deshalb weiter.
+
+* Security - Rücksetz-Token und OC-Signature im Protokoll maskiert
+
+   Das Protokoll ersetzt jetzt auch das Token im Pfad der Passwort-Rücksetzung
+   (/lostpassword/reset/form/… und /lostpassword/set/…) sowie die Signatur
+   signierter Adressen (OC-Signature) durch ***.
+
+* Bugfix - decrypt-all entschlüsselt auch Versionen und Papierkorb
+
+   "occ encryption:decrypt-all" ging bisher nur durch den Ordner "files" jedes
+   Nutzers. Ältere Versionen (files_versions) und Papierkorbeinträge samt deren
+   Versionen (files_trashbin) blieben verschlüsselt, obwohl der Befehl Erfolg
+   meldete. "occ encryption:disable" verweigerte danach das Abschalten; wurde die
+   Verschlüsselung trotzdem von Hand abgeschaltet, ließen sich diese Versionen
+   und Papierkorbeinträge nicht mehr lesen oder wiederherstellen.
+
+   decrypt-all entschlüsselt jetzt auch "files_versions" und "files_trashbin".
+   Versionen werden dabei entschlüsselt gelesen und unverschlüsselt neu
+   geschrieben: ein bloßes Kopieren innerhalb von files_versions übernimmt den
+   Inhalt 1:1, er bliebe verschlüsselt, während der Dateicache schon
+   "unverschlüsselt" meldet.
+   "occ encryption:disable" nennt bei Resten die noch als verschlüsselt
+   markierten Pfade (höchstens 20, dazu die Restanzahl) und wie sie zu
+   entschlüsseln sind.
+
+   Wer decrypt-all schon mit einer älteren Version ausgeführt hat, startet es
+   nach dem Update erneut; dabei werden die verbliebenen Versionen und
+   Papierkorbeinträge entschlüsselt. Mit Nutzerschlüsseln meldet decrypt-all nach
+   einem vollständigen Lauf nur "Nothing to do"; dann vorher
+   "occ encryption:enable" ausführen.
+
+   decrypt-all markiert eine Datei nur noch als entschlüsselt, wenn Kopieren und
+   Umbenennen wirklich geklappt haben. Eine halbe Kopie wird bei jedem Fehler
+   entfernt, und eine einzelne defekte Datei bricht den Lauf nicht mehr ab.
+   encryption:disable setzt das fälschlich gesetzte Kennzeichen auf
+   Schlüsseldateien zurück. Daran scheiterte das Abschalten bisher, wenn ein
+   Empfänger eine Datei in einer empfangenen Freigabe gelöscht hatte.
+
+* Bugfix - Auftragsstatus asynchroner MOVE-Anfragen wird aufgeräumt
+
+   Jede MOVE-Anfrage mit OC-LazyOps legte eine Zeile in oc_dav_job_status an, die
+   nie gelöscht wurde; die Tabelle wuchs dadurch stetig. Für eine nicht vorhandene
+   Quelle wird jetzt kein Auftrag mehr angelegt. Die neue Spalte updated_at
+   (dav 0.9.0, Migration beim Update) hält die letzte Änderung fest, der
+   Hintergrundjob CleanJobStatus löscht stündlich alles, was seit einem Tag
+   unverändert ist, und beim Löschen eines Kontos gehen seine Aufträge mit.
+
+* Bugfix - Teilen-Dialog zeigt föderierte Treffer auch neben lokalen
+
+   Der Teilen-Dialog hat föderierte Empfänger nur angezeigt, wenn die Suche
+   keinen lokalen Benutzer und keine lokale Gruppe fand. Ein einziger lokaler
+   Treffer verbarg damit alle föderierten, auch eine exakt eingegebene Cloud-ID.
+   Jetzt erscheinen föderierte Treffer immer. Die vom Server geratene Cloud-ID
+   für einen Suchbegriff mit „@“ entfällt stattdessen, sobald der Begriff genau
+   einem lokalen Benutzer oder einer lokalen Gruppe entspricht.
+
+   Lokale Benutzer und Gruppen stehen in der Liste immer vor den föderierten
+   Treffern, beide Teile für sich sortiert. Der erste Eintrag ist vorausgewählt;
+   die Eingabetaste wählt bei einer halb getippten Mailadresse damit weiterhin
+   das lokale Konto und nicht eine geratene, unvollständige Cloud-ID.
+
+   Upstream: 80580664c2d
+
+* Bugfix - Föderiertes Adressbuch bleibt beim vertrauenswürdigen Server
+
+   Der Abgleich des föderierten System-Adressbuchs hat Verweise eines
+   vertrauenswürdigen Servers abgerufen, ohne zu prüfen, ob sie zu diesem Server
+   gehören, und ist Umleitungen auf fremde Server gefolgt. Anfragen, die den
+   vertrauenswürdigen Server verlassen würden, werden jetzt abgelehnt; fremde
+   Verweise werden übersprungen und protokolliert.
+
+   Upstream: 794511f74b3
+
+* Bugfix - Zertifikatsbündel werden beim Upgrade neu gebaut
+
+   Ausgehende HTTPS-Anfragen prüfen gegen ein zwischengespeichertes Bündel im
+   Datenverzeichnis (files_external/rootcerts.crt). Neu gebaut wurde es bisher nur,
+   wenn resources/config/ca-bundle.crt eine jüngere Änderungszeit hatte. Wer beim
+   Ausrollen Zeitstempel erhält oder vereinheitlicht, vertraute deshalb weiter
+   Wurzeln, die ein Update entfernt hatte.
+
+   Der Reparaturschritt UpdateCertificateStore ist jetzt registriert und baut bei
+   `occ upgrade` und `occ maintenance:repair` zuerst das Systembündel und danach die
+   vorhandenen Nutzerbündel neu. Ein Fehler bricht das Upgrade nicht ab, sondern
+   erscheint als Warnung und im Log; ein Bündel, das sich nicht neu bauen ließ,
+   wird entfernt und beim nächsten Gebrauch neu erzeugt.
+
+   Bei Instanzen mit sehr vielen Konten verlängert der Schritt das Upgrade, weil er
+   für jedes Konto prüft, ob ein eigenes Bündel existiert.
+
+   Übernommen aus dem Upstream-Projekt (PR 41910).
+
+* Bugfix - Nutzerbündel folgen Änderungen am System-Zertifikatsbündel
+
+   Das Zertifikatsbündel eines Kontos enthält das Systembündel. Die Prüfung, ob es
+   veraltet ist, schrieb die Änderungszeit des Systembündels wegen eines
+   Tippfehlers in eine Variable, die nie gelesen wurde. Importierte oder entfernte
+   eine Administratorin ein System-Zertifikat, nutzten Konten mit eigenen
+   hochgeladenen Zertifikaten weiter das alte Bündel. Jetzt wird ein Nutzerbündel
+   neu gebaut, sobald das Systembündel jünger ist.
+
+   Übernommen aus dem Upstream-Projekt (PR 41909).
+
+* Bugfix - Vorschau bleibt bei nicht lesbaren Dateien aus, statt einen Fehler zu liefern
+
+   Ließ sich eine Datei für die Vorschau nicht öffnen, weil der Pfad gesperrt war oder
+   kein Speicher dazu gehörte, brachen Bitmap-Vorschauen mit einem Serverfehler ab.
+   Warf beim SVG-Vorschaubild das Lesen selbst einen Fehler, etwa bei fehlendem
+   Verschlüsselungsschlüssel, blieben Dateihandle und Dateisperre offen.
+
+   In beiden Fällen gibt es jetzt einfach keine Vorschau, und die Datei wird wieder
+   freigegeben.
+
+* Bugfix - Papierkorb meldet den ursprünglichen Ort ohne führenden Schrägstrich
+
+   Die WebDAV-Eigenschaft trashbin-original-location enthielt in manchen Fällen
+   einen führenden Schrägstrich, in anderen nicht. Sie wird jetzt immer als
+   relativer Pfad ohne führenden Schrägstrich geliefert. Die Web-Oberfläche war
+   nicht betroffen; Clients, die den Wert auswerten, bekommen nun einen
+   einheitlichen Pfad.
+
+   Upstream: 72b3ad0e2c
+
+* Bugfix - Toten Fremdlink aus den Einstellungen zur föderierten Cloud-ID entfernt
+
+   Unter „Zur Webseite hinzufügen“ und bei den Teilen-Knöpfen in den
+   persönlichen Einstellungen wurde ein Link auf eine externe Seite erzeugt,
+   die es nicht mehr gibt. Verlinkt wird jetzt die eigene Instanz, die
+   föderierte Cloud-ID steht im Text.
+
+   Upstream: 0489d0cb7c
+
+* Bugfix - VERSION-Datei von google/auth bleibt im Paket
+
+   Beim Bau entfernt dg/composer-cleaner aus jedem Paket alles außer den
+   Autoload-Pfaden, composer.json und LICENSE. Bei google/auth traf das auch die
+   Datei VERSION, die die Bibliothek zur Laufzeit liest, um den Kopf
+   x-goog-api-client jeder Google-Anfrage zu bilden. Jeder Zugriff auf einen
+   Google-Drive-Speicher schrieb deshalb einen Fehler „Failed to open stream“ ins
+   Log. Die Datei wird jetzt beim Aufräumen ausgenommen; composer.lock bekommt nur
+   einen neuen content-hash, an den Paketen ändert sich nichts.
+
+   Übernommen aus dem Upstream-Projekt (PR 41918).
+
+* Bugfix - occ user:home:list-dirs und user:home:list-users --all brechen nicht mehr ab
+
+   Beide Befehle übergaben für „alle Konten“ null als Suchmuster an
+   IUserManager::search(). Unter PHP 8 kam das null bei
+   Connection::escapeLikeParameter(string) an und endete in einem TypeError, der
+   den Befehl abbrach. Jetzt übergeben beide die leere Zeichenkette, die alle
+   anderen Aufrufer schon für „alle“ verwenden.
+
+   Übernommen aus dem Upstream-Projekt (PR 41631).
+
+* Bugfix - Letzte PHP-8-Meldungen in Kommentaren, Datenbank-Migration, Freigaben und Google Drive beseitigt
+
+   Vier Stellen schrieben unter PHP 8 unnötige Warnungen und Deprecation-Meldungen
+   ins Log:
+
+   - Ein PROPFIND auf einen Kommentar mit einer unbekannten Eigenschaft las einen
+     nicht vorhandenen Schlüssel. Unbekannte Eigenschaften werden jetzt still
+     übergangen.
+   - Der PostgreSQL-Migrator übergab einen fehlenden Spaltenvorgabewert (null) an
+     trim(). Der Vergleich arbeitet jetzt mit einer ausdrücklichen Umwandlung,
+     Vorgabewerte werden weiter richtig gesetzt.
+   - Beim Wiederherstellen aus dem Papierkorb in einer Freigabe gelangte ein
+     unbekannter Pfad an substr(). Er wird jetzt vorher abgefangen.
+   - Die Google-Drive-Anbindung übergab bei der Änderungsprüfung eines Ordners eine
+     fehlende Änderungszeit als null an strtotime(). Wie schon bei stat() gilt eine
+     fehlende Zeit jetzt als „jetzt“, der Ordner also als geändert.
+
+   Übernommen aus dem Upstream-Projekt (PR 41656 und 41694), für Google Drive
+   in unserer bisherigen Form.
+
+* Change - Dokumentation auf Deutsch und Englisch aktualisiert
+
+   Die Seite zum Desktop-Client beschreibt den Client 11.0.1. Die Galerie-Seite
+   nennt die ImageMagick-Decoder, die PDF-, PostScript- und Illustrator-Vorschauen
+   brauchen.
+
 # Changelog for owncloud.online [11.0.26] (2026-11-05)
 
 The following sections list the changes in owncloud.online 11.0.26 relevant to

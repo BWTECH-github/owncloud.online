@@ -9,7 +9,7 @@ stattdessen ein Katalog im Dateisystem einrichten. Die App bringt außerdem die
 !!! note "Verfügbarkeit"
     Im Kern enthalten. Das Serverarchiv bringt die App mit und schaltet sie bei
     der Installation ein. App-ID `market`, Version 0.10.11 in owncloud.online
-    11.0.26. Der Marketplace führt sie zusätzlich als öffentliche App.
+    11.0.27. Der Marketplace führt sie zusätzlich als öffentliche App.
 
 ## Voraussetzungen
 

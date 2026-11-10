@@ -131,7 +131,7 @@ Release-Paket, bevor Sie es auspacken:
   gebaut wurde. Prüfen lässt sie sich mit der GitHub-Kommandozeile `gh`:
 
     ```bash
-    gh attestation verify owncloud-online-11.0.26.tar.gz \
+    gh attestation verify owncloud-online-11.0.27.tar.gz \
       --repo BWTECH-github/owncloud.online
     ```
 

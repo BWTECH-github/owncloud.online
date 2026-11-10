@@ -94,7 +94,7 @@ leaves the server only when you pass it on.
 - A report from the web interface contains the host name and the display name
   of the logged-in account. On the command line, both are missing.
 - Personal external storage of individual accounts is not part of `mounts`.
-- In owncloud.online 11.0.26, the app is on the list of shipped apps
+- In owncloud.online 11.0.27, the app is on the list of shipped apps
   (`core/shipped.json`). For this reason, `occ market:uninstall configreport`
   refuses to remove it ("Shipped apps cannot be uninstalled"). Disabling works
   as usual with `sudo -u www-data php8.4 occ app:disable configreport`.

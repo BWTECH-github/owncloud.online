@@ -332,15 +332,15 @@ unchanged:
 
 ```bash
 cd /tmp
-curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.26/owncloud-online-11.0.26.tar.gz
-curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.26/SHA256SUMS.txt
+curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.27/owncloud-online-11.0.27.tar.gz
+curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.27/SHA256SUMS.txt
 sha256sum --ignore-missing -c SHA256SUMS.txt
 ```
 
-The last line reads `owncloud-online-11.0.26.tar.gz: OK`.
+The last line reads `owncloud-online-11.0.27.tar.gz: OK`.
 
 If <https://github.com/BWTECH-github/owncloud.online/releases> lists a newer
-version, replace `11.0.26` everywhere in this step and the next one with the
+version, replace `11.0.27` everywhere in this step and the next one with the
 new number.
 
 ??? note "Background: checksum"
@@ -353,7 +353,7 @@ new number.
     | What you see | Cause | Fix |
     | --- | --- | --- |
     | `curl: (22) The requested URL returned error: 404` | version number misspelled | compare the number with the releases page |
-    | `owncloud-online-11.0.26.tar.gz: FAILED` | file incomplete or modified | do not use the file, delete it with `rm /tmp/owncloud-online-11.0.26.tar.gz`, and download it again |
+    | `owncloud-online-11.0.27.tar.gz: FAILED` | file incomplete or modified | do not use the file, delete it with `rm /tmp/owncloud-online-11.0.27.tar.gz`, and download it again |
 
 ## 6. Unpack and set permissions {#auspacken}
 
@@ -363,7 +363,7 @@ serves it. Both belong to the `www-data` user that the web server and PHP run
 as:
 
 ```bash
-sudo tar -xzf /tmp/owncloud-online-11.0.26.tar.gz -C /var/www
+sudo tar -xzf /tmp/owncloud-online-11.0.27.tar.gz -C /var/www
 sudo mv /var/www/owncloud /var/www/owncloud.online
 sudo mkdir -p /var/oco-data
 sudo chown -R www-data:www-data /var/www/owncloud.online /var/oco-data
@@ -731,7 +731,7 @@ sudo -u www-data php8.4 occ status
 sudo -u www-data php8.4 occ check
 ```
 
-`occ status` shows `installed: true` and `versionstring: 11.0.26`. `occ check`
+`occ status` shows `installed: true` and `versionstring: 11.0.27`. `occ check`
 prints nothing if all requirements are met.
 
 ??? warning "If it doesn't work"

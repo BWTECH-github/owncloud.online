@@ -9,7 +9,7 @@ and are **read-only** by default.
 The app is part of the server: it lives in `apps/oco_mcp/` in the
 [server repository](https://github.com/BWTECH-github/owncloud.online) and in
 the release archive, but it is disabled after installation. This page covers
-app version 1.0.3, which ships with owncloud.online 11.0.26.
+app version 1.0.3, which ships with owncloud.online 11.0.27.
 
 ---
 

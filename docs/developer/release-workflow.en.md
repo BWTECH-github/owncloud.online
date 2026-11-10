@@ -6,7 +6,7 @@ Git tag triggers the workflow `.github/workflows/release-owncloud-online.yml`.
 It creates the archives, adds checksums, a software bill of materials (SBOM),
 and a manifest, and publishes everything as a GitHub release. Finished releases
 are at <https://github.com/BWTECH-github/owncloud.online/releases>; the
-current version is 11.0.26.
+current version is 11.0.27.
 
 If you do not build anything and only want to verify a downloaded archive, you
 only need the section [Verifying authenticity](#echtheit-pruefen).
@@ -21,7 +21,7 @@ entered.
 | Field | Meaning |
 | --- | --- |
 | `$OC_Version` | Four-part version number, for example `[11, 0, 25, 0]`. According to the comment in the file, the fourth part is **not** part of the public version number; it triggers database updates between pre-releases and the final release |
-| `$OC_VersionString` | The human-readable version, for example `11.0.26`. The release workflow reads this value when it runs on `main` without a tag and without a version entered |
+| `$OC_VersionString` | The human-readable version, for example `11.0.27`. The release workflow reads this value when it runs on `main` without a tag and without a version entered |
 | `$OC_VersionCanBeUpgradedFrom` | The oldest versions from which an upgrade is allowed |
 | `$OC_Channel` | Release channel, `bwtech` in the repository. The build overwrites it with the value of `RELEASE_CHANNEL` |
 | `$OC_Build` | Empty in the repository. The build writes the timestamp and commit here |
@@ -41,7 +41,7 @@ paragraph, and finally the related links. The types are `Bugfix`, `Change`,
 
 `CHANGELOG.md` summarizes the entries per version. The file starts with a
 table of contents, followed by one section per version, newest first, for
-example "Changelog for owncloud.online [11.0.26] (2026-11-05)" with the parts
+example "Changelog for owncloud.online [11.0.27] (2026-11-10)" with the parts
 *Summary* and *Details*. With each release, the section for the new version is
 added at the top. `changelog/README.md` also describes moving the entries from
 `unreleased/` into a folder named `<version>_<yyyy-mm-dd>`; there are no such
@@ -80,8 +80,8 @@ is built anyway, so check the latest run first.
 The workflow reacts to every tag that starts with `v`:
 
 ```bash
-git tag -a v11.0.26 -m "owncloud.online 11.0.26"
-git push origin v11.0.26
+git tag -a v11.0.27 -m "owncloud.online 11.0.27"
+git push origin v11.0.27
 ```
 
 This starts the build. The workflow takes the version from the tag name
@@ -165,7 +165,7 @@ through OIDC), which the workflow issues for the archives and the SBOM. Verify
 it with the GitHub CLI:
 
 ```bash
-gh attestation verify owncloud-online-11.0.26.tar.gz \
+gh attestation verify owncloud-online-11.0.27.tar.gz \
   --repo BWTECH-github/owncloud.online
 ```
 

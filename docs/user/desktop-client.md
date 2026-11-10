@@ -8,14 +8,14 @@ Faktor dort abgefragt und im Client selbst kein Passwort hinterlegt. Nur auf
 Instanzen ohne OAuth2 und OpenID Connect fragt der Client selbst nach
 Benutzername und Passwort.
 
-Diese Seite beschreibt den Desktop-Client 11.0.1 mit owncloud.online 11.0.26.
+Diese Seite beschreibt den Desktop-Client 11.0.1 mit owncloud.online 11.0.27.
 
 ## Voraussetzungen
 
 | Punkt | Anforderung |
 | --- | --- |
 | Adresse der Instanz | Muss über **https** erreichbar sein. Der Client lehnt `http://` mit „Ungültiges URL-Schema. Nur https wird akzeptiert.“ ab |
-| Serverversion | 10.0.0 oder neuer. 11.0.26 erfüllt das; bei älteren Versionen warnt der Client mit „nicht unterstützte Server Version“ |
+| Serverversion | 10.0.0 oder neuer. 11.0.27 erfüllt das; bei älteren Versionen warnt der Client mit „nicht unterstützte Server Version“ |
 | Anmeldeverfahren | Mit der App `oauth2` oder `openidconnect` läuft die Anmeldung im Browser. Ohne beide Apps fragt der Client nach Benutzername und Passwort |
 | Betriebssystem | Windows 64 Bit, macOS 13 oder neuer auf Apple Silicon, Linux x86_64 |
 

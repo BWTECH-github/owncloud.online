@@ -93,7 +93,7 @@ Save the settings.
 From <https://github.com/BWTECH-github/owncloud.online/releases>, download to
 your own computer:
 
-- `owncloud-online-11.0.26.zip`, about 65 MB, or the newer version offered
+- `owncloud-online-11.0.27.zip`, about 65 MB, or the newer version offered
   there,
 - `SHA256SUMS.txt` with the checksums.
 
@@ -101,13 +101,13 @@ Check that the ZIP file arrived unchanged. On Windows, open PowerShell in your
 download folder and enter:
 
 ```powershell
-(Get-FileHash .\owncloud-online-11.0.26.zip -Algorithm SHA256).Hash -eq ((Select-String 'owncloud-online-11.0.26.zip' .\SHA256SUMS.txt).Line -split '\s+')[0]
+(Get-FileHash .\owncloud-online-11.0.27.zip -Algorithm SHA256).Hash -eq ((Select-String 'owncloud-online-11.0.27.zip' .\SHA256SUMS.txt).Line -split '\s+')[0]
 ```
 
 The answer is `True`. On Linux, the command is
 `sha256sum --ignore-missing -c SHA256SUMS.txt`, and the answer is
-`owncloud-online-11.0.26.zip: OK`. On macOS,
-`shasum -a 256 owncloud-online-11.0.26.zip` shows the checksum. Compare it with
+`owncloud-online-11.0.27.zip: OK`. On macOS,
+`shasum -a 256 owncloud-online-11.0.27.zip` shows the checksum. Compare it with
 the line for the ZIP file in `SHA256SUMS.txt`.
 
 If the answer is `False` or the checksum differs, the file is damaged or has

@@ -9,7 +9,7 @@ Rechten des angemeldeten Kontos, ab Werk nur lesend.
 !!! note "Verfügbarkeit"
     Im Kern enthalten. Der Server bringt die App unter `apps/oco_mcp` mit, ab
     Werk ist sie ausgeschaltet. App-ID `oco_mcp`, Version 1.0.3 in
-    owncloud.online 11.0.26. Im Marketplace steht sie nicht.
+    owncloud.online 11.0.27. Im Marketplace steht sie nicht.
 
 ## Voraussetzungen
 

@@ -60,8 +60,8 @@ describes the update over FTP and the update page in the browser.
 
 ```bash
 cd /tmp
-curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.26/owncloud-online-11.0.26.tar.gz
-curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.26/SHA256SUMS.txt
+curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.27/owncloud-online-11.0.27.tar.gz
+curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.27/SHA256SUMS.txt
 sha256sum --ignore-missing -c SHA256SUMS.txt
 ```
 
@@ -73,7 +73,7 @@ services stay stopped and maintenance mode stays on.
 
 ```bash
 mv /var/www/owncloud.online /var/www/owncloud.online.alt
-tar -xzf /tmp/owncloud-online-11.0.26.tar.gz -C /var/www
+tar -xzf /tmp/owncloud-online-11.0.27.tar.gz -C /var/www
 mv /var/www/owncloud /var/www/owncloud.online
 ```
 

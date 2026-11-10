@@ -9,7 +9,7 @@ dabei genau dessen Berechtigungen und dürfen standardmäßig **nur lesen**.
 Die App gehört zum Server: Sie liegt unter `apps/oco_mcp/` im
 [Server-Repository](https://github.com/BWTECH-github/owncloud.online) und im
 Release-Archiv, ist nach der Installation aber ausgeschaltet. Diese Seite
-beschreibt die App-Version 1.0.3, die mit owncloud.online 11.0.26 ausgeliefert
+beschreibt die App-Version 1.0.3, die mit owncloud.online 11.0.27 ausgeliefert
 wird.
 
 ---

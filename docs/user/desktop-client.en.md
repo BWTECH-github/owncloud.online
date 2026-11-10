@@ -8,14 +8,14 @@ there as well, and the client itself doesn't store a password. Only on
 instances without OAuth2 and OpenID Connect does the client ask for a username
 and password itself.
 
-This page describes desktop client 11.0.1 with owncloud.online 11.0.26.
+This page describes desktop client 11.0.1 with owncloud.online 11.0.27.
 
 ## Requirements
 
 | Item | Requirement |
 | --- | --- |
 | Instance address | Must be reachable over **https**. The client rejects `http://` with "Invalid URL scheme. Only https is accepted." |
-| Server version | 10.0.0 or later. 11.0.26 meets this; with older versions, the client warns "Unsupported Server Version" |
+| Server version | 10.0.0 or later. 11.0.27 meets this; with older versions, the client warns "Unsupported Server Version" |
 | Login method | With the `oauth2` or `openidconnect` app, you log in through the browser. Without either app, the client asks for a username and password |
 | Operating system | 64-bit Windows, macOS 13 or later on Apple silicon, Linux x86_64 |
 

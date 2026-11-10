@@ -96,7 +96,7 @@ The Marketplace delivers some apps only to instances that send an API key.
 Without the key, these apps are missing from the catalog, and the download is
 rejected with HTTP 401. You can request the key from BW-Tech GmbH.
 
-With owncloud.online 11.0.26 this applies to the following apps:
+With owncloud.online 11.0.27 this applies to the following apps:
 
 | App ID | Name in the Market app |
 | --- | --- |
@@ -277,7 +277,7 @@ archive `owncloud-online-<version>.tar.gz` or `.zip` at
 and are not installed one by one, but updated together with the server. Each
 release also includes `SHA256SUMS.txt` to verify the archives,
 `sbom-owncloud-online-<version>.cdx.json`, `release-manifest.json`, and
-`removed-release-files.txt`. This page describes release 11.0.26.
+`removed-release-files.txt`. This page describes release 11.0.27.
 
 ## Enable and disable
 
