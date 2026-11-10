@@ -6,6 +6,10 @@
  *
  * See the COPYING-README file.
  *
+ * Modified by BW-Tech GmbH on 2026-11-10.
+ * Changes:
+ *   - list local sharees before federated ones in the share autocomplete
+ *
  */
 
 (function() {
@@ -318,9 +322,16 @@
 						}
 
 						if (suggestions.length > 0) {
-							suggestions.sort(function (a, b) {
+							var compareLabels = function (a, b) {
 								return OC.Util.naturalSortCompare(a.label, b.label);
-							});
+							};
+							// Lokale Treffer (Nutzer und Gruppen) stehen immer vor den
+							// föderierten. Der erste Eintrag ist vorausgewählt (autoFocus);
+							// stünde eine geratene Cloud-ID wie „anna.schmidt@“ vor dem
+							// lokalen Konto „Schmidt, Anna“, legte Enter eine föderierte
+							// Freigabe an eine unvollständige Adresse an.
+							suggestions = users.concat(groups).sort(compareLabels)
+								.concat(remotes.sort(compareLabels));
 							$('.shareWithField').removeClass('error')
 								.tooltip('hide')
 								.autocomplete("option", "autoFocus", true);

@@ -7,4 +7,9 @@ Jetzt erscheinen föderierte Treffer immer. Die vom Server geratene Cloud-ID
 für einen Suchbegriff mit „@“ entfällt stattdessen, sobald der Begriff genau
 einem lokalen Benutzer oder einer lokalen Gruppe entspricht.
 
+Lokale Benutzer und Gruppen stehen in der Liste immer vor den föderierten
+Treffern, beide Teile für sich sortiert. Der erste Eintrag ist vorausgewählt;
+die Eingabetaste wählt bei einer halb getippten Mailadresse damit weiterhin
+das lokale Konto und nicht eine geratene, unvollständige Cloud-ID.
+
 Upstream: 80580664c2d

@@ -4,6 +4,10 @@
 * @author Vincent Petry
 * @copyright Copyright (c) 2018 Vincent Petry <pvince81@owncloud.com>
 *
+* Modified by BW-Tech GmbH on 2026-11-10.
+* Changes:
+*   - cover the order of local and federated sharees in the autocomplete
+*
 * This library is free software; you can redistribute it and/or
 * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
 * License as published by the Free Software Foundation; either
@@ -415,9 +419,138 @@ describe('OC.Share.ShareDialogView', function() {
 					{'Content-Type': 'application/json'},
 					jsonData
 			);
+			// Der lokale Treffer steht vorn, auch wenn die Beschriftung des
+			// föderierten Treffers davor sortieren würde.
 			expect(response.getCall(0).args[0]).toEqual([
-				{'label': 'team', 'value': {'shareType': OC.Share.SHARE_TYPE_REMOTE, 'shareWith': 'team@remote.example.com', 'server': 'remote.example.com'}},
-				{'label': 'teamleads', 'value': {'shareType': OC.Share.SHARE_TYPE_GROUP, 'shareWith': 'teamleads'}}
+				{'label': 'teamleads', 'value': {'shareType': OC.Share.SHARE_TYPE_GROUP, 'shareWith': 'teamleads'}},
+				{'label': 'team', 'value': {'shareType': OC.Share.SHARE_TYPE_REMOTE, 'shareWith': 'team@remote.example.com', 'server': 'remote.example.com'}}
+			]);
+			expect(autocompleteStub.calledWith("option", "autoFocus", true)).toEqual(true);
+		});
+
+		it('lists a local user before the guessed federated address of an unfinished mail address', function () {
+			dialog.render();
+			var response = sinon.stub();
+			dialog.autocompleteHandler({term: 'anna.schmidt@'}, response);
+			var jsonData = JSON.stringify({
+				'ocs' : {
+					'meta' : {
+						'status' : 'success',
+						'statuscode' : 100,
+						'message' : null
+					},
+					'data' : {
+						'exact' : {
+							'users'  : [],
+							'groups' : [],
+							'remotes': [
+								{'label': 'anna.schmidt@', 'value': {'shareType': OC.Share.SHARE_TYPE_REMOTE, 'shareWith': 'anna.schmidt@'}}
+							]
+						},
+						'users'  : [
+							{'label': 'Schmidt, Anna', 'value': {'shareType': OC.Share.SHARE_TYPE_USER, 'shareWith': 'aschmidt'}}
+						],
+						'groups' : [],
+						'remotes': []
+					}
+				}
+			});
+			fakeServer.requests[0].respond(
+					200,
+					{'Content-Type': 'application/json'},
+					jsonData
+			);
+			// Der erste Eintrag ist vorausgewählt (autoFocus): Enter muss das
+			// lokale Konto treffen, nicht die geratene Cloud-ID.
+			expect(response.getCall(0).args[0]).toEqual([
+				{'label': 'Schmidt, Anna', 'value': {'shareType': OC.Share.SHARE_TYPE_USER, 'shareWith': 'aschmidt'}},
+				{'label': 'anna.schmidt@', 'value': {'shareType': OC.Share.SHARE_TYPE_REMOTE, 'shareWith': 'anna.schmidt@'}}
+			]);
+			expect(autocompleteStub.calledWith("option", "autoFocus", true)).toEqual(true);
+		});
+
+		it('lists local users and groups in natural order before all federated matches', function () {
+			dialog.render();
+			var response = sinon.stub();
+			dialog.autocompleteHandler({term: 'a'}, response);
+			var jsonData = JSON.stringify({
+				'ocs' : {
+					'meta' : {
+						'status' : 'success',
+						'statuscode' : 100,
+						'message' : null
+					},
+					'data' : {
+						'exact' : {
+							'users'  : [],
+							'groups' : [],
+							'remotes': []
+						},
+						'users'  : [
+							{'label': 'Zacharias', 'value': {'shareType': OC.Share.SHARE_TYPE_USER, 'shareWith': 'zacharias'}},
+							{'label': 'Maria', 'value': {'shareType': OC.Share.SHARE_TYPE_USER, 'shareWith': 'maria'}}
+						],
+						'groups' : [
+							{'label': 'Verwaltung', 'value': {'shareType': OC.Share.SHARE_TYPE_GROUP, 'shareWith': 'verwaltung'}}
+						],
+						'remotes': [
+							{'label': 'Bauer, Carla', 'value': {'shareType': OC.Share.SHARE_TYPE_REMOTE, 'shareWith': 'carla@remote.example.com', 'server': 'remote.example.com'}},
+							{'label': 'Adam', 'value': {'shareType': OC.Share.SHARE_TYPE_REMOTE, 'shareWith': 'adam@remote.example.com', 'server': 'remote.example.com'}}
+						]
+					}
+				}
+			});
+			fakeServer.requests[0].respond(
+					200,
+					{'Content-Type': 'application/json'},
+					jsonData
+			);
+			expect(response.getCall(0).args[0]).toEqual([
+				{'label': 'Maria', 'value': {'shareType': OC.Share.SHARE_TYPE_USER, 'shareWith': 'maria'}},
+				{'label': 'Verwaltung', 'value': {'shareType': OC.Share.SHARE_TYPE_GROUP, 'shareWith': 'verwaltung'}},
+				{'label': 'Zacharias', 'value': {'shareType': OC.Share.SHARE_TYPE_USER, 'shareWith': 'zacharias'}},
+				{'label': 'Adam', 'value': {'shareType': OC.Share.SHARE_TYPE_REMOTE, 'shareWith': 'adam@remote.example.com', 'server': 'remote.example.com'}},
+				{'label': 'Bauer, Carla', 'value': {'shareType': OC.Share.SHARE_TYPE_REMOTE, 'shareWith': 'carla@remote.example.com', 'server': 'remote.example.com'}}
+			]);
+		});
+
+		it('keeps the natural order when only federated matches are found', function () {
+			dialog.render();
+			var response = sinon.stub();
+			dialog.autocompleteHandler({term: 'pet'}, response);
+			var jsonData = JSON.stringify({
+				'ocs' : {
+					'meta' : {
+						'status' : 'success',
+						'statuscode' : 100,
+						'message' : null
+					},
+					'data' : {
+						'exact' : {
+							'users'  : [],
+							'groups' : [],
+							'remotes': [
+								{'label': 'Petra', 'value': {'shareType': OC.Share.SHARE_TYPE_REMOTE, 'shareWith': 'petra@remote.example.com', 'server': 'remote.example.com'}}
+							]
+						},
+						'users'  : [],
+						'groups' : [],
+						'remotes': [
+							{'label': 'peter B.', 'value': {'shareType': OC.Share.SHARE_TYPE_REMOTE, 'shareWith': 'peterb@remote.example.com', 'server': 'remote.example.com'}},
+							{'label': 'Peter A.', 'value': {'shareType': OC.Share.SHARE_TYPE_REMOTE, 'shareWith': 'petera@remote.example.com', 'server': 'remote.example.com'}}
+						]
+					}
+				}
+			});
+			fakeServer.requests[0].respond(
+					200,
+					{'Content-Type': 'application/json'},
+					jsonData
+			);
+			expect(response.getCall(0).args[0]).toEqual([
+				{'label': 'Peter A.', 'value': {'shareType': OC.Share.SHARE_TYPE_REMOTE, 'shareWith': 'petera@remote.example.com', 'server': 'remote.example.com'}},
+				{'label': 'peter B.', 'value': {'shareType': OC.Share.SHARE_TYPE_REMOTE, 'shareWith': 'peterb@remote.example.com', 'server': 'remote.example.com'}},
+				{'label': 'Petra', 'value': {'shareType': OC.Share.SHARE_TYPE_REMOTE, 'shareWith': 'petra@remote.example.com', 'server': 'remote.example.com'}}
 			]);
 			expect(autocompleteStub.calledWith("option", "autoFocus", true)).toEqual(true);
 		});
