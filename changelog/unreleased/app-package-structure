@@ -1,10 +1,8 @@
 Security: App-Pakete müssen genau einen Ordner mit der App-ID enthalten
 
-Beim Installieren und Aktualisieren aus einem Paket wurde die info.xml im
-ersten passenden Unterordner geprüft, kopiert wurde aber der Ordner mit dem
-Namen der id aus dieser info.xml. Ein Paket konnte so einen anderen Ordner
-installieren als den geprüften. Jetzt muss das Archiv genau einen App-Ordner
-enthalten, der wie die id heißt; eine info.xml in der Wurzel, mehrere
-App-Ordner und eine nicht kanonische id (Zeichen außerhalb von
-[a-zA-Z0-9_.-], „..“ oder „core“) werden abgelehnt. Bei jeder Ablehnung wird
-das entpackte Archiv entfernt.
+Ein App-Paket wird nur noch installiert oder aktualisiert, wenn es genau einen
+App-Ordner enthält, der wie die App-ID aus seiner info.xml heißt. Pakete mit
+einer info.xml im Wurzelverzeichnis, mit mehreren App-Ordnern oder mit einer
+ungültigen App-ID werden mit einer Fehlermeldung abgelehnt, und das entpackte
+Paket wird wieder entfernt. Die Pakete im Marktplatz erfüllen diese Regel;
+selbst gebaute Pakete müssen ihr ebenfalls folgen.

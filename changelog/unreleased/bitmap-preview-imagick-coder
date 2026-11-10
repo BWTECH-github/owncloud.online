@@ -1,17 +1,13 @@
-Security: Bitmap-Vorschauen geben keine Skript-Inhalte mehr an ImageMagick
+Security: Vorschaubilder werden nur noch im erwarteten Format erzeugt
 
-Konnte die SVG-Bereinigung eine Datei nicht lesen, reichten die Bitmap-Vorschauen
-(PDF, TIFF, PSD, SGI, HEIC, Schriften u. a.) bisher die ungeprüften Rohdaten an
-ImageMagick weiter. Eine präparierte SVG- oder MVG-Datei konnte so beim Erzeugen
-der Vorschau Dateien als Webserver-Benutzer lesen oder schreiben.
-
-Bitmap-Vorschauen lehnen Text-, SVG-, XML- und MVG-Inhalte jetzt ab, bevor
-ImageMagick sie sieht, und legen das erwartete Bildformat je Vorschau-Typ fest,
-statt es ImageMagick erraten zu lassen. Dateien, deren Endung nicht zum Inhalt
-passt, bekommen deshalb keine Vorschau mehr.
+Die Vorschauen über ImageMagick (PDF, TIFF, PSD, SGI, HEIC, Schriften u. a.)
+lesen eine Datei nur noch mit dem Decoder, der zu ihrem Typ gehört, und geben
+Text-, SVG-, XML- und MVG-Inhalte nicht an ImageMagick weiter. Dateien, deren
+Endung nicht zum Inhalt passt, bekommen deshalb keine Vorschau mehr.
 
 PDF-, PostScript- und Illustrator-Vorschauen wählen den Decoder am Dateianfang
-(PDF, PS, bei EPS mit DOS-Kopf EPS). So gilt für jeden Inhalt die
-ImageMagick-Policy, die zu ihm gehört, und eine Sperre in der policy.xml bleibt
-wirksam. Sperrt die Policy einen Decoder oder scheitert Ghostscript, steht das
-als Fehler im Log; Dateien mit unpassendem Inhalt nur auf Debug.
+(PDF, PS, bei EPS mit DOS-Kopf EPS). Eine Sperre in der ImageMagick-Policy
+bleibt damit wirksam. Sperrt die Policy einen Decoder oder scheitert
+Ghostscript, steht das als Fehler im Log; Dateien mit unpassendem Inhalt nur
+auf Stufe Debug. Vorschauen, die vor dem Update erzeugt wurden, bleiben im
+Vorschau-Cache.

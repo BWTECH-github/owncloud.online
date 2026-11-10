@@ -1,16 +1,11 @@
-Security: appconfig-Schlüssel public_/remote_ können keinen Code mehr einbinden
+Security: Dienst-Schlüssel der App core sind über die App-Einstellungen gesperrt
 
-Ein Admin konnte über die AppConfig-Endpunkte einen Dienst-Schlüssel
-public_/remote_ der App core mit einem Pfad außerhalb des App-Ordners belegen,
-den public.php oder remote.php danach einband. Die Sperre für core lässt sich
-nicht mehr mit abgewandelten Schreibweisen wie „core “ oder „CORE“ umgehen,
-App-IDs außerhalb von [a-zA-Z0-9_.-] werden beim Schreiben abgelehnt, und die
-ganze core-Konfiguration lässt sich nicht mehr löschen. Eingebunden wird nur
-noch eine PHP-Datei, die tatsächlich im Ordner der App liegt.
+Die Schlüssel public_* und remote_* der App core, über die public.php und
+remote.php ihre Dienste finden, lassen sich über die AppConfig-Endpunkte weder
+lesen noch ändern oder löschen, auch nicht in abweichender Schreibweise. App-IDs
+außerhalb von [a-zA-Z0-9_.-] werden beim Schreiben abgelehnt. Eingebunden wird
+nur noch eine PHP-Datei, die im Ordner der jeweiligen App liegt.
 
-Hinweis: Die Endpunkte liefern Dienst-Schlüssel von core auch beim Lesen nicht
-mehr aus; ein Wert lässt sich mit `occ config:app:get` lesen. Ein nicht
-registrierter Dienst unter public.php antwortet jetzt mit 404 statt 500.
-Lehnt remote.php eine Anfrage ab (Pfad nicht erlaubt, Dienst nicht erlaubt,
-App nicht installiert), antwortet es jetzt ausdrücklich mit 503; vorher kam
-ohne WebDAV eine ungültige Statuszeile „HTTP/1.1 0“.
+Hinweis: Den Wert eines Dienst-Schlüssels zeigt `occ config:app:get core
+<schlüssel>`. Ein nicht registrierter Dienst unter public.php antwortet mit 404
+statt 500. Lehnt remote.php eine Anfrage ab, antwortet es mit 503.
