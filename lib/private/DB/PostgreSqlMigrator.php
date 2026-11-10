@@ -40,19 +40,33 @@ class PostgreSqlMigrator extends Migrator {
 					if ($changedProperties !== 'default') {
 						return true;
 					}
-					$fromDefault = $column->fromColumn->getDefault();
-					$toDefault = $column->column->getDefault();
-					// Nur Zeichenketten kürzen, ein fehlender Vorgabewert ist null
-					if (\is_string($fromDefault)) {
-						$fromDefault = \trim($fromDefault, "()");
-					}
-
-					// by intention usage of !=
-					return $fromDefault != $toDefault;
+					return self::defaultChanged($column->fromColumn->getDefault(), $column->column->getDefault());
 				});
 			}
 		}
 
 		return $schemaDiff;
+	}
+
+	/**
+	 * Hat sich der Vorgabewert einer Spalte wirklich geändert?
+	 *
+	 * PostgreSQL meldet negative Vorgabewerte in Klammern, die werden vor dem
+	 * Vergleich entfernt. Ein fehlender Vorgabewert (null) wird dabei zur leeren
+	 * Zeichenkette, so wie trim() es immer getan hat: Die Änderung „kein
+	 * Vorgabewert → 0“ gilt damit als Änderung und SET DEFAULT wird ausgeführt.
+	 * Der Cast ist ausdrücklich, weil trim(null) seit PHP 8.1 veraltet ist; den
+	 * Wert bei null unverändert zu lassen, würde diese Änderung verschlucken
+	 * (null != 0 ist falsch).
+	 *
+	 * @param mixed $fromDefault Vorgabewert in der Datenbank
+	 * @param mixed $toDefault Vorgabewert im Zielschema
+	 * @return bool
+	 */
+	protected static function defaultChanged($fromDefault, $toDefault): bool {
+		$fromDefault = \trim((string)$fromDefault, "()");
+
+		// by intention usage of !=
+		return $fromDefault != $toDefault;
 	}
 }
