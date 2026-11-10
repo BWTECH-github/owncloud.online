@@ -30,7 +30,7 @@ class Font extends Bitmap {
 		return '/application\/(?:font-sfnt|x-font$)/';
 	}
 
-	protected function getImagickFormat(string $mimeType): string {
+	protected function getImagickFormat(string $mimeType, string $content): string {
 		if ($mimeType === 'application/x-font') {
 			return 'PFB';
 		}

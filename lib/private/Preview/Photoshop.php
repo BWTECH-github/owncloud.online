@@ -31,7 +31,7 @@ class Photoshop extends Bitmap {
 		return '/application\/x-photoshop/';
 	}
 
-	protected function getImagickFormat(string $mimeType): string {
+	protected function getImagickFormat(string $mimeType, string $content): string {
 		return 'PSD';
 	}
 }

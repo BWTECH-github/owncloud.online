@@ -31,7 +31,12 @@ class PDF extends Bitmap {
 		return '/application\/pdf/';
 	}
 
-	protected function getImagickFormat(string $mimeType): string {
+	protected function getImagickFormat(string $mimeType, string $content): string {
+		// Nur echter PDF-Inhalt. Der PDF-Decoder reicht sonst auch PostScript an
+		// Ghostscript weiter, und zwar unter der Policy PDF statt PS.
+		if (self::detectGhostscriptContent($content) !== 'PDF') {
+			throw new \RuntimeException('Refusing to decode content that is not PDF for a PDF preview');
+		}
 		return 'PDF';
 	}
 }

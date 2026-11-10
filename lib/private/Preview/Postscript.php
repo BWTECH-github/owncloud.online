@@ -31,13 +31,15 @@ class Postscript extends Bitmap {
 		return '/application\/postscript/';
 	}
 
-	protected function getImagickFormat(string $mimeType): string {
-		# EPS is the coder ImageMagick registers for application/postscript, and it covers
-		# .ps as well as .eps. Measured rather than inferred from the coder internals:
-		# plain PostScript and EPSF-tagged content declaring a bounding box smaller than
-		# the page both render to the same geometry read unpinned, pinned EPS and pinned
-		# PS, so the pin does not change what a .ps file previews as. Measured on
-		# ImageMagick 6.9.11-60 with Ghostscript 9.55.0, the owncloudci/php:8.3 build.
-		return 'EPS';
+	protected function getImagickFormat(string $mimeType, string $content): string {
+		// PostScript und EPS mit "%!" am Anfang liest der Decoder PS, so wie ImageMagick
+		// es ohne Festlegung selbst entschieden hat; damit gilt für .ps und .eps wieder
+		// die Policy PS. Nur DOS-EPS mit Binärkopf braucht den Decoder EPS. PDF-Inhalt
+		// und alles andere gehört nicht hierher.
+		$kind = self::detectGhostscriptContent($content);
+		if ($kind === 'PS' || $kind === 'EPS') {
+			return $kind;
+		}
+		throw new \RuntimeException('Refusing to decode content that is not PostScript for a PostScript preview');
 	}
 }

@@ -24,6 +24,8 @@
  *
  * Modified by BW-Tech GmbH on 2026-03-16.
  * Changes:
+ *   - pick the Ghostscript coders by content so each content type hits its own policy
+ *   - log policy and delegate failures as errors again, mismatching content at debug
  *   - log a rejected bitmap preview at debug level instead of error
  *   - release the file handle when a bitmap preview cannot be decoded (#41835)
  *   - PHP 8.4 compatibility and owncloud.online design integration
@@ -74,12 +76,12 @@ abstract class Bitmap implements IProvider2 {
 			// escapes the handler below, it would turn a missing preview into a 500.
 			$bp = $this->getResizedPreview($stream, $maxX, $maxY, (string)$file->getMimeType());
 		} catch (\Exception $e) {
-			// Bewusst nur DEBUG: Jede hochgeladene Datei, deren Endung nicht zum Inhalt
-			// passt (etwa ein PNG namens bild.tiff), landet hier, weil der gepinnte Coder
-			// den Inhalt ablehnt. Das ist erwartetes Verhalten und von jedem Nutzer per
-			// Upload auslösbar – auf ERROR würde es das Log fluten und echte Fehler
-			// verdecken. Ergebnis ist schlicht „keine Vorschau“.
-			Util::writeLog('core', 'ImageMagick says: ' . $e->getMessage(), Util::DEBUG);
+			// Jede hochgeladene Datei, deren Endung nicht zum Inhalt passt (etwa ein PNG
+			// namens bild.tiff), landet hier, weil der festgelegte Decoder den Inhalt
+			// ablehnt. Das ist erwartetes Verhalten und von jedem Nutzer per Upload
+			// auslösbar, darum nur DEBUG. Betriebsfehler bleiben dagegen sichtbar,
+			// siehe logLevelForFailure(). Ergebnis ist in beiden Fällen „keine Vorschau“.
+			Util::writeLog('core', 'ImageMagick says: ' . $e->getMessage(), self::logLevelForFailure($e));
 			return false;
 		} finally {
 			// also on the failure path: any content ImageMagick has no coder for lands
@@ -124,6 +126,10 @@ abstract class Bitmap implements IProvider2 {
 			throw new \RuntimeException('Refusing to decode text-based content for a bitmap preview');
 		}
 
+		// Erst den Decoder bestimmen: Passt der Inhalt nicht zum Anbieter, wird hier
+		// abgelehnt, bevor ImageMagick überhaupt angefasst wird.
+		$format = $this->getImagickFormat($mimeType, $content);
+
 		$bp = ImagickFactory::create();
 
 		# Pin the coder instead of letting Imagick's own content-sniffing pick one:
@@ -136,7 +142,7 @@ abstract class Bitmap implements IProvider2 {
 		# Deliberately not guarded by queryFormats(): if this build does not register
 		# the coder, throwing here is correct - the only alternative is falling back to
 		# the content-sniffing this pin exists to prevent.
-		$bp->setFormat($this->getImagickFormat($mimeType));
+		$bp->setFormat($format);
 		$bp->readImageBlob($content);
 
 		# setIteratorIndex(0) will make previews to be generated from the first page
@@ -169,8 +175,53 @@ abstract class Bitmap implements IProvider2 {
 	 * suffix defeats extension-based detection. Returning a constant handles that
 	 * correctly. Do NOT "fix" the divergence by rejecting a $mimeType that fails this
 	 * provider's own getMimeType() regex - that rejects every trashbin preview.
+	 *
+	 * $content ist der schon gelesene Dateiinhalt. Die von Ghostscript gelesenen Anbieter
+	 * (PDF, Postscript, Illustrator) wählen damit über detectGhostscriptContent() den
+	 * Decoder, der zum Inhalt gehört, und lehnen alles andere mit einer \RuntimeException
+	 * ab. Alle übrigen Anbieter geben weiter eine Konstante zurück.
+	 *
+	 * @throws \RuntimeException wenn der Inhalt nicht zum Anbieter passt
 	 */
-	abstract protected function getImagickFormat(string $mimeType): string;
+	abstract protected function getImagickFormat(string $mimeType, string $content): string;
+
+	/**
+	 * Erkennt an den ersten Bytes, welche von Ghostscript gelesene Inhaltsart vorliegt:
+	 * 'PDF', 'PS', 'EPS' (DOS-EPS mit Binärkopf) oder null.
+	 *
+	 * Bewusst nur an Stelle 0 und ohne Toleranz für einen Vorspann: Genau so hat
+	 * ImageMagick entschieden, solange der Decoder nicht festgelegt war. Damit wird
+	 * für jeden Inhalt wieder die Policy abgefragt, die zu ihm gehört (PDF bzw. PS).
+	 * Ein fester Decoder je Anbieter hätte das verschoben: PostScript hinter einer
+	 * .pdf-Datei liefe unter der Policy PDF, jede .ai-Datei unter der Policy AI, die
+	 * in der üblichen policy.xml gar nicht gesperrt ist. Eine Sperre des Admins für
+	 * PS oder PDF bliebe dann wirkungslos. Für DOS-EPS gilt EPS statt des früher
+	 * geratenen EPT; EPS steht in den üblichen Sperrlisten, EPT nicht.
+	 */
+	protected static function detectGhostscriptContent(string $content): ?string {
+		if (\strncmp($content, '%PDF-', 5) === 0) {
+			return 'PDF';
+		}
+		if (\strncmp($content, '%!', 2) === 0 || \strncmp($content, "\x04%!", 3) === 0) {
+			return 'PS';
+		}
+		if (\strncmp($content, "\xC5\xD0\xD3\xC6", 4) === 0) {
+			return 'EPS';
+		}
+		return null;
+	}
+
+	/**
+	 * Protokollstufe für eine gescheiterte Vorschau.
+	 *
+	 * Sperrt die ImageMagick-Policy den Decoder oder fehlt bzw. scheitert ein Delegate
+	 * (Ghostscript), ist das ein Betriebsfehler, den der Admin sehen muss: ERROR. Alles
+	 * andere - unsere eigene Ablehnung und Decoder-Fehler, weil der Inhalt nicht zur
+	 * Endung passt - ist erwartbar und bleibt auf DEBUG.
+	 */
+	protected static function logLevelForFailure(\Throwable $e): int {
+		return \preg_match('/security policy|delegate/i', $e->getMessage()) === 1 ? Util::ERROR : Util::DEBUG;
+	}
 
 	/**
 	 * Bitmap providers must never hand text-based content (SVG, XML, or any other

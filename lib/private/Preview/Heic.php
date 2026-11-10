@@ -30,7 +30,7 @@ class Heic extends Bitmap {
 		return '/image\/hei(f|c)/';
 	}
 
-	protected function getImagickFormat(string $mimeType): string {
+	protected function getImagickFormat(string $mimeType, string $content): string {
 		# image/heic and image/heif are the same container handled by the same coder
 		# module, and not every ImageMagick build registers a distinct HEIF coder - so
 		# both mime types pin HEIC rather than risk pinning a format that is absent.
