@@ -68,6 +68,11 @@ class CacheJail extends CacheWrapper {
 	 * @return null|string the jailed path or null if the path is outside the jail
 	 */
 	protected function getJailedPath($path) {
+		// Ein unbekannter Pfad (null, etwa von getPathById()) liegt außerhalb; ohne
+		// diese Abfrage liefe er in substr() und füllte das Log mit Deprecations.
+		if ($path === null) {
+			return null;
+		}
 		if ($this->root === '') {
 			return $path;
 		}
