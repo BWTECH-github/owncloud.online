@@ -21,3 +21,10 @@ nach dem Update erneut; dabei werden die verbliebenen Versionen und
 Papierkorbeinträge entschlüsselt. Mit Nutzerschlüsseln meldet decrypt-all nach
 einem vollständigen Lauf nur "Nothing to do"; dann vorher
 "occ encryption:enable" ausführen.
+
+decrypt-all markiert eine Datei nur noch als entschlüsselt, wenn Kopieren und
+Umbenennen wirklich geklappt haben. Eine halbe Kopie wird bei jedem Fehler
+entfernt, und eine einzelne defekte Datei bricht den Lauf nicht mehr ab.
+encryption:disable setzt das fälschlich gesetzte Kennzeichen auf
+Schlüsseldateien zurück. Daran scheiterte das Abschalten bisher, wenn ein
+Empfänger eine Datei in einer empfangenen Freigabe gelöscht hatte.

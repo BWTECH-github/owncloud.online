@@ -21,11 +21,13 @@
  *
  * Modified by BW-Tech GmbH on 2026-02-26.
  * Changes:
+ *   - reset the bogus encryption flag on key files so disabling works after decrypt-all
  *   - doctrine/dbal:3 (#41450)
  */
 
 namespace OC\Core\Command\Encryption;
 
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use Symfony\Component\Console\Command\Command;
@@ -62,7 +64,70 @@ class Disable extends Command {
 		;
 	}
 
+	/**
+	 * Schlüsseldateien unter files_encryption/ können im Dateicache fälschlich als
+	 * verschlüsselt markiert sein, etwa die Schlüssel der Papierkorb-Kopie, die beim
+	 * Empfänger entsteht, wenn er eine Datei in einer empfangenen Freigabe löscht.
+	 * decrypt-all geht nur durch files, files_versions und files_trashbin und
+	 * erreicht diese Zeilen nie; ohne Bereinigung ließe sich die Verschlüsselung
+	 * auf solchen Instanzen nicht mehr abschalten. Schlüsseldateien sind selbst nie
+	 * verschlüsselt, das Kennzeichen wird deshalb zurückgesetzt.
+	 *
+	 * @return int Anzahl der bereinigten Zeilen
+	 */
+	private function resetFlagOnKeyFiles(): int {
+		$qb = $this->db->getQueryBuilder();
+		// "_" passt im LIKE auf jedes Zeichen; die genaue Prüfung macht isKeyStoragePath()
+		$qb->select('fc.fileid', 'fc.path', 'st.id')
+			->from('filecache', 'fc')
+			->innerJoin('fc', 'storages', 'st', $qb->expr()->eq('fc.storage', 'st.numeric_id'))
+			->where($qb->expr()->gte('fc.encrypted', $qb->expr()->literal('1')))
+			->andWhere($qb->expr()->like('fc.path', $qb->createNamedParameter('%files_encryption/%')));
+		$results = $qb->execute();
+		$fileIds = [];
+		while ($row = $results->fetch()) {
+			if ($this->isKeyStoragePath((string)$row['id'], (string)$row['path'])) {
+				$fileIds[] = (int)$row['fileid'];
+			}
+		}
+		$results->free();
+
+		foreach (\array_chunk($fileIds, 500) as $chunk) {
+			$qb = $this->db->getQueryBuilder();
+			$qb->update('filecache')
+				->set('encrypted', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT))
+				->where($qb->expr()->in('fileid', $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_INT_ARRAY)));
+			$qb->execute();
+		}
+		return \count($fileIds);
+	}
+
+	/**
+	 * Liegt der Pfad im Schlüsselspeicher? Im Heimatspeicher eines Nutzers und im
+	 * Wurzelspeicher ist das files_encryption/…, im Wurzelspeicher zusätzlich
+	 * <uid>/files_encryption/…. Ein Ordner dieses Namens unter files/ oder auf
+	 * einem externen Speicher ist Nutzerinhalt und zählt nicht dazu.
+	 *
+	 * @param string $storageId Kennung aus oc_storages, z. B. home::anna
+	 * @param string $path Pfad innerhalb des Speichers
+	 * @return bool
+	 */
+	protected function isKeyStoragePath(string $storageId, string $path): bool {
+		$dataDir = \rtrim((string)$this->config->getSystemValue('datadirectory', \OC::$SERVERROOT . '/data'), '/');
+		$isRoot = $storageId === 'local::' . $dataDir . '/' || \strpos($storageId, 'object::store:') === 0;
+		$isHome = \strpos($storageId, 'home::') === 0 || \strpos($storageId, 'object::user:') === 0;
+		if (($isRoot || $isHome) && \strpos($path, 'files_encryption/') === 0) {
+			return true;
+		}
+		return $isRoot && \preg_match('#^[^/]+/files_encryption/#', $path) === 1;
+	}
+
 	protected function execute(InputInterface $input, OutputInterface $output): int {
+		$resetKeyFiles = $this->resetFlagOnKeyFiles();
+		if ($resetKeyFiles > 0) {
+			$output->writeln("Reset the encryption flag of $resetKeyFiles key files, they are never encrypted themselves.");
+		}
+
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->createFunction('COUNT(*)'))
 			->from('filecache', 'fc')

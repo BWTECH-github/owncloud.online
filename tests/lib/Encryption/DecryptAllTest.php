@@ -740,6 +740,79 @@ class DecryptAllTest extends TestCase {
 		$this->assertFalse(self::invokePrivate($instance, 'isVersion', ['/user1/files_versions']));
 	}
 
+	public function providesSilentFailures(): array {
+		return [
+			// [Rückgabe von copy(), Rückgabe von rename(), wird rename() überhaupt erreicht]
+			'copy scheitert still' => [false, true, false],
+			'rename scheitert still' => [true, false, true],
+		];
+	}
+
+	/**
+	 * copy() und rename() melden manche Fehler nur über den Rückgabewert. Dann darf
+	 * die Datei nicht als entschlüsselt gelten: kein encrypted=0 im Dateicache, die
+	 * halbe Kopie wird entfernt, der Aufrufer bekommt eine Ausnahme.
+	 *
+	 * @dataProvider providesSilentFailures
+	 */
+	public function testDecryptFileKeepsTheFlagWhenCopyOrRenameFailSilently(bool $copyResult, bool $renameResult, bool $renameReached): void {
+		$path = '/user1/files_trashbin/files/test.txt.d1234';
+		$target = $path . '.decrypted.42.part';
+
+		/** @var DecryptAll | \PHPUnit\Framework\MockObject\MockObject  $instance */
+		$instance = $this->getMockBuilder(DecryptAll::class)
+			->setConstructorArgs([$this->encryptionManager, $this->userManager, $this->view, $this->logger])
+			->setMethods(['getTimestamp'])
+			->getMock();
+		$instance->expects($this->any())->method('getTimestamp')->willReturn(42);
+
+		$this->view->expects($this->once())->method('copy')->with($path, $target)->willReturn($copyResult);
+		$this->view->expects($renameReached ? $this->once() : $this->never())
+			->method('rename')->with($target, $path)->willReturn($renameResult);
+		// der Dateicache wird nicht angefasst
+		$this->view->expects($this->never())->method('resolvePath');
+		$this->view->expects($this->once())->method('file_exists')->with($target)->willReturn(true);
+		// entfernt wird nur die Kopie, nie die Quelle
+		$this->view->expects($this->once())->method('unlink')->with($target);
+
+		try {
+			$this->invokePrivate($instance, 'decryptFile', [$path]);
+			$this->fail('decryptFile() muss den stillen Fehlschlag melden');
+		} catch (\RuntimeException $e) {
+			$this->assertStringContainsString($path, $e->getMessage());
+		}
+	}
+
+	/**
+	 * Wirft das Entschlüsseln etwas anderes als DecryptionFailedException, bleibt
+	 * keine halbe Kopie liegen und der Fehler geht unverändert an den Aufrufer.
+	 */
+	public function testDecryptFileRemovesThePartialCopyOnAnyError(): void {
+		$path = '/user1/files_trashbin/files/test.txt.d1234';
+		$target = $path . '.decrypted.42.part';
+
+		/** @var DecryptAll | \PHPUnit\Framework\MockObject\MockObject  $instance */
+		$instance = $this->getMockBuilder(DecryptAll::class)
+			->setConstructorArgs([$this->encryptionManager, $this->userManager, $this->view, $this->logger])
+			->setMethods(['getTimestamp'])
+			->getMock();
+		$instance->expects($this->any())->method('getTimestamp')->willReturn(42);
+
+		$error = new \ValueError('fread(): Argument #2 ($length) must be greater than 0');
+		$this->view->expects($this->once())->method('copy')->willThrowException($error);
+		$this->view->expects($this->never())->method('rename');
+		$this->view->expects($this->never())->method('resolvePath');
+		$this->view->expects($this->once())->method('file_exists')->with($target)->willReturn(true);
+		$this->view->expects($this->once())->method('unlink')->with($target);
+
+		try {
+			$this->invokePrivate($instance, 'decryptFile', [$path]);
+			$this->fail('Der Fehler muss weitergereicht werden');
+		} catch (\ValueError $e) {
+			$this->assertSame($error, $e);
+		}
+	}
+
 	/**
 	 * Test to verify the fileid after the decryptFile method should be same
 	 */

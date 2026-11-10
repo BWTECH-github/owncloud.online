@@ -182,8 +182,10 @@ class DecryptAll extends Command {
 				$output->writeln('done.');
 				$output->writeln('aborted');
 			}
-		} catch (\Exception $e) {
+		} catch (\Throwable $e) {
 			// enable server side encryption again if something went wrong
+			// \Throwable statt \Exception: Auch nach einem \Error dürfen der
+			// Einzelnutzermodus und der abgeschaltete Papierkorb nicht stehen bleiben.
 			$this->config->setAppValue('core', 'encryption_enabled', 'yes');
 			$this->resetSingleUserAndTrashbin();
 			throw $e;

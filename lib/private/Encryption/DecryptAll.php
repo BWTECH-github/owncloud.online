@@ -248,7 +248,10 @@ class DecryptAll {
 								$progress->advance();
 							}
 						}
-					} catch (\Exception $e) {
+					} catch (\Throwable $e) {
+						// Auch \Error (etwa ein ValueError aus dem Lesen einer Datei, die
+						// als verschlüsselt gilt, aber keinen Kopf hat): Eine einzelne
+						// Datei darf den Lauf für alle übrigen nicht abbrechen.
 						$this->logger->logException($e, [
 							'message' => "Exception trying to decrypt file <$path> for user <$uid>",
 							'app' => __CLASS__
@@ -279,26 +282,58 @@ class DecryptAll {
 			try {
 				if ($this->isVersion($source)) {
 					$this->copyDecrypted($source, $target);
-				} else {
-					$this->rootView->copy($source, $target);
+				} elseif ($this->rootView->copy($source, $target) === false) {
+					// copy() meldet manche Fehler nur über den Rückgabewert (kein Platz,
+					// Speicherfehler). Ohne diese Prüfung liefe der Code weiter und
+					// markierte die Datei als entschlüsselt, obwohl sie es nicht ist.
+					throw new \RuntimeException("Could not write the decrypted copy of $source");
 				}
 			} finally {
 				\OC\Files\Storage\Wrapper\Encryption::setDisableWriteEncryption(false);
 			}
 			View::setIgnorePartFile(true);
-			$this->rootView->rename($target, $source);
-			View::setIgnorePartFile(false);
+			try {
+				$renamed = $this->rootView->rename($target, $source);
+			} finally {
+				View::setIgnorePartFile(false);
+			}
+			if ($renamed === false) {
+				throw new \RuntimeException("Could not replace $source with its decrypted copy");
+			}
 			list($storage, $internalPath) = $this->rootView->resolvePath($source);
 			//Update the encrypted column in file cache to zero, as the file is decrypted
 			$storage->getCache()->put($internalPath, ['encrypted' => 0]);
 		} catch (DecryptionFailedException $e) {
-			if ($this->rootView->file_exists($target)) {
-				$this->rootView->unlink($target);
-			}
+			$this->removeDecryptedCopy($target);
 			return false;
+		} catch (\Throwable $e) {
+			// Bis zum Umbenennen ist die Quelle unverändert verschlüsselt. Die halbe
+			// Kopie wird entfernt, der Fehler geht an den Aufrufer, der die Datei als
+			// fehlgeschlagen sammelt. Das Kennzeichen im Dateicache bleibt stehen.
+			$this->removeDecryptedCopy($target);
+			throw $e;
 		}
 
 		return true;
+	}
+
+	/**
+	 * Entfernt eine liegengebliebene entschlüsselte Kopie. Scheitert das, darf es den
+	 * eigentlichen Fehler nicht überdecken.
+	 *
+	 * @param string $target
+	 */
+	private function removeDecryptedCopy($target) {
+		try {
+			if ($this->rootView->file_exists($target)) {
+				$this->rootView->unlink($target);
+			}
+		} catch (\Throwable $e) {
+			$this->logger->logException($e, [
+				'message' => "Could not remove the partial copy <$target>",
+				'app' => __CLASS__
+			]);
+		}
 	}
 
 	/**
