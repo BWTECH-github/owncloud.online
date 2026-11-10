@@ -86,10 +86,16 @@ class GeneralPersonalPanelTest extends \Test\TestCase {
 		$this->request->expects($this->once())->method('getHeader')->with('User-Agent')->willReturn($agent);
 		$this->userSession->expects($this->once())->method('getUser')->willReturn($mockUser);
 		$this->shareProvider->expects($this->once())->method('isOutgoingServer2serverShareEnabled')->willReturn(true);
+		$this->urlGenerator->method('getAbsoluteURL')->willReturnCallback(static function ($url) {
+			return 'https://cloud.example.com/sub' . $url;
+		});
 		$templateHtml = $this->panel->getPanel()->fetchPage();
 		$this->assertStringContainsString('<div id="fileSharingSettings"', $templateHtml);
-		// Kein toter Fremdlink mehr, verlinkt wird nur die Cloud-ID selbst
+		// Kein toter Fremdlink mehr: verlinkt wird die eigene Instanz, die Cloud-ID
+		// steht im Text. Eine Cloud-ID als href wäre ein kaputter relativer Link.
 		$this->assertStringNotContainsString('owncloud.com/federation', $templateHtml);
-		$this->assertStringContainsString('href="user@cloud.example.com"', $templateHtml);
+		$this->assertStringNotContainsString('href="user@cloud.example.com"', $templateHtml);
+		$this->assertStringContainsString('href="https://cloud.example.com/sub/"', $templateHtml);
+		$this->assertStringContainsString('user@cloud.example.com', $templateHtml);
 	}
 }

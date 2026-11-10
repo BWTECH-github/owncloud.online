@@ -75,7 +75,10 @@ class GeneralPersonalPanel implements ISettings {
 		$tmpl->assign('message_with_URL', $this->l->t('Share with me through my Federated Cloud ID, see %s', [$cloudID]));
 		$tmpl->assign('message_without_URL', $this->l->t('Share with me through my Federated Cloud ID', [$cloudID]));
 		$tmpl->assign('owncloud_logo_path', $ownCloudLogoPath);
-		$tmpl->assign('reference', $cloudID);
+		// Verlinkt wird die eigene Instanz. Die Vorlage setzt den Wert als href und als
+		// Adresse für die Teilen-Knöpfe ein; die Cloud-ID selbst wäre dort ein kaputter
+		// relativer Link. Sie steht im Text daneben.
+		$tmpl->assign('reference', $this->urlGenerator->getAbsoluteURL('/'));
 		$tmpl->assign('cloudId', $cloudID);
 		$tmpl->assign('showShareIT', !$isIE8);
 		$tmpl->assign('urlGenerator', $this->urlGenerator);
