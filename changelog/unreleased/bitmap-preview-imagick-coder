@@ -9,3 +9,9 @@ Bitmap-Vorschauen lehnen Text-, SVG-, XML- und MVG-Inhalte jetzt ab, bevor
 ImageMagick sie sieht, und legen das erwartete Bildformat je Vorschau-Typ fest,
 statt es ImageMagick erraten zu lassen. Dateien, deren Endung nicht zum Inhalt
 passt, bekommen deshalb keine Vorschau mehr.
+
+PDF-, PostScript- und Illustrator-Vorschauen wählen den Decoder am Dateianfang
+(PDF, PS, bei EPS mit DOS-Kopf EPS). So gilt für jeden Inhalt die
+ImageMagick-Policy, die zu ihm gehört, und eine Sperre in der policy.xml bleibt
+wirksam. Sperrt die Policy einen Decoder oder scheitert Ghostscript, steht das
+als Fehler im Log; Dateien mit unpassendem Inhalt nur auf Debug.
