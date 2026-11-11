@@ -79,10 +79,12 @@ class OC_Defaults {
 		$this->defaultName = 'owncloud.online'; /* short name, used when referring to the software */
 		$this->defaultTitle = 'owncloud.online'; /* can be a longer name, for titles */
 		$this->defaultBaseUrl = 'https://owncloud.online';
-		$this->defaultSyncClientUrl = 'https://owncloud.online/first-steps/';
-		$this->defaultiOSClientUrl = 'https://itunes.apple.com/de/app/owncloud-online/id1436996124?mt=8';
-		$this->defaultiTunesAppId = '1436996124';
-		$this->defaultAndroidClientUrl = 'https://play.google.com/store/apps/details?id=com.owncloud.android';
+		$this->defaultSyncClientUrl = 'https://marketplace.owncloud.online/downloads/desktop';
+		// iOS-App „owncloud.online“ von BW-TECH im App Store
+		$this->defaultiOSClientUrl = 'https://apps.apple.com/app/owncloud-online/id6830208084';
+		$this->defaultiTunesAppId = '6830208084';
+		// Eigene Android-App folgt; bis dahin die Download-Seite der Mobil-Apps
+		$this->defaultAndroidClientUrl = 'https://marketplace.owncloud.online/downloads/mobile';
 		$this->defaultDocBaseUrl = 'https://docs.owncloud.online';
 		$this->defaultDocVersion = $version[0] . '.' . $version[1]; // used to generate doc links
 		$this->defaultSlogan = $this->l->t('Cloud storage made to trust.');

@@ -129,17 +129,17 @@ $CONFIG = [
  */
 
 /**
- * Define the download links for ownCloud clients
- * Configuring the download links for ownCloud clients,
+ * Define the download links for owncloud.online clients
+ * Configuring the download links for owncloud.online clients,
  * as seen in the first-run wizard and on Personal pages
  */
 
 'customclient_desktop' =>
-	'https://owncloud.com/desktop-app/',
+	'https://marketplace.owncloud.online/downloads/desktop',
 'customclient_android' =>
-	'https://play.google.com/store/apps/details?id=com.owncloud.android',
+	'https://marketplace.owncloud.online/downloads/mobile',
 'customclient_ios' =>
-	'https://apps.apple.com/app/id1359583808',
+	'https://apps.apple.com/app/owncloud-online/id6830208084',
 
 /**
  * App: Kerberos

@@ -1,0 +1,10 @@
+Bugfix: Links zu Desktop-Client und Mobil-Apps zeigen auf owncloud.online
+
+Die Links in den persönlichen Einstellungen und im Willkommensdialog führen
+jetzt zum Desktop-Client im Marktplatz und zur iOS-App „owncloud.online“ im
+App Store. Safari bietet beim Aufruf auf iPhone und iPad ebenfalls diese App
+an. Der Android-Link führt bis zum Start der Android-App auf die
+Download-Seite der Mobil-Apps im Marktplatz.
+
+Eigene Links über `customclient_desktop`, `customclient_android` und
+`customclient_ios` in der config.php gelten weiterhin vorrangig.
