@@ -8,7 +8,7 @@ there as well, and the client itself doesn't store a password. Only on
 instances without OAuth2 and OpenID Connect does the client ask for a username
 and password itself.
 
-This page describes desktop client 11.0.1 with owncloud.online 11.0.27.
+This page describes desktop client 11.0.2 with owncloud.online 11.0.27.
 
 ## Requirements
 
@@ -62,7 +62,7 @@ messages about files you didn't download. On Windows, PowerShell shows the
 checksum:
 
 ```powershell
-Get-FileHash .\owncloud.online-client-11.0.1-win-x64-Setup.exe -Algorithm SHA256
+Get-FileHash .\owncloud.online-client-11.0.2-win-x64-Setup.exe -Algorithm SHA256
 ```
 
 Compare the value with the line for the same file in `SHA256SUMS.txt`. Case
@@ -190,6 +190,10 @@ Below the connection status of each account, a bar shows the storage space in
 use. Above 90 percent it turns red, and the client warns once with "Storage
 space almost full".
 
+While a folder uploads or downloads files, its row shows a progress bar along
+with the amount transferred, the speed and, when it can be estimated, the time
+left.
+
 ## Choose folders to sync
 
 If you don't want everything on your computer, choose the folders. In the
@@ -245,7 +249,9 @@ selection becomes available again.
 The account appears in the Finder sidebar under *Locations*. The files are there
 as placeholders and are downloaded when you open them. New, changed, renamed,
 moved, and deleted files go to the server, and changes on the server reach the
-Finder within about 30 seconds.
+Finder within about 30 seconds. While files upload or download, the Finder shows
+the progress of each one, and the folder's row in the client window shows these
+transfers with a progress bar and the speed.
 
 The first time, macOS needs your permission. Until then, the client reports "The
 files are not shown in the Finder yet: macOS needs your permission." Open *System
@@ -337,7 +343,9 @@ and doesn't get in the client's way; you **don't** need an app password for
 the desktop client. This applies as long as the instance
 offers OAuth2 or OpenID Connect. Without either, the client asks for a username
 and password itself: create an app password and enter it there. The client keeps
-it in the system keychain.
+it in the system keychain. If the server rejects the account password because a
+second factor applies to your account, the client says so and asks for an app
+password.
 
 It's different for access you set up with a username and password: a WebDAV
 folder mapped as a network drive, command-line tools, or older applications.

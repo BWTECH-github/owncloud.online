@@ -8,7 +8,7 @@ Faktor dort abgefragt und im Client selbst kein Passwort hinterlegt. Nur auf
 Instanzen ohne OAuth2 und OpenID Connect fragt der Client selbst nach
 Benutzername und Passwort.
 
-Diese Seite beschreibt den Desktop-Client 11.0.1 mit owncloud.online 11.0.27.
+Diese Seite beschreibt den Desktop-Client 11.0.2 mit owncloud.online 11.0.27.
 
 ## Voraussetzungen
 
@@ -62,7 +62,7 @@ Dateien, die Sie nicht heruntergeladen haben, können Sie übergehen. Unter
 Windows zeigt PowerShell die Prüfsumme an:
 
 ```powershell
-Get-FileHash .\owncloud.online-client-11.0.1-win-x64-Setup.exe -Algorithm SHA256
+Get-FileHash .\owncloud.online-client-11.0.2-win-x64-Setup.exe -Algorithm SHA256
 ```
 
 Vergleichen Sie den Wert mit der Zeile derselben Datei in `SHA256SUMS.txt`;
@@ -197,6 +197,10 @@ Unter dem Verbindungsstatus jedes Kontos zeigt ein Balken den belegten
 Speicherplatz. Ab 90 Prozent wird er rot, und der Client warnt einmal mit
 „Speicherplatz fast voll“.
 
+Während ein Ordner Dateien hoch- oder herunterlädt, zeigt seine Zeile einen
+Fortschrittsbalken, dazu die übertragene Menge, die Geschwindigkeit und, wenn
+absehbar, die Restzeit.
+
 ## Ordner auswählen
 
 Wenn nicht der gesamte Bestand auf den Rechner soll, wählen Sie die Ordner aus.
@@ -256,7 +260,9 @@ Ordnerauswahl wieder zur Verfügung.
 Das Konto erscheint in der Finder-Seitenleiste unter *Orte*. Die Dateien liegen
 dort als Platzhalter und werden beim Öffnen geladen. Neue, geänderte, umbenannte,
 verschobene und gelöschte Dateien gehen auf den Server, Änderungen vom Server
-erreichen den Finder nach etwa 30 Sekunden.
+erreichen den Finder nach etwa 30 Sekunden. Beim Hoch- und Herunterladen zeigt
+der Finder den Fortschritt jeder Datei; die Ordnerzeile im Client-Fenster zeigt
+diese Übertragungen mit Balken und Geschwindigkeit.
 
 Beim ersten Mal braucht macOS Ihre Erlaubnis. Bis dahin meldet der Client „Die
 Dateien erscheinen noch nicht im Finder: macOS braucht Ihre Erlaubnis.“ Öffnen
@@ -356,7 +362,9 @@ stört den Client nicht; für den Desktop-Client brauchen Sie **kein**
 App-Passwort. Das gilt, solange die Instanz OAuth2 oder OpenID Connect anbietet.
 Ohne beide fragt der Client selbst nach Benutzername und Passwort: Legen Sie dann
 ein App-Passwort an und tragen Sie es dort ein. Der Client bewahrt es im
-Schlüsselbund des Systems auf.
+Schlüsselbund des Systems auf. Weist der Server das Kontopasswort ab, weil für
+Ihr Konto ein zweiter Faktor gilt, sagt der Client das ausdrücklich und
+verlangt ein App-Passwort.
 
 Anders bei Zugängen, die Sie mit Benutzername und Passwort einrichten: ein als
 Netzlaufwerk eingebundener WebDAV-Ordner, Kommandozeilen-Werkzeuge oder ältere

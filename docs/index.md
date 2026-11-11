@@ -15,9 +15,9 @@ Desktop-Client.
 | --- | --- |
 | Server | owncloud.online `11.0.27` |
 | PHP | 8.4 |
-| Desktop-Client | `11.0.1` |
+| Desktop-Client | `11.0.2` |
 | Repository | <https://github.com/BWTECH-github/owncloud.online> |
-| Aktualisiert | 10. November 2026 |
+| Aktualisiert | 11. November 2026 |
 
 ## Dokumentationsbereiche
 
