@@ -26,6 +26,7 @@ use OC\Files\Filesystem;
 use OC\Files\View;
 use OCA\DAV\Connector\Sabre\Directory;
 use Sabre\DAV\Exception\Forbidden;
+use Sabre\DAV\Exception\ServiceUnavailable;
 use Sabre\DAV\ICollection;
 
 class UploadHome implements ICollection {
@@ -94,6 +95,9 @@ class UploadHome implements ICollection {
 		}
 		$view = new View('/' . $user->getUID() . '/uploads');
 		$rootInfo = $view->getFileInfo('');
+		if ($rootInfo === false) {
+			throw new ServiceUnavailable('Upload directory is temporarily unavailable');
+		}
 		$impl = new Directory($view, $rootInfo);
 		return $impl;
 	}
