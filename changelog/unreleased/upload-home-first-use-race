@@ -1,0 +1,14 @@
+Bugfix: First parallel chunked uploads of an account no longer fail with a server error
+
+When an account uploaded large files in chunks for the very first time and two
+requests reached /remote.php/dav/uploads/<user>/ at the same moment, one of
+them could find the upload folder half created: on disk, but not yet in the
+file cache and still locked by the other request. That request ended with
+"Call to a member function getPath() on false" (HTTP 500), or with a lock
+error when both tried to create the folder. Desktop clients repeated the file
+in the next sync run, the web interface showed a failed upload.
+
+The upload home now waits up to one second for the other request to finish
+and then answers normally. If the folder is still not readable, the answer is
+HTTP 503 "Storage is temporarily not available", which sync clients treat as a
+temporary error of that one file instead of aborting the sync run.

@@ -25,10 +25,17 @@ namespace OCA\DAV\Upload;
 use OC\Files\Filesystem;
 use OC\Files\View;
 use OCA\DAV\Connector\Sabre\Directory;
+use OCP\Lock\LockedException;
 use Sabre\DAV\Exception\Forbidden;
+use Sabre\DAV\Exception\ServiceUnavailable;
 use Sabre\DAV\ICollection;
 
 class UploadHome implements ICollection {
+	/** Wiederholungen, solange der Upload-Ordner beim ersten Zugriff noch nicht lesbar ist */
+	private const FIRST_USE_RETRIES = 10;
+	/** Wartezeit je Wiederholung: 100 ms, zusammen höchstens eine Sekunde */
+	private const FIRST_USE_WAIT_MICROSECONDS = 100000;
+
 	private $principalInfo;
 
 	/**
@@ -89,12 +96,31 @@ class UploadHome implements ICollection {
 			$user = \OC::$server->getUserSession()->getUser();
 		}
 		Filesystem::initMountPoints($user->getUID());
-		if (!$rootView->file_exists('/' . $user->getUID() . '/uploads')) {
-			$rootView->mkdir('/' . $user->getUID() . '/uploads');
+		$uploadsPath = '/' . $user->getUID() . '/uploads';
+		if (!$rootView->file_exists($uploadsPath)) {
+			try {
+				$rootView->mkdir($uploadsPath);
+			} catch (LockedException $e) {
+				// Eine parallele Anfrage legt den Ordner gerade an. Nicht erneut anlegen:
+				// View::basicOperation gibt die eigene geteilte Sperre in diesem Fall erst
+				// am Ende der Anfrage frei. Unten wird nur noch gelesen.
+			}
 		}
-		$view = new View('/' . $user->getUID() . '/uploads');
+		$view = new View($uploadsPath);
 		$rootInfo = $view->getFileInfo('');
-		$impl = new Directory($view, $rootInfo);
-		return $impl;
+		// Beim ersten Zugriff eines Kontos kann eine parallele Anfrage den Ordner noch
+		// anlegen oder einlesen. View::getFileInfo() meldet die Sperre dann nicht,
+		// sondern liefert false. Die Sperre hält nur Millisekunden, deshalb kurz warten.
+		for ($attempt = 0; $rootInfo === false && $attempt < self::FIRST_USE_RETRIES; $attempt++) {
+			\usleep(self::FIRST_USE_WAIT_MICROSECONDS);
+			$rootInfo = $view->getFileInfo('');
+		}
+		if ($rootInfo === false) {
+			// Der Wortlaut ist Absicht (wie in ObjectTree): Desktop-Clients werten nur
+			// diesen 503 als vorübergehenden Fehler der einen Datei. Jeden anderen
+			// ServiceUnavailable halten sie für den Wartungsmodus und brechen den Sync ab.
+			throw new ServiceUnavailable('Storage is temporarily not available');
+		}
+		return new Directory($view, $rootInfo);
 	}
 }
