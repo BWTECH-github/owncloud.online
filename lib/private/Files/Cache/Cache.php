@@ -43,6 +43,7 @@
 
 namespace OC\Files\Cache;
 
+use Doctrine\DBAL\Exception\DeadlockException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Platforms\OraclePlatform;
 use OC\Cache\CappedMemoryCache;
@@ -929,6 +930,27 @@ class Cache implements ICache {
 	 * @return int
 	 */
 	public function calculateFolderSize($path, $entry = null) {
+		$canRetry = !$this->connection->inTransaction();
+		for ($attempt = 1; ; $attempt++) {
+			try {
+				return $this->calculateFolderSizeOnce($path, $entry);
+			} catch (DeadlockException $e) {
+				if (!$canRetry || $this->connection->inTransaction() || $attempt === 5) {
+					throw $e;
+				}
+				// Recalculate after a conflicting write instead of replaying an obsolete size.
+				$entry = null;
+				\usleep(\random_int(10000, 50000) * $attempt);
+			}
+		}
+	}
+
+	/**
+	 * @param string $path
+	 * @param array $entry
+	 * @return int
+	 */
+	protected function calculateFolderSizeOnce($path, $entry = null) {
 		$totalSize = 0;
 		if ($entry === null or !isset($entry['fileid'])) {
 			$entry = $this->get($path);
