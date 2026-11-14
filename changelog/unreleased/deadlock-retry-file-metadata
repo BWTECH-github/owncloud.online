@@ -1,0 +1,13 @@
+Bugfix: Parallel deletes and uploads no longer fail on short database deadlocks
+
+With several database nodes accepting writes (Galera), parallel requests of
+one account can collide on the folder rows that carry size and ETag. The
+database then aborts one statement with error 1213 / SQLSTATE 40001. A delete
+ended with HTTP 500 after the file had already been moved to the trash bin,
+and the trash bin record with its original location was missing. An upload
+ended with HTTP 500 and left wrong folder sizes behind.
+
+The folder size calculation and the propagation of ETag and size to the parent
+folders now repeat the failed statement up to five times after a short pause,
+but only outside of database transactions. Lock wait timeouts and other errors
+are passed on unchanged.
