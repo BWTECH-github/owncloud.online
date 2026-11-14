@@ -1,0 +1,14 @@
+Bugfix: Long uploads no longer fail when the database connection was cut while idle
+
+A request that does not use the database for a while - a large chunk arriving
+over a slow line, the assembly of a very large file, a virus scan - kept its
+database connection open but unused. Load balancers and firewalls in front of
+the database often cut such a connection after 60 seconds of inactivity. The
+next query then failed with "MySQL server has gone away" and the whole request
+with HTTP 500, although all data had arrived; sync clients reported the file as
+failed and uploaded it again.
+
+Before a query, a connection that was idle for 30 seconds or more is now
+checked with an empty query and re-established if the other side has dropped
+it. Requests inside an open transaction are left alone. Normal requests are
+not affected: without such an idle period there is no additional query.
