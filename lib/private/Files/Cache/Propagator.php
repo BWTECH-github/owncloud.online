@@ -28,6 +28,7 @@
 
 namespace OC\Files\Cache;
 
+use Doctrine\DBAL\Exception\DeadlockException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\Files\Cache\IPropagator;
 use OCP\IDBConnection;
@@ -107,7 +108,19 @@ class Propagator implements IPropagator {
 		$builder->where($builder->expr()->eq('storage', $builder->createNamedParameter($storageId, IQueryBuilder::PARAM_INT)));
 		$builder->andWhere($builder->expr()->in('path_hash', $hashParams));
 
-		$builder->execute();
+		$canRetry = !$this->connection->inTransaction();
+		for ($attempt = 1; ; $attempt++) {
+			try {
+				$builder->execute();
+				return;
+			} catch (DeadlockException $e) {
+				if (!$canRetry || $this->connection->inTransaction() || $attempt === 5) {
+					throw $e;
+				}
+				// Only the failed atomic UPDATE is retried; a successful size delta is never replayed.
+				\usleep(\random_int(10000, 50000) * $attempt);
+			}
+		}
 	}
 
 	protected function getParents($path) {
