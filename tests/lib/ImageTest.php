@@ -75,6 +75,26 @@ class ImageTest extends \Test\TestCase {
 		$this->assertFalse($img->valid());
 	}
 
+	public function testLocalFilesWithoutUserFilesystem() {
+		$view = new \ReflectionProperty(\OC\Files\Filesystem::class, 'defaultInstance');
+		$previous = $view->getValue();
+		try {
+			$view->setValue(null, null);
+			$image = new \OC_Image();
+			$this->assertFalse($image->loadFromFile(OC::$SERVERROOT.'/core/img/filetypes/file.svg'));
+			$this->assertFalse($image->valid());
+			$this->assertNull(\OC\Files\Filesystem::getView());
+
+			$this->assertNotFalse($image->loadFromFile(OC::$SERVERROOT.'/tests/data/testimage.png'));
+			$this->assertTrue($image->valid());
+			$this->assertNull(\OC\Files\Filesystem::getView());
+			$this->assertFalse($image->loadFromFile(OC::$SERVERROOT.'/core/img/filetypes/file.svg'));
+			$this->assertFalse($image->valid());
+		} finally {
+			$view->setValue(null, $previous);
+		}
+	}
+
 	public function testMimeType() {
 		$img = new \OC_Image(OC::$SERVERROOT.'/tests/data/testimage.png');
 		$this->assertEquals('image/png', $img->mimeType());
