@@ -62,12 +62,80 @@ class Connection extends \Doctrine\DBAL\Connection implements IDBConnection {
 
 	protected $lockedTable = null;
 
+	/**
+	 * Sekunden ohne Abfrage, nach denen die Verbindung vor der nächsten Abfrage geprüft wird.
+	 * Lastverteiler und Firewalls vor der Datenbank trennen Verbindungen häufig nach 60 Sekunden
+	 * Leerlauf, der Wert liegt deshalb deutlich darunter.
+	 */
+	public const IDLE_CHECK_AFTER = 30;
+
+	/**
+	 * @var int Zeitpunkt (Unix-Zeit), zu dem die Verbindung zuletzt benutzt wurde: Ende der
+	 * letzten Abfrage, 0 vor der ersten
+	 */
+	private $lastUsed = 0;
+
+	/**
+	 * @var bool true, sobald der Konstruktor die erste Sitzung eingerichtet hat. Jede weitere
+	 * Sitzung (Neuaufbau) bekommt die Isolationsstufe in connect() erneut.
+	 */
+	private $sessionConfigured = false;
+
 	public function connect() {
 		try {
-			return parent::connect();
+			$this->reconnectAfterIdle();
+			$established = parent::connect();
 		} catch (DBALException $e) {
 			// throw a new exception to prevent leaking info from the stacktrace
 			throw new DBALException('Failed to connect to the database: ' . $e->getMessage(), $e->getCode());
+		}
+		if ($established && $this->sessionConfigured) {
+			// Eine neu aufgebaute Sitzung liefe sonst mit der Isolationsstufe des Servers
+			// (MySQL: REPEATABLE READ) statt mit der des Konstruktors.
+			parent::setTransactionIsolation($this->getTransactionIsolation());
+		}
+		return $established;
+	}
+
+	/**
+	 * Lange Anfragen nutzen die Datenbank minutenlang nicht: das Hochladen eines großen Stücks
+	 * über eine langsame Leitung, der Zusammenbau einer großen Datei, eine Virenprüfung. Trennt
+	 * in dieser Zeit ein Lastverteiler oder der Datenbankserver die Verbindung, scheitert die
+	 * nächste Abfrage mit "MySQL server has gone away" und damit die ganze Anfrage mit HTTP 500,
+	 * obwohl die Daten vollständig angekommen sind.
+	 *
+	 * Deshalb wird die Verbindung nach längerem Leerlauf mit einer leeren Abfrage geprüft und
+	 * bei Bedarf geschlossen; parent::connect() baut sie dann neu auf (postConnect-Ereignisse)
+	 * und connect() setzt die Isolationsstufe erneut.
+	 *
+	 * Der Leerlauf zählt ab dem Ende der letzten Abfrage. lastInsertId() löst die Prüfung nie
+	 * aus: Eine Abfrage dazwischen setzte die Einfüge-ID der Sitzung zurück.
+	 */
+	private function reconnectAfterIdle(): void {
+		$now = \time();
+		$idle = $now - $this->lastUsed;
+		$this->lastUsed = $now;
+		if ($this->_conn === null || $idle < self::IDLE_CHECK_AFTER) {
+			return;
+		}
+		if ($this->isTransactionActive() || $this->lockedTable !== null) {
+			// Eine offene Transaktion oder Tabellensperre ginge mit der Verbindung verloren und
+			// ließe sich nicht stillschweigend fortsetzen. Der Fehler der nächsten Abfrage bleibt
+			// dann sichtbar.
+			return;
+		}
+		try {
+			$this->_conn->query($this->getDatabasePlatform()->getDummySelectSQL())->free();
+		} catch (\Throwable $e) {
+			$this->close();
+			try {
+				\OC::$server->getLogger()->info(
+					'Database connection was dropped while idle for {idle} seconds, reconnecting: {message}',
+					['app' => 'core', 'idle' => $idle, 'message' => $e->getMessage()]
+				);
+			} catch (\Throwable $ignored) {
+				// Das Protokoll ist hier nur Zugabe
+			}
 		}
 	}
 
@@ -154,6 +222,7 @@ class Connection extends \Doctrine\DBAL\Connection implements IDBConnection {
 		$this->tablePrefix = $params['tablePrefix'];
 
 		parent::setTransactionIsolation(TransactionIsolationLevel::READ_COMMITTED);
+		$this->sessionConfigured = true;
 	}
 
 	/**
@@ -196,7 +265,11 @@ class Connection extends \Doctrine\DBAL\Connection implements IDBConnection {
 	public function executeQuery($query, array $params = [], $types = [], ?QueryCacheProfile $qcp = null) : Result {
 		$query = $this->replaceTablePrefix($query);
 		$query = $this->adapter->fixupStatement($query);
-		return parent::executeQuery($query, $params, $types, $qcp);
+		try {
+			return parent::executeQuery($query, $params, $types, $qcp);
+		} finally {
+			$this->lastUsed = \time();
+		}
 	}
 
 	/**
@@ -221,7 +294,11 @@ class Connection extends \Doctrine\DBAL\Connection implements IDBConnection {
 	public function executeUpdate($query, array $params = [], array $types = []) : int {
 		$query = $this->replaceTablePrefix($query);
 		$query = $this->adapter->fixupStatement($query);
-		return parent::executeUpdate($query, $params, $types);
+		try {
+			return parent::executeUpdate($query, $params, $types);
+		} finally {
+			$this->lastUsed = \time();
+		}
 	}
 
 	/**
@@ -243,7 +320,11 @@ class Connection extends \Doctrine\DBAL\Connection implements IDBConnection {
 	public function executeStatement($query, array $params = [], array $types = []) {
 		$query = $this->replaceTablePrefix($query);
 		$query = $this->adapter->fixupStatement($query);
-		return parent::executeStatement($query, $params, $types);
+		try {
+			return parent::executeStatement($query, $params, $types);
+		} finally {
+			$this->lastUsed = \time();
+		}
 	}
 
 	/**
@@ -258,6 +339,8 @@ class Connection extends \Doctrine\DBAL\Connection implements IDBConnection {
 	 * @return string A string representation of the last inserted ID.
 	 */
 	public function lastInsertId($seqName = null) {
+		// Keine Prüfabfrage vor dem Lesen der Einfüge-ID, siehe reconnectAfterIdle()
+		$this->lastUsed = \time();
 		if ($seqName) {
 			$seqName = $this->replaceTablePrefix($seqName);
 		}
