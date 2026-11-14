@@ -101,24 +101,25 @@ class UploadHome implements ICollection {
 			try {
 				$rootView->mkdir($uploadsPath);
 			} catch (LockedException $e) {
-				// Eine parallele Anfrage legt den Ordner gerade an. Nicht erneut anlegen:
-				// View::basicOperation gibt die eigene geteilte Sperre in diesem Fall erst
-				// am Ende der Anfrage frei. Unten wird nur noch gelesen.
+				// Vorsorglich: View selbst sperrt diesen Pfad nicht (View::shouldLockFile()),
+				// ein Speicher darf die Ausnahme aber werfen. Unten wird dann nur noch gelesen.
 			}
 		}
 		$view = new View($uploadsPath);
 		$rootInfo = $view->getFileInfo('');
-		// Beim ersten Zugriff eines Kontos kann eine parallele Anfrage den Ordner noch
-		// anlegen oder einlesen. View::getFileInfo() meldet die Sperre dann nicht,
-		// sondern liefert false. Die Sperre hält nur Millisekunden, deshalb kurz warten.
-		for ($attempt = 0; $rootInfo === false && $attempt < self::FIRST_USE_RETRIES; $attempt++) {
+		// Beim ersten Zugriff eines Kontos liest eine Anfrage den Ordner in den Datei-Cache ein.
+		// Eine parallele Anfrage scheitert an der Sperre dieses Scanners; View::getCacheEntry()
+		// schluckt die LockedException und liefert false, obwohl der Ordner da ist. Der Scan
+		// dauert nur Millisekunden, deshalb kurz warten. Fehlt der Ordner wirklich (Anlegen
+		// gescheitert), hilft Warten nicht.
+		for ($attempt = 0; $rootInfo === false && $attempt < self::FIRST_USE_RETRIES && $rootView->file_exists($uploadsPath); $attempt++) {
 			\usleep(self::FIRST_USE_WAIT_MICROSECONDS);
 			$rootInfo = $view->getFileInfo('');
 		}
 		if ($rootInfo === false) {
-			// Der Wortlaut ist Absicht (wie in ObjectTree): Desktop-Clients werten nur
-			// diesen 503 als vorübergehenden Fehler der einen Datei. Jeden anderen
-			// ServiceUnavailable halten sie für den Wartungsmodus und brechen den Sync ab.
+			// Der Wortlaut ist Absicht (wie in ObjectTree): Bei Stück-Uploads und beim
+			// Zusammenbau werten Desktop-Clients nur diesen 503 als vorübergehenden Fehler
+			// der einen Datei, jeden anderen ServiceUnavailable als Wartungsmodus.
 			throw new ServiceUnavailable('Storage is temporarily not available');
 		}
 		return new Directory($view, $rootInfo);

@@ -20,6 +20,7 @@
 namespace OCA\DAV\Tests\unit\Upload;
 
 use OC\Files\Cache\CacheEntry;
+use OC\Files\Cache\Scanner;
 use OC\Files\Cache\Updater;
 use OC\Files\Cache\Watcher;
 use OC\Files\Filesystem;
@@ -32,8 +33,8 @@ use Test\TestCase;
 use Test\Traits\UserTrait;
 
 /**
- * Erster Zugriff auf den Upload-Ordner eines Kontos, auch wenn eine parallele
- * Anfrage ihn gerade anlegt.
+ * Erster Zugriff auf den Upload-Ordner eines Kontos, auch wenn eine parallele Anfrage ihn
+ * gerade in den Datei-Cache einliest und die Scanner-Sperre hält.
  *
  * @group DB
  */
@@ -46,7 +47,16 @@ class UploadHomeTest extends TestCase {
 	private $mountPath;
 	/** @var Temporary|\PHPUnit\Framework\MockObject\MockObject|null */
 	private $storage;
-	/** @var int Anzahl der Leseversuche auf den Cache-Eintrag des Ordners */
+
+	/** @var bool Ordner liegt auf der Platte */
+	private $onDisk = false;
+	/** @var bool Ordner steht im Datei-Cache */
+	private $inCache = false;
+	/** @var int so viele eigene Scans treffen noch auf die Sperre der parallelen Anfrage */
+	private $lockedScans = 0;
+	/** @var int eigene Scan-Versuche */
+	private $scanAttempts = 0;
+	/** @var int Leseversuche auf den Cache-Eintrag */
 	private $cacheReads = 0;
 
 	protected function setUp(): void {
@@ -65,17 +75,25 @@ class UploadHomeTest extends TestCase {
 	}
 
 	/**
-	 * Hängt einen Speicher als Upload-Ordner ein, dessen Sichtbarkeit der Test steuert.
+	 * Hängt einen Speicher als Upload-Ordner ein, dessen Zustand der Test steuert.
 	 * UploadHome arbeitet dabei mit seinen echten Views.
 	 *
-	 * @param bool $existsOnDisk Ordner ist für file_exists() schon da
-	 * @param int $readableFromRead ab dem wievielten Leseversuch der Cache-Eintrag da ist
-	 *            (1 = sofort, PHP_INT_MAX = nie)
+	 * @param bool $onDisk Ordner liegt schon auf der Platte
+	 * @param bool $inCache Ordner steht schon im Datei-Cache
+	 * @param int $lockedScans so viele Scans scheitern an der Sperre einer parallelen Anfrage;
+	 *            danach hat diese den Ordner eingelesen (PHP_INT_MAX = sie wird nie fertig)
 	 * @param bool|\Exception $mkdirResult Ergebnis von mkdir() oder die Ausnahme, die es wirft
+	 * @param bool $createdByOther mkdir() scheitert, weil eine parallele Anfrage den Ordner
+	 *            in diesem Moment angelegt und eingelesen hat
 	 * @return Temporary|\PHPUnit\Framework\MockObject\MockObject
 	 */
-	private function mountUploads($existsOnDisk, $readableFromRead = 1, $mkdirResult = true) {
+	private function mountUploads($onDisk, $inCache, $lockedScans = 0, $mkdirResult = true, $createdByOther = false) {
+		$this->onDisk = $onDisk;
+		$this->inCache = $inCache;
+		$this->lockedScans = $lockedScans;
+		$this->scanAttempts = 0;
 		$this->cacheReads = 0;
+
 		$entry = new CacheEntry([
 			'fileid' => 1,
 			'path' => '',
@@ -86,24 +104,44 @@ class UploadHomeTest extends TestCase {
 			'permissions' => \OCP\Constants::PERMISSION_ALL,
 		]);
 		$cache = $this->createMock(ICache::class);
-		$cache->method('get')->willReturnCallback(function () use ($entry, $readableFromRead) {
+		$cache->method('get')->willReturnCallback(function () use ($entry) {
 			$this->cacheReads++;
-			return $this->cacheReads >= $readableFromRead ? $entry : false;
+			return $this->inCache ? $entry : false;
 		});
 		$watcher = $this->createMock(Watcher::class);
 		$watcher->method('needsUpdate')->willReturn(false);
+		// Der Weg aus der Produktion: Der eigene Scan scheitert an der Scanner-Sperre der
+		// parallelen Anfrage, View::getCacheEntry() schluckt die LockedException.
+		$scanner = $this->createMock(Scanner::class);
+		$scanner->method('scan')->willReturnCallback(function () {
+			$this->scanAttempts++;
+			if ($this->scanAttempts <= $this->lockedScans) {
+				if ($this->scanAttempts === $this->lockedScans) {
+					// Die parallele Anfrage ist jetzt fertig, der nächste Leseversuch findet den Eintrag
+					$this->inCache = true;
+				}
+				throw new LockedException('scanner::');
+			}
+			$this->inCache = true;
+			return null;
+		});
 
 		$this->storage = $this->getMockBuilder(Temporary::class)
-			->onlyMethods(['getCache', 'getWatcher', 'getUpdater', 'getOwner', 'file_exists', 'mkdir'])
+			->onlyMethods(['getCache', 'getWatcher', 'getUpdater', 'getScanner', 'getOwner', 'file_exists', 'mkdir'])
 			->getMock();
 		$this->storage->method('getCache')->willReturn($cache);
 		$this->storage->method('getWatcher')->willReturn($watcher);
 		$this->storage->method('getUpdater')->willReturn($this->createMock(Updater::class));
+		$this->storage->method('getScanner')->willReturn($scanner);
 		$this->storage->method('getOwner')->willReturn($this->user->getUID());
-		// Ohne Cache-Eintrag und ohne Ordner auf der Platte liefert View::getFileInfo() false,
-		// genau wie hinter der Sperre einer parallelen Anfrage.
-		$this->storage->method('file_exists')->willReturn($existsOnDisk);
-		$this->storage->method('mkdir')->willReturnCallback(function () use ($mkdirResult) {
+		$this->storage->method('file_exists')->willReturnCallback(function () {
+			return $this->onDisk;
+		});
+		$this->storage->method('mkdir')->willReturnCallback(function () use ($mkdirResult, $createdByOther) {
+			if ($mkdirResult === true || $createdByOther) {
+				$this->onDisk = true;
+				$this->inCache = true;
+			}
 			if ($mkdirResult instanceof \Exception) {
 				throw $mkdirResult;
 			}
@@ -114,51 +152,52 @@ class UploadHomeTest extends TestCase {
 	}
 
 	public function testCreatesUploadHomeOnFirstUse(): void {
-		$storage = $this->mountUploads(false);
+		$storage = $this->mountUploads(false, false);
 		$storage->expects($this->once())->method('mkdir');
 
 		$home = new UploadHome(['user' => $this->user]);
 		self::assertSame(123456789, $home->getLastModified());
 	}
 
-	public function testReusesExistingUploadHomeWithoutCreatingAgain(): void {
-		$storage = $this->mountUploads(true);
+	public function testReusesExistingUploadHomeWithoutWaiting(): void {
+		$storage = $this->mountUploads(true, true);
 		$storage->expects($this->never())->method('mkdir');
 
 		$home = new UploadHome(['user' => $this->user]);
 		self::assertSame(123456789, $home->getLastModified());
 		self::assertSame(1, $this->cacheReads, 'Der Normalfall darf nicht warten oder mehrfach lesen');
+		self::assertSame(0, $this->scanAttempts);
 	}
 
 	public function testUsesHomeCreatedConcurrentlyWhenMkdirReturnsFalse(): void {
-		$storage = $this->mountUploads(false, 1, false);
+		$storage = $this->mountUploads(false, false, 0, false, true);
 		$storage->expects($this->once())->method('mkdir');
 
 		$home = new UploadHome(['user' => $this->user]);
 		self::assertSame(123456789, $home->getLastModified());
 	}
 
-	public function testUsesHomeCreatedConcurrentlyWhenMkdirIsLocked(): void {
-		$storage = $this->mountUploads(false, 1, new LockedException('uploads'));
+	public function testToleratesLockedMkdir(): void {
+		$storage = $this->mountUploads(false, false, 0, new LockedException('uploads'), true);
 		$storage->expects($this->once())->method('mkdir');
 
 		$home = new UploadHome(['user' => $this->user]);
 		self::assertSame(123456789, $home->getLastModified());
 	}
 
-	public function testWaitsUntilConcurrentCreationIsReadable(): void {
-		// Die ersten drei Leseversuche treffen noch auf die Sperre der anlegenden Anfrage
-		$storage = $this->mountUploads(false, 4, false);
-		$storage->expects($this->once())->method('mkdir');
+	public function testWaitsWhileConcurrentRequestHoldsTheScannerLock(): void {
+		// Ordner liegt auf der Platte, steht aber noch nicht im Cache: Drei eigene Scans
+		// treffen auf die Scanner-Sperre der parallelen Anfrage, dann ist diese fertig.
+		$storage = $this->mountUploads(true, false, 3);
+		$storage->expects($this->never())->method('mkdir');
 
 		$home = new UploadHome(['user' => $this->user]);
 		self::assertSame(123456789, $home->getLastModified());
-		self::assertSame(4, $this->cacheReads);
+		self::assertSame(3, $this->scanAttempts);
 	}
 
-	public function testUnreadableHomeIsReportedAsTemporaryStorageError(): void {
-		$storage = $this->mountUploads(false, PHP_INT_MAX, false);
-		$storage->expects($this->once())->method('mkdir');
+	public function testPermanentScannerLockIsReportedAsTemporaryStorageError(): void {
+		$this->mountUploads(true, false, PHP_INT_MAX);
 
 		$home = new UploadHome(['user' => $this->user]);
 		try {
@@ -168,6 +207,24 @@ class UploadHomeTest extends TestCase {
 			self::assertSame(503, $exception->getHTTPCode());
 			// Auf diesen Wortlaut prüfen die Desktop-Clients, siehe ObjectTree
 			self::assertSame('Storage is temporarily not available', $exception->getMessage());
+			self::assertSame(11, $this->scanAttempts, 'Ein Versuch und zehn Wiederholungen');
+		}
+	}
+
+	public function testMissingHomeIsReportedWithoutWaiting(): void {
+		// Anlegen scheitert (Rechte, Platte voll): Warten hilft nicht
+		$storage = $this->mountUploads(false, false, 0, false);
+		$storage->expects($this->once())->method('mkdir');
+
+		$home = new UploadHome(['user' => $this->user]);
+		$start = \microtime(true);
+		try {
+			$home->getLastModified();
+			self::fail('Ein fehlender Upload-Ordner darf nicht an Directory gehen');
+		} catch (ServiceUnavailable $exception) {
+			self::assertSame(503, $exception->getHTTPCode());
+			self::assertSame(1, $this->cacheReads);
+			self::assertLessThan(0.5, \microtime(true) - $start, 'Ohne Ordner auf der Platte wird nicht gewartet');
 		}
 	}
 }
