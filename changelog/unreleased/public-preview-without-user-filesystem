@@ -1,0 +1,8 @@
+Bugfix: Public link previews no longer fail without a user file system
+
+When no preview could be generated for a file in a public link, the server
+fell back to the file type icon. These icons are SVG files, which the image
+library cannot read, and the image loader then tried to read them through the
+file system of a logged-in user. A visitor of a public link without a login has
+no such file system, so the request ended with HTTP 500 and an error in the
+log. The image loader now reports that it cannot load the icon instead.
