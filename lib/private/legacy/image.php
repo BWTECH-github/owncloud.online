@@ -700,6 +700,11 @@ class OC_Image implements \OCP\IImage {
 					break;
 				*/
 			default:
+				// Anonymous previews may have no user filesystem for the encrypted-file fallback.
+				if (\OC\Files\Filesystem::getView() === null) {
+					$this->resource = false;
+					return false;
+				}
 
 				// this is mostly file created from encrypted file
 				$this->resource = \imagecreatefromstring(\OC\Files\Filesystem::file_get_contents(\OC\Files\Filesystem::getLocalPath($imagePath)));
