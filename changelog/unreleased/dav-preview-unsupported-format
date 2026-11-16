@@ -1,0 +1,4 @@
+Bugfix: WebDAV previews of AVIF and other formats no longer fail with HTTP 400
+
+Previews in a format the image library cannot write back, such as AVIF, ended
+with HTTP 400. They are now delivered as PNG.

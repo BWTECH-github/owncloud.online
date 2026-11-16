@@ -98,6 +98,21 @@ class HasherTest extends \Test\TestCase {
 	}
 
 	/**
+	 * Fehlendes Passwort (null) ergibt false ohne PHP-Meldung
+	 */
+	public function testVerifyNullPassword() {
+		$hash = $this->hasher->hash('geheim');
+		\set_error_handler(static function ($no, $str) {
+			throw new \ErrorException($str, 0, $no);
+		});
+		try {
+			$this->assertFalse($this->hasher->verify(null, $hash));
+		} finally {
+			\restore_error_handler();
+		}
+	}
+
+	/**
 	 * @dataProvider allHashProviders
 	 */
 	public function testVerify($password, $hash, $expected) {

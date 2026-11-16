@@ -58,6 +58,15 @@ class FileHelperTest extends \Test\TestCase {
 		$this->assertEquals($expectedVersionInfo['revision'], $versionInfo['revision']);
 	}
 
+	/**
+	 * Dateien ohne „.v<Zeitstempel>“ im Versionsordner (z. B. Reste aus einem Umzug) sind keine Versionen
+	 */
+	public function testGetPathAndRevisionWithoutVersionSuffix() {
+		$fileHelper = new FileHelper();
+		$this->assertNull($fileHelper->getPathAndRevision('/files_versions/Ordner/bericht.docx'));
+		$this->assertNull($fileHelper->getPathAndRevision(''));
+	}
+
 	public function dataTestGetPathAndRevision() {
 		return [
 			[

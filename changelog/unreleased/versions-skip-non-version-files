@@ -1,0 +1,5 @@
+Bugfix: Version list ignores files without a version suffix
+
+Files in the versions folder without the ".v<timestamp>" suffix, for example
+leftovers from a migration, produced thousands of PHP warnings when the
+version list or the version cleanup ran. They are no longer treated as versions.

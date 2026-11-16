@@ -175,6 +175,9 @@ class PreviewPluginTest extends TestCase {
 	public function testPreviewCreatesImage(): void {
 		$image = $this->createMock(IImage::class);
 		$image->method('valid')->willReturn(true);
+		// Vorschau in einem Format, das OC_Image nicht ausgeben kann: geht als PNG raus
+		$image->method('mimeType')->willReturn('image/avif');
+		$image->expects($this->once())->method('show')->with('image/png');
 		$this->previewNode->method('getThumbnail')->willReturn($image);
 
 		$this->request->method('getQueryParameters')->willReturn([
@@ -185,7 +188,7 @@ class PreviewPluginTest extends TestCase {
 		$this->response->method('setBody')->with('');
 		$this->response->expects($this->exactly(4))
 			->method('setHeader')->withConsecutive(
-				['Content-Type', 'application/octet-stream'],
+				['Content-Type', 'image/png'],
 				['Content-Disposition', 'attachment'],
 				['Cache-Control', 'max-age=86400, must-revalidate'],
 				['Expires', \gmdate('D, d M Y H:i:s', 1234567 + 86400) . ' GMT']

@@ -91,6 +91,10 @@ class FileHelper {
 					\array_push($dirs, $filePath);
 				} else {
 					$versionInfo = $this->getPathAndRevision($filePath);
+					if ($versionInfo === null) {
+						// keine Versionsdatei (z. B. Rest aus einem Umzug): nicht als Version auflisten
+						continue;
+					}
 					$relPathStart = \strlen(Storage::VERSIONS_ROOT);
 					$relPath = \substr($versionInfo['path'], $relPathStart);
 					$key = $versionInfo['revision'] . '#' . $relPath;
@@ -128,17 +132,15 @@ class FileHelper {
 	 *
 	 * @param string $versionPath
 	 *
-	 * @return array
+	 * @return array|null null, wenn der Pfad keine Versionsdatei ist (kein „.v<Zeitstempel>“ am Ende)
 	 */
 	public function getPathAndRevision($versionPath) {
-		\preg_match_all(
-			'#(?<path>.*)\.v(?<timestamp>\d+)$#',
-			$versionPath,
-			$versionInfo
-		);
+		if (!\preg_match('#(?<path>.*)\.v(?<timestamp>\d+)$#', (string)$versionPath, $versionInfo)) {
+			return null;
+		}
 		return [
-			'path' => $versionInfo['path'][0],
-			'revision' => $versionInfo['timestamp'][0]
+			'path' => $versionInfo['path'],
+			'revision' => $versionInfo['timestamp']
 		];
 	}
 

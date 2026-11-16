@@ -1013,7 +1013,8 @@ class Storage {
 				if (self::isPublishedVersion($versionsFileview, $path)) {
 					continue;
 				}
-				$versionInfo = self::getFileHelper()->getPathAndRevision($path);
+				// Dateien ohne Versionsendung werden trotzdem aufgeräumt, nur ohne Revision im Hook
+				$versionInfo = self::getFileHelper()->getPathAndRevision($path) ?? ['path' => $path, 'revision' => ''];
 				$hookData = [
 					'user' => $uid,
 					'path' => $path,

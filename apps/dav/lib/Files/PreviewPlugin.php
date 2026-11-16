@@ -117,14 +117,16 @@ class PreviewPlugin extends ServerPlugin {
 					throw new NotFound();
 				}
 				$type = $image->mimeType();
-				if (!\in_array($type, ['image/png', 'image/jpeg', 'image/gif'])) {
-					$type = 'application/octet-stream';
+				if (!\in_array($type, ['image/png', 'image/jpeg', 'image/gif'], true)) {
+					// Andere Formate (z. B. AVIF) kann OC_Image nicht in ihrem eigenen Format ausgeben
+					// (HTTP 400). Die Vorschau geht dann als PNG raus.
+					$type = 'image/png';
 				}
 
 				// Enable output buffering
 				\ob_start();
 				// Capture the output
-				$image->show();
+				$image->show($type);
 				$imageData = \ob_get_contents();
 				// Clear the output buffer
 				\ob_end_clean();

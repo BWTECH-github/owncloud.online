@@ -143,6 +143,9 @@ class Hasher implements IHasher {
 	 * @return bool Whether $hash is a valid hash of $message
 	 */
 	public function verify($message, $hash, &$newHash = null) {
+		// null (z. B. fehlendes Passwort) wie leere Zeichenkette prüfen; password_verify(null) ist ab PHP 8.1 veraltet
+		$message = (string)$message;
+		$hash = (string)$hash;
 		$splittedHash = $this->splitHash($hash);
 
 		if (isset($splittedHash['version'])) {
