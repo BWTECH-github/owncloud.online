@@ -1,0 +1,8 @@
+Bugfix: Previews of large photos are faster and smaller
+
+Photos larger than the preview limit of 6016 pixels are scaled down with
+imagick. Their previews were stored as PNG, which took more than two seconds
+per photo and produced files about seven times larger than the JPEG previews
+of smaller photos. After a migration, when all previews are created again, a
+folder with many large photos showed no thumbnails in the gallery view for
+minutes. JPEG photos now keep JPEG previews; other formats stay PNG.

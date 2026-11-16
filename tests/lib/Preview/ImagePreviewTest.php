@@ -54,6 +54,59 @@ class ImagePreviewTest extends TestCase {
 		self::assertFalse($result);
 	}
 
+	/**
+	 * Erzeugt ein Bild, das breiter als das GD-Limit (6016 px) ist, damit der
+	 * imagick-Weg greift, und liefert es als Datei-Attrappe.
+	 */
+	private function wideImage(string $type): File {
+		$gd = \imagecreatetruecolor(6100, 40);
+		\ob_start();
+		if ($type === 'jpeg') {
+			\imagefill($gd, 0, 0, \imagecolorallocate($gd, 30, 120, 200));
+			\imagejpeg($gd, null, 80);
+		} else {
+			// PNG mit echter Transparenz
+			\imagealphablending($gd, false);
+			\imagesavealpha($gd, true);
+			\imagefill($gd, 0, 0, \imagecolorallocatealpha($gd, 30, 120, 200, 100));
+			\imagepng($gd);
+		}
+		$data = \ob_get_clean();
+		$stream = \fopen('php://memory', 'r+b');
+		\fwrite($stream, $data);
+		\rewind($stream);
+		$file = $this->createMock(File::class);
+		$file->method('getSize')->willReturn(\strlen($data));
+		$file->method('fopen')->willReturn($stream);
+		return $file;
+	}
+
+	/**
+	 * Große Fotos laufen über imagick. Ihre Vorschau bleibt JPEG, wie die kleinerer
+	 * Fotos über GD: PNG kostete je Foto mehrere Sekunden und viel Platz.
+	 */
+	public function testLargeJpegPreviewStaysJpeg(): void {
+		if (!\extension_loaded('imagick')) {
+			$this->markTestSkipped('imagick fehlt');
+		}
+		$result = (new JPEG())->getThumbnail($this->wideImage('jpeg'), 64, 64, true);
+
+		self::assertInstanceOf(\OC_Image::class, $result);
+		self::assertTrue($result->valid());
+		self::assertSame('image/jpeg', $result->mimeType());
+	}
+
+	public function testLargeTransparentPngPreviewStaysPng(): void {
+		if (!\extension_loaded('imagick')) {
+			$this->markTestSkipped('imagick fehlt');
+		}
+		$result = (new PNG())->getThumbnail($this->wideImage('png'), 64, 64, true);
+
+		self::assertInstanceOf(\OC_Image::class, $result);
+		self::assertTrue($result->valid());
+		self::assertSame('image/png', $result->mimeType());
+	}
+
 	public function testPixelFlood(): void {
 		$filename = __DIR__ . '/../../data/pixel.jpg';
 		$stream = fopen($filename, 'rb');

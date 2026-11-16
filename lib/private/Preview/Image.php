@@ -31,6 +31,7 @@
  *   - keep pixel-flood protection in the imagick fallback
  *   - stop double-decoding oversized images
  *   - use Imagick::autoOrientate for EXIF orientation
+ *   - keep large JPEG photos as JPEG in the imagick fallback (faster, smaller previews)
  */
 namespace OC\Preview;
 
@@ -149,7 +150,16 @@ abstract class Image implements IProvider2 {
 			if (\method_exists($imagick, 'autoOrientate')) {
 				$imagick->autoOrientate();
 			}
-			$imagick->setImageFormat('png');
+			// JPEG-Fotos bleiben JPEG, wie im GD-Weg fuer kleinere Fotos. Als PNG kostete
+			// die grosse Vorschau je Foto ueber eine Sekunde in imagick und noch einmal
+			// in GD beim Speichern, und die Vorschaudatei wurde etwa siebenmal groesser.
+			// Andere Formate (z. B. PNG mit Transparenz) bleiben PNG.
+			if (\strtoupper((string)$imagick->getImageFormat()) === 'JPEG') {
+				$imagick->setImageFormat('jpeg');
+				$imagick->setImageCompressionQuality(95);
+			} else {
+				$imagick->setImageFormat('png');
+			}
 			$imagick->thumbnailImage($maxX, $maxY, true);
 			$blob = $imagick->getImageBlob();
 		} catch (\Throwable $e) {
