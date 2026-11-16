@@ -1,5 +1,6 @@
 # Table of Contents
 
+* [Changelog for owncloud.online 11.0.28](#changelog-for-owncloudonline-11028-2026-11-16)
 * [Changelog for owncloud.online 11.0.27](#changelog-for-owncloudonline-11027-2026-11-10)
 * [Changelog for owncloud.online 11.0.26](#changelog-for-owncloudonline-11026-2026-11-05)
 * [Changelog for owncloud.online 11.0.25](#changelog-for-owncloudonline-11025-2026-10-28)
@@ -44,6 +45,133 @@
 * [Changelog for 10.4.1](#changelog-for-owncloud-core-1041-2020-03-30)
 * [Changelog for 10.4.0](#changelog-for-owncloud-core-1040-2020-02-10)
 * [Changelog for 10.3.2](#changelog-for-owncloud-core-1032-2019-12-04)
+# Changelog for owncloud.online [11.0.28] (2026-11-16)
+
+The following sections list the changes in owncloud.online 11.0.28 relevant to
+admins and users.
+
+[11.0.28]: https://github.com/BWTECH-github/owncloud.online
+
+## Summary
+
+* Security - phpseclib updated to 3.0.58: [#474d64b](https://github.com/BWTECH-github/owncloud.online/commit/474d64b)
+* Bugfix - First parallel chunked uploads of an account no longer fail with a server error: [#51488d5](https://github.com/BWTECH-github/owncloud.online/commit/51488d5)
+* Bugfix - Long uploads no longer fail when the database connection was cut while idle: [#f455fcd](https://github.com/BWTECH-github/owncloud.online/commit/f455fcd)
+* Bugfix - Parallel deletes and uploads no longer fail on short database deadlocks: [#f3def0e](https://github.com/BWTECH-github/owncloud.online/commit/f3def0e)
+* Bugfix - Public link previews no longer fail without a user file system: [#c2e0190](https://github.com/BWTECH-github/owncloud.online/commit/c2e0190)
+* Bugfix - Previews of large photos are faster and smaller: [#05ccc16](https://github.com/BWTECH-github/owncloud.online/commit/05ccc16)
+* Bugfix - Version list ignores files without a version suffix: [#b0483ed](https://github.com/BWTECH-github/owncloud.online/commit/b0483ed)
+* Bugfix - No PHP deprecation message when checking a missing password: [#b0483ed](https://github.com/BWTECH-github/owncloud.online/commit/b0483ed)
+* Bugfix - WebDAV previews of AVIF and other formats no longer fail with HTTP 400: [#b0483ed](https://github.com/BWTECH-github/owncloud.online/commit/b0483ed)
+* Bugfix - Desktop client and mobile app links point to owncloud.online: [#1e50625](https://github.com/BWTECH-github/owncloud.online/commit/1e50625)
+* Change - Desktop client page of the documentation updated for version 11.0.2: [#a429a48](https://github.com/BWTECH-github/owncloud.online/commit/a429a48)
+
+## Details
+
+* Security - phpseclib updated to 3.0.58
+
+   phpseclib/phpseclib was updated from 3.0.57 to 3.0.58. It fixes
+   GHSA-w3p9-g4p2-h3rr: the PBKDF iteration count was not limited when encrypted
+   keys, PFX or CMS structures were parsed, so a crafted file could keep the
+   server busy. The advisory has no CVE ID. composer audit reports no known
+   vulnerabilities for the PHP dependencies of the core and of the apps oco_mcp
+   and market.
+
+* Bugfix - First parallel chunked uploads of an account no longer fail with a server error
+
+   When an account uploaded large files in chunks for the very first time and two
+   requests reached /remote.php/dav/uploads/<user>/ at the same moment, one of
+   them found the upload folder on disk but not yet in the file cache, while the
+   other request was still scanning it and held the scanner lock. That request
+   ended with "Call to a member function getPath() on false" (HTTP 500). Desktop
+   clients repeated the file in the next sync run, the web interface showed a
+   failed upload.
+
+   The upload home now waits up to one second for the other request to finish
+   and then answers normally. If the folder is still not readable, the answer is
+   HTTP 503 "Storage is temporarily not available", which sync clients treat as a
+   temporary error of that one file instead of aborting the sync run.
+
+* Bugfix - Long uploads no longer fail when the database connection was cut while idle
+
+   A request that does not use the database for a while - a large chunk arriving
+   over a slow line, the assembly of a very large file, a virus scan - kept its
+   database connection open but unused. Load balancers and firewalls in front of
+   the database often cut such a connection after 60 seconds of inactivity. The
+   next query then failed with "MySQL server has gone away" and the whole request
+   with HTTP 500, although all data had arrived; sync clients reported the file as
+   failed and uploaded it again.
+
+   Before a query, a connection that was idle for 30 seconds or more is now
+   checked with an empty query and re-established if the other side has dropped
+   it. Requests inside an open transaction are left alone. Normal requests are
+   not affected: without such an idle period there is no additional query.
+
+* Bugfix - Parallel deletes and uploads no longer fail on short database deadlocks
+
+   With several database nodes accepting writes (Galera), parallel requests of
+   one account can collide on the folder rows that carry size and ETag. The
+   database then aborts one statement with error 1213 / SQLSTATE 40001. A delete
+   ended with HTTP 500 after the file had already been moved to the trash bin,
+   and the trash bin record with its original location was missing. An upload
+   ended with HTTP 500 and left wrong folder sizes behind.
+
+   The folder size calculation and the propagation of ETag and size to the parent
+   folders now repeat the failed statement up to five times after a short pause,
+   but only outside of database transactions. Lock wait timeouts and other errors
+   are passed on unchanged.
+
+* Bugfix - Public link previews no longer fail without a user file system
+
+   When no preview could be generated for a file in a public link, the server
+   fell back to the file type icon. These icons are SVG files, which the image
+   library cannot read, and the image loader then tried to read them through the
+   file system of a logged-in user. A visitor of a public link without a login has
+   no such file system, so the request ended with HTTP 500 and an error in the
+   log. The image loader now reports that it cannot load the icon instead.
+
+* Bugfix - Previews of large photos are faster and smaller
+
+   Photos larger than the preview limit of 6016 pixels are scaled down with
+   imagick. Their previews were stored as PNG, which took more than two seconds
+   per photo and produced files about seven times larger than the JPEG previews
+   of smaller photos. After a migration, when all previews are created again, a
+   folder with many large photos showed no thumbnails in the gallery view for
+   minutes. JPEG photos now keep JPEG previews; other formats stay PNG.
+
+* Bugfix - Version list ignores files without a version suffix
+
+   Files in the versions folder without the ".v<timestamp>" suffix, for example
+   leftovers from a migration, produced thousands of PHP warnings when the
+   version list or the version cleanup ran. They are no longer treated as versions.
+
+* Bugfix - No PHP deprecation message when checking a missing password
+
+   Checking a password that was not given (null) wrote a PHP deprecation message
+   from password_verify() into the log. A missing password is now checked like an
+   empty one; the result is still "wrong password".
+
+* Bugfix - WebDAV previews of AVIF and other formats no longer fail with HTTP 400
+
+   Previews in a format the image library cannot write back, such as AVIF, ended
+   with HTTP 400. They are now delivered as PNG.
+
+* Bugfix - Desktop client and mobile app links point to owncloud.online
+
+   The links in the personal settings and in the welcome dialog now lead to the
+   desktop client in the Marketplace and to the iOS app "owncloud.online" in the
+   App Store. Safari on iPhone and iPad offers this app as well. Until the
+   Android app is available, the Android link leads to the download page of the
+   mobile apps in the Marketplace.
+
+   Custom links set with `customclient_desktop`, `customclient_android` and
+   `customclient_ios` in config.php still take precedence.
+
+* Change - Desktop client page of the documentation updated for version 11.0.2
+
+   The documentation page on the desktop client describes version 11.0.2 in
+   German and English.
+
 # Changelog for owncloud.online [11.0.27] (2026-11-10)
 
 The following sections list the changes in owncloud.online 11.0.27 relevant to
