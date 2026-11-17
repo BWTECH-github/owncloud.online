@@ -1,0 +1,9 @@
+Security: Legacy admin endpoints require the second factor
+
+After a password login the user id is in the session before the second factor
+is checked. The legacy admin and group admin checks only looked at that user
+id, so a session that knew the password but not the one-time code could call
+endpoints like /index.php/disableapp or settings/ajax/setquota.php - for
+example to switch off the two-factor app for the whole instance. These checks
+now require a complete login including the second factor and the account
+modules; such sessions get 401.

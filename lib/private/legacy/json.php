@@ -111,6 +111,10 @@ class OC_JSON {
 	 * @deprecated Use annotation based ACLs from the AppFramework instead
 	 */
 	public static function checkAdminUser() {
+		// Anmeldung samt zweitem Faktor und Kontomodulen zuerst: Nach der
+		// Kennwort-Anmeldung steht user_id schon vor der 2FA-Abfrage in der Sitzung,
+		// ohne diese Prüfung ließ sich z. B. über /disableapp twofactor_totp abschalten.
+		self::checkLoggedIn();
 		if (!OC_User::isAdminUser(OC_User::getUser())) {
 			$l = \OC::$server->getL10N('lib');
 			self::error(['data' => ['message' => $l->t('Authentication error'), 'error' => 'authentication_error']]);
@@ -136,6 +140,8 @@ class OC_JSON {
 	 * @deprecated Use annotation based ACLs from the AppFramework instead
 	 */
 	public static function checkSubAdminUser() {
+		// wie checkAdminUser(): erst vollständig angemeldet (2FA, Kontomodule)
+		self::checkLoggedIn();
 		$userObject = \OC::$server->getUserSession()->getUser();
 		$isSubAdmin = false;
 		if ($userObject !== null) {
