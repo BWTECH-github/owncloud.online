@@ -1,0 +1,6 @@
+Bugfix: Share ids below 256 passed as integer were rejected
+
+ctype_digit() treats integers up to 255 as character codes. Share ids passed
+as integer - by the transfer-ownership troubleshooting command and the legacy
+federated sharing endpoints - were therefore reported as not found for most ids
+below 256. The id is cast to string again before the check.

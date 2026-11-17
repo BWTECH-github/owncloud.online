@@ -735,7 +735,8 @@ class FederatedShareProvider implements IShareProvider {
 	 * @inheritdoc
 	 */
 	public function getShareById($id, $recipientId = null) {
-		if (!ctype_digit($id)) {
+		// (string): ctype_digit() liest int-Werte bis 255 als Zeichencode, IDs wie 12 galten als ungültig
+		if (!\ctype_digit((string)$id)) {
 			// share id is defined as a field of type integer
 			// if someone calls the API asking for a share id like "abc" or "42.1"
 			// then there is no point trying to query the database,
