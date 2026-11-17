@@ -1010,10 +1010,34 @@ class OC_App {
 			if (self::atLeastMinorVersionLevelChanged($info['version'], $versions[$app])) {
 				return true;
 			}
+			// Patch-Sprung: nur ohne Upgrade weiter, wenn keine Migration der App offen ist. Sonst liefen
+			// Migrationen aus Patch-Releases auf Bestandsinstanzen nie, nur auf Neuinstallationen.
+			if (self::hasPendingMigrations($app, $info)) {
+				return true;
+			}
 			// update app version in db
 			\OC::$server->getConfig()->setAppValue($app, 'installed_version', $info['version']);
 		}
 		return false;
+	}
+
+	/**
+	 * @param string $app
+	 * @param array $info app info
+	 * @return bool true, wenn die App Migrationen mitbringt, die in oc_migrations noch fehlen
+	 */
+	private static function hasPendingMigrations($app, array $info) {
+		if (!isset($info['use-migrations']) || $info['use-migrations'] !== 'true') {
+			return false;
+		}
+		try {
+			$ms = new \OC\DB\MigrationService($app, \OC::$server->getDatabaseConnection());
+			return \array_diff($ms->getAvailableVersions(), $ms->getMigratedVersions()) !== [];
+		} catch (\Exception $e) {
+			// Im Zweifel wie bisher: kein Upgrade erzwingen
+			\OC::$server->getLogger()->logException($e, ['app' => 'core']);
+			return false;
+		}
 	}
 
 	/**

@@ -139,7 +139,7 @@ class Installer {
 			if (\is_file($basedir.'/appinfo/database.xml')) {
 				$schemaManager = new \OC\DB\MDB2SchemaManager(\OC::$server->getDatabaseConnection());
 				if (\OC::$server->getAppConfig()->getValue($info['id'], 'installed_version') === null) {
-					$schemaManager->createDbFromStructure($basedir . '/appinfo/database.xml');
+					self::createAppDbFromStructure($schemaManager, $basedir . '/appinfo/database.xml', $info['id']);
 				} else {
 					$schemaManager->updateDbFromStructure($basedir . '/appinfo/database.xml');
 				}
@@ -509,6 +509,31 @@ class Installer {
 	}
 
 	/**
+	 * Legt die Tabellen einer App aus database.xml an. Stehen sie aus einer früheren Installation
+	 * schon da (App war entfernt, Tabellen blieben), wird das Schema angeglichen statt abzubrechen.
+	 *
+	 * @param \OC\DB\MDB2SchemaManager $schemaManager
+	 * @param string $file
+	 * @param string $appId
+	 */
+	private static function createAppDbFromStructure($schemaManager, $file, $appId) {
+		try {
+			$schemaManager->createDbFromStructure($file);
+		} catch (TableExistsException $e) {
+			// createDbFromStructure lässt bei einem Abbruch seine Transaktion offen
+			$connection = \OC::$server->getDatabaseConnection();
+			if ($connection->inTransaction()) {
+				$connection->rollBack();
+			}
+			\OC::$server->getLogger()->info(
+				"Tables of $appId already exist from an earlier installation, updating the schema instead",
+				['app' => __CLASS__]
+			);
+			$schemaManager->updateDbFromStructure($file);
+		}
+	}
+
+	/**
 	 * Installs shipped apps
 	 *
 	 * This function installs all apps found in the 'apps' directory that should be enabled by default;
@@ -525,7 +550,8 @@ class Installer {
 				if ($softErrors) {
 					try {
 						Installer::installShippedApp($appToInstall);
-					} catch (TableExistsException $e) {
+					} catch (\Exception $e) {
+						// Im Update nur protokollieren: Ein kaputter Altbestand einer App darf das Update nicht abbrechen
 						\OC::$server->getLogger()->logException($e, ['app' => __CLASS__]);
 						$errors[$appToInstall] = $e;
 						continue;
@@ -563,7 +589,7 @@ class Installer {
 			if ($appPath !== false && \is_file($appPath.'/appinfo/database.xml')) {
 				\OC::$server->getLogger()->debug('Create app database from schema file');
 				$schemaManager = new \OC\DB\MDB2SchemaManager(\OC::$server->getDatabaseConnection());
-				$schemaManager->createDbFromStructure($appPath . '/appinfo/database.xml');
+				self::createAppDbFromStructure($schemaManager, $appPath . '/appinfo/database.xml', $app);
 			}
 		}
 

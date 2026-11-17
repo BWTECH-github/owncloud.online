@@ -1,0 +1,14 @@
+Bugfix: Enabling an outdated or previously removed app no longer breaks the instance
+
+Enabling a disabled app whose data was older than its code only set the app to
+enabled. The instance then required an upgrade until an administrator ran
+`occ upgrade`, and showed the maintenance page meanwhile. Enabling now runs the
+app's migrations and repair steps first.
+
+Installing an app over tables left behind by an earlier installation stopped
+with "table already exists" for apps that use database.xml. The schema is now
+updated instead. During `occ upgrade`, any error while installing a new shipped
+app is logged and no longer aborts the upgrade.
+
+An app update that only raises the patch version now runs migrations that are
+still missing, instead of silently skipping them on existing instances.

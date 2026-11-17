@@ -281,6 +281,8 @@ class AppManager implements IAppManager {
 
 		if (!Installer::isInstalled($appId)) {
 			Installer::installShippedApp($appId);
+		} else {
+			$this->upgradeBeforeEnable($appId);
 		}
 
 		$this->canEnableTheme($appId);
@@ -348,6 +350,8 @@ class AppManager implements IAppManager {
 
 		if (!Installer::isInstalled($appId)) {
 			Installer::installShippedApp($appId);
+		} else {
+			$this->upgradeBeforeEnable($appId);
 		}
 
 		$groupIds = \array_map(function ($group) {
@@ -816,6 +820,26 @@ class AppManager implements IAppManager {
 		$infoFile = "{$path}/appinfo/info.xml";
 		$appData = $this->getAppInfoByPath($infoFile);
 		return isset($appData['version']) ? $appData['version'] : '';
+	}
+
+	/**
+	 * Eine ausgeschaltete App mit älterem Datenstand erst aktualisieren (Migrationen, Reparaturschritte),
+	 * dann einschalten. Sonst steht die Instanz danach auf „Update nötig“ (Wartungsseite, DAV 503),
+	 * bis jemand occ upgrade ausführt – so geschehen beim Einschalten von Pflicht-Apps im SaaS-Update.
+	 *
+	 * @param string $appId
+	 * @return void
+	 * @throws \Exception
+	 */
+	private function upgradeBeforeEnable(string $appId): void {
+		if ($this->appConfig->getValue($appId, 'enabled', 'no') !== 'no') {
+			return; // eingeschaltete Apps aktualisiert occ upgrade
+		}
+		if (!OC_App::shouldUpgrade($appId)) {
+			return;
+		}
+		OC_App::registerAutoloading($appId, $this->getAppPath($appId));
+		OC_App::updateApp($appId);
 	}
 
 	/**
