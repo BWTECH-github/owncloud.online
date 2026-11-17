@@ -1418,7 +1418,8 @@ class View {
 			// if the file is not in the cache or needs to be updated, trigger the scanner and reload the data
 			if (!$data || (isset($data['size']) && ($data['size'] === IScanner::SIZE_NEEDS_SCAN))) {
 				$this->lockFile($relativePath, ILockingProvider::LOCK_SHARED);
-				if (!$storage->file_exists($internalPath)) {
+				if (!$storage->file_exists($internalPath)
+					|| (!$data && $this->isGoneAfterRevalidation($storage, $internalPath))) {
 					$this->unlockFile($relativePath, ILockingProvider::LOCK_SHARED);
 					return false;
 				}
@@ -1440,6 +1441,57 @@ class View {
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Mehrere Webknoten teilen sich das Datenverzeichnis über NFS. Hat ein anderer Knoten eine Datei
+	 * gerade gelöscht (Papierkorb), verschoben oder umbenannt, kann der NFS-Client dieses Knotens den
+	 * alten Verzeichniseintrag noch kurz für gültig halten; NFS 4.1+ öffnet zudem per Dateihandle, das
+	 * nach dem Verschieben gültig bleibt. Der Scan würde die Datei dann mit altem Inhalt wieder in den
+	 * Dateicache aufnehmen. Das Öffnen eines Verzeichnisses erzwingt beim NFS-Client die
+	 * Close-to-open-Prüfung am Server; von der Speicherwurzel abwärts geöffnet, verwirft er dabei
+	 * veraltete Einträge. Läuft nur, wenn eine Datei auf der Platte liegt, aber im Cache fehlt, und nur
+	 * für lokale Speicher (Wrapper und Jails werden bis zum lokalen Speicher aufgelöst).
+	 *
+	 * @param \OC\Files\Storage\Storage $storage
+	 * @param string $internalPath
+	 * @return bool true, wenn die Datei nach der Prüfung am Server nicht mehr existiert
+	 */
+	private function isGoneAfterRevalidation($storage, $internalPath) {
+		try {
+			$path = $internalPath;
+			while ($storage instanceof \OC\Files\Storage\Wrapper\Wrapper) {
+				// getWrapperStorage() zuerst: SharedStorage setzt dabei erst den Jail-Pfad
+				$inner = $storage->getWrapperStorage();
+				if ($storage instanceof \OC\Files\Storage\Wrapper\Jail) {
+					$path = $storage->getSourcePath($path);
+				}
+				$storage = $inner;
+			}
+			if (!$storage instanceof Local) {
+				return false;
+			}
+			$parts = \explode('/', \trim($path, '/'));
+			\array_pop($parts);
+			$dir = '';
+			$dirs = [''];
+			foreach ($parts as $part) {
+				$dir = ($dir === '') ? $part : $dir . '/' . $part;
+				$dirs[] = $dir;
+			}
+			foreach ($dirs as $dir) {
+				$handle = @\opendir($storage->getSourcePath($dir));
+				if ($handle === false) {
+					// Ordner fehlt: die Abfrage unten entscheidet
+					break;
+				}
+				\closedir($handle);
+			}
+			\clearstatcache();
+			return !$storage->file_exists(\trim($path, '/'));
+		} catch (\Throwable $e) {
+			return false;
+		}
 	}
 
 	/**
