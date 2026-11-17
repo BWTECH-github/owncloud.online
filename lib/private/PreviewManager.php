@@ -373,12 +373,24 @@ class PreviewManager implements IPreview {
 						if (!$officeFound) {
 							// Fallback auf shell_exec, wenn findBinaryPath nichts liefert:
 							// deckt deaktiviertes exec UND open_basedir-Setups ab, in denen
-							// is_executable() auf /usr/bin nicht erlaubt ist
-							$whichLibreOffice = \shell_exec('command -v libreoffice');
-							$officeFound = !empty($whichLibreOffice);
-							if (!$officeFound) {
-								$whichOpenOffice = \shell_exec('command -v openoffice');
-								$officeFound = !empty($whichOpenOffice);
+							// is_executable() auf /usr/bin nicht erlaubt ist.
+							// Das Ergebnis wird gemerkt: Ohne LibreOffice starteten sonst bei
+							// jeder Vorschau-Anfrage zwei Shell-Prozesse.
+							$fallbackCache = \OC\Memcache\LocalCacheFactory::create(
+								\OC::$server->getMemCacheFactory(),
+								'findBinaryPath'
+							);
+							$cachedFallback = $fallbackCache->get('office-shell-fallback');
+							if ($cachedFallback === 'yes' || $cachedFallback === 'no') {
+								$officeFound = $cachedFallback === 'yes';
+							} else {
+								$whichLibreOffice = \shell_exec('command -v libreoffice');
+								$officeFound = !empty($whichLibreOffice);
+								if (!$officeFound) {
+									$whichOpenOffice = \shell_exec('command -v openoffice');
+									$officeFound = !empty($whichOpenOffice);
+								}
+								$fallbackCache->set('office-shell-fallback', $officeFound ? 'yes' : 'no', 300);
 							}
 						}
 					}

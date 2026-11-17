@@ -1,0 +1,5 @@
+Change: Remember the shell fallback of the office detection
+
+Without LibreOffice on the server, every preview request started two shell
+processes to look for it again. The result of that fallback is now kept for
+five minutes, like the result of the regular binary lookup.
