@@ -1,0 +1,5 @@
+Change: Remember image paths within a request
+
+With Redis as local cache every imagePath() call, for example each icon in the
+navigation and templates, was its own network request. Image paths found once
+are now reused for the rest of the request.

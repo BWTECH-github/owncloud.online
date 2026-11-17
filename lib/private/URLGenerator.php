@@ -55,6 +55,8 @@ class URLGenerator implements IURLGenerator {
 	private $config;
 	/** @var ICacheFactory */
 	private $cacheFactory;
+	/** @var string[] Bildpfade, die in dieser Anfrage schon ermittelt wurden */
+	private $imagePathMemo = [];
 	/** @var IRouter */
 	private $router;
 	/** @var ITheme */
@@ -166,21 +168,26 @@ class URLGenerator implements IURLGenerator {
 	 * Returns the path to the image.
 	 */
 	public function imagePath($app, $image) {
+		$cacheKey = $this->environmentHelper->getWebRoot().'-'.$this->theme->getName().'-'.$app.'-'.$image;
+		// Innerhalb einer Anfrage nicht jedes Mal den Memcache fragen: Mit Redis als lokalem Cache
+		// war jedes Symbol in Navigation und Templates eine eigene Netzabfrage
+		if (isset($this->imagePathMemo[$cacheKey])) {
+			return $this->imagePathMemo[$cacheKey];
+		}
 		$cache = $this->cacheFactory->create('imagePath');
 		// Der Pfad enthält den Webroot. Ist dieselbe Instanz unter zwei Webroots
 		// erreichbar (z. B. / und /oc-shib hinter Shibboleth), teilen sich beide
 		// den Cache – ohne Webroot im Schlüssel bekäme der eine Einstieg Bildpfade
 		// des anderen und lüde Bilder über den fremden Pfad.
-		$cacheKey = $this->environmentHelper->getWebRoot().'-'.$this->theme->getName().'-'.$app.'-'.$image;
 		if ($key = $cache->get($cacheKey)) {
-			return $key;
+			return $this->imagePathMemo[$cacheKey] = $key;
 		}
 
 		$path = $this->getImagePath($app, $image);
 
 		if ($path !== '' && $path !== null) {
 			$cache->set($cacheKey, $path);
-			return $path;
+			return $this->imagePathMemo[$cacheKey] = $path;
 		} else {
 			throw new RuntimeException(
 				'image not found: image:' . $image
