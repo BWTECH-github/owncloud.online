@@ -127,7 +127,7 @@ dort liegen:
 ```bash
 sudo -u www-data mkdir -p /var/www/owncloud.online/build
 sudo -u www-data curl -fLo /var/www/owncloud.online/build/preload.php \
-  https://raw.githubusercontent.com/BWTECH-github/owncloud.online/v11.0.28/build/preload.php
+  https://raw.githubusercontent.com/BWTECH-github/owncloud.online/v11.0.29/build/preload.php
 ```
 
 Von außen ist die Datei nicht abrufbar: Die `.htaccess` und die

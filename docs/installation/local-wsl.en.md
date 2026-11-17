@@ -113,17 +113,17 @@ EXIT;
 
 ```bash
 cd /tmp
-curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.28/owncloud-online-11.0.28.tar.gz
-curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.28/SHA256SUMS.txt
+curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.29/owncloud-online-11.0.29.tar.gz
+curl -fLO https://github.com/BWTECH-github/owncloud.online/releases/download/v11.0.29/SHA256SUMS.txt
 sha256sum --ignore-missing -c SHA256SUMS.txt
-sudo tar -xzf /tmp/owncloud-online-11.0.28.tar.gz -C /var/www
+sudo tar -xzf /tmp/owncloud-online-11.0.29.tar.gz -C /var/www
 sudo mv /var/www/owncloud /var/www/owncloud.online
 sudo mkdir -p /var/oco-data
 sudo chown -R www-data:www-data /var/www/owncloud.online /var/oco-data
 sudo chmod 750 /var/oco-data
 ```
 
-The check reports `owncloud-online-11.0.28.tar.gz: OK`.
+The check reports `owncloud-online-11.0.29.tar.gz: OK`.
 
 **Install.** The command first asks for the database password and then for a
 new password for the `admin` administrator account:
