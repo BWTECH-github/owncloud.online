@@ -1031,8 +1031,28 @@ class OC_App {
 			return false;
 		}
 		try {
-			$ms = new \OC\DB\MigrationService($app, \OC::$server->getDatabaseConnection());
-			return \array_diff($ms->getAvailableVersions(), $ms->getMigratedVersions()) !== [];
+			$appPath = self::getAppPath($app);
+			if ($appPath === false) {
+				return false;
+			}
+			// Nur Dateinamen und die Migrationstabelle lesen, keinen MigrationService und keine Klassen laden:
+			// Das läuft auch beim ersten Webaufruf nach einem App-Update, noch vor dem Aufbau der Sitzung.
+			// Mit dem MigrationService endete genau dieser Aufruf mit Fehler 500 (Sitzung schon geschlossen).
+			$available = [];
+			foreach (\glob($appPath . '/appinfo/Migrations/Version*.php') ?: [] as $file) {
+				$available[] = (string)\substr(\basename($file, '.php'), 7);
+			}
+			if ($available === []) {
+				return false;
+			}
+			$qb = \OC::$server->getDatabaseConnection()->getQueryBuilder();
+			$result = $qb->select('version')
+				->from('migrations')
+				->where($qb->expr()->eq('app', $qb->createNamedParameter($app)))
+				->execute();
+			$done = \array_map('strval', $result->fetchFirstColumn());
+			$result->free();
+			return \array_diff($available, $done) !== [];
 		} catch (\Throwable $e) {
 			// Im Zweifel wie bisher: kein Upgrade erzwingen
 			\OC::$server->getLogger()->logException($e, ['app' => 'core']);
