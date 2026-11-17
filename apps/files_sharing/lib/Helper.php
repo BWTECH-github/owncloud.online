@@ -131,8 +131,18 @@ class Helper {
 		if ($password !== null) {
 			if ($linkItem['share_type'] == \OCP\Share::SHARE_TYPE_LINK) {
 				// Check Password
+				// Über den ShareManager, damit dieselbe Bremse greift wie bei der Anmeldung an der
+				// Linkseite (Throttler und brute_force_protection). Vorher ließ sich das Kennwort
+				// hier ohne jede Bremse durchprobieren.
 				$newHash = '';
-				if (\OC::$server->getHasher()->verify($password, $linkItem['share_with'], $newHash)) {
+				try {
+					$shareManager = \OC::$server->getShareManager();
+					$passwordOk = $shareManager->checkPassword($shareManager->getShareByToken((string)($linkItem['token'] ?? '')), $password);
+				} catch (\Exception $e) {
+					// Link nicht (mehr) gültig oder Adresse gesperrt
+					$passwordOk = false;
+				}
+				if ($passwordOk) {
 					// Save item id in session for future requests
 					\OC::$server->getSession()->set('public_link_authenticated', (string) $linkItem['id']);
 
