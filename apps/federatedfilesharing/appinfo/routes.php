@@ -36,8 +36,7 @@ return [
 	],
 
 	'routes' => [
-		// ocm 1.0-proposal1
-		['name' => 'ocm#index', 'url' => '/', 'verb' => 'GET'],
+		// ocm 1.0-proposal1 (GET / hatte keine Methode im OcmController und endete mit Fehler 500)
 		['name' => 'ocm#createShare', 'url' => '/shares', 'verb' => 'POST'],
 		['name' => 'ocm#processNotification', 'url' => '/notifications', 'verb' => 'POST'],
 		[

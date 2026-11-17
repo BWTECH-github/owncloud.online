@@ -1,0 +1,7 @@
+Bugfix: Unknown paths no longer cause errors 500 during maintenance
+
+Requests for unknown .js paths skipped the maintenance check and then failed
+with "Call to a member function isLoggedIn() on null". They now get a 404.
+
+Two routes without code were removed: files_sharing `ajax/list.php` and the
+GET route at the root of federatedfilesharing. Both ended with an error 500.

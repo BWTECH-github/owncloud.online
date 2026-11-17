@@ -1090,7 +1090,16 @@ class OC {
 			return;
 		}
 
+		// .js-Pfade überspringen oben die Wartungsprüfung (die Update-Seite braucht sie). Trifft so ein
+		// Pfad in Wartung oder vor einem Update keine Route, ist hier Schluss: 404 statt Fehler 500
+		// ($userSession ist in diesem Fall nie gesetzt worden).
+		if ($systemConfig->getValue('maintenance', false) || self::checkUpgrade(false)) {
+			\http_response_code(404);
+			return;
+		}
+
 		// Someone is logged in
+		$userSession = \OC::$server->getUserSession();
 		if ($userSession->isLoggedIn() && $userSession->verifyAuthHeaders($request)) {
 			OC_App::loadApps();
 			OC_User::setupBackends();
