@@ -1,0 +1,7 @@
+Bugfix: Chunked uploads no longer replace files in upload-only links
+
+In a public link that only allows uploading, a file sent in legacy chunks (the
+web interface does this above 10 MiB) replaced an existing file of the same
+name, because the checks before only saw the chunk name. With OC-Autorename the
+upload now gets a free name like a single upload does; without it and without
+the right to change the existing file, it is rejected.

@@ -557,6 +557,18 @@ class File extends Node implements IFile, IFileNode {
 			$partFile = null;
 
 			$targetPath = $path . '/' . $info['name'];
+			if ($this->fileView->file_exists($targetPath)) {
+				// Wie beim einzelnen PUT: Mit OC-Autorename (Datei-Drop) bekommt die Datei einen
+				// freien Namen, und ohne Änderungsrecht darf ein gechunkter Upload eine vorhandene
+				// Datei nicht ersetzen. Die Prüfungen davor sehen nur den Chunk-Namen; in Links,
+				// die nur das Hochladen erlauben, überschrieb der Zusammenbau deshalb die Datei.
+				if (($_SERVER['HTTP_OC_AUTORENAME'] ?? '') === '1') {
+					$targetPath = \OC_Helper::buildNotExistingFileNameForView($path, $info['name'], $this->fileView);
+				} elseif (!$this->fileView->isUpdatable($targetPath)) {
+					$chunk_handler->cleanup();
+					throw new Forbidden('Overwriting the existing file is not allowed');
+				}
+			}
 			$absPath = $this->fileView->getAbsolutePath($targetPath);
 			$beforeEvent = new GenericEvent(null, ['path' => $absPath]);
 			$newFile = false;
@@ -599,7 +611,7 @@ class File extends Node implements IFile, IFileNode {
 
 				if ($usePartFile) {
 					// we first assembly the target file as a part file
-					$partFile = $this->getPartFileBasePath($path . '/' . $info['name']) . '.ocTransferId' . $info['transferid'] . '.part';
+					$partFile = $this->getPartFileBasePath($targetPath) . '.ocTransferId' . $info['transferid'] . '.part';
 					/** @var \OC\Files\Storage\Storage $targetStorage */
 					list($partStorage, $partInternalPath) = $this->fileView->resolvePath($partFile);
 
