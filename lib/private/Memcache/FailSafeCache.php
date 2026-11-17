@@ -142,10 +142,11 @@ class FailSafeCache extends Cache implements IMemcache {
 	 * @return array Schlüssel => Wert
 	 */
 	public function getMultiple(array $keys) {
-		$leer = \array_fill_keys(\array_values($keys), null);
-		return $this->attempt(static function (IMemcache $cache) use ($keys, $leer) {
-			return \method_exists($cache, 'getMultiple') ? $cache->getMultiple($keys) : $leer;
-		}, $leer);
+		$empty = \array_fill_keys(\array_values($keys), null);
+		return $this->attempt(static function (IMemcache $cache) use ($keys, $empty) {
+			/* @phan-suppress-next-line PhanUndeclaredMethod geprüft per method_exists() */
+			return \method_exists($cache, 'getMultiple') ? $cache->getMultiple($keys) : $empty;
+		}, $empty);
 	}
 
 	public function set($key, $value, $ttl = 0) {

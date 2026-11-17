@@ -543,6 +543,7 @@ class AppManager implements IAppManager {
 			if ($keys === []) {
 				return;
 			}
+			/* @phan-suppress-next-line PhanUndeclaredMethod geprüft per method_exists() oben */
 			foreach ($this->appInfo->getMultiple($keys) as $key => $value) {
 				if ($value !== null && !isset($this->appInfoCache[$key])) {
 					$this->appInfoCache[$key] = $value;
