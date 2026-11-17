@@ -1,0 +1,12 @@
+Bugfix: Files removed on another web node no longer come back
+
+With several web nodes on a shared NFS data directory, a request on one node
+could put a file back into the file cache that another node had just moved to
+the trash bin, moved or renamed. The file showed up again with its old content
+and could still be downloaded. Before scanning a path that is on disk but not
+in the cache, the node now opens the folders above it, which makes the NFS
+client check them on the server, so removed files stay removed.
+
+Measured on the two-node staging cluster: 17 of 17 removed files came back
+before, 0 of 17 after (files and folders in the trash bin, moved files, files
+in received shares).

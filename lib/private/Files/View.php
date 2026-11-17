@@ -1451,7 +1451,9 @@ class View {
 	 * Dateicache aufnehmen. Das Öffnen eines Verzeichnisses erzwingt beim NFS-Client die
 	 * Close-to-open-Prüfung am Server; von der Speicherwurzel abwärts geöffnet, verwirft er dabei
 	 * veraltete Einträge. Läuft nur, wenn eine Datei auf der Platte liegt, aber im Cache fehlt, und nur
-	 * für lokale Speicher (Wrapper und Jails werden bis zum lokalen Speicher aufgelöst).
+	 * für lokale Speicher (Wrapper und Jails werden bis zum lokalen Speicher aufgelöst). Die
+	 * abschließende Abfrage läuft wieder über den vollständigen Speicher, damit Wrapper mit eigener
+	 * Pfadumsetzung (z. B. Encoding für NFD-Namen) wie beim ersten file_exists() entscheiden.
 	 *
 	 * @param \OC\Files\Storage\Storage $storage
 	 * @param string $internalPath
@@ -1459,16 +1461,17 @@ class View {
 	 */
 	private function isGoneAfterRevalidation($storage, $internalPath) {
 		try {
+			$local = $storage;
 			$path = $internalPath;
-			while ($storage instanceof \OC\Files\Storage\Wrapper\Wrapper) {
+			while ($local instanceof \OC\Files\Storage\Wrapper\Wrapper) {
 				// getWrapperStorage() zuerst: SharedStorage setzt dabei erst den Jail-Pfad
-				$inner = $storage->getWrapperStorage();
-				if ($storage instanceof \OC\Files\Storage\Wrapper\Jail) {
-					$path = $storage->getSourcePath($path);
+				$inner = $local->getWrapperStorage();
+				if ($local instanceof \OC\Files\Storage\Wrapper\Jail) {
+					$path = $local->getSourcePath($path);
 				}
-				$storage = $inner;
+				$local = $inner;
 			}
-			if (!$storage instanceof Local) {
+			if (!$local instanceof Local) {
 				return false;
 			}
 			$parts = \explode('/', \trim($path, '/'));
@@ -1480,7 +1483,7 @@ class View {
 				$dirs[] = $dir;
 			}
 			foreach ($dirs as $dir) {
-				$handle = @\opendir($storage->getSourcePath($dir));
+				$handle = @\opendir($local->getSourcePath($dir));
 				if ($handle === false) {
 					// Ordner fehlt: die Abfrage unten entscheidet
 					break;
@@ -1488,7 +1491,7 @@ class View {
 				\closedir($handle);
 			}
 			\clearstatcache();
-			return !$storage->file_exists(\trim($path, '/'));
+			return !$storage->file_exists($internalPath);
 		} catch (\Throwable $e) {
 			return false;
 		}
