@@ -64,6 +64,29 @@ class Redis extends Cache implements IMemcacheTTL {
 		return \json_decode($result, true);
 	}
 
+	/**
+	 * Mehrere Schlüssel mit einer Abfrage (MGET) lesen; fehlende Schlüssel liefern null wie get().
+	 *
+	 * @param string[] $keys
+	 * @return array Schlüssel => Wert
+	 */
+	public function getMultiple(array $keys) {
+		$keys = \array_values($keys);
+		if ($keys === []) {
+			return [];
+		}
+		$prefix = $this->getNameSpace();
+		$raw = self::$cache->mget(\array_map(function ($key) use ($prefix) {
+			return $prefix . $key;
+		}, $keys));
+		$result = [];
+		foreach ($keys as $i => $key) {
+			$value = \is_array($raw) ? ($raw[$i] ?? false) : false;
+			$result[$key] = $value === false ? null : \json_decode($value, true);
+		}
+		return $result;
+	}
+
 	public function set($key, $value, $ttl = 0) {
 		if ($ttl > 0) {
 			return self::$cache->setex($this->getNameSpace() . $key, $ttl, \json_encode($value));

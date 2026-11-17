@@ -1,0 +1,11 @@
+Change: Fetch the app info of all enabled apps with one cache request
+
+With Redis as local cache, every first access to the info of an app in a request
+was its own network request, about 60 per request (one for the app id and one
+for the path of info.xml per enabled app). They are now fetched together with
+one MGET on the first access. The etag check of info.xml on every lookup stays
+as it was; caches without multi-get and any error fall back to single reads.
+
+Measured on a SaaS test instance (Redis requests per page, warm cache): login
+page 301 before, 13 after; files page 653 / 37; PROPFIND 360 / 8; capabilities
+400 / 10. Part of this comes from the request cache of #118.

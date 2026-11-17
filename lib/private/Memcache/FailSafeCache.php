@@ -133,6 +133,21 @@ class FailSafeCache extends Cache implements IMemcache {
 		}, null);
 	}
 
+	/**
+	 * Mehrere Schlüssel mit einer Abfrage lesen, wenn der eigentliche Cache das kann (Redis: MGET).
+	 * Kann er es nicht oder fällt er aus, kommt für jeden Schlüssel null – wie ein Fehltreffer;
+	 * der Aufrufer liest dann wie bisher einzeln.
+	 *
+	 * @param string[] $keys
+	 * @return array Schlüssel => Wert
+	 */
+	public function getMultiple(array $keys) {
+		$leer = \array_fill_keys(\array_values($keys), null);
+		return $this->attempt(static function (IMemcache $cache) use ($keys, $leer) {
+			return \method_exists($cache, 'getMultiple') ? $cache->getMultiple($keys) : $leer;
+		}, $leer);
+	}
+
 	public function set($key, $value, $ttl = 0) {
 		return $this->attempt(static function (IMemcache $cache) use ($key, $value, $ttl) {
 			return $cache->set($key, $value, $ttl);

@@ -77,6 +77,8 @@ class AppManager implements IAppManager {
 	private $appInfo;
 	/** @var array[] App-info entries reused within this request; etags are still checked on every lookup. */
 	private $appInfoCache = [];
+	/** @var bool App-Infos der eingeschalteten Apps sind in dieser Anfrage schon gesammelt geholt */
+	private $appInfoPrefetched = false;
 	/** @var \OCP\IGroupManager */
 	private $groupManager;
 	/** @var \OCP\ICacheFactory */
@@ -394,6 +396,7 @@ class AppManager implements IAppManager {
 		$settingsMemCache->clear('listApps');
 		$this->appInfo->clear();
 		$this->appInfoCache = [];
+		$this->appInfoPrefetched = false;
 		$this->appDirs = [];
 	}
 
@@ -458,6 +461,7 @@ class AppManager implements IAppManager {
 
 		$etag = null;
 
+		$this->prefetchAppInfo();
 		// check the cache
 		$data = $this->appInfoCache[$appId] ??= $this->appInfo->get($appId);
 		if (isset($data['path'])) {
@@ -506,9 +510,53 @@ class AppManager implements IAppManager {
 	 * @throws \InvalidArgumentException
 	 * @throws AppNotFoundException
 	 */
+	/**
+	 * Holt die gecachten App-Infos aller eingeschalteten Apps (Schlüssel nach App-ID und nach Pfad der info.xml)
+	 * mit einer Abfrage, statt beim ersten Zugriff je App einzeln. Mit Redis als lokalem Cache waren das sonst
+	 * rund 60 Netzabfragen je Anfrage. Die Etag-Prüfung bei jedem Zugriff bleibt, wie sie ist; Backends ohne
+	 * getMultiple() und jeder Fehler fallen auf das bisherige Einzellesen zurück.
+	 */
+	private function prefetchAppInfo(): void {
+		if ($this->appInfoPrefetched) {
+			return;
+		}
+		$this->appInfoPrefetched = true;
+		if (!\method_exists($this->appInfo, 'getMultiple')) {
+			return;
+		}
+		try {
+			$keys = [];
+			$roots = $this->getAppRoots();
+			foreach ($this->getInstalledApps() as $appId) {
+				if (!\is_string($appId) || $appId === '' || \OC_App::cleanAppId($appId) !== $appId) {
+					continue;
+				}
+				$keys[] = $appId;
+				foreach ($roots as $root) {
+					$file = \realpath($root['path'] . '/' . $appId . '/appinfo/info.xml');
+					if ($file !== false) {
+						$keys[] = $file;
+					}
+				}
+			}
+			$keys = \array_values(\array_diff(\array_unique($keys), \array_keys($this->appInfoCache)));
+			if ($keys === []) {
+				return;
+			}
+			foreach ($this->appInfo->getMultiple($keys) as $key => $value) {
+				if ($value !== null && !isset($this->appInfoCache[$key])) {
+					$this->appInfoCache[$key] = $value;
+				}
+			}
+		} catch (\Throwable $e) {
+			// z. B. vor der Installation ohne Datenbank: wie bisher einzeln lesen
+		}
+	}
+
 	public function getAppInfoByPath($path, $etag = null) {
 		$file = \realpath($path);
 
+		$this->prefetchAppInfo();
 		// check the cache
 		$data = $this->appInfoCache[$file] ??= $this->appInfo->get($file);
 		if (isset($data['path'])) {
