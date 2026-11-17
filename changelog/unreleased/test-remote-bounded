@@ -1,0 +1,8 @@
+Security: Bound the remote test of federated sharing
+
+The check whether another server speaks the sharing protocol needs no login. It
+followed redirects and ran up to eight requests with their own time limits, so
+a slow remote kept a web server process busy for a long time and could send the
+server to arbitrary addresses. Redirects are no longer followed, all probes of
+one call share a budget of eight seconds, and the outcome is logged as debug
+instead of error.

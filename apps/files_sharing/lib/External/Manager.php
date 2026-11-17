@@ -50,6 +50,8 @@ use Symfony\Component\EventDispatcher\GenericEvent;
 
 class Manager {
 	public const STORAGE = '\OCA\Files_Sharing\External\Storage';
+	/** Zeitbudget in Sekunden für alle Proben eines testRemoteUrl()-Aufrufs zusammen */
+	private const TEST_REMOTE_BUDGET_SECONDS = 8.0;
 
 	/**
 	 * @var string
@@ -559,6 +561,10 @@ class Manager {
 				[
 					'timeout' => 3,
 					'connect_timeout' => 3,
+					// keine Weiterleitungen: der Aufruf ist ohne Anmeldung erreichbar, jede
+					// Weiterleitung verlängerte ihn um ein weiteres Zeitlimit und führte den
+					// Server an beliebige, auch interne Adressen
+					'allow_redirects' => false,
 				]
 			)->getBody());
 
@@ -603,45 +609,56 @@ class Manager {
 				}
 			}
 		}
+		// Zeitbudget für alle Proben zusammen: Der Aufruf braucht keine Anmeldung und hielt mit
+		// langsam antwortenden Gegenstellen sonst bis zu acht Zeitlimits lang einen Webserver-Prozess fest.
+		$deadline = \microtime(true) + self::TEST_REMOTE_BUDGET_SECONDS;
+		$test = function (string $url, bool $checkVersion = false) use ($clientService, $deadline): bool {
+			return \microtime(true) < $deadline && $this->testUrl($clientService, $url, $checkVersion);
+		};
 		try {
 			// one initial connectivity check on https and http
-			if (!$this->checkConnectivity($clientService, $remote)) {
+			if (!$this->checkConnectivity($clientService, $remote, $deadline)) {
 				return false;
 			}
-			if ($this->testUrl($clientService, 'https://' . $remote . '/ocs-provider/') ||
-				$this->testUrl($clientService, 'https://' . $remote . '/ocs-provider/index.php') ||
-				$this->testUrl($clientService, 'https://' . $remote . '/status.php', true)
+			if ($test('https://' . $remote . '/ocs-provider/') ||
+				$test('https://' . $remote . '/ocs-provider/index.php') ||
+				$test('https://' . $remote . '/status.php', true)
 			) {
 				return 'https';
 			}
 
 			if (
-				$this->testUrl($clientService, 'http://' . $remote . '/ocs-provider/') ||
-				$this->testUrl($clientService, 'http://' . $remote . '/ocs-provider/index.php') ||
-				$this->testUrl($clientService, 'http://' . $remote . '/status.php', true)
+				$test('http://' . $remote . '/ocs-provider/') ||
+				$test('http://' . $remote . '/ocs-provider/index.php') ||
+				$test('http://' . $remote . '/status.php', true)
 			) {
 				return 'http';
 			}
 		} catch (ConnectException $e) {
-			\OC::$server->getLogger()->logException($e, ['message' => "Remote $remote not reachable"]);
+			\OC::$server->getLogger()->debug("Remote $remote not reachable: " . $e->getMessage(), ['app' => 'files_sharing']);
 		}
 
 		return false;
 	}
 
-	private function checkConnectivity(IClientService $clientService, string $remote): bool {
+	private function checkConnectivity(IClientService $clientService, string $remote, float $deadline): bool {
+		// Protokoll nur auf Debug: Die Gegenstelle bestimmt der (anonyme) Aufrufer, mit ERROR-Zeilen
+		// ließ sich das Protokoll beliebig füllen.
+		$logger = \OC::$server->getLogger();
 		foreach (['http://', 'https://'] as $schema) {
+			if (\microtime(true) >= $deadline) {
+				break;
+			}
 			try {
 				if ($this->testUrl($clientService, $schema . $remote . '/status.php', false, true)) {
-					\OC::$server->getLogger()->error("Remote $schema$remote/status.php reachable");
 					return true;
 				}
 			} catch (\Exception $ex) {
-				\OC::$server->getLogger()->logException($ex, ['message' => "Remote $schema$remote/status.php not reachable"]);
+				$logger->debug("Remote $schema$remote/status.php not reachable: " . $ex->getMessage(), ['app' => 'files_sharing']);
 			}
 		}
 
-		\OC::$server->getLogger()->error("Remote $remote not reachable via http and https");
+		$logger->debug("Remote $remote not reachable via http and https", ['app' => 'files_sharing']);
 		return false;
 	}
 }
