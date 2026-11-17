@@ -1,5 +1,6 @@
 # Table of Contents
 
+* [Changelog for owncloud.online 11.0.29](#changelog-for-owncloudonline-11029-2026-11-17)
 * [Changelog for owncloud.online 11.0.28](#changelog-for-owncloudonline-11028-2026-11-16)
 * [Changelog for owncloud.online 11.0.27](#changelog-for-owncloudonline-11027-2026-11-10)
 * [Changelog for owncloud.online 11.0.26](#changelog-for-owncloudonline-11026-2026-11-05)
@@ -45,6 +46,244 @@
 * [Changelog for 10.4.1](#changelog-for-owncloud-core-1041-2020-03-30)
 * [Changelog for 10.4.0](#changelog-for-owncloud-core-1040-2020-02-10)
 * [Changelog for 10.3.2](#changelog-for-owncloud-core-1032-2019-12-04)
+# Changelog for owncloud.online [11.0.29] (2026-11-17)
+
+The following sections list the changes in owncloud.online 11.0.29 relevant to
+admins and users.
+
+[11.0.29]: https://github.com/BWTECH-github/owncloud.online
+
+## Summary
+
+* Change - The interface language follows the browser unless the user chose one: [#baad1e2](https://github.com/BWTECH-github/owncloud.online/commit/baad1e2)
+* Enhancement - New command to drop default_language without surprising users: [#4639dd3](https://github.com/BWTECH-github/owncloud.online/commit/4639dd3)
+* Bugfix - Enabling an outdated app no longer leaves the instance waiting for an upgrade: [#107d7a2](https://github.com/BWTECH-github/owncloud.online/commit/107d7a2)
+* Bugfix - Installing an app over tables of an earlier installation no longer fails: [#107d7a2](https://github.com/BWTECH-github/owncloud.online/commit/107d7a2), [#8befafc](https://github.com/BWTECH-github/owncloud.online/commit/8befafc)
+* Bugfix - Patch-level app updates run migrations that are still missing: [#107d7a2](https://github.com/BWTECH-github/owncloud.online/commit/107d7a2), [#0cdf6a1](https://github.com/BWTECH-github/owncloud.online/commit/0cdf6a1)
+* Bugfix - Unknown paths no longer cause errors 500 during maintenance: [#f3ff455](https://github.com/BWTECH-github/owncloud.online/commit/f3ff455)
+* Bugfix - Deleting a folder with a file missing on disk no longer fails with error 500: [#1ee5f89](https://github.com/BWTECH-github/owncloud.online/commit/1ee5f89)
+* Bugfix - Fewer false error lines in owncloud.log: [#1ee5f89](https://github.com/BWTECH-github/owncloud.online/commit/1ee5f89)
+* Change - Far fewer cache requests per page: [#d826259](https://github.com/BWTECH-github/owncloud.online/commit/d826259), [#a27c46c](https://github.com/BWTECH-github/owncloud.online/commit/a27c46c), [#65c789d](https://github.com/BWTECH-github/owncloud.online/commit/65c789d)
+* Security - Bound the work of legacy chunked uploads: [#1139238](https://github.com/BWTECH-github/owncloud.online/commit/1139238)
+* Security - Legacy admin endpoints require the second factor: [#32b9b7f](https://github.com/BWTECH-github/owncloud.online/commit/32b9b7f)
+* Security - Bound the remote test of federated sharing: [#37047d2](https://github.com/BWTECH-github/owncloud.online/commit/37047d2)
+* Security - Throttle link passwords checked through shareinfo: [#178af7a](https://github.com/BWTECH-github/owncloud.online/commit/178af7a)
+* Bugfix - Files removed on another web node no longer come back: [#a23a42c](https://github.com/BWTECH-github/owncloud.online/commit/a23a42c), [#a10f48c](https://github.com/BWTECH-github/owncloud.online/commit/a10f48c)
+* Bugfix - Bulk upload keeps spaces at the end of file names: [#81de183](https://github.com/BWTECH-github/owncloud.online/commit/81de183)
+* Bugfix - Chunked uploads no longer replace files in upload-only links: [#51edc18](https://github.com/BWTECH-github/owncloud.online/commit/51edc18)
+* Bugfix - Share ids below 256 passed as integer were rejected: [#08aa89f](https://github.com/BWTECH-github/owncloud.online/commit/08aa89f)
+* Bugfix - Reset the log level when an upgrade ends with a PHP Error: [#0e60a5a](https://github.com/BWTECH-github/owncloud.online/commit/0e60a5a)
+* Change - Remember the shell fallback of the office detection: [#7b3e25b](https://github.com/BWTECH-github/owncloud.online/commit/7b3e25b)
+
+## Details
+
+* Change - The interface language follows the browser unless the user chose one
+
+   Without `default_language`, the language of the first visit was stored
+   permanently for every user. A later visit with a browser in another language
+   kept the old language, and a client without an Accept-Language header could
+   fix an account to English. The browser language now applies on every visit.
+   It is still remembered per user for e-mails and background jobs, but marked as
+   taken from the browser, so the next visit with another browser language
+   replaces it. A language chosen under personal settings always wins, and so do
+   all language settings that existed before this change. German browser
+   variants (de, de-AT, de-CH) get formal German (de_DE). English remains the
+   last resort.
+
+   https://github.com/BWTECH-github/owncloud.online/commit/baad1e2
+
+* Enhancement - New command to drop default_language without surprising users
+
+   `occ config:system:drop-default-language` removes default_language from
+   config.php so that the browser language applies. Accounts without an own
+   language keep the old default as their remembered browser language, so
+   e-mails and background jobs stay in the familiar language until the user's
+   next visit switches to the browser language. `--dry-run` only counts these
+   accounts.
+
+   https://github.com/BWTECH-github/owncloud.online/commit/4639dd3
+
+* Bugfix - Enabling an outdated app no longer leaves the instance waiting for an upgrade
+
+   Enabling a disabled app whose data was older than its code only set the app
+   to enabled. The instance then required an upgrade until an administrator ran
+   `occ upgrade` and showed the maintenance page meanwhile (WebDAV answered 503).
+   Enabling now runs the app's migrations and repair steps first.
+
+   https://github.com/BWTECH-github/owncloud.online/commit/107d7a2
+
+* Bugfix - Installing an app over tables of an earlier installation no longer fails
+
+   Apps that use database.xml stopped with "table already exists" when tables of
+   an earlier installation were still there; the schema is now updated instead.
+   During `occ upgrade`, any error while installing a new shipped app is logged
+   and no longer aborts the upgrade, and a transaction left open by such an error
+   is closed.
+
+   https://github.com/BWTECH-github/owncloud.online/commit/107d7a2
+   https://github.com/BWTECH-github/owncloud.online/commit/8befafc
+
+* Bugfix - Patch-level app updates run migrations that are still missing
+
+   An app update that only raised the patch version silently skipped new
+   migrations on existing instances. They now lead to an upgrade like any other
+   app update. The check only compares the migration files with the migrations
+   table and does not load any classes.
+
+   https://github.com/BWTECH-github/owncloud.online/commit/107d7a2
+   https://github.com/BWTECH-github/owncloud.online/commit/0cdf6a1
+
+* Bugfix - Unknown paths no longer cause errors 500 during maintenance
+
+   Requests for unknown .js paths skipped the maintenance check and then failed
+   with "Call to a member function isLoggedIn() on null". They now get a 404. The
+   route files_sharing `ajax/list.php` had no code behind it and was removed.
+
+   https://github.com/BWTECH-github/owncloud.online/commit/f3ff455
+
+* Bugfix - Deleting a folder with a file missing on disk no longer fails with error 500
+
+   When the copy into the trash bin could not open a file, `fclose()` was called
+   on `false` and the request ended with a TypeError. The failed copy is now
+   handled.
+
+   https://github.com/BWTECH-github/owncloud.online/commit/1ee5f89
+
+* Bugfix - Fewer false error lines in owncloud.log
+
+   Web uploads with OC-LazyOps no longer log "headers already sent" for the mtime
+   header after the early response. Calls of deleted share links are logged at
+   debug level, previews of images beyond the ImageMagick limits at info level,
+   and a null path in the forbidden-file check no longer raises a deprecation.
+
+   https://github.com/BWTECH-github/owncloud.online/commit/1ee5f89
+
+* Change - Far fewer cache requests per page
+
+   With Redis as local cache, every read of the app info was its own network
+   request, and many apps were read repeatedly within one request. App info is now
+   reused within a request (#118) and the entries of all enabled apps are fetched
+   with one request on the first access; image paths are remembered within a
+   request. Measured on a test instance (Redis requests per page with a warm
+   cache): login page 301 before and 13 after, files page 653 and 37, PROPFIND
+   360 and 8.
+
+   https://github.com/BWTECH-github/owncloud.online/pull/118
+   https://github.com/BWTECH-github/owncloud.online/commit/a27c46c
+   https://github.com/BWTECH-github/owncloud.online/commit/65c789d
+
+* Security - Bound the work of legacy chunked uploads
+
+   The number of chunks in a legacy chunked upload comes from the file name in
+   the URL and was not checked. The quota check looped over every possible chunk
+   index, so a single request with a huge chunk count kept a web server process
+   busy practically forever - through a public folder link even without login.
+   Chunk names are now validated (at most 100000 chunks, index below the count)
+   and invalid names are rejected with 400. The size of the stored chunks and the
+   cleanup now read the existing chunks in one directory listing instead of
+   probing every index.
+
+   Measured on the staging cluster: a request with 20000 announced chunks took
+   6.6 s before and 0.14 s after; 10^11 chunks are rejected in 0.08 s. Chunked
+   uploads through public links and for logged-in users work as before.
+
+   https://github.com/BWTECH-github/owncloud.online/commit/1139238
+
+* Security - Legacy admin endpoints require the second factor
+
+   After a password login the user id is in the session before the second factor
+   is checked. The legacy admin and group admin checks only looked at that user
+   id, so a session that knew the password but not the one-time code could call
+   endpoints like /index.php/disableapp or settings/ajax/setquota.php - for
+   example to switch off the two-factor app for the whole instance. These checks
+   now require a complete login including the second factor and the account
+   modules; such sessions get 401.
+
+   https://github.com/BWTECH-github/owncloud.online/commit/32b9b7f
+
+* Security - Bound the remote test of federated sharing
+
+   The check whether another server speaks the sharing protocol needs no login. It
+   followed redirects and ran up to eight requests with their own time limits, so
+   a slow remote kept a web server process busy for a long time and could send the
+   server to arbitrary addresses. Redirects are no longer followed, all probes of
+   one call share a budget of eight seconds, and the outcome is logged as debug
+   instead of error.
+
+   https://github.com/BWTECH-github/owncloud.online/commit/37047d2
+
+* Security - Throttle link passwords checked through shareinfo
+
+   The legacy shareinfo endpoint verified the password of a public link without
+   any throttling, so it could be guessed at full speed. It now uses the share
+   manager, so the same throttling and brute force protection apply as on the
+   public link page.
+
+   https://github.com/BWTECH-github/owncloud.online/commit/178af7a
+
+* Bugfix - Files removed on another web node no longer come back
+
+   With several web nodes on a shared NFS data directory, a request on one node
+   could put a file back into the file cache that another node had just moved to
+   the trash bin, moved or renamed. The file showed up again with its old content
+   and could still be downloaded. Before scanning a path that is on disk but not
+   in the cache, the node now opens the folders above it, which makes the NFS
+   client check them on the server, so removed files stay removed.
+
+   Measured on the two-node staging cluster: 17 of 17 removed files came back
+   before, 0 of 17 after (files and folders in the trash bin, moved files, files
+   in received shares).
+
+   https://github.com/BWTECH-github/owncloud.online/commit/a23a42c
+   https://github.com/BWTECH-github/owncloud.online/commit/a10f48c
+
+* Bugfix - Bulk upload keeps spaces at the end of file names
+
+   The bulk upload endpoint trimmed every part header, including X-File-Path. A
+   new file "Notiz " uploaded by the desktop client on macOS or Linux was stored
+   as "Notiz" and silently overwrote that file; the client did not find its own
+   path in the answer, reported "Server did not confirm the upload" and uploaded
+   again on every sync, overwriting the neighbour each time. The path now keeps
+   trailing whitespace, and each part gets the same file name checks as a single
+   PUT.
+
+   https://github.com/BWTECH-github/owncloud.online/commit/81de183
+
+* Bugfix - Chunked uploads no longer replace files in upload-only links
+
+   In a public link that only allows uploading, a file sent in legacy chunks (the
+   web interface does this above 10 MiB) replaced an existing file of the same
+   name, because the checks before only saw the chunk name. With OC-Autorename the
+   upload now gets a free name like a single upload does; without it and without
+   the right to change the existing file, it is rejected.
+
+   https://github.com/BWTECH-github/owncloud.online/commit/51edc18
+
+* Bugfix - Share ids below 256 passed as integer were rejected
+
+   ctype_digit() treats integers up to 255 as character codes. Share ids passed
+   as integer - by the transfer-ownership troubleshooting command and the legacy
+   federated sharing endpoints - were therefore reported as not found for most ids
+   below 256. The id is cast to string again before the check.
+
+   https://github.com/BWTECH-github/owncloud.online/commit/08aa89f
+
+* Bugfix - Reset the log level when an upgrade ends with a PHP Error
+
+   The updater only caught exceptions. A PHP Error in an app migration ended the
+   upgrade without the updater's failure handling and left the log level on debug
+   for good. Errors are now handled like exceptions.
+
+   https://github.com/BWTECH-github/owncloud.online/commit/0e60a5a
+
+* Change - Remember the shell fallback of the office detection
+
+   Without LibreOffice on the server, every preview request started two shell
+   processes to look for it again. The result of that fallback is now kept for
+   five minutes, like the result of the regular binary lookup.
+
+   https://github.com/BWTECH-github/owncloud.online/commit/7b3e25b
+
 # Changelog for owncloud.online [11.0.28] (2026-11-16)
 
 The following sections list the changes in owncloud.online 11.0.28 relevant to
