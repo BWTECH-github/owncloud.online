@@ -36,7 +36,10 @@ return [
 	],
 
 	'routes' => [
-		// ocm 1.0-proposal1 (GET / hatte keine Methode im OcmController und endete mit Fehler 500)
+		// ocm 1.0-proposal1
+		// ocm#index hat mit Absicht keine Methode im OcmController: discovery() bildet aus dem Namen dieser
+		// Route den Endpunkt der App. Ohne sie nennt /ocm-provider/ eine falsche Adresse.
+		['name' => 'ocm#index', 'url' => '/', 'verb' => 'GET'],
 		['name' => 'ocm#createShare', 'url' => '/shares', 'verb' => 'POST'],
 		['name' => 'ocm#processNotification', 'url' => '/notifications', 'verb' => 'POST'],
 		[

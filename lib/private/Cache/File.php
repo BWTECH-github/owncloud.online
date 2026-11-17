@@ -163,6 +163,8 @@ class File implements ICache {
 	 * @throws \OC\ForbiddenException
 	 */
 	public function getNumberedKeys($prefix) {
+		// Die Namen im Ordner sind über die View immer NFC; der Präfix kann roh aus der URL kommen (macOS: NFD)
+		$prefix = \OC_Util::normalizeUnicode($prefix);
 		$storage = $this->getStorage();
 		$result = [];
 		if ($storage && $storage->is_dir('/')) {

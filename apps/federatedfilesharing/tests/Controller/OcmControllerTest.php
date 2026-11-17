@@ -134,6 +134,15 @@ class OcmControllerTest extends TestCase {
 		);
 	}
 
+	/**
+	 * discovery() bildet den Endpunkt aus der Route ocm#index. Fehlt sie, nennt /ocm-provider/ die Adresse der
+	 * Instanz statt der App, und andere Server erreichen die OCM-Schnittstelle nicht mehr.
+	 */
+	public function testDiscoveryRouteIsRegistered() {
+		$routes = include __DIR__ . '/../../appinfo/routes.php';
+		$this->assertContains('ocm#index', \array_column($routes['routes'], 'name'));
+	}
+
 	public function testDiscovery() {
 		$response = $this->ocmController->discovery();
 		$this->assertArrayHasKey('apiVersion', $response);
