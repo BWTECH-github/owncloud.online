@@ -1671,6 +1671,17 @@ $CONFIG = [
 'filesystem_check_changes' => 0,
 
 /**
+ * Automatically scan a non-root path when its file-cache entry is missing.
+ * This is independent of filesystem_check_changes and defaults to true.
+ * Managed installations where all file changes go through ownCloud can set this
+ * to false to avoid rediscovering deleted files through stale filesystem lookups.
+ * Files added outside ownCloud, including on external storage, then require an
+ * explicit files:scan. Storage-root initialization and incomplete cached entries
+ * are still scanned. This does not change the filesystem's own cache behaviour.
+ */
+'filesystem_scan_on_cache_miss' => true,
+
+/**
  * Define unsuccessful mountpoint rename attempts
  * This config value avoids infinite loops for seldom cases where a file renaming
  * conflict between different share backends could occur.

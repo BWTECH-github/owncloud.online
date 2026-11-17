@@ -1401,7 +1401,7 @@ class View {
 	/**
 	 * Get file info from cache
 	 *
-	 * If the file is not in cached it will be scanned
+	 * If the file is not cached it will be scanned unless cache-miss scanning is disabled
 	 * If the file has changed on storage the cache will be updated
 	 *
 	 * @param \OC\Files\Storage\Storage $storage
@@ -1412,6 +1412,9 @@ class View {
 	private function getCacheEntry($storage, $internalPath, $relativePath) {
 		$cache = $storage->getCache($internalPath);
 		$data = $cache->get($internalPath);
+		if (!$data && $internalPath !== '' && !$this->config->getSystemValue('filesystem_scan_on_cache_miss', true)) {
+			return false;
+		}
 		$watcher = $storage->getWatcher($internalPath);
 
 		try {

@@ -1,0 +1,11 @@
+Change: Allow managed installations to disable automatic scans on file-cache misses
+
+The filesystem_scan_on_cache_miss option defaults to true, preserving automatic
+discovery. Managed installations where all file changes go through ownCloud can
+set it to false to avoid rediscovering deleted files through stale filesystem
+lookups. Files added outside ownCloud, including on external storage, then need
+an explicit occ files:scan.
+
+Storage-root initialization, incomplete cached entries and watcher updates keep
+their existing behaviour. The option is independent of filesystem_check_changes
+and does not change or fix NFS caching itself.
