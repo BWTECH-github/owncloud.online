@@ -775,7 +775,7 @@ class Filesystem {
 		[$excludeFolders, $excludeFoldersRegex, $blacklistFiles, $blacklistFilesRegex] = $lists;
 
 		// explode '/'
-		$ppx = \array_filter(\explode('/', $FileOrDir), 'strlen');
+		$ppx = \array_filter(\explode('/', (string)$FileOrDir), 'strlen');
 		$ppx = \array_map('strtolower', $ppx);
 
 		// further explode each array element with '\' and add to result array if found

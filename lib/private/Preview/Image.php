@@ -163,9 +163,11 @@ abstract class Image implements IProvider2 {
 			$imagick->thumbnailImage($maxX, $maxY, true);
 			$blob = $imagick->getImageBlob();
 		} catch (\Throwable $e) {
+			// Bilder über den Grenzen der ImageMagick-Policy sind erwartbar: keine Fehlerzeile je Bild
+			$expected = $e instanceof \ImagickException && \strpos($e->getMessage(), 'exceeds limit') !== false;
 			\OC::$server->getLogger()->logException(
 				$e,
-				['app' => 'core', 'message' => 'imagick large-image preview failed']
+				['app' => 'core', 'message' => 'imagick large-image preview failed', 'level' => $expected ? \OCP\Util::INFO : \OCP\Util::ERROR]
 			);
 			return false;
 		} finally {

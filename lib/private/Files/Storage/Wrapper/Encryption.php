@@ -878,8 +878,14 @@ class Encryption extends Wrapper {
 				}
 				$target = $this->fopen($targetInternalPath, 'w');
 				list(, $result) = \OC_Helper::streamCopy($source, $target);
-				\fclose($source);
-				\fclose($target);
+				// fopen kann false liefern (Datei fehlt auf der Platte): dann ist der Kopiervorgang
+				// gescheitert, aber kein TypeError aus fclose(false) mit Fehler 500
+				if (\is_resource($source)) {
+					\fclose($source);
+				}
+				if (\is_resource($target)) {
+					\fclose($target);
+				}
 			} catch (\Exception $e) {
 				Encryption::setDisableWriteEncryption(false);
 				if (\is_resource($source)) {

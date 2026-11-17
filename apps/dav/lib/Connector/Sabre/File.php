@@ -808,7 +808,10 @@ class File extends Node implements IFile, IFileNode {
 	}
 
 	protected function header($string) {
-		\header($string);
+		// Mit OC-LazyOps ist die Antwort beim Zusammenbau schon raus, ein Header kommt dann nicht mehr an
+		if (!\headers_sent()) {
+			\header($string);
+		}
 	}
 
 	/**

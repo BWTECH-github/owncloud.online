@@ -1544,7 +1544,8 @@ class Manager implements IManager {
 				$provider = $this->factory->getProviderForType(\OCP\Share::SHARE_TYPE_REMOTE);
 				$share = $provider->getShareByToken($token);
 			} catch(ShareNotFound $ex) {
-				$this->logger->error(
+				// Aufrufe gelöschter oder falscher Links sind Alltag, keine Fehler
+				$this->logger->debug(
 					"shared file not found by token: $token for federated user share, try to check federated group share.",
 					['app' => __CLASS__]
 				);
@@ -1554,7 +1555,7 @@ class Manager implements IManager {
 						$share = $provider->getShareByToken($token);
 					}
 				} catch (ShareNotFound $ex) {
-					$this->logger->error(
+					$this->logger->debug(
 						"shared file not found by token: $token for federated group share",
 						['app' => __CLASS__]
 					);

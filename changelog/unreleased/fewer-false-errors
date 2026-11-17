@@ -1,0 +1,8 @@
+Bugfix: Fewer false errors in owncloud.log and no error 500 on a missing file
+
+Deleting a folder whose file was missing on disk failed with "fclose(): Argument
+#1 must be of type resource, false given" and an error 500; the failed copy is
+now handled. Web uploads with OC-LazyOps no longer log "headers already sent"
+for the mtime header after the early response. Calls of deleted share links,
+previews of images beyond the ImageMagick limits and a null path in the
+forbidden-file check no longer write error lines.
