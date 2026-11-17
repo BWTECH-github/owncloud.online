@@ -1033,7 +1033,7 @@ class OC_App {
 		try {
 			$ms = new \OC\DB\MigrationService($app, \OC::$server->getDatabaseConnection());
 			return \array_diff($ms->getAvailableVersions(), $ms->getMigratedVersions()) !== [];
-		} catch (\Exception $e) {
+		} catch (\Throwable $e) {
 			// Im Zweifel wie bisher: kein Upgrade erzwingen
 			\OC::$server->getLogger()->logException($e, ['app' => 'core']);
 			return false;

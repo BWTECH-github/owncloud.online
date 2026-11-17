@@ -551,7 +551,12 @@ class Installer {
 					try {
 						Installer::installShippedApp($appToInstall);
 					} catch (\Exception $e) {
-						// Im Update nur protokollieren: Ein kaputter Altbestand einer App darf das Update nicht abbrechen
+						// Im Update nur protokollieren: Ein kaputter Altbestand einer App darf das Update nicht abbrechen.
+						// Eine dabei offen gebliebene Transaktion schließen, sonst hingen alle weiteren Schreibvorgänge darin.
+						$connection = \OC::$server->getDatabaseConnection();
+						if ($connection->inTransaction()) {
+							$connection->rollBack();
+						}
 						\OC::$server->getLogger()->logException($e, ['app' => __CLASS__]);
 						$errors[$appToInstall] = $e;
 						continue;
