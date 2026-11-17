@@ -83,7 +83,7 @@ Rufen Sie im Browser `https://cloud.example.com/status.php` auf, mit Ihrer
 eigenen Adresse. Eine laufende Installation antwortet so:
 
 ```json
-{"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"11.0.29","versionstring":"11.0.29","edition":"Community","productname":"owncloud.online","product":"owncloud.online"}
+{"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"11.0.28","versionstring":"11.0.28","edition":"Community","productname":"owncloud.online","product":"owncloud.online"}
 ```
 
 `installed` muss `true` sein, `maintenance` und `needsDbUpgrade` müssen
