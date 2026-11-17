@@ -205,6 +205,11 @@ $CONFIG = [
  * Overrides automatic language detection on public pages like login or shared items.
  * User's language preferences configured under `personal -> language` override
  * this setting after they have logged in.
+ * If not set, ownCloud follows the browser language (Accept-Language) on every
+ * visit and falls back to English. German browser variants (de, de-AT, de-CH)
+ * get formal German (`de_DE`). The last browser language seen is remembered per
+ * user for e-mails and background jobs; a language chosen under
+ * `personal -> language` always wins.
  */
 'default_language' => 'en_GB',
 

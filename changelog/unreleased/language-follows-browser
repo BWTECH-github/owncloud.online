@@ -1,0 +1,14 @@
+Change: The interface language follows the browser unless a user chose one
+
+Without `default_language`, ownCloud stored the language of the first visit
+permanently for every user. A later visit with a browser in another language
+kept the old language, and a client without an Accept-Language header could
+fix an account to English.
+
+The browser language now applies on every visit. It is still remembered per
+user for e-mails and background jobs, but marked as taken from the browser, so
+the next visit with another browser language replaces it. A language chosen
+under personal settings always wins, and so do all language settings that
+existed before this change. German browser variants (de, de-AT, de-CH) get
+formal German (de_DE), so the form of address no longer depends on the
+browser. English remains the last resort.

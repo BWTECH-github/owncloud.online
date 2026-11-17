@@ -151,10 +151,13 @@ class FactoryTest extends TestCase {
 			->method('getUser')
 			->willReturn($user);
 		$this->config
-				->expects($this->once())
+				->expects($this->exactly(2))
 				->method('getUserValue')
-				->with('MyUserUid', 'core', 'lang', null)
-				->willReturn('jp');
+				->withConsecutive(
+					['MyUserUid', 'core', 'lang', null],
+					['MyUserUid', 'core', 'lang_source', null],
+				)
+				->willReturnOnConsecutiveCalls('jp', null);
 
 		$this->assertSame('jp', $factory->findLanguage('MyApp'));
 	}
@@ -188,10 +191,13 @@ class FactoryTest extends TestCase {
 				->method('getUser')
 				->willReturn($user);
 		$this->config
-				->expects($this->once())
+				->expects($this->exactly(2))
 				->method('getUserValue')
-				->with('MyUserUid', 'core', 'lang', null)
-				->willReturn('jp');
+				->withConsecutive(
+					['MyUserUid', 'core', 'lang', null],
+					['MyUserUid', 'core', 'lang_source', null],
+				)
+				->willReturnOnConsecutiveCalls('jp', null);
 
 		$this->assertSame('es', $factory->findLanguage('MyApp'));
 	}
@@ -225,10 +231,13 @@ class FactoryTest extends TestCase {
 				->method('getUser')
 				->willReturn($user);
 		$this->config
-				->expects($this->once())
+				->expects($this->exactly(2))
 				->method('getUserValue')
-				->with('MyUserUid', 'core', 'lang', null)
-				->willReturn('jp');
+				->withConsecutive(
+					['MyUserUid', 'core', 'lang', null],
+					['MyUserUid', 'core', 'lang_source', null],
+				)
+				->willReturnOnConsecutiveCalls('jp', null);
 		$this->config
 			->expects($this->never())
 			->method('setUserValue');
@@ -265,10 +274,13 @@ class FactoryTest extends TestCase {
 				->method('getUser')
 				->willReturn($user);
 		$this->config
-				->expects($this->once())
+				->expects($this->exactly(2))
 				->method('getUserValue')
-				->with('MyUserUid', 'core', 'lang', null)
-				->willReturn('jp');
+				->withConsecutive(
+					['MyUserUid', 'core', 'lang', null],
+					['MyUserUid', 'core', 'lang_source', null],
+				)
+				->willReturnOnConsecutiveCalls('jp', null);
 		$this->config
 				->expects($this->never())
 				->method('setUserValue')

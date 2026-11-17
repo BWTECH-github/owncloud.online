@@ -44,6 +44,14 @@ use OCP\Theme\IThemeService;
  * A factory that generates language instances
  */
 class Factory implements IFactory {
+	/**
+	 * Herkunft der gespeicherten Kontosprache (core/lang). Fehlt der Wert, gilt die Sprache als
+	 * selbst gewählt (persönliche Einstellungen, Admin); 'browser' heißt: automatisch aus dem
+	 * Accept-Language-Header übernommen und beim nächsten Besuch mit anderem Browser neu gesetzt.
+	 */
+	public const LANG_SOURCE_KEY = 'lang_source';
+	public const LANG_SOURCE_BROWSER = 'browser';
+
 	/** @var string */
 	protected $requestLanguage = '';
 
@@ -140,19 +148,19 @@ class Factory implements IFactory {
 		 *
 		 * @link https://github.com/owncloud/core/issues/21955
 		 */
+		$userId = null;
+		$userLang = null;
+		$userLangFromBrowser = false;
 		if ($this->userSession !== null && $this->config->getSystemValue('installed', false)) {
 			$userId = $this->userSession->getUser() !== null ? $this->userSession->getUser()->getUID() :  null;
 			if ($userId !== null) {
 				$userLang = $this->config->getUserValue($userId, 'core', 'lang', null);
-			} else {
-				$userLang = null;
+				$userLangFromBrowser = $this->config->getUserValue($userId, 'core', self::LANG_SOURCE_KEY, null) === self::LANG_SOURCE_BROWSER;
 			}
-		} else {
-			$userId = null;
-			$userLang = null;
 		}
 
-		if ($userLang) {
+		// Selbst gewählte Kontosprache gilt immer
+		if ($userLang && !$userLangFromBrowser) {
 			$this->requestLanguage = $userLang;
 			if ($this->languageExists($app, $userLang)) {
 				return $userLang;
@@ -165,12 +173,26 @@ class Factory implements IFactory {
 			return $defaultLanguage;
 		}
 
-		$lang = $this->setLanguageFromRequest($app);
-		if ($userId !== null && $app === null && !$userLang) {
-			$this->config->setUserValue($userId, 'core', 'lang', $lang);
+		// Browsersprache dieser Anfrage. Sie wird für Mails und Hintergrundjobs gemerkt, aber als
+		// 'browser' markiert: Ein anderer Browser beim nächsten Besuch setzt sie neu, nichts wird festgeschrieben.
+		$lang = $this->matchRequestLanguage($app);
+		if ($lang !== null) {
+			if ($userId !== null && $app === null && (!$userLang || $userLangFromBrowser) && $userLang !== $lang) {
+				$this->config->setUserValue($userId, 'core', 'lang', $lang);
+				$this->config->setUserValue($userId, 'core', self::LANG_SOURCE_KEY, self::LANG_SOURCE_BROWSER);
+			}
+			return $lang;
 		}
 
-		return $lang;
+		// Kein passender Header (Sync-Client, Cron): zuletzt gesehene Browsersprache, sonst Englisch
+		if ($userLang && $userLangFromBrowser && $this->languageExists($app, $userLang)) {
+			if ($app === null) {
+				$this->requestLanguage = $userLang;
+			}
+			return $userLang;
+		}
+
+		return 'en';
 	}
 
 	/**
@@ -224,46 +246,79 @@ class Factory implements IFactory {
 	 * @return string
 	 */
 	public function setLanguageFromRequest($app = null) {
-		$header = $this->request->getHeader('ACCEPT_LANGUAGE');
-		if ($header) {
-			$available = $this->findAvailableLanguages($app);
-
-			// E.g. make sure that 'de' is before 'de_DE'.
-			\sort($available);
-
-			$preferences = \preg_split('/,\s*/', \strtolower($header));
-			foreach ($preferences as $preference) {
-				list($preferred_language) = \explode(';', $preference);
-				$preferred_language = \str_replace('-', '_', $preferred_language);
-
-				foreach ($available as $available_language) {
-					if ($preferred_language === \strtolower($available_language)) {
-						if ($app === null && !$this->requestLanguage) {
-							$this->requestLanguage = $available_language;
-						}
-						return $available_language;
-					}
-				}
-
-				// Fallback from de_De to de
-				foreach ($available as $available_language) {
-					if (\substr($preferred_language, 0, 2) === $available_language) {
-						if ($app === null && !$this->requestLanguage) {
-							$this->requestLanguage = $available_language;
-						}
-						return $available_language;
-					}
-				}
-			}
-		}
-
 		// Do NOT cache the 'en' last-resort fallback in requestLanguage: doing so
 		// poisons the per-request Factory singleton so that a later findLanguage()
 		// returns 'en' before ever consulting default_language or Accept-Language.
 		// This broke anonymous pages (login / public-share password page) whenever
 		// the first no-app lookup ran without a visible Accept-Language header
 		// (e.g. the header not forwarded by the web server) — see issue #41618.
-		return 'en'; // Last try: English
+		return $this->matchRequestLanguage($app) ?? 'en'; // Last try: English
+	}
+
+	/**
+	 * Sprache aus dem Accept-Language-Header; null, wenn keine verfügbare Sprache passt.
+	 *
+	 * @param string|null $app App id or null for core
+	 * @return string|null
+	 */
+	private function matchRequestLanguage($app) {
+		$header = $this->request->getHeader('ACCEPT_LANGUAGE');
+		if (!$header) {
+			return null;
+		}
+		$available = $this->findAvailableLanguages($app);
+
+		// E.g. make sure that 'de' is before 'de_DE'.
+		\sort($available);
+
+		$preferences = \preg_split('/,\s*/', \strtolower($header));
+		foreach ($preferences as $preference) {
+			list($preferred_language) = \explode(';', $preference);
+			$preferred_language = \str_replace('-', '_', $preferred_language);
+
+			$match = null;
+			foreach ($available as $available_language) {
+				if ($preferred_language === \strtolower($available_language)) {
+					$match = $available_language;
+					break;
+				}
+			}
+
+			// Fallback from de_De to de
+			if ($match === null) {
+				foreach ($available as $available_language) {
+					if (\substr($preferred_language, 0, 2) === $available_language) {
+						$match = $available_language;
+						break;
+					}
+				}
+			}
+
+			if ($match !== null) {
+				$match = $this->unifyGerman($match, $available);
+				if ($app === null && !$this->requestLanguage) {
+					$this->requestLanguage = $match;
+				}
+				return $match;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Deutsche Browser-Varianten (de, de-AT, de-CH …) einheitlich in der Sie-Form (de_DE),
+	 * damit die Anrede nicht je Browser wechselt und lückenhafte Kataloge (de_AT) nicht halb englisch zeigen.
+	 * Gilt nur für die Browsersprache, eine selbst gewählte Kontosprache bleibt unverändert.
+	 *
+	 * @param string $lang
+	 * @param string[] $available verfügbare Sprachen der App
+	 * @return string
+	 */
+	private function unifyGerman($lang, array $available) {
+		if ($lang !== 'de_DE' && \strtolower(\substr($lang, 0, 2)) === 'de' && \in_array('de_DE', $available, true)) {
+			return 'de_DE';
+		}
+		return $lang;
 	}
 
 	/**

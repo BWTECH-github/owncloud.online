@@ -209,7 +209,8 @@ class OC_Template extends \OC\Template\Base {
 	 */
 	private static function findMomentLocales() {
 		try {
-			$lang = \OC::$server->getL10NFactory()->findLanguage();
+			// Mit App-Angabe: nur nachschlagen, nichts beim Konto speichern (Templates entstehen auch für Mails)
+			$lang = \OC::$server->getL10NFactory()->findLanguage('core');
 		} catch (\Exception $e) {
 			return [];
 		}

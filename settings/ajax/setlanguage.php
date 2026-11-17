@@ -35,6 +35,8 @@ if (isset($_POST['lang'])) {
 	$lang = (string)$_POST['lang'];
 	if (\array_search($lang, $languageCodes) or $lang === 'en') {
 		\OC::$server->getConfig()->setUserValue(OC_User::getUser(), 'core', 'lang', $lang);
+		// Selbst gewählt: gilt vor der Browsersprache (siehe OC\L10N\Factory::findLanguage)
+		\OC::$server->getConfig()->deleteUserValue(OC_User::getUser(), 'core', \OC\L10N\Factory::LANG_SOURCE_KEY);
 		OC_JSON::success(["data" => ["message" => $l->t("Language changed")]]);
 	} else {
 		OC_JSON::error(["data" => ["message" => $l->t("Invalid request")]]);
