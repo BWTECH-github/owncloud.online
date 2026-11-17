@@ -153,6 +153,41 @@ class File implements ICache {
 	}
 
 	/**
+	 * Einträge, deren Schlüssel aus $prefix und einer Zahl besteht (z. B. die Chunks
+	 * einer Übertragung), mit ihrer Größe. Liest das Verzeichnis einmal, statt jeden
+	 * denkbaren Schlüssel einzeln abzufragen. Teil-Dateien laufender Schreibvorgänge
+	 * (.part) und Zahlen mit führender Null zählen nicht.
+	 *
+	 * @param string $prefix
+	 * @return array<int, int|float> Zahl hinter dem Präfix => Größe in Bytes
+	 * @throws \OC\ForbiddenException
+	 */
+	public function getNumberedKeys($prefix) {
+		$storage = $this->getStorage();
+		$result = [];
+		if ($storage && $storage->is_dir('/')) {
+			$dh = $storage->opendir('/');
+			if (\is_resource($dh)) {
+				$length = \strlen($prefix);
+				while (($file = \readdir($dh)) !== false) {
+					if (\strncmp($file, $prefix, $length) !== 0) {
+						continue;
+					}
+					$number = \substr($file, $length);
+					if (\preg_match('/^(0|[1-9][0-9]{0,8})$/', $number) === 1
+						&& $storage->is_file($file) && $storage->isReadable($file)
+					) {
+						$size = $storage->filesize($file);
+						$result[(int)$number] = \is_numeric($size) ? 0 + $size : 0;
+					}
+				}
+				\closedir($dh);
+			}
+		}
+		return $result;
+	}
+
+	/**
 	 * @param string $key
 	 * @return bool|mixed
 	 * @throws \OC\ForbiddenException

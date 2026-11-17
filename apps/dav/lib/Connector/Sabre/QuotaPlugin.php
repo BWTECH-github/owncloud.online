@@ -31,6 +31,7 @@
  *   - perf+fix(upload/ui): stabilise uploads, harden chunk assembly, UI + brand...
  */
 namespace OCA\DAV\Connector\Sabre;
+use OCA\DAV\Connector\Sabre\Exception\InvalidChunkName;
 use OCA\DAV\Upload\FutureFile;
 use OCP\Files\FileInfo;
 use OCP\Files\StorageNotAvailableException;
@@ -190,6 +191,7 @@ class QuotaPlugin extends \Sabre\DAV\ServerPlugin {
 	 * @param int|float $length size to check whether it fits
 	 * @param int|float $extraSpace additional space granted, usually used when overwriting files
 	 * @throws InsufficientStorage
+	 * @throws InvalidChunkName
 	 * @return bool
 	 */
 	public function checkQuota($path, $length = null, $extraSpace = 0) {
@@ -204,6 +206,10 @@ class QuotaPlugin extends \Sabre\DAV\ServerPlugin {
 			$req = $this->server->httpRequest;
 			if ($req->getHeader('OC-Chunked')) {
 				$info = \OC_FileChunking::decodeName($newName);
+				if (empty($info)) {
+					// kein gültiger Chunk-Name (z. B. chunkcount über der Obergrenze)
+					throw new InvalidChunkName();
+				}
 				$chunkHandler = $this->getFileChunking($info);
 				if (\is_numeric($req->getHeader('OC-Total-Length'))) {
 					// The client reports the total upload size in advance (desktop client,

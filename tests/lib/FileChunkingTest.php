@@ -103,6 +103,16 @@ class FileChunkingTest extends \Test\TestCase {
 			unset($store[$key]);
 			return true;
 		});
+		$cache->method('getNumberedKeys')->willReturnCallback(function ($prefix) use (&$store) {
+			$result = [];
+			foreach ($store as $key => $value) {
+				$number = \substr($key, \strlen($prefix));
+				if (\strpos($key, $prefix) === 0 && \preg_match('/^(0|[1-9][0-9]*)$/', $number) === 1) {
+					$result[(int)$number] = \strlen($value);
+				}
+			}
+			return $result;
+		});
 		return $cache;
 	}
 
@@ -180,5 +190,101 @@ class FileChunkingTest extends \Test\TestCase {
 		}
 
 		$this->assertEquals(2000, $fileChunking->getCurrentSize(), 'the recount must match the stored chunks');
+	}
+
+	public function dataDecodeName() {
+		return [
+			['file.txt-chunking-42-3-0', true],
+			['file.txt-chunking-42-3-2', true],
+			['file.txt-chunking-42-0003-2', true],
+			['file.txt-chunking-42-100000-99999', true],
+			['file.txt-chunking-42-3-3', false],
+			['file.txt-chunking-42-3-7', false],
+			['file.txt-chunking-42-0-0', false],
+			['file.txt-chunking-42-100001-0', false],
+			['file.txt-chunking-42-99999999999999999999999-0', false],
+			['file.txt-chunking-42-3-99999999999999999999999', false],
+			['file.txt', false],
+		];
+	}
+
+	/**
+	 * chunkcount comes from the URL - also without login through public folder
+	 * links - and must stay within sane bounds.
+	 *
+	 * @dataProvider dataDecodeName
+	 */
+	public function testDecodeNameAcceptsOnlyValidChunkNames($name, $valid) {
+		$info = \OC_FileChunking::decodeName($name);
+		if ($valid) {
+			$this->assertSame('file.txt', $info['name']);
+			$this->assertSame('42', $info['transferid']);
+		} else {
+			$this->assertSame([], $info);
+		}
+	}
+
+	/**
+	 * @param int $chunkCount
+	 * @param \OC\Cache\File $cache
+	 * @return \OC_FileChunking|\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private function getChunkingWithCount($chunkCount, $cache) {
+		$fileChunking = $this->getMockBuilder('\OC_FileChunking')
+			->setMethods(['getCache'])
+			->setConstructorArgs([[
+				'name' => 'file',
+				'transferid' => '42',
+				'chunkcount' => $chunkCount,
+			]])
+			->getMock();
+		$fileChunking->method('getCache')->willReturn($cache);
+		return $fileChunking;
+	}
+
+	/**
+	 * The recount must look at the stored chunks only, not probe every index up
+	 * to chunkcount - that loop could be stretched at will by the caller.
+	 */
+	public function testCurrentSizeDoesNotProbeEveryIndex() {
+		$cache = $this->createMock('\OC\Cache\File');
+		$cache->method('get')->willReturn(null);
+		$cache->method('set')->willReturn(true);
+		$cache->expects($this->never())->method('size');
+		$cache->expects($this->never())->method('hasKey');
+		$cache->expects($this->once())->method('getNumberedKeys')
+			->with('file-chunking-42-')
+			->willReturn([0 => 1000, 5 => 2000]);
+
+		$fileChunking = $this->getChunkingWithCount(\OC_FileChunking::MAX_CHUNK_COUNT, $cache);
+		$this->assertEquals(3000, $fileChunking->getCurrentSize());
+	}
+
+	/**
+	 * Leftovers of an earlier transfer with the same prefix but more chunks do
+	 * not count, just like the per-index loop did not see them.
+	 */
+	public function testCurrentSizeIgnoresIndicesBeyondChunkCount() {
+		$cache = $this->createMock('\OC\Cache\File');
+		$cache->method('get')->willReturn(null);
+		$cache->method('set')->willReturn(true);
+		$cache->method('getNumberedKeys')->willReturn([0 => 10, 1 => 10, 7 => 99]);
+
+		$fileChunking = $this->getChunkingWithCount(3, $cache);
+		$this->assertEquals(20, $fileChunking->getCurrentSize());
+	}
+
+	public function testCleanupRemovesTheStoredChunksAndTheSubtotal() {
+		$removed = [];
+		$cache = $this->createMock('\OC\Cache\File');
+		$cache->method('getNumberedKeys')->willReturn([0 => 1, 2 => 1]);
+		$cache->method('remove')->willReturnCallback(function ($key) use (&$removed) {
+			$removed[] = $key;
+			return true;
+		});
+
+		$fileChunking = $this->getChunkingWithCount(\OC_FileChunking::MAX_CHUNK_COUNT, $cache);
+		$fileChunking->cleanup();
+		$this->assertSame(['file-chunking-42-size', 'file-chunking-42-0', 'file-chunking-42-2'], $removed);
 	}
 }

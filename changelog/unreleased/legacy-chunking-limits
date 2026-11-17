@@ -1,0 +1,14 @@
+Security: Bound the work of legacy chunked uploads
+
+The number of chunks in a legacy chunked upload comes from the file name in
+the URL and was not checked. The quota check looped over every possible chunk
+index, so a single request with a huge chunk count kept a web server process
+busy practically forever - through a public folder link even without login.
+Chunk names are now validated (at most 100000 chunks, index below the count)
+and invalid names are rejected with 400. The size of the stored chunks and the
+cleanup now read the existing chunks in one directory listing instead of
+probing every index.
+
+Measured on the staging cluster: a request with 20000 announced chunks took
+6.6 s before and 0.14 s after; 10^11 chunks are rejected in 0.08 s. Chunked
+uploads through public links and for logged-in users work as before.

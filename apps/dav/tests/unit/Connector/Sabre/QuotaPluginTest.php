@@ -253,6 +253,29 @@ class QuotaPluginTest extends TestCase {
 		$this->plugin->checkQuota('/sub/test.txt-chunking-12345-3-1');
 	}
 
+	public function invalidChunkNameProvider() {
+		return [
+			// chunkcount far beyond the limit: the size check must not loop up to it
+			['/sub/test.txt-chunking-12345-100000000000-0'],
+			['/sub/test.txt-chunking-12345-3-3'],
+			['/sub/test.txt-chunking-12345-0-0'],
+			['/sub/test.txt'],
+		];
+	}
+
+	/**
+	 * @dataProvider invalidChunkNameProvider
+	 */
+	public function testCheckQuotaChunkedRejectsInvalidChunkNames($path) {
+		$this->expectException(\OCA\DAV\Connector\Sabre\Exception\InvalidChunkName::class);
+
+		$this->init(1000, 'sub/test.txt');
+		$this->plugin->expects($this->never())->method('getFileChunking');
+
+		$this->server->httpRequest = new \Sabre\HTTP\Request('', '', ['OC-CHUNKED' => 1, 'CONTENT-LENGTH' => '0']);
+		$this->plugin->checkQuota($path);
+	}
+
 	/**
 	 * Regression test for the public-link chunked-upload quota bypass: without
 	 * OC-Total-Length, each chunk PUT only carries its own Content-Length. A naive

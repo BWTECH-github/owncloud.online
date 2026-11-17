@@ -40,6 +40,7 @@ use OC\Files\Filesystem;
 use OC\Files\Mount\MoveableMount;
 use OCA\DAV\Connector\Sabre\Exception\FileLocked;
 use OCA\DAV\Connector\Sabre\Exception\Forbidden;
+use OCA\DAV\Connector\Sabre\Exception\InvalidChunkName;
 use OCA\DAV\Connector\Sabre\Exception\InvalidPath;
 use OCA\DAV\TrashBin\ITrashBinNode;
 use OCA\DAV\Upload\FutureFile;
@@ -147,6 +148,9 @@ class Directory extends Node implements ICollection, IQuota, IMoveTarget {
 
 				// exit if we can't create a new file and we don't update existing file
 				$chunkInfo = \OC_FileChunking::decodeName($name);
+				if (empty($chunkInfo)) {
+					throw new InvalidChunkName();
+				}
 				if (!$this->fileView->isCreatable($this->path) &&
 					!$this->fileView->isUpdatable($this->path . '/' . $chunkInfo['name'])
 				) {

@@ -45,6 +45,14 @@ class OC_FileChunking {
 	private const LOCK_ATTEMPTS = 5;
 	private const LOCK_RETRY_USEC = 20000; // 20 ms
 
+	/**
+	 * Höchstzahl der Chunks einer Übertragung. chunkcount steht im Dateinamen der
+	 * URL und ist damit Eingabe des Aufrufers, über öffentliche Ordnerlinks auch
+	 * ohne Anmeldung. 100.000 Chunks reichen bei den 10 MiB der Weboberfläche für
+	 * rund 1 TB.
+	 */
+	public const MAX_CHUNK_COUNT = 100000;
+
 	protected $info;
 	protected $cache;
 
@@ -62,8 +70,29 @@ class OC_FileChunking {
 		return false;
 	}
 
+	/**
+	 * Zerlegt einen Chunk-Namen <name>-chunking-<transferid>-<chunkcount>-<index>.
+	 *
+	 * Liefert ein leeres Array, wenn der Name kein gültiger Chunk-Name ist: ohne
+	 * Chunk-Muster, chunkcount 0 oder über MAX_CHUNK_COUNT, index nicht kleiner als
+	 * chunkcount. Die Längenprüfung vor dem Umwandeln verhindert, dass riesige
+	 * Ziffernfolgen als float durchrutschen.
+	 *
+	 * @param string $name
+	 * @return array
+	 */
 	public static function decodeName($name) {
 		\preg_match('/(?P<name>.*)-chunking-(?P<transferid>\d+)-(?P<chunkcount>\d+)-(?P<index>\d+)/', $name, $matches);
+		if (!isset($matches['chunkcount'], $matches['index'])) {
+			return [];
+		}
+		$count = \ltrim($matches['chunkcount'], '0');
+		$index = \ltrim($matches['index'], '0');
+		if ($count === '' || \strlen($count) > 6 || (int)$count > self::MAX_CHUNK_COUNT
+			|| \strlen($index) > 6 || (int)$index >= (int)$count
+		) {
+			return [];
+		}
 		return $matches;
 	}
 
@@ -330,10 +359,15 @@ class OC_FileChunking {
 		if (\is_numeric($cachedTotal)) {
 			return 0 + $cachedTotal;
 		}
-		$prefix = $this->getPrefix();
+		// Nur die vorhandenen Chunks zählen (ein Verzeichnisdurchlauf) statt jeden
+		// Index bis chunkcount einzeln abzufragen: chunkcount kommt aus der URL, die
+		// Schleife darüber ließ sich ohne Anmeldung beliebig verlängern.
+		$count = (int)$this->info['chunkcount'];
 		$total = 0;
-		for ($i = 0; $i < $this->info['chunkcount']; $i++) {
-			$total += $cache->size($prefix.$i);
+		foreach ($cache->getNumberedKeys($this->getPrefix()) as $index => $size) {
+			if ($index < $count) {
+				$total += $size;
+			}
 		}
 		try {
 			$cache->set($this->getSizeKey(), (string)$total, $this->ttl);
@@ -350,8 +384,9 @@ class OC_FileChunking {
 		$cache = $this->getCache();
 		$prefix = $this->getPrefix();
 		$cache->remove($this->getSizeKey());
-		for ($i=0; $i < $this->info['chunkcount']; $i++) {
-			$cache->remove($prefix.$i);
+		// nur vorhandene Chunks entfernen (siehe getCurrentSize())
+		foreach (\array_keys($cache->getNumberedKeys($prefix)) as $index) {
+			$cache->remove($prefix . $index);
 		}
 	}
 

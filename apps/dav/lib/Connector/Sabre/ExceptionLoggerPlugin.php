@@ -68,6 +68,8 @@ class ExceptionLoggerPlugin extends \Sabre\DAV\ServerPlugin {
 		// Bereich hinter dem Dateiende angefragt, Länge fehlt
 		'Sabre\DAV\Exception\RequestedRangeNotSatisfiable' => true,
 		'Sabre\DAV\Exception\LengthRequired' => true,
+		// ungültiger Chunk-Name, auch ohne Anmeldung auslösbar
+		'OCA\DAV\Connector\Sabre\Exception\InvalidChunkName' => true,
 	];
 
 	/** @var string */
