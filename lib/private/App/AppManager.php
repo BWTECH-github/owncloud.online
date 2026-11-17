@@ -75,8 +75,8 @@ class AppManager implements IAppManager {
 	private $appConfig;
 	/** @var \OCP\ICache */
 	private $appInfo;
-	/** @var bool[] app-info-Cache-Keys, deren Etag in diesem Request schon validiert wurde */
-	private $appInfoValidated = [];
+	/** @var array[] App-info entries reused within this request; etags are still checked on every lookup. */
+	private $appInfoCache = [];
 	/** @var \OCP\IGroupManager */
 	private $groupManager;
 	/** @var \OCP\ICacheFactory */
@@ -389,7 +389,7 @@ class AppManager implements IAppManager {
 		$settingsMemCache = $this->memCacheFactory->create('settings');
 		$settingsMemCache->clear('listApps');
 		$this->appInfo->clear();
-		$this->appInfoValidated = [];
+		$this->appInfoCache = [];
 		$this->appDirs = [];
 	}
 
@@ -455,7 +455,7 @@ class AppManager implements IAppManager {
 		$etag = null;
 
 		// check the cache
-		$data = $this->appInfo->get($appId);
+		$data = $this->appInfoCache[$appId] ??= $this->appInfo->get($appId);
 		if (isset($data['path'])) {
 			// check that that info file hasn't changed by comparing the etag.
 			// NOTE: this must run on every call -- a per-request "validated
@@ -468,6 +468,7 @@ class AppManager implements IAppManager {
 			}
 			// invalidate cache
 			$this->appInfo->remove($appId);
+			unset($this->appInfoCache[$appId]);
 		}
 
 		$appPath = $this->getAppPath($appId);
@@ -505,7 +506,7 @@ class AppManager implements IAppManager {
 		$file = \realpath($path);
 
 		// check the cache
-		$data = $this->appInfo->get($file);
+		$data = $this->appInfoCache[$file] ??= $this->appInfo->get($file);
 		if (isset($data['path'])) {
 			// check that that info file hasn't changed by comparing the etag
 			// (must run on every call, see getAppInfo)
@@ -516,6 +517,7 @@ class AppManager implements IAppManager {
 			}
 			// invalidate cache
 			$this->appInfo->remove($file);
+			unset($this->appInfoCache[$file]);
 		}
 
 		// parse the actual file
@@ -551,12 +553,14 @@ class AppManager implements IAppManager {
 		];
 
 		// cache results for a day
-		$appIdData = $this->appInfo->get($appId);
+		$appIdData = $this->appInfoCache[$appId] = $this->appInfo->get($appId);
 		if ($appIdData === null || \version_compare($appIdData['info']['version'], $info['version']) === -1) {
 			// if no data is cached for the appId or the new one has a higher version, update cache
 			$this->appInfo->set($appId, $data, 86400);
+			$this->appInfoCache[$appId] = $data;
 		}
 		$this->appInfo->set($file, $data, 86400);
+		$this->appInfoCache[$file] = $data;
 
 		return $info;
 	}
