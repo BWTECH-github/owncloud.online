@@ -117,7 +117,9 @@ class Updater extends BasicEmitter {
 		try {
 			$this->checkAppsCompatibility();
 			$this->doUpgrade($currentVersion, $installedVersion);
-		} catch (\Exception $exception) {
+		} catch (\Throwable $exception) {
+			// auch \Error (z. B. TypeError in einer App-Migration): sonst bliebe loglevel
+			// dauerhaft auf Debug und occ upgrade endete ohne Fehlermeldung des Updaters
 			$this->log->logException($exception, ['app' => 'core']);
 			$this->emit('\OC\Updater', 'failure', [\get_class($exception) . ': ' .$exception->getMessage()]);
 			$success = false;

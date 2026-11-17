@@ -1,0 +1,5 @@
+Bugfix: Reset the log level when an upgrade ends with a PHP Error
+
+The updater only caught exceptions. A PHP Error in an app migration ended the
+upgrade without the updater's failure handling and left the log level on debug
+for good. Errors are now handled like exceptions.
