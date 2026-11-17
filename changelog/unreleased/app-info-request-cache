@@ -1,0 +1,5 @@
+Bugfix: Reuse app metadata within a request to reduce cache backend traffic
+
+Repeated app-info lookups reuse their cache entries within the request instead
+of fetching them from Redis or APCu each time. Every lookup still checks the
+info.xml etag, and clearing the app cache also clears the request entries.
