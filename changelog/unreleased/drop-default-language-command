@@ -1,0 +1,7 @@
+Enhancement: New command to drop default_language without surprising users
+
+`occ config:system:drop-default-language` removes default_language from
+config.php so that the browser language applies. Accounts without an own
+language keep the old default as their remembered browser language, so e-mails
+and background jobs stay in the familiar language until the user's next visit
+switches to the browser language. `--dry-run` only counts these accounts.
