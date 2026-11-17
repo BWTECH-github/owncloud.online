@@ -302,6 +302,9 @@ class BulkUploadPlugin extends ServerPlugin {
 			if (!\OC\Files\Filesystem::isValidPath($path)) {
 				return ['error' => true, 'message' => 'Invalid path'];
 			}
+			// dieselbe Namensprüfung wie beim einzelnen PUT (reservierte Namen,
+			// ungültige Zeichen, Länge); wirft InvalidPathException → Fehler je Datei
+			$view->verifyPath(\dirname($path), \basename($path));
 
 			$expectedMd5 = isset($part['headers']['x-file-md5']) ? \strtolower($part['headers']['x-file-md5']) : null;
 			if ($expectedMd5 !== null && \md5($part['body']) !== $expectedMd5) {
@@ -589,7 +592,14 @@ class BulkUploadPlugin extends ServerPlugin {
 				continue;
 			}
 			$name = \strtolower(\trim(\substr($line, 0, $colon)));
-			$value = \trim(\substr($line, $colon + 1));
+			$value = \ltrim(\substr($line, $colon + 1), " \t");
+			// Leerraum am Ende gehört beim Pfad zum Dateinamen ("Notiz " ist eine
+			// andere Datei als "Notiz"); gekürzt landete die Datei unter falschem
+			// Namen, überschrieb die Nachbardatei und der Client fand seinen
+			// Ergebnisschlüssel nicht (Endlosschleife). Andere Werte wie bisher kürzen.
+			if ($name !== 'x-file-path') {
+				$value = \rtrim($value);
+			}
 			$headers[$name] = $value;
 		}
 		return $headers;

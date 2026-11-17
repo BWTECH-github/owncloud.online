@@ -1,0 +1,9 @@
+Bugfix: Bulk upload keeps spaces at the end of file names
+
+The bulk upload endpoint trimmed every part header, including X-File-Path. A
+new file "Notiz " uploaded by the desktop client on macOS or Linux was stored
+as "Notiz" and silently overwrote that file; the client did not find its own
+path in the answer, reported "Server did not confirm the upload" and uploaded
+again on every sync, overwriting the neighbour each time. The path now keeps
+trailing whitespace, and each part gets the same file name checks as a single
+PUT.
