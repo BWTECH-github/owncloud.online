@@ -1,0 +1,7 @@
+Bugfix: Keep the version when a concurrent request removes the versions folder
+
+When a file was overwritten, files_versions created the versions folder and
+then copied the old content into it. A MOVE or DELETE running at the same time
+in the same tree could remove that still empty folder through its own cleanup.
+The copy then failed, the upload still answered 204 and the previous version
+was lost. The versions folder is now created again and the copy retried once.

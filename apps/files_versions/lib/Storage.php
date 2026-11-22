@@ -241,7 +241,14 @@ class Storage {
 			$sourceFileInfo = $users_view->getFileInfo("files/$filename");
 
 			$versionFileName = "files_versions/$filename.v$mtime";
-			if ($users_view->copy("files/$filename", $versionFileName)) {
+			$copied = $users_view->copy("files/$filename", $versionFileName);
+			if (!$copied) {
+				// Wettlauf: cleanupEmptyVersionFolder() einer parallelen Anfrage (MOVE/DELETE im selben Baum)
+				// kann den eben angelegten, noch leeren Ordner wieder löschen. Dann einmal neu anlegen.
+				self::getFileHelper()->createMissingDirectories($users_view, '/' . $filename);
+				$copied = $users_view->copy("files/$filename", $versionFileName);
+			}
+			if ($copied) {
 				// call getFileInfo to enforce a file cache entry for the new version
 				$fileInfo = $users_view->getFileInfo($versionFileName);
 				// update checksum of the version

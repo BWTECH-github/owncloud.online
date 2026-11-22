@@ -61,6 +61,7 @@ use OCP\IConfig;
 use OCP\Util;
 use PHPUnit\Framework\MockObject\MockObject;
 use ReflectionClass;
+use ReflectionProperty;
 use Test\TestCase;
 use function basename;
 use function file_exists;
@@ -1444,6 +1445,50 @@ class VersioningTest extends TestCase {
 		OC::$server->getUserFolder($user);
 	}
 
+	/**
+	 * Eine parallele Anfrage löscht den eben angelegten Fassungsordner wieder (cleanupEmptyVersionFolder
+	 * nach MOVE/DELETE im selben Baum). Die Fassung darf trotzdem nicht verloren gehen.
+	 */
+	public function testStoreVersionWhenVersionFolderVanishesConcurrently(): void {
+		$this->overwriteConfig();
+		$this->markTestSkippedIfStorageHasOwnVersioning();
+		self::loginAsUser($this->user1);
+
+		$application = new ReflectionProperty(\OCA\Files_Versions\Storage::class, 'application');
+		$application->setAccessible(true);
+		$previous = $application->getValue();
+		$helper = new RacingFileHelper();
+		$racingApp = new \OCA\Files_Versions\AppInfo\Application();
+		$racingApp->getContainer()->registerService('FileHelper', function () use ($helper) {
+			return $helper;
+		});
+		$application->setValue(null, $racingApp);
+
+		// wie im Betrieb: Die Warnung des gescheiterten copy() wird protokolliert, nicht als Ausnahme geworfen
+		$warnings = [];
+		\set_error_handler(function ($errno, $errstr) use (&$warnings) {
+			$warnings[] = $errstr;
+			return true;
+		}, E_WARNING);
+		try {
+			$view = Filesystem::getView();
+			$view->mkdir('ordner');
+			$view->file_put_contents('ordner/test.txt', 'version 1');
+			$view->file_put_contents('ordner/test.txt', 'version 2');
+		} finally {
+			\restore_error_handler();
+			$application->setValue(null, $previous);
+		}
+		$context = ' Warnungen: ' . \implode(' | ', $warnings);
+
+		[$rootStorage,] = $this->rootView->resolvePath($this->user1 . '/files_versions');
+		$rootStorage->getScanner()->scan('files_versions');
+		$versions = \OCA\Files_Versions\Storage::getVersions($this->user1, '/ordner/test.txt');
+		$this->assertTrue($helper->raced, 'store() hat den Fassungsordner nicht angelegt.' . $context);
+		$this->assertSame(2, $helper->calls, 'store() hat die Ordner nach dem gescheiterten Kopieren nicht neu angelegt.' . $context);
+		$this->assertCount(1, $versions, $context);
+	}
+
 	private function markTestSkippedIfStorageHasOwnVersioning(): void {
 		/** @var Storage $storage */
 		[$storage, $internalPath] = $this->rootView->resolvePath(self::USERS_VERSIONS_ROOT);
@@ -1469,5 +1514,20 @@ class VersionStorageToTest extends \OCA\Files_Versions\Storage {
 	 */
 	public static function callProtectedIsPublishedVersion($view, $path): bool {
 		return self::isPublishedVersion($view, $path);
+	}
+}
+
+// legt die Ordner an und lässt sie beim ersten Aufruf von einer "parallelen Anfrage" wieder löschen
+class RacingFileHelper extends FileHelper {
+	public bool $raced = false;
+	public int $calls = 0;
+
+	public function createMissingDirectories(View $view, $path) {
+		$this->calls++;
+		parent::createMissingDirectories($view, $path);
+		if (!$this->raced) {
+			$this->raced = true;
+			$view->rmdir(self::VERSIONS_RELATIVE_PATH . Filesystem::normalizePath(\dirname($path)));
+		}
 	}
 }
