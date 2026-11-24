@@ -6,6 +6,11 @@
  *
  * See the COPYING-README file.
  *
+ * Modified by BW-Tech GmbH on 2026-11-24.
+ * Changes:
+ *   - build plural functions with a small parser instead of new Function, so
+ *     they also work under a Content-Security-Policy without 'unsafe-eval'
+ *
  */
 
 /**
@@ -25,6 +30,13 @@ OC.L10N = {
 	 * @type {Object.<String,Function>}
 	 */
 	_pluralFunctions: {},
+
+	/**
+	 * Erzeugte Pluralfunktionen je Pluralform, null steht für eine ungültige
+	 * Form. Die Bündel einer Sprache teilen fast immer dieselbe Form.
+	 * @type {Object.<String,Function|null>}
+	 */
+	_pluralFormCache: {},
 
 	/**
 	 * Load an app's translation bundle if not loaded already.
@@ -111,22 +123,139 @@ OC.L10N = {
 			//pf = "nplurals=2; plural=(n != 1);";
 			//ex russian: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10< =4 && (n%100<10 or n%100>=20) ? 1 : 2)
 			//pf = "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2)";
-			var pf = pluralForm;
-			if (! /;\s*$/.test(pf)) {
-				pf = pf.concat(';');
+			var cache = this._pluralFormCache;
+			if (!Object.prototype.hasOwnProperty.call(cache, pluralForm)) {
+				cache[pluralForm] = this._compilePluralForm(pluralForm);
 			}
-			/* We used to use eval, but it seems IE has issues with it.
-			 * We now use "new Function", though it carries a slightly
-			 * bigger performance hit.
-			var code = 'function (n) { var plural; var nplurals; '+pf+' return { "nplural" : nplurals, "plural" : (plural === true ? 1 : plural ? plural : 0) }; };';
-			Gettext._locale_data[domain].head.plural_func = eval("("+code+")");
-			 */
-			var code = 'var plural; var nplurals; '+pf+' return { "nplural" : nplurals, "plural" : (plural === true ? 1 : plural ? plural : 0) };';
-			func = new Function("n", code);
-		} else {
-			console.warn('Invalid plural form in language file: "' + pluralForm + '"');
+			if (cache[pluralForm]) {
+				return cache[pluralForm];
+			}
 		}
+		console.warn('Invalid plural form in language file: "' + pluralForm + '"');
 		return func;
+	},
+
+	/**
+	 * Baut aus einer gettext-Pluralform die Pluralfunktion, ohne eval und ohne
+	 * new Function: Beide werfen unter einer Content-Security-Policy ohne
+	 * 'unsafe-eval' einen EvalError.
+	 *
+	 * Erlaubt ist genau die gettext-Syntax: n, ganze Zahlen, Klammern, !,
+	 * * / %, + -, < <= > >=, == !=, && und || sowie ? : mit Vorrang und
+	 * Bindung wie in C. Gerechnet wird mit den JavaScript-Operatoren, jede
+	 * angenommene Form liefert also dasselbe wie früher new Function: / teilt
+	 * mit Nachkommastellen, == und != vergleichen lose.
+	 *
+	 * @param {String} pluralForm Pluralform, z. B. "nplurals=2; plural=(n != 1);"
+	 * @return {Function|null} Pluralfunktion, null bei ungültiger Form
+	 */
+	_compilePluralForm: function(pluralForm) {
+		// binäre Operatoren nach Bindungsstärke, die schwächsten zuerst
+		var levels = [['||'], ['&&'], ['==', '!='], ['<', '<=', '>', '>='], ['+', '-'], ['*', '/', '%']];
+		var tokens;
+		var pos = 0;
+
+		function consume(token) {
+			if (tokens[pos++] !== token) {
+				throw new Error('Expected ' + token);
+			}
+		}
+
+		function binary(op, left, right) {
+			switch (op) {
+				case '||': return function(n) { return left(n) || right(n); };
+				case '&&': return function(n) { return left(n) && right(n); };
+				// bewusst lose verglichen, wie bisher
+				case '==': return function(n) { return left(n) == right(n); };
+				case '!=': return function(n) { return left(n) != right(n); };
+				case '<': return function(n) { return left(n) < right(n); };
+				case '<=': return function(n) { return left(n) <= right(n); };
+				case '>': return function(n) { return left(n) > right(n); };
+				case '>=': return function(n) { return left(n) >= right(n); };
+				case '+': return function(n) { return left(n) + right(n); };
+				case '-': return function(n) { return left(n) - right(n); };
+				case '*': return function(n) { return left(n) * right(n); };
+				case '/': return function(n) { return left(n) / right(n); };
+				default: return function(n) { return left(n) % right(n); }; // '%'
+			}
+		}
+
+		// a ? b : c, rechtsbindend
+		function parseConditional() {
+			var condition = parseBinary(0);
+			if (tokens[pos] !== '?') {
+				return condition;
+			}
+			pos++;
+			var whenTrue = parseConditional();
+			consume(':');
+			var whenFalse = parseConditional();
+			return function(n) {
+				return condition(n) ? whenTrue(n) : whenFalse(n);
+			};
+		}
+
+		// linksbindend innerhalb einer Stufe
+		function parseBinary(level) {
+			if (level === levels.length) {
+				return parseOperand();
+			}
+			var left = parseBinary(level + 1);
+			while (levels[level].indexOf(tokens[pos]) !== -1) {
+				var op = tokens[pos++];
+				left = binary(op, left, parseBinary(level + 1));
+			}
+			return left;
+		}
+
+		function parseOperand() {
+			var token = tokens[pos++];
+			if (token === '!') {
+				var operand = parseOperand();
+				return function(n) { return !operand(n); };
+			}
+			if (token === '(') {
+				var inner = parseConditional();
+				consume(')');
+				return inner;
+			}
+			if (token === 'n') {
+				return function(n) { return n; };
+			}
+			// ohne führende Null: new Function las 010 oktal, gettext dezimal
+			if (/^(?:0|[1-9][0-9]*)$/.test(token)) {
+				var value = parseInt(token, 10);
+				return function() { return value; };
+			}
+			throw new Error('Unexpected token ' + token);
+		}
+
+		try {
+			var header = /^\s*nplurals\s*=\s*(0|[1-9][0-9]*)\s*;\s*plural\s*=/.exec(pluralForm);
+			// Echte Formen haben wenige hundert Zeichen. Die Grenze hält Aufwand
+			// und Verschachtelungstiefe manipulierter Formen klein.
+			if (!header || pluralForm.length > 1000) {
+				return null;
+			}
+			var nplurals = parseInt(header[1], 10);
+			// Leerraum trennt nur; jedes andere Zeichen ist ein Token, unbekannte
+			// lehnt der Parser ab
+			tokens = pluralForm.slice(header[0].length).match(/[0-9]+|[A-Za-z_$][\w$]*|[<>!=]=|&&|\|\||\S/g) || [];
+			if (tokens[tokens.length - 1] === ';') {
+				tokens.pop();
+			}
+			var plural = parseConditional();
+			if (pos !== tokens.length) {
+				return null;
+			}
+			return function(n) {
+				var p = plural(n);
+				return { 'nplural' : nplurals, 'plural' : (p === true ? 1 : p ? p : 0) };
+			};
+		} catch (e) {
+			// Syntaxfehler, auch zu tiefe Verschachtelung (RangeError)
+			return null;
+		}
 	},
 
 	/**

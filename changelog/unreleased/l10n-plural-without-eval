@@ -1,0 +1,8 @@
+Bugfix: Plural forms work under a Content Security Policy without unsafe-eval
+
+The web interface built the plural rule of every translation bundle with
+new Function. Under a Content Security Policy without 'unsafe-eval' this threw
+an EvalError for each bundle on every page, and plural translations failed.
+The plural rules are now read by a small parser for the gettext syntax and give
+the same results as before. A plural rule that cannot be read falls back to the
+default rule with a warning instead of an error.
