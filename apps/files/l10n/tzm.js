@@ -6,4 +6,4 @@ OC.L10N.register(
     "_Uploading %n file_::_Uploading %n files_" : ["",""],
     "_matches '{filter}'_::_match '{filter}'_" : ["",""]
 },
-"nplurals=2; plural=(n == 0 || n == 1 || (n > 10 && n < 100) ? 0 : 1;");
+"nplurals=2; plural=(n == 0 || n == 1 || (n > 10 && n < 100) ? 0 : 1);");
