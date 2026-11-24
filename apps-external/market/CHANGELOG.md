@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
+## [0.11.0] - 2026-11-24
+
+### Changed
+
+- Verbesserungen und Fehlerbehebungen.
+
 ## [0.10.11] - 2026-10-28
 
 ### Changed

@@ -43,9 +43,21 @@ use RecursiveIteratorIterator;
 use RuntimeException;
 
 class MarketService {
+	/** Kontakt für Support-Verträge, solange der Marktplatz keinen nennt. */
+	public const SUPPORT_EMAIL = 'support@owncloudonline.com';
+	public const SUPPORT_URL = 'https://owncloud.online';
+
+	/** Ab so vielen Resttagen gilt ein Support-Vertrag als „läuft bald ab“. */
+	private const EXPIRES_SOON_DAYS = 30;
+
 	private ?array $apps = null;
 	private ?array $categories = null;
 	private ?array $bundles = null;
+	private ?array $supportContact = null;
+	/** @var array<string, array> Memo Schlüssel => getKeyStatus() je Prozess */
+	private array $keyStatus = [];
+	/** @var array<string, true> Schlüssel, deren Statusabfrage den Marktplatz nicht erreichte */
+	private array $keyStatusUnreachable = [];
 	/** @var array<string, array>|null Memo appId => info.xml-Daten der installierten Apps */
 	private ?array $installedAppInfos = null;
 	private ?DependencyAnalyzer $dependencyAnalyzer = null;
@@ -264,6 +276,11 @@ class MarketService {
 		if ($marketInfo === null) {
 			throw new AppNotFoundException($this->l10n->t('App (%s) is not known at the marketplace.', [$appId]));
 		}
+		if (self::isLocked($marketInfo)) {
+			// Ohne Support-Vertrag gibt es kein Paket: kein Update melden, das
+			// sich nicht installieren lässt.
+			return ['major' => false, 'minor' => false];
+		}
 		$currentVersion = (string) $info['version'];
 		return [
 			'major' => $this->filterReleases($marketInfo, $currentVersion, true),
@@ -359,12 +376,274 @@ class MarketService {
 		if ($apiKey === '') {
 			return true;
 		}
+		// Kennt der Marktplatz die Statusabfrage, entscheidet sie: Ein
+		// Schlüssel, den er ablehnt, wird gar nicht erst gespeichert.
+		$state = $this->getKeyStatus($apiKey)['state'];
+		if ($state === 'invalid' || isset($this->keyStatusUnreachable[$apiKey])) {
+			// Ohne Verbindung scheiterte auch die Prüfung unten, nur später.
+			return false;
+		}
+		if ($state !== 'unknown') {
+			return true;
+		}
 		try {
 			$this->httpService->validateKey($apiKey);
 			return true;
 		} catch (Exception) {
 			return false;
 		}
+	}
+
+	/**
+	 * Stand des Support-Vertrags zum Schlüssel $apiKey (ohne Angabe: zum
+	 * gespeicherten), aufbereitet für die Anzeige:
+	 *
+	 * - state: active, expiring, expired, blocked, pending, system_blocked,
+	 *   update, invalid, none, local oder unknown
+	 * - label: kurzer Zustand, message: Grund in der Sprache des Nutzers
+	 * - rows: weitere Angaben als Liste von [label, value]
+	 *
+	 * @return array{state: string, label: string, message: string, rows: array<int, array{label: string, value: string}>}
+	 */
+	public function getKeyStatus(?string $apiKey = null): array {
+		$apiKey ??= $this->getApiKey();
+		if ($apiKey === null || $apiKey === '') {
+			return $this->keyStatusResult('none', '');
+		}
+		if (isset($this->keyStatus[$apiKey])) {
+			return $this->keyStatus[$apiKey];
+		}
+		if ($this->httpService->isLocalCatalog()) {
+			return $this->keyStatusResult('local', (string) $this->l10n->t('This system uses the local app catalog and needs no key.'));
+		}
+
+		try {
+			$response = $this->httpService->fetchKeyStatus($apiKey);
+		} catch (Exception $e) {
+			// Auch das merken: Ein zweiter Versuch in derselben Anfrage liefe
+			// nur erneut in das Zeitlimit.
+			$this->keyStatusUnreachable[$apiKey] = true;
+			return $this->keyStatus[$apiKey] = $this->keyStatusResult('unknown', $e->getMessage());
+		}
+		$code = $response['status'];
+		$body = $response['body'];
+		$result = match (true) {
+			\is_array($body) && \is_string($body['status'] ?? null) => $this->keyStatusFromPayload($body),
+			$code === 401 => $this->keyStatusResult('invalid', (string) $this->l10n->t('This key is not valid.')),
+			$code === 404 => $this->keyStatusResult('unknown', (string) $this->l10n->t('The marketplace does not show the status of support contracts.')),
+			$code === 429 => $this->keyStatusResult('unknown', (string) $this->l10n->t('Too many attempts. Please try again later.')),
+			default => $this->keyStatusResult(
+				'unknown',
+				self::plainText($body['message'] ?? null, 300) ?? (string) $this->l10n->t('No marketplace connection: %s', ['HTTP ' . $code])
+			),
+		};
+		return $this->keyStatus[$apiKey] = $result;
+	}
+
+	/**
+	 * Kontakt für Support-Verträge aus /api/v1/support.json, ohne Antwort
+	 * (alter Marktplatz, lokaler Katalog, keine Verbindung) die Vorgabe.
+	 * Adresse und Link werden geprüft, weil sie als mailto:/href in der
+	 * Oberfläche landen; Titel und Text sind reiner Text.
+	 *
+	 * @return array{email: string, url: string, title: string, text: string}
+	 */
+	public function getSupportContact(): array {
+		if ($this->supportContact !== null) {
+			return $this->supportContact;
+		}
+		try {
+			$data = $this->httpService->getSupport();
+		} catch (Exception) {
+			$data = null;
+		}
+		$data = \is_array($data) ? $data : [];
+		$suffix = $this->prefersGerman() ? 'de' : 'en';
+
+		$email = \is_string($data['email'] ?? null) ? \trim($data['email']) : '';
+		$url = \is_string($data['url'] ?? null) ? \trim($data['url']) : '';
+		return $this->supportContact = [
+			'email' => \filter_var($email, FILTER_VALIDATE_EMAIL) !== false ? $email : self::SUPPORT_EMAIL,
+			'url' => self::isWebUrl($url) ? $url : self::SUPPORT_URL,
+			'title' => self::plainText($data['title_' . $suffix] ?? null, 80) ?? (string) $this->l10n->t('Support contract'),
+			'text' => self::plainText($data['text_' . $suffix] ?? null, 500) ?? (string) $this->l10n->t('Available with a support contract.'),
+		];
+	}
+
+	/**
+	 * Meldung, wenn eine App mit Support-Vertrag nicht geladen werden darf;
+	 * mit Kontakt, damit auch occ sagt, wohin man sich wendet.
+	 */
+	public function getSupportContractMessage(): string {
+		$contact = $this->getSupportContact();
+		return (string) $this->l10n->t(
+			'Available with a support contract. Request one at %1$s or %2$s.',
+			[$contact['email'], $contact['url']]
+		);
+	}
+
+	/**
+	 * Geschützte App, die dieses System nicht laden darf: Der Marktplatz
+	 * listet sie für Market ab 0.11.0 mit entitled=false und ohne
+	 * Download-Adresse. Ältere Marktplätze senden das Feld nicht; dann gilt
+	 * eine App wie bisher als freigegeben.
+	 */
+	public static function isLocked(array $app): bool {
+		return ($app['entitled'] ?? true) === false;
+	}
+
+	public function isAppLocked(string $appId): bool {
+		$info = $this->getAppInfo($appId);
+		return $info !== null && self::isLocked($info);
+	}
+
+	/** Spricht der Nutzer Deutsch (de, de_DE, de_CH, de-AT …)? */
+	public function prefersGerman(): bool {
+		return \str_starts_with(\strtolower((string) $this->l10n->getLanguageCode()), 'de');
+	}
+
+	/**
+	 * Kurzbeschreibung und Beschreibung einer Katalog-App in der Sprache des
+	 * Nutzers: Deutsch aus summary_de/description_de, solange dort etwas
+	 * steht, sonst bleibt der englische Text.
+	 */
+	public static function localizeTexts(array $app, bool $german): array {
+		if (!$german) {
+			return $app;
+		}
+		foreach (['summary', 'description'] as $field) {
+			$text = $app[$field . '_de'] ?? null;
+			if (\is_string($text) && \trim($text) !== '') {
+				$app[$field] = $text;
+			}
+		}
+		return $app;
+	}
+
+	/**
+	 * @param array<string, mixed> $payload Antwort von /api/v1/key/status
+	 */
+	private function keyStatusFromPayload(array $payload): array {
+		$status = \is_string($payload['status'] ?? null) ? $payload['status'] : '';
+		$systemStatus = \is_string($payload['instance_status'] ?? null) ? $payload['instance_status'] : '';
+		$expiresAt = \is_string($payload['expires_at'] ?? null) && \strtotime($payload['expires_at']) !== false
+			? $payload['expires_at']
+			: null;
+		$days = null;
+		if (\is_int($payload['expires_in_days'] ?? null)) {
+			$days = $payload['expires_in_days'];
+		} elseif ($expiresAt !== null) {
+			$days = (int) \floor((\strtotime($expiresAt) - \time()) / 86400);
+		}
+		// Wie der Marktplatz: „läuft bald ab“ bei weniger als 30 Tagen. Nennt er
+		// den Zustand selbst (contract_status), gilt der.
+		$contractStatus = \is_string($payload['contract_status'] ?? null) ? $payload['contract_status'] : null;
+		$expiring = $contractStatus !== null
+			? $contractStatus === 'expiring'
+			: $days !== null && $days < self::EXPIRES_SOON_DAYS;
+		// Gilt der Vertrag, lädt dieses System. „Zu viele Systeme: trotzdem
+		// zulassen und markieren“ sieht nur die Verwaltung.
+		if ($status === 'valid' && $systemStatus === 'pending') {
+			$systemStatus = 'approved';
+		}
+
+		$state = match ($status) {
+			'valid' => $expiring ? 'expiring' : 'active',
+			'expired' => 'expired',
+			'paused', 'disabled' => 'blocked',
+			'instance_pending' => 'pending',
+			'instance_blocked' => 'system_blocked',
+			'client_update_required' => 'update',
+			'invalid', 'revoked' => 'invalid',
+			default => 'unknown',
+		};
+
+		$german = $this->prefersGerman();
+		$message = self::plainText($payload[$german ? 'message_de' : 'message_en'] ?? null, 300)
+			?? self::plainText($payload[$german ? 'message_en' : 'message_de'] ?? null, 300)
+			?? '';
+
+		$rows = [];
+		$contract = self::plainText($payload['contract_label'] ?? null, 120);
+		if ($contract !== null) {
+			$rows[] = ['label' => (string) $this->l10n->t('Contract'), 'value' => $contract];
+		}
+		if (!\in_array($state, ['invalid', 'unknown'], true)) {
+			$rows[] = [
+				'label' => (string) $this->l10n->t('Valid until'),
+				'value' => $expiresAt !== null ? $this->formatDate($expiresAt) : (string) $this->l10n->t('No end date'),
+			];
+		}
+		$instances = $payload['instances'] ?? null;
+		if (\is_array($instances) && \is_int($instances['used'] ?? null)) {
+			$max = \is_int($instances['max'] ?? null) ? $instances['max'] : null;
+			$rows[] = [
+				'label' => (string) $this->l10n->t('Systems'),
+				'value' => $max !== null
+					? (string) $this->l10n->t('%1$s of %2$s', [$instances['used'], $max])
+					: (string) $this->l10n->t('%s (no limit)', [$instances['used']]),
+			];
+		}
+		$systemLabel = match ($systemStatus) {
+			'approved' => $this->l10n->t('Allowed'),
+			'pending' => $this->l10n->t('Not allowed yet'),
+			'blocked' => $this->l10n->t('Blocked'),
+			default => null,
+		};
+		if ($systemLabel !== null) {
+			$rows[] = ['label' => (string) $this->l10n->t('This system'), 'value' => (string) $systemLabel];
+		}
+
+		return $this->keyStatusResult($state, $message, $rows);
+	}
+
+	/**
+	 * @param array<int, array{label: string, value: string}> $rows
+	 */
+	private function keyStatusResult(string $state, string $message, array $rows = []): array {
+		$label = match ($state) {
+			'active' => $this->l10n->t('Active'),
+			'expiring' => $this->l10n->t('Expires soon'),
+			'expired' => $this->l10n->t('Expired'),
+			'blocked' => $this->l10n->t('Temporarily blocked'),
+			'pending' => $this->l10n->t('Waiting to be allowed'),
+			'system_blocked' => $this->l10n->t('System blocked'),
+			'update' => $this->l10n->t('Update the Market app'),
+			'invalid' => $this->l10n->t('Invalid'),
+			'none' => $this->l10n->t('No key saved'),
+			'local' => $this->l10n->t('Local catalog'),
+			default => $this->l10n->t('Status unknown'),
+		};
+		return ['state' => $state, 'label' => (string) $label, 'message' => $message, 'rows' => $rows];
+	}
+
+	/** Datum des Vertragsendes; der Marktplatz legt es auf das Tagesende in Berlin. */
+	private function formatDate(string $isoDate): string {
+		try {
+			$date = (new \DateTime($isoDate))->setTimezone(new \DateTimeZone('Europe/Berlin'));
+		} catch (Exception) {
+			return $isoDate;
+		}
+		return (string) $this->l10n->l('date', $date, ['width' => 'medium']);
+	}
+
+	/** Einzeiliger Text ohne Steuerzeichen, gekürzt; null, wenn nichts bleibt. */
+	private static function plainText(mixed $value, int $maxLength): ?string {
+		if (!\is_string($value)) {
+			return null;
+		}
+		$text = \trim((string) \preg_replace('/[\x00-\x1F\x7F]+/u', ' ', $value));
+		if ($text === '') {
+			return null;
+		}
+		return \mb_strlen($text) > $maxLength ? \rtrim(\mb_substr($text, 0, $maxLength - 1)) . '…' : $text;
+	}
+
+	private static function isWebUrl(string $url): bool {
+		$scheme = \strtolower((string) \parse_url($url, PHP_URL_SCHEME));
+		return ($scheme === 'https' || $scheme === 'http')
+			&& \filter_var($url, FILTER_VALIDATE_URL) !== false
+			&& \preg_match('/[\s<>"\']/', $url) !== 1;
 	}
 
 	/**
@@ -474,6 +753,9 @@ class MarketService {
 		if (empty($data)) {
 			throw new AppNotFoundException($this->l10n->t('Unknown app (%s)', [$appId]));
 		}
+		if (self::isLocked($data)) {
+			throw new AppManagerException($this->getSupportContractMessage());
+		}
 
 		$version = $this->versionHelper->getPlatformVersion();
 		$release = \array_filter(
@@ -508,7 +790,16 @@ class MarketService {
 		}
 		\usort($release, static fn ($a, $b): int => \version_compare($b['version'], $a['version']));
 		$release = \array_values($release);
-		$downloadLink = $release[0]['download'];
+		$downloadLink = $release[0]['download'] ?? '';
+		if (!\is_string($downloadLink) || $downloadLink === '') {
+			// Eine leere Adresse nie anfragen: Sie träfe sonst die Seite des
+			// Marktplatzes oder würde als lokaler Pfad gelesen.
+			throw new AppManagerException(
+				($data['requiresKey'] ?? false) === true
+					? $this->getSupportContractMessage()
+					: (string) $this->l10n->t('No download available for %s.', [$appId])
+			);
+		}
 
 		$pathInfo = \pathinfo($downloadLink);
 		$extension = isset($pathInfo['extension']) ? '.' . $pathInfo['extension'] : '';

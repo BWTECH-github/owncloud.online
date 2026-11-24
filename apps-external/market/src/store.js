@@ -37,10 +37,21 @@ const state = {
 
     apikey : {
         key : null,
+        hasKey : false,
         loading: false,
         valid : undefined,
         changeable : false
     },
+
+    // Stand des Support-Vertrags (state, label, message, rows vom Server)
+    keyStatus: {
+        loading: false,
+        data: null,
+        catalogReloaded: false
+    },
+
+    // Kontakt für Support-Verträge (email, url, title, text vom Server)
+    support: null,
 
     // Live search query, applied to name + summary + description + categories
     searchQuery: "",
@@ -300,7 +311,18 @@ const mutations = {
     APIKEY (state, changes) {
         _.extend(state["apikey"], changes);
     },
+
+    KEY_STATUS (state, changes) {
+        _.extend(state["keyStatus"], changes);
+    },
+
+    SUPPORT (state, support) {
+        state.support = support;
+    },
 };
+
+// Laufende oder erledigte Abfrage des Support-Kontakts (FETCH_SUPPORT)
+let supportRequest = null;
 
 // Request content from the remote API.
 const actions = {
@@ -545,6 +567,7 @@ const actions = {
             .then((response) => {
                 context.commit("APIKEY", {
                     "key"        : response.data.apiKey,
+                    "hasKey"     : response.data.hasKey === true || !!response.data.apiKey,
                     "changeable" : response.data.changeable,
                     "loading"    : false,
                     "processing" : false
@@ -588,7 +611,10 @@ const actions = {
                 }
             }
         ).then((response) => {
-            if (response.data.message == "The api key is not valid.") {
+            const data = response.data || {};
+            // Der Server meldet einen abgelehnten Schlüssel mit valid: false;
+            // der Meldungstext ist übersetzt und taugt nicht zum Vergleich.
+            if (data.valid === false) {
                 context.commit("APIKEY", {
                     "loading": false,
                     "valid"  : false
@@ -601,9 +627,65 @@ const actions = {
                 context.dispatch("FETCH_CATEGORIES");
                 context.dispatch("FETCH_BUNDLES");
             }
+            context.commit("KEY_STATUS", {"loading": false, "data": data.status || null});
         }).catch((error) => {
             context.commit("APIKEY", {"loading" : false });
         })
+    },
+
+    FETCH_KEY_STATUS (context) {
+        context.commit("KEY_STATUS", {"loading": true});
+        return Axios.get(OC.generateUrl("/apps/market/apikey/status"), {
+                headers: {
+                    requesttoken: OC.requestToken
+                }
+            })
+            .then((response) => {
+                context.commit("KEY_STATUS", {"loading": false, "data": response.data});
+                // Gilt der Vertrag, zeigt der Katalog aber noch Schlösser, kann
+                // er aus der Zeit vor einer Zulassung stammen: einmal frisch laden.
+                const valid = ["active", "expiring"].indexOf(response.data && response.data.state) !== -1;
+                if (valid && !context.state.keyStatus.catalogReloaded && _.some(context.state.applications.records, "locked")) {
+                    context.commit("KEY_STATUS", {"catalogReloaded": true});
+                    return context.dispatch("INVALIDATE_CACHE", {silent: true}).catch(() => {});
+                }
+            })
+            .catch((error) => {
+                const response = (error && error.response) ? error.response : {};
+                const data = response.data || {};
+                // Ohne Antwort übersetzt die Oberfläche Zustand und Meldung selbst.
+                context.commit("KEY_STATUS", {
+                    "loading": false,
+                    "data": {
+                        "state": "unknown",
+                        "label": "",
+                        "message": data.message || "",
+                        "failed": true,
+                        "rows": []
+                    }
+                });
+            });
+    },
+
+    FETCH_SUPPORT (context) {
+        // Detailseite und Dialog fragen oft gleichzeitig: nur eine Anfrage.
+        supportRequest = supportRequest || Axios.get(OC.generateUrl("/apps/market/support"))
+            .then((response) => {
+                context.commit("SUPPORT", response.data);
+                return response.data;
+            })
+            .catch(() => {
+                // Ohne Antwort bleibt der Knopf mit der bekannten Adresse.
+                const fallback = {
+                    "email": "support@owncloudonline.com",
+                    "url": "https://owncloud.online",
+                    "title": "",
+                    "text": ""
+                };
+                context.commit("SUPPORT", fallback);
+                return fallback;
+            });
+        return supportRequest;
     },
 
     REBUILD_NAVIGATION() {

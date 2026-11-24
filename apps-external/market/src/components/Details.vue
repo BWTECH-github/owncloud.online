@@ -15,6 +15,14 @@
 							rating(:rating="application.rating")
 
 			.uk-card-body.bwt-detail__body
+				.bwt-lock(v-if="application.locked")
+					span.bwt-lock__icon(uk-icon="icon: lock", aria-hidden="true")
+					div
+						p.bwt-lock__title {{ supportTitle }}
+						p.bwt-lock__text {{ application.installed ? t('Updates are available with a support contract.') : supportText }}
+						p.bwt-lock__reason(v-if="lockReason") {{ lockReason }}
+						a.bwt-lock__link(v-if="supportUrl", :href="supportUrl", target="_blank", rel="noopener noreferrer") {{ supportHost }}
+
 				.article(v-html="markdown(application.description)")
 
 				table.uk-table.uk-table-divider.uk-table-responsive.uk-table-justify(v-if="!processing && !loading")
@@ -65,6 +73,13 @@
 
 				div(v-else-if="isLocalOnly")
 					span.uk-text-muted.uk-align-right.uk-margin-remove-bottom {{ t('Installed locally') }}
+
+				//- Ohne Support-Vertrag: anfragen statt installieren; Deinstallieren bleibt.
+				div(v-else-if="application.locked")
+					a.uk-button.uk-button-primary.uk-align-right.uk-margin-remove-bottom.uk-margin-small-left(:href="mailto")
+						| {{ t('Request a support contract') }}
+					button.uk-button.uk-button-default.uk-align-right.uk-margin-remove-bottom.uk-margin-small-left(v-if="installed && application.id !== 'market'", :disabled="processing", @click="uninstall")
+						| {{ t('uninstall') }}
 
 				div(v-else-if="!application.downloadable")
 					a.uk-button.uk-button-secondary.uk-align-right.uk-margin-remove-bottom.uk-margin-small-left.uk-position-relative(:href="application.marketplace", target="_blank")
@@ -128,7 +143,63 @@
 				this.$store.dispatch('FETCH_LOCAL_APPS');
 			}
 		},
+		watch: {
+			locked: {
+				immediate: true,
+				handler (locked) {
+					if (locked) {
+						this.$store.dispatch('FETCH_SUPPORT');
+					}
+				}
+			},
+			// Mit Schlüssel und trotzdem Schloss: den Grund beim Marktplatz
+			// erfragen, statt die App kommentarlos gesperrt zu zeigen.
+			needsKeyStatus: {
+				immediate: true,
+				handler (needed) {
+					if (needed) {
+						this.$store.dispatch('FETCH_KEY_STATUS');
+					}
+				}
+			}
+		},
 		computed: {
+			locked () {
+				return !!(this.application && this.application.locked);
+			},
+			needsKeyStatus () {
+				const keyStatus = this.$store.state.keyStatus;
+				return this.locked && this.$store.state.apikey.hasKey && !keyStatus.data && !keyStatus.loading;
+			},
+			support () {
+				return this.$store.state.support || {};
+			},
+			supportTitle () {
+				return this.support.title || this.t('Support contract');
+			},
+			supportText () {
+				return this.support.text || this.t('Available with a support contract.');
+			},
+			supportUrl () {
+				return this.support.url || '';
+			},
+			// Link-Text ohne Schema und Schrägstrich am Ende: „owncloud.online“
+			supportHost () {
+				return this.supportUrl.replace(/^https?:\/\//i, '').replace(/\/$/, '');
+			},
+			mailto () {
+				return this.supportMailto(this.$store.state.support, this.t('Support contract') + ': ' + this.application.name);
+			},
+			lockReason () {
+				const status = this.$store.state.keyStatus.data;
+				if (!this.$store.state.apikey.hasKey || !status) {
+					return '';
+				}
+				if (status.state === 'active' || status.state === 'expiring') {
+					return this.t('Your support contract does not include this app.');
+				}
+				return status.message || status.label || '';
+			},
 			loading() {
 				return this.$store.state.applications.loading
 			},
@@ -425,6 +496,43 @@
 			margin-top: 0.75rem;
 			margin-bottom: 0.75rem;
 		}
+	}
+
+	.bwt-lock {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.85rem;
+		margin: 0 0 1.5rem;
+		padding: 1rem 1.1rem;
+		border: 1px solid #c7d2fe;
+		border-radius: var(--bwt-radius-sm);
+		background: var(--bwt-brand-soft);
+		color: var(--bwt-text);
+		line-height: 1.5;
+
+		p {
+			margin: 0;
+		}
+	}
+
+	.bwt-lock__icon {
+		flex: none;
+		margin-top: 2px;
+		color: var(--bwt-brand-strong);
+	}
+
+	.bwt-lock__title {
+		font-weight: 700;
+	}
+
+	.bwt-lock__reason {
+		margin-top: 0.5rem !important;
+		font-weight: 600;
+	}
+
+	.bwt-lock__link {
+		display: inline-block;
+		margin-top: 0.5rem;
 	}
 
 	.bwt-update-changelog {

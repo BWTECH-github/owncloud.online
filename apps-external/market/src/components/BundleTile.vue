@@ -26,6 +26,9 @@
 									span(v-else-if="isProcessing(application.id)", role="status", :title="t('installing')" uk-tooltip)
 										span(uk-spinner, uk-icon="icon: spinner; ratio: 0.8", aria-hidden="true")
 										span.uk-hidden-visually {{ t('installing') }}
+									span.bwt-badge.bwt-badge--locked(v-else-if="application.locked")
+										span(uk-icon="icon: lock; ratio: 0.6", aria-hidden="true")
+										| {{ t('Support contract') }}
 				.uk-card-footer
 					button(v-if="bundle.downloadable && installableApps.length > 0", @click="install").uk-button.uk-button-primary {{ t('install bundle') }}
 					a(v-else-if="!bundle.downloadable && installableApps.length === 0", :href="bundle.marketplace", target="_blank").uk-button.uk-button-default {{ t('view in marketplace') }}
@@ -53,8 +56,9 @@
 		},
 		computed : {
 			installableApps () {
+				// Apps mit Schloss bleiben draußen: Ihr Download würde abgelehnt.
 				return _.filter(_.without(this.bundle.products, 'enterprise_key'), function (application) {
-					return !application.installed;
+					return !application.installed && !application.locked;
 				});
 			}
 		},

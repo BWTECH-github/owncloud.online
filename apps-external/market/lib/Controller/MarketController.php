@@ -126,8 +126,14 @@ class MarketController extends Controller {
 	 * @NoCSRFRequired
 	 */
 	public function changeApiKey(string $apiKey): Response|DataResponse {
+		// 'valid' statt des übersetzten Meldungstexts: Die Oberfläche erkennt
+		// daran einen abgelehnten Schlüssel in jeder Sprache.
 		if (!$this->marketService->isApiKeyValid($apiKey)) {
-			return new DataResponse(['message' => $this->l10n->t('The api key is not valid.')]);
+			return new DataResponse([
+				'message' => $this->l10n->t('The api key is not valid.'),
+				'valid' => false,
+				'status' => $this->marketService->getKeyStatus($apiKey),
+			]);
 		}
 
 		// Don't update on GET
@@ -141,7 +147,10 @@ class MarketController extends Controller {
 			]);
 		}
 
-		return (new Response())->setStatus(Http::STATUS_OK);
+		return new DataResponse([
+			'valid' => true,
+			'status' => $this->marketService->getKeyStatus($apiKey),
+		], Http::STATUS_OK);
 	}
 
 	/**
@@ -150,6 +159,9 @@ class MarketController extends Controller {
 	public function getApiKey(): DataResponse {
 		$responseBody = [
 			'changeable' => $this->marketService->isApiKeyChangeableByUser(),
+			// Auch für einen Schlüssel aus config.php: Die Oberfläche bietet
+			// dann „Status prüfen“ an, ohne den Schlüssel selbst zu sehen.
+			'hasKey' => $this->marketService->getApiKey() !== null,
 		];
 
 		if ($this->marketService->isApiKeyChangeableByUser()) {
@@ -157,6 +169,23 @@ class MarketController extends Controller {
 		}
 
 		return new DataResponse($responseBody, Http::STATUS_OK);
+	}
+
+	/**
+	 * Stand des Support-Vertrags zum gespeicherten Schlüssel. Fragt jedes Mal
+	 * beim Marktplatz nach, deshalb mit CSRF-Schutz.
+	 */
+	public function keyStatus(): DataResponse {
+		return new DataResponse($this->marketService->getKeyStatus(), Http::STATUS_OK);
+	}
+
+	/**
+	 * Kontakt für Support-Verträge (Adresse, Link, Titel und Satz).
+	 *
+	 * @NoCSRFRequired
+	 */
+	public function support(): DataResponse {
+		return new DataResponse($this->marketService->getSupportContact(), Http::STATUS_OK);
 	}
 
 	public function uninstall(string $appId): array|DataResponse {
@@ -186,6 +215,10 @@ class MarketController extends Controller {
 	}
 
 	private function enrichApp(array $app): array {
+		$app = MarketService::localizeTexts($app, $this->marketService->prefersGerman());
+		// Geschützte App ohne gültigen Support-Vertrag: Die Oberfläche zeigt
+		// dann das Schloss und „Support-Vertrag anfragen“ statt „Installieren“.
+		$app['locked'] = MarketService::isLocked($app);
 		$app['installed'] = $this->marketService->isAppInstalled($app['id']);
 		$releases = \array_map(
 			function ($release): array {

@@ -17,6 +17,9 @@
 						span.bwt-tile__label(v-if="primaryCategory") {{ primaryCategoryLabel }}
 						span.bwt-tile__label.bwt-tile__label--installed(v-if="application.installed && !application.updateInfo") {{ t('Installed') }}
 						span.bwt-tile__label.bwt-tile__label--update(v-if="application.updateInfo") {{ t('Update') }}
+						span.bwt-tile__label.bwt-tile__label--locked(v-if="application.locked")
+							span(uk-icon="icon: lock; ratio: 0.6", aria-hidden="true")
+							| {{ t('Support contract') }}
 
 					h3.bwt-tile__title
 						router-link(:to="{ name: 'details', params: { id: application.id }}") {{ application.name }}
@@ -90,5 +93,9 @@
 
 	.bwt-tile__label {
 		text-transform: capitalize;
+	}
+
+	.bwt-tile__label--locked {
+		text-transform: none;
 	}
 </style>

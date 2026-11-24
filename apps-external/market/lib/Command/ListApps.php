@@ -26,6 +26,7 @@ namespace OCA\Market\Command;
 
 use Exception;
 use OCA\Market\MarketService;
+use OCP\IL10N;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -33,6 +34,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class ListApps extends Command {
 	public function __construct(
 		private readonly MarketService $marketService,
+		private readonly IL10N $l10n,
 	) {
 		parent::__construct();
 	}
@@ -55,8 +57,11 @@ class ListApps extends Command {
 
 		\usort($apps, static fn ($a, $b): int => \strcmp($a['id'], $b['id']));
 
+		// Apps, die dieses System erst mit einem Support-Vertrag laden darf,
+		// bekommen eine Marke hinter der ID; die erste Spalte bleibt die ID.
+		$marker = (string) $this->l10n->t('[support contract]');
 		foreach ($apps as $app) {
-			$output->writeln("{$app['id']}");
+			$output->writeln(MarketService::isLocked($app) ? "{$app['id']} $marker" : "{$app['id']}");
 		}
 		return 0;
 	}

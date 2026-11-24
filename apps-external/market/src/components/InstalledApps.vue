@@ -6,7 +6,7 @@
 				div(uk-grid)
 					.uk-width-expand
 						h2.bwt-page-head__title.uk-margin-remove-bottom {{ t('Installed Apps') }}
-						p.uk-text-meta.uk-margin-small-top {{ t('Apps currently present in this owncloud.online instance.') }}
+						p.uk-text-meta.uk-margin-small-top {{ t('Apps on this system.') }}
 					.uk-width-auto
 						.bwt-segmented
 							button.bwt-segmented__item(:class="{ 'is-active': filter === 'all' }", @click="filter = 'all'") {{ t('All') }}

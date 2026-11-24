@@ -61,9 +61,19 @@ export default {
 				return this.$gettext(string);
 			}
 			else {
-				// %{interplate} with object
-				return this.$gettextInterpolate(string, interpolation);
+				// Erst übersetzen, dann %{platzhalter} füllen: $gettextInterpolate
+				// allein übersetzt nicht.
+				return this.$gettextInterpolate(this.$gettext(string), interpolation);
 			}
+		},
+		// mailto-Link für „Support-Vertrag anfragen“; der Host im Text sagt dem
+		// Support, um welches System es geht.
+		supportMailto (support, subject) {
+			const email = (support && support.email) || "support@owncloudonline.com";
+			const body = "System: " + window.location.host;
+			return "mailto:" + email
+				+ "?subject=" + encodeURIComponent(subject)
+				+ "&body=" + encodeURIComponent(body);
 		},
 		markdown (string) {
 			if (!string) {

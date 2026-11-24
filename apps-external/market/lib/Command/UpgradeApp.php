@@ -155,6 +155,11 @@ class UpgradeApp extends Command {
 				$this->exitCode = 1;
 				return;
 			}
+			if ($this->marketService->isAppLocked($appId)) {
+				$output->writeln("<error>$appId: {$this->marketService->getSupportContractMessage()}</error>");
+				$this->exitCode = 1;
+				return;
+			}
 			$updateVersions = $this->marketService->getAvailableUpdateVersions($appId);
 			$updateVersion = $this->marketService->chooseCandidate($updateVersions, $isMajorUpdateAllowed);
 			if ($updateVersion !== false) {

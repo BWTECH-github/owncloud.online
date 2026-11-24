@@ -13,17 +13,22 @@ This is a community fork maintained by **BW-Tech GmbH** for
 
 ## Features
 
-- **Local-first catalog** — apps live in `marketplace/apps.json` inside the
-  plugin directory; no remote backend needed. Add an entry, point `download`
-  to a GitHub release URL, you're done.
-- **Drop-in remote mode** — set `appstoreurl` in `config.php` to use the
-  classic owncloud.online marketplace API or your own HTTPS catalog instead.
+- **owncloud.online marketplace** — used by default; set `appstoreurl` in
+  `config.php` to use your own HTTPS catalog instead.
+- **Local catalog** — with `appstoreurl` = `local`, apps live in
+  `marketplace/apps.json` inside the plugin directory; no remote backend
+  needed. Add an entry, point `download` to a GitHub release URL, you're done.
 - **PHP 8.4** — constructor property promotion, `readonly`, `#[\Override]`,
   typed properties, `match`, native first-class function syntax.
 - **Modern UI** — refreshed tile cards, custom CSS variables, automatic
   dark mode via `prefers-color-scheme`, smoother animations.
 - **Live search** — type to filter the visible app list across name,
   summary, description and category.
+- **Support contract** — apps that come with a support contract are listed
+  with a lock; the key from the contract unlocks them, and the Market shows
+  whether the contract is valid and why not.
+- **App texts in the user's language** — German summaries and descriptions
+  from the marketplace for German users, English otherwise.
 - **OCC commands** — install, uninstall, list and upgrade apps from the
   command line.
 - **Background updates** — daily check for available updates, with
@@ -31,10 +36,10 @@ This is a community fork maintained by **BW-Tech GmbH** for
 
 ## Requirements
 
-- owncloud.online Server **10.x** (10.11+ recommended)
+- owncloud.online Server **11**
 - **PHP 8.4** or newer
 - Composer 2.x (only for development / building the dist artifact)
-- Node.js 20 (only for building the JS bundle)
+- Node.js 22 (only for building the JS bundle)
 
 ## Installation
 
@@ -53,22 +58,24 @@ and extract it into `apps/market/`.
 
 ## Configuration
 
-Everything is optional — out of the box the bundled local catalog at
-`apps/market/marketplace/apps.json` is used.
+Everything is optional — out of the box the owncloud.online marketplace at
+`https://marketplace.owncloud.online` is used.
 
 Add to `config/config.php` to change the source:
 
 ```php
 <?php
 $CONFIG = [
-    // (1) bundled catalog (default)              — `appstoreurl` unset or "local"
-    // (2) catalog at a custom file-system path
-    'appstoreurl' => 'file:///srv/owncloud-catalog',
-
-    // (3) remote HTTPS marketplace (classic mode)
+    // (1) owncloud.online marketplace (default)   — `appstoreurl` unset
     // 'appstoreurl' => 'https://marketplace.owncloud.online',
-    // 'marketplace.key' => 'your-api-key',
+    // 'marketplace.key' => 'key-from-your-support-contract',
     // 'marketplace.ca' => '/etc/ssl/custom-ca.pem',
+
+    // (2) bundled catalog at apps/market/marketplace/
+    // 'appstoreurl' => 'local',
+
+    // (3) catalog at a custom file-system path
+    // 'appstoreurl' => 'file:///srv/owncloud-catalog',
 
     // notification recipients
     // 'has_internet_connection' => true,  // disable to suppress remote calls
@@ -77,28 +84,33 @@ $CONFIG = [
 
 | Key                       | Default   | Description                                                       |
 | ------------------------- | --------- | ----------------------------------------------------------------- |
-| `appstoreurl`             | `local`   | `local` for the bundled catalog, `file://` for a local directory, or an HTTPS URL of a remote owncloud.online marketplace. |
-| `marketplace.key`         | unset     | API key sent as `Authorization: apikey: …` for remote marketplaces. |
+| `appstoreurl`             | `https://marketplace.owncloud.online` | `local` for the bundled catalog, `file://` for a local directory, or an HTTPS URL of a remote owncloud.online marketplace. |
+| `marketplace.key`         | unset     | Key from the support contract, sent as `Authorization: apikey: …`. Set here, it cannot be changed in the Market; its status can still be checked there. |
 | `marketplace.ca`          | unset     | Path to a custom CA bundle for remote TLS validation.             |
 | `marketplace.send_host`   | `true`    | If `false`, the instance's host name is not sent to the marketplace (see below). |
 | `has_internet_connection` | `true`    | If `false`, remote calls are blocked. Local catalog mode ignores this. |
 
 ### Data sent to the marketplace
 
-When an API key is configured, requests to the marketplace also identify
-the instance:
+Every request to the marketplace names the version of this app, so the
+marketplace knows it can list apps that need a support contract:
+
+| Header                 | Value                                                                 |
+| ---------------------- | --------------------------------------------------------------------- |
+| `X-Market-Client`      | `market/<version of this app>`                                        |
+| `User-Agent`           | `owncloud.online-market/<version of this app>`                        |
+
+When a key is configured, the requests also identify the instance:
 
 | Header                 | Value                                                                 |
 | ---------------------- | --------------------------------------------------------------------- |
 | `X-Market-Instance`    | `instanceid` from `config.php`                                        |
 | `X-Market-Server-Host` | host name from `overwrite.cli.url`, otherwise the first usable entry of `trusted_domains` (host only, no scheme, port or path; `localhost` and `127.x.x.x` are skipped); left out with `marketplace.send_host` = `false` |
 | `X-Market-Platform`    | server version, e.g. `11.0.25.0`                                      |
-| `X-Market-Client`      | `market/<version of this app>`                                        |
-| `User-Agent`           | `owncloud.online-market/<version of this app>`                        |
 
 These headers only go to the origin of `appstoreurl` (same scheme, host and
-port), and only together with the key. Nothing of this is sent without a
-key, in local catalog mode, or to download URLs on other hosts. If the
+port); the instance headers only together with the key. Nothing of this is
+sent in local catalog mode or to download URLs on other hosts. If the
 marketplace redirects to another origin, the key and these headers are
 dropped before the redirect is followed. Values that do not have the
 expected format are left out.
@@ -107,6 +119,23 @@ A host name can relate to a person (for example
 `cloud.firstname-lastname.de`). Set `marketplace.send_host` to `false` to
 leave it out; the instance ID is always sent, because without it the
 marketplace cannot tell instances apart.
+
+### Support contract
+
+Some apps on the marketplace come with a support contract. The Market lists
+them for everyone, marked with a lock. Without a valid contract the
+**Install** button is replaced by **Request a support contract** (an e-mail
+to the contact the marketplace names in `/api/v1/support.json`, by default
+`support@owncloudonline.com`).
+
+Under **Support contract** in the sidebar the key from the contract is
+entered and saved; a key the marketplace does not know is not saved.
+**Check status** asks the marketplace (`/api/v1/key/status`) and shows
+whether the contract is active, until when it is valid, how many systems
+use it and whether this system is allowed. If it does not unlock anything,
+the reason is shown there and on the page of a locked app.
+
+Marketplaces that do not send these fields work as before.
 
 ### Adding your own app to the local catalog
 
@@ -143,8 +172,8 @@ relative to the catalog directory.
 
 | Command                                    | What it does                                                     |
 | ------------------------------------------ | ---------------------------------------------------------------- |
-| `occ market:list`                          | List all app ids known to the configured catalog.                |
-| `occ market:install <id> [<id> …]`         | Install one or more apps by id (latest minor release).           |
+| `occ market:list`                          | List all app ids known to the configured catalog; apps that need a support contract are marked `[support contract]` (in German `[Support-Vertrag]`). |
+| `occ market:install <id> [<id> …]`         | Install one or more apps by id (latest minor release). For an app that needs a support contract it stops with the contact. |
 | `occ market:install --local /path/to.tgz`  | Install an app from a local tar.gz package.                      |
 | `occ market:uninstall <id>`                | Uninstall an app.                                                |
 | `occ market:upgrade [<id> …]`              | Upgrade selected apps to the latest minor release.               |
@@ -180,6 +209,7 @@ nothing to toggle for dark mode.
 | "Installing apps is not supported" notice                    | Apps directory is not writable by the web user                     | `chown -R www-data:www-data apps/` or fix the cluster's shared-storage mount.                  |
 | App appears in catalog but **Install** fails with 404        | `download` URL is wrong                                            | Open the URL in a browser; if it's a private GitHub release, attach the CDN-style download URL. |
 | Categories are empty                                         | `marketplace/categories.json` not loaded yet (cache)               | Click **Clear cache** in the sidebar.                                                          |
+| App stays locked although a key is saved                     | Contract expired, this system not allowed yet, or the app is not part of the contract | **Support contract → Check status** names the reason; send it to the support.                  |
 | Dark mode looks broken on light background                   | Browser does not honour `prefers-color-scheme`                     | Force it with `<html data-theme="dark">` via a userstyle / extension.                          |
 | `composer install` fails with "requires php >=8.4"           | Older PHP                                                          | Install PHP 8.4 (`apt install php8.4 php8.4-cli php8.4-curl`) or change interpreter.            |
 | Update notifications never arrive                            | Background job hasn't run                                          | `occ background:cron` or check that cron / system-cron is configured.                          |

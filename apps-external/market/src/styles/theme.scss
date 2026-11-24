@@ -72,13 +72,17 @@
 		            box-shadow var(--bwt-transition);
 	}
 
+	// Weiße Schrift auch für Links als Knopf („Support-Vertrag anfragen“):
+	// Die Linkfarbe oben würde sie sonst auf dem Knopf verschwinden lassen.
 	.uk-button-primary {
 		background: var(--bwt-brand);
 		border-color: var(--bwt-brand);
+		color: #fff;
 
 		&:hover, &:focus {
 			background: var(--bwt-brand-strong);
 			border-color: var(--bwt-brand-strong);
+			color: #fff;
 		}
 
 		&:focus-visible {
@@ -515,6 +519,14 @@
 			color: #92400e;
 			text-transform: none;
 		}
+
+		&--locked {
+			gap: 4px;
+			border-color: #c7d2fe;
+			background: var(--bwt-brand-soft);
+			color: var(--bwt-brand-strong);
+			text-transform: none;
+		}
 	}
 
 	.bwt-tile__title {
@@ -594,6 +606,11 @@
 	&--disabled {
 		background: #e2e8f0;
 		color: #475569;
+	}
+
+	&--locked {
+		background: var(--bwt-brand-soft);
+		color: var(--bwt-brand-strong);
 	}
 }
 

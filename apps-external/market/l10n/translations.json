@@ -278,7 +278,7 @@
     "Save": "Speichern",
     "All apps are up to date.": "Alle Apps sind auf dem neuesten Stand.",
     "All": "Alle",
-    "Apps currently present in this owncloud.online instance.": "Aktuell in dieser owncloud.online-Instanz vorhandene Apps.",
+    "Apps on this system.": "Apps auf diesem System.",
     "Apps in %{category}": "Apps in %{category}",
     "Apps with newer versions available.": "Apps mit verfügbaren neueren Versionen.",
     "Author": "Autor",
@@ -310,7 +310,17 @@
     "Updating": "Wird aktualisiert",
     "installing": "wird installiert",
     "published on": "veröffentlicht am",
-    "version": "Version"
+    "version": "Version",
+    "Support contract": "Support-Vertrag",
+    "Support contract key": "Schlüssel des Support-Vertrags",
+    "The key is set in config.php.": "Der Schlüssel steht in der config.php.",
+    "Check status": "Status prüfen",
+    "Request a support contract": "Support-Vertrag anfragen",
+    "Available with a support contract.": "Diese App gibt es mit einem Support-Vertrag.",
+    "Updates are available with a support contract.": "Updates gibt es mit einem Support-Vertrag.",
+    "Your support contract does not include this app.": "Dein Support-Vertrag umfasst diese App nicht.",
+    "Could not check the status.": "Status konnte nicht geprüft werden.",
+    "Status unknown": "Status unbekannt"
   },
   "de_DE": {
     "Installing and updating Apps is not supported!": "Das Installieren und Updaten von Apps wird nicht unterstützt!",
@@ -390,7 +400,7 @@
     "Save": "Speichern",
     "All apps are up to date.": "Alle Apps sind auf dem neuesten Stand.",
     "All": "Alle",
-    "Apps currently present in this owncloud.online instance.": "Aktuell in dieser owncloud.online-Instanz vorhandene Apps.",
+    "Apps on this system.": "Apps auf diesem System.",
     "Apps in %{category}": "Apps in %{category}",
     "Apps with newer versions available.": "Apps mit verfügbaren neueren Versionen.",
     "Author": "Autor",
@@ -422,7 +432,17 @@
     "Updating": "Wird aktualisiert",
     "installing": "wird installiert",
     "published on": "veröffentlicht am",
-    "version": "Version"
+    "version": "Version",
+    "Support contract": "Support-Vertrag",
+    "Support contract key": "Schlüssel des Support-Vertrags",
+    "The key is set in config.php.": "Der Schlüssel steht in der config.php.",
+    "Check status": "Status prüfen",
+    "Request a support contract": "Support-Vertrag anfragen",
+    "Available with a support contract.": "Diese App gibt es mit einem Support-Vertrag.",
+    "Updates are available with a support contract.": "Updates gibt es mit einem Support-Vertrag.",
+    "Your support contract does not include this app.": "Ihr Support-Vertrag umfasst diese App nicht.",
+    "Could not check the status.": "Status konnte nicht geprüft werden.",
+    "Status unknown": "Status unbekannt"
   },
   "el": {
     "Installing and updating Apps is not supported!": "Η εγκατάσταση και η ενημέρωση των εφαρμογών δεν υποστηρίζονται!",
@@ -1768,7 +1788,7 @@
   "de_CH": {
     "All apps are up to date.": "Alle Apps sind auf dem neuesten Stand.",
     "All": "Alle",
-    "Apps currently present in this owncloud.online instance.": "Aktuell in dieser owncloud.online-Instanz vorhandene Apps.",
+    "Apps on this system.": "Apps auf diesem System.",
     "Apps in %{category}": "Apps in %{category}",
     "Apps with newer versions available.": "Apps mit verfügbaren neueren Versionen.",
     "Author": "Autor",
@@ -1800,6 +1820,19 @@
     "Updating": "Wird aktualisiert",
     "installing": "wird installiert",
     "published on": "veröffentlicht am",
-    "version": "Version"
+    "version": "Version",
+    "Support contract": "Support-Vertrag",
+    "Support contract key": "Schlüssel des Support-Vertrags",
+    "The key is set in config.php.": "Der Schlüssel steht in der config.php.",
+    "Check status": "Status prüfen",
+    "Request a support contract": "Support-Vertrag anfragen",
+    "Available with a support contract.": "Diese App gibt es mit einem Support-Vertrag.",
+    "Updates are available with a support contract.": "Updates gibt es mit einem Support-Vertrag.",
+    "Your support contract does not include this app.": "Dein Support-Vertrag umfasst diese App nicht.",
+    "Close": "Schliessen",
+    "Save": "Speichern",
+    "saving": "speichert …",
+    "Could not check the status.": "Status konnte nicht geprüft werden.",
+    "Status unknown": "Status unbekannt"
   }
 }

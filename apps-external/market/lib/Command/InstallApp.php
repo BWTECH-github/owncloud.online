@@ -121,6 +121,11 @@ class InstallApp extends Command {
 
 	private function installRemoteApp(string $appId, OutputInterface $output): void {
 		try {
+			if ($this->marketService->isAppLocked($appId)) {
+				$output->writeln("<error>$appId: {$this->marketService->getSupportContractMessage()}</error>");
+				$this->exitCode = 1;
+				return;
+			}
 			if ($this->marketService->isAppInstalled($appId)) {
 				$updateVersions = $this->marketService->getAvailableUpdateVersions($appId);
 				$updateVersion = $updateVersions['minor'];

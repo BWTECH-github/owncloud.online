@@ -25,6 +25,7 @@
 
 namespace OCA\Market;
 
+use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\TransferException;
 use GuzzleHttp\Psr7\Uri;
@@ -49,6 +50,10 @@ class HttpService {
 	public const BUNDLES = 'bundles';
 	public const CATEGORIES = 'categories';
 	public const DEMO_KEY = 'demo_license_information';
+	public const SUPPORT = 'support';
+
+	/** Stand des Support-Vertrags zu einem Schlüssel; nie aus dem Cache. */
+	public const KEY_STATUS_URL = '/api/v1/key/status';
 
 	/**
 	 * Sentinel value for `appstoreurl` which forces the bundled local catalog
@@ -67,6 +72,9 @@ class HttpService {
 	 * Angaben zur eigenen Instanz. Mit ihnen ordnet der Marktplatz einen
 	 * API-Schlüssel den Instanzen zu, die ihn benutzen. Gesendet werden sie
 	 * nur zusammen mit dem Schlüssel und nur an die Herkunft von `appstoreurl`.
+	 * Nur HEADER_CLIENT (und der User-Agent) geht auch ohne Schlüssel mit:
+	 * Daran erkennt der Marktplatz, dass diese App Apps mit Support-Vertrag
+	 * gesperrt anzeigen kann.
 	 */
 	public const HEADER_INSTANCE = 'X-Market-Instance';
 	public const HEADER_SERVER_HOST = 'X-Market-Server-Host';
@@ -82,6 +90,7 @@ class HttpService {
 		self::BUNDLES => '/api/v1/bundles.json',
 		self::CATEGORIES => '/api/v1/categories.json',
 		self::DEMO_KEY => '/api/v1/instance/%s/demo-key',
+		self::SUPPORT => '/api/v1/support.json',
 	];
 
 	public function __construct(
@@ -120,6 +129,49 @@ class HttpService {
 	 */
 	public function getDemoKey(): mixed {
 		return $this->getEntities(self::DEMO_KEY);
+	}
+
+	/**
+	 * Kontakt für Support-Verträge (GET /api/v1/support.json).
+	 *
+	 * @throws AppManagerException
+	 */
+	public function getSupport(): mixed {
+		return $this->getEntities(self::SUPPORT);
+	}
+
+	/**
+	 * Fragt beim Marktplatz ab, wie es um den Support-Vertrag zu einem
+	 * Schlüssel steht. Ablehnungen (etwa 401 für einen unbekannten Schlüssel)
+	 * kommen als Status zurück, nicht als Ausnahme: Die Oberfläche soll den
+	 * Grund zeigen können.
+	 *
+	 * @return array{status: int, body: ?array} HTTP-Status und JSON-Antwort
+	 * @throws AppManagerException ohne Verbindung zum Marktplatz
+	 */
+	public function fetchKeyStatus(string $apiKey): array {
+		$this->checkInternetConnection();
+		try {
+			$response = $this->httpGet($this->getAbsoluteUrl(self::KEY_STATUS_URL), [], $apiKey);
+			return ['status' => (int) $response->getStatusCode(), 'body' => self::decodeObject((string) $response->getBody())];
+		} catch (AppManagerException $e) {
+			$previous = $e->getPrevious();
+			if ($previous instanceof BadResponseException) {
+				$response = $previous->getResponse();
+				return ['status' => $response->getStatusCode(), 'body' => self::decodeObject((string) $response->getBody())];
+			}
+			throw $e;
+		}
+	}
+
+	/** JSON-Objekt als Array, sonst null (auch bei kaputtem JSON). */
+	private static function decodeObject(string $body): ?array {
+		try {
+			$decoded = \json_decode($body, true, 32, \JSON_THROW_ON_ERROR);
+		} catch (\JsonException) {
+			return null;
+		}
+		return \is_array($decoded) ? $decoded : null;
 	}
 
 	/**
@@ -270,15 +322,10 @@ class HttpService {
 		$client = $this->httpClientService->newClient();
 		$sendKey = !empty($apiKey);
 		for ($redirects = 0; ; $redirects++) {
-			$instanceHeaders = $sendKey ? $this->getInstanceHeaders($url) : [];
-			$requestOptions = $options;
-			if ($sendKey) {
-				$requestOptions = \array_merge(
-					['headers' => ['Authorization' => "apikey: $apiKey"] + $instanceHeaders],
-					$requestOptions
-				);
-			}
-			if ($instanceHeaders === []) {
+			$marketHeaders = $this->getMarketHeaders($url, $sendKey);
+			$headers = $sendKey ? ['Authorization' => "apikey: $apiKey"] + $marketHeaders : $marketHeaders;
+			$requestOptions = $headers !== [] ? \array_merge(['headers' => $headers], $options) : $options;
+			if ($marketHeaders === []) {
 				// Kein Marktplatz-Ziel: Guzzle folgt Weiterleitungen wie bisher
 				// und lässt den Schlüssel an einer Herkunftsgrenze selbst weg.
 				return $this->send($client, $url, $requestOptions, $apiKey);
@@ -286,7 +333,7 @@ class HttpService {
 
 			// Guzzle nimmt bei einer Weiterleitung auf einen fremden Host nur
 			// Authorization und Cookie heraus, eigene Kopfzeilen gingen mit.
-			// Solange die Instanzangaben dabei sind, folgen wir deshalb selbst.
+			// Solange eigene Kopfzeilen dabei sind, folgen wir deshalb selbst.
 			$requestOptions['allow_redirects'] = false;
 			$response = $this->send($client, $url, $requestOptions, $apiKey);
 			$next = $this->getRedirectTarget($url, $response);
@@ -315,14 +362,20 @@ class HttpService {
 			return $client->get($url, $options);
 		} catch (TransferException $e) {
 			if ($e instanceof ClientException) {
+				// Die Ursache hängt immer an: fetchKeyStatus() liest daraus
+				// Status und Antwort des Marktplatzes.
 				throw match ($e->getCode()) {
 					401 => new AppManagerException(
 						$apiKey !== null
 							? $this->l10n->t('Invalid marketplace API key provided')
-							: $this->l10n->t('Marketplace API key missing')
+							: $this->l10n->t('Marketplace API key missing'),
+						0,
+						$e
 					),
 					402 => new AppManagerException(
-						$this->l10n->t('Active subscription on marketplace required')
+						$this->l10n->t('Active subscription on marketplace required'),
+						0,
+						$e
 					),
 					default => new AppManagerException(
 						$this->l10n->t('No marketplace connection: %s', [$e->getMessage()]),
@@ -357,7 +410,10 @@ class HttpService {
 			$instanceId = $this->config->getSystemValue('instanceid');
 			$url = \sprintf($url, $instanceId);
 		}
-		return $this->queryData($code, $url);
+		// Die Antwort hängt von HEADER_CLIENT ab: Nach einem Update dieser App
+		// soll der Katalog frisch geladen werden, nicht bis zu 30 Minuten der
+		// für die alte Fassung.
+		return $this->queryData($code . '@' . ($this->getOwnVersion() ?? ''), $url);
 	}
 
 	private function getAbsoluteUrl(string $relativeUrl): string {
@@ -366,14 +422,16 @@ class HttpService {
 	}
 
 	/**
-	 * Kopfzeilen mit den Angaben zur eigenen Instanz, wenn $url zur Herkunft
-	 * von `appstoreurl` gehört (Schema, Host und Port), sonst keine. Werte,
-	 * die der Marktplatz nicht annehmen würde, bleiben weg; eine kaputte
-	 * Einstellung darf die Verbindung nicht stören.
+	 * Eigene Kopfzeilen, wenn $url zur Herkunft von `appstoreurl` gehört
+	 * (Schema, Host und Port), sonst keine: User-Agent und HEADER_CLIENT
+	 * immer, die Angaben zur eigenen Instanz nur mit $withInstance (also
+	 * zusammen mit dem Schlüssel). Werte, die der Marktplatz nicht annehmen
+	 * würde, bleiben weg; eine kaputte Einstellung darf die Verbindung nicht
+	 * stören.
 	 *
 	 * @return array<string, string>
 	 */
-	private function getInstanceHeaders(string $url): array {
+	private function getMarketHeaders(string $url, bool $withInstance): array {
 		$storeOrigin = self::getOrigin((string) $this->config->getSystemValue('appstoreurl', self::DEFAULT_STORE_URL));
 		if ($storeOrigin === null || self::getOrigin($url) !== $storeOrigin) {
 			return [];
@@ -383,6 +441,9 @@ class HttpService {
 		$headers = ['User-Agent' => 'owncloud.online-market' . ($version !== null ? '/' . $version : '')];
 		if ($version !== null) {
 			$headers[self::HEADER_CLIENT] = 'market/' . $version;
+		}
+		if (!$withInstance) {
+			return $headers;
 		}
 		$instanceId = $this->config->getSystemValue('instanceid', '');
 		if (\is_string($instanceId) && \preg_match('/^[a-z0-9]{6,64}$/D', $instanceId) === 1) {
@@ -517,7 +578,7 @@ class HttpService {
 	 * marker or points at a `file://` location; without configuration the
 	 * remote marketplace (DEFAULT_STORE_URL) is used.
 	 */
-	private function isLocalCatalog(): bool {
+	public function isLocalCatalog(): bool {
 		$url = $this->config->getSystemValue('appstoreurl', self::DEFAULT_STORE_URL);
 		return $url === self::LOCAL_CATALOG_MARKER || \str_starts_with((string) $url, 'file://');
 	}

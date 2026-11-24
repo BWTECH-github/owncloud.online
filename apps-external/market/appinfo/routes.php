@@ -37,6 +37,8 @@ return [
 		['name' => 'market#uninstall', 'url' => '/apps/{appId}/uninstall', 'verb' => 'POST'],
 		['name' => 'market#getApiKey', 'url' => '/apikey', 'verb' => 'GET'],
 		['name' => 'market#changeApiKey', 'url' => '/apikey', 'verb' => 'PUT'],
+		['name' => 'market#keyStatus', 'url' => '/apikey/status', 'verb' => 'GET'],
+		['name' => 'market#support', 'url' => '/support', 'verb' => 'GET'],
 		['name' => 'market#getConfig', 'url' => '/config', 'verb' => 'GET'],
 		['name' => 'market#requestDemoLicenseKeyFromMarket', 'url' => '/request-license-key-from-market', 'verb' => 'GET'],
 		['name' => 'market#invalidateCache', 'url' => '/cache/invalidate', 'verb' => 'POST'],
