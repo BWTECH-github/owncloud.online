@@ -1,6 +1,6 @@
 # Table of Contents
 
-* [Changelog for owncloud.online 11.0.29](#changelog-for-owncloudonline-11029-2026-11-17)
+* [Changelog for owncloud.online 11.0.29](#changelog-for-owncloudonline-11029-2026-11-24)
 * [Changelog for owncloud.online 11.0.28](#changelog-for-owncloudonline-11028-2026-11-16)
 * [Changelog for owncloud.online 11.0.27](#changelog-for-owncloudonline-11027-2026-11-10)
 * [Changelog for owncloud.online 11.0.26](#changelog-for-owncloudonline-11026-2026-11-05)
@@ -46,7 +46,7 @@
 * [Changelog for 10.4.1](#changelog-for-owncloud-core-1041-2020-03-30)
 * [Changelog for 10.4.0](#changelog-for-owncloud-core-1040-2020-02-10)
 * [Changelog for 10.3.2](#changelog-for-owncloud-core-1032-2019-12-04)
-# Changelog for owncloud.online [11.0.29] (2026-11-17)
+# Changelog for owncloud.online [11.0.29] (2026-11-24)
 
 The following sections list the changes in owncloud.online 11.0.29 relevant to
 admins and users.
@@ -74,6 +74,10 @@ admins and users.
 * Bugfix - Share ids below 256 passed as integer were rejected: [#08aa89f](https://github.com/BWTECH-github/owncloud.online/commit/08aa89f)
 * Bugfix - Reset the log level when an upgrade ends with a PHP Error: [#0e60a5a](https://github.com/BWTECH-github/owncloud.online/commit/0e60a5a)
 * Change - Remember the shell fallback of the office detection: [#7b3e25b](https://github.com/BWTECH-github/owncloud.online/commit/7b3e25b)
+* Bugfix - Keep the version when a concurrent request removes the versions folder: [#535590a](https://github.com/BWTECH-github/owncloud.online/commit/535590a)
+* Bugfix - Plural forms work under a Content Security Policy without unsafe-eval: [#d03f062](https://github.com/BWTECH-github/owncloud.online/commit/d03f062)
+* Bugfix - Plural rule of the Files app in Tamazight: [#5a52e7e](https://github.com/BWTECH-github/owncloud.online/commit/5a52e7e)
+* Change - Market app 0.11.0: [#9263b2b](https://github.com/BWTECH-github/owncloud.online/commit/9263b2b)
 
 ## Details
 
@@ -283,6 +287,46 @@ admins and users.
    five minutes, like the result of the regular binary lookup.
 
    https://github.com/BWTECH-github/owncloud.online/commit/7b3e25b
+
+* Bugfix - Keep the version when a concurrent request removes the versions folder
+
+   When a file was overwritten, files_versions created the versions folder and
+   then copied the old content into it. A MOVE or DELETE running at the same
+   time in the same tree could remove that still empty folder through its own
+   cleanup. The copy then failed, the upload still answered 204 and the previous
+   version was lost. The versions folder is now created again and the copy
+   retried once.
+
+   https://github.com/BWTECH-github/owncloud.online/commit/535590a
+
+* Bugfix - Plural forms work under a Content Security Policy without unsafe-eval
+
+   The web interface built the plural rule of every translation bundle with new
+   Function. Under a Content Security Policy without 'unsafe-eval' this threw an
+   EvalError for each bundle on every page, and plural translations failed. The
+   plural rules are now read by a small parser for the gettext syntax and give
+   the same results as before. A plural rule that cannot be read falls back to
+   the default rule with a warning instead of an error.
+
+   https://github.com/BWTECH-github/owncloud.online/commit/d03f062
+
+* Bugfix - Plural rule of the Files app in Tamazight
+
+   The plural rule of the Files translation for Tamazight (tzm) missed its
+   closing bracket, so the Files app could not build plural forms in that
+   language. The bracket is added.
+
+   https://github.com/BWTECH-github/owncloud.online/commit/5a52e7e
+
+* Change - Market app 0.11.0
+
+   The bundled Market app is updated to 0.11.0. Apps that need a support
+   contract are listed with a lock and a button to request a contract instead of
+   being hidden. The key settings show the state of the contract, its end date
+   and the systems in use, and name the reason when apps are not available. App
+   descriptions follow the user's language.
+
+   https://github.com/BWTECH-github/owncloud.online/commit/9263b2b
 
 # Changelog for owncloud.online [11.0.28] (2026-11-16)
 
